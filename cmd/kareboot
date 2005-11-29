@@ -1,0 +1,195 @@
+#!/usr/bin/perl
+
+# needs a configuration file that should be found at /etc/kadeploy/deploy_cmd.conf
+
+use File::Copy;
+use Getopt::Long;
+use lib::conflib;
+use lib::bootlib;
+use lib::deploy_iolib;
+
+use strict;
+
+my $soft = 0;
+my $hard = 0;
+my $deploy = 0;
+my $noreboot = 0;
+my @host_list = ();
+my $env = "";
+my $device="";
+my $reboot = "";
+my $query = "";
+
+if (!@ARGV){
+    print "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] -m|--machine hostname [-e|--environment name] [-p|--partition partition]\n";
+    exit 0;
+}
+
+## gets the options
+GetOptions('m=s'           => \@host_list,
+	   'machine=s'     => \@host_list,
+	   'e=s'           => \$env,
+	   'environment=s' => \$env,
+	   's'             => \$soft,
+	   'soft'          => \$soft,
+	   'h'             => \$hard,
+	   'hard'          => \$hard,
+	   'd'             => \$deploy,
+	   'deploy'        => \$deploy,
+	   'n'             => \$noreboot,
+	   'noreboot'      => \$noreboot,
+	   'p=s'           => \$device,
+	   'partition=s'   => \$device
+	   );
+
+## checks if needed options are defined
+if (!scalar(@host_list)){
+    print "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] -m|--machine hostname [-e|--environment name] [-p|--partition partition]\n";
+    exit 0;
+}
+if ($soft && $hard){
+    print "ERROR : soft and hard reboot options are exclusive\n";
+    print "ERROR : please select only one of them at once\n";
+    exit 0;
+}
+
+if (($noreboot && $deploy) || ($noreboot && $soft) || ($noreboot && $hard)){
+    print "ERROR : no reboot and soft, hard or deploy reboot should be exclusive\n";
+    print "EROOR : please select only one of them at once\n";
+    exit 0;
+}
+
+if (($deploy && $env) || ($deploy && $device) || ($env && $device)){
+    print "ERROR : please select EITHER a deployment reboot OR a reboot on a partition OR a reboot on an environment\n";
+    exit 0;
+}
+
+# checks if tftp folders exist
+my $intel_tftp = conflib::get_conf("tftp_repository_intel") . conflib::get_conf("tftp_relative_path");
+my $tftp = conflib::get_conf("tftp_repository") . conflib::get_conf("tftp_relative_path");
+if((!(-e $intel_tftp)) || (!(-e $tftp))){
+    print "ERROR : unknown tftp folder\n";
+    print "ERROR : please check your configuration file\n";
+    exit 0;
+}
+
+
+# defines reboot type
+if ($deploy){
+    $reboot = "deployboot";
+}elsif ($hard){
+    $reboot = "hardboot";
+}elsif ($noreboot){
+    $reboot = "noreboot";
+}else{
+    # default is soft
+    $reboot = "softboot";    
+}
+
+# defines query type
+if ($deploy){
+    $query = "deployboot";
+}elsif ($env){
+    $query = "envboot";
+}elsif ($device){
+    $query = "devboot";
+}elsif ($noreboot){
+    $query = "noreboot";
+}else{
+    # default is normal reboot
+    $query = "reboot";
+}
+
+## Available variables are :
+## - @host_list - list of hosts to reboot
+## - $env - environment name
+##  OR
+## - $device - device and partition number
+
+my %cmd = conflib::check_cmd;
+
+foreach my $host (@host_list){
+    my $dev = "";
+    my $part = "";
+    my %node_info;
+    my @env_info = ();
+
+    # debug print 
+    # print "NOREBOOT = $noreboot ; SOFT = $soft ; HARD = $hard ; DEPLOY = $deploy\n";
+
+    # check
+   
+    if( (!$cmd{$host}{$reboot}) && (!$noreboot)){
+	print "WARNING : no $reboot command found for $host !\n";
+    }else{
+	# debug print
+	# print "to be executed : $host -> $cmd{$host}{$reboot}\n";
+	
+	my $base = deploy_iolib::connect();
+	
+	if($deploy){
+	    if(($hard && !$cmd{$host}{"hardboot"}) || ($soft && !$cmd{$host}{"softboot"})){
+		print "WARNING : no $reboot command found for $host !\n";
+	    }else{
+		system("$cmd{$host}{$reboot}");
+		if($hard){
+		    system("$cmd{$host}{\"hardboot\"}");
+		}else{
+		    # default is soft boot
+		    system("$cmd{$host}{\"softboot\"}");
+		}
+	    }
+
+	}elsif ($env){
+	    # searches for partition with requested environment
+	    my @res = deploy_iolib::search_deployed_env($base,$env,$host);
+	    if(scalar(@res)){
+		# gets device and part number of the first partition by default for the moment
+		$dev  = deploy_iolib::disk_id_to_dev($base,$res[0][0]);
+		$part = deploy_iolib::part_id_to_nb($base,$res[0][1]);
+		
+		# debug print
+		# print "DEV = $dev ; PART = $part ; That's it !\n";
+
+ 		my $deploy_id = deploy_iolib::get_deploy_id($base,$host,$dev,$part);
+		if(!$deploy_id){
+		    print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
+		}else{
+		    @env_info = deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
+		}
+	    }
+
+	}elsif($device){
+	    # separates device and partition number from $device
+	    $dev = substr($device, 0, 3);
+	    my @nb = split(/$dev/, $device);
+	    $part = $nb[1];
+
+	    # gets the environment installed on
+	    my $deploy_id = deploy_iolib::get_deploy_id($base,$host,$dev,$part);
+	    if(!$deploy_id){
+		print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
+	    }else{
+		@env_info = deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
+	    }
+
+	}elsif(!$noreboot){
+	    # default is normal reboot
+	    print "Rebooting...\n";
+	    system("$cmd{$host}{$reboot}");
+	}
+	    
+	if ($dev && $part && scalar(@env_info)){
+	    # grub and pxe
+	    my $ip = deploy_iolib::node_name_to_ip($base,$host);
+	    $node_info{$ip} = [$dev,$part];
+	    bootlib::manage_grub_pxe(\%node_info,\@env_info);
+	    # reboots
+	    if(!$noreboot){
+		print "Rebooting...\n";
+		system("$cmd{$host}{$reboot}");
+	    }
+	}
+	deploy_iolib::disconnect($base);
+    }
+}

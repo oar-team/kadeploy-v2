@@ -1,0 +1,599 @@
+#!/usr/bin/perl
+
+use File::Copy;
+use Getopt::Long;
+use lib::deploy_iolib;
+use lib::rights_iolib;
+use lib::conflib;
+use lib::bootlib;
+use lib::node_bd;
+use lib::nodes;
+use strict;
+
+## declares the function
+sub check_options();
+sub check_consistency();
+sub check_nodes($$);
+sub check_partition($$$);
+sub check_env($$);
+sub set_tar_options($);
+sub set_mkfs_option($);
+sub halt($);
+
+## declares the options
+my $env = '';               # env name to be deployed
+my @host_list = ();         # host list to deploy on
+my $device = '';            # device & partition number
+
+## declares other global variables
+my $base;                   # database reference
+my $deployment;             # deployment identifier
+my $environment;            # environment identifier
+
+my $username = getpwuid($ENV{SUDO_UID});
+
+my @db_checked_hosts = ();  # nodes existing in database
+my $dev;                    # device e.g. hda
+my $part;                   # partition number e.g. 1
+my $destination_partition;  # deployment target partition e.g. /dev/hda1
+my $grub_boot_img_name;     # grub boot image name e.g. grub_deploy_debian_bootvmlinuz_hda1
+my $grub_menu_file_name;    # grub menu file name e.g. menu1_hda1
+my $pre_install_archive;    # path to pre-install archive
+my $pre_install_option;     # tar options for pre-install archive
+my $pre_install_script;     # name of the pre-install script
+my $mkfs_fs;                # parameter for mkfs command
+my $filesystem;             # filesystem type
+my $filebase;               # path to environment image
+my $filebase_option;        # tar options for environment image
+my $filesite;               # path to site specification site
+my $filesite_option;        # tar options for specification site
+my $post_script;            # name of the post-install script
+my $tftp_destination_folder;# tftp destination folder
+my $kernel_path;            # path to kernel in env image
+my $kernel_param;           # boot kernel parameter
+my @to_check = ();          # deployed nodes to check
+my @ready = ();             # deployed nodes that are ready 
+
+## Nodes sets used during depoymetnt process
+my $nodes_set;
+my $deployed_nodes_set;
+
+## to prevent zombie processes
+## SIGCHLD is ignored and when the child dies, his father does not care...
+$SIG{CHLD} = 'IGNORE';
+## enables kadeploy to catch the Ctrl-C signal
+## in order to correct the database before exiting
+$SIG{INT} = \&tsktsk;
+sub tsktsk {
+    $SIG{INT} = \&tsktsk;           # See ``Writing A Signal Handler''
+    print "Signal caught...\n";
+    # checks if $base exists i.e. if kadepoy has already connected to the database
+    if($base){
+	if($deployment){
+	    deploy_iolib::correct_deployment_consistence($base,$deployment);
+	  }
+    }
+    print "Database corrected\nExiting...\n";
+    # clean the remaining processes
+    if ($deployed_nodes_set != 0) {
+	print "killing sentinelle\n";
+	$deployed_nodes_set->kill_sentinelle();
+    } elsif ($nodes_set != 0) {
+	print "killing sentinelle\n";
+	$nodes_set->kill_sentinelle();
+    }
+    exit 0;
+}
+
+## checks the options
+if(!check_options()){
+    exit 0;
+}
+
+## Available variables are :
+## - $env
+## - @host_list ; (array of) nodes to be deployed
+## - $dev e.g. hda
+## - $part e.g. 1
+
+## database connection
+$base = deploy_iolib::connect();
+
+if (!check_consistency()){
+    exit 0;
+}
+
+## checks if the user has appropriate rights
+print "Checking user deployment rights...\n";
+if(!(rights_iolib::check_rights_kadeploy($base,$username,\@db_checked_hosts,$device))){
+    halt("user does not have appropriate rights on some nodes/partitions");
+}
+
+## new deployment creation
+$deployment = deploy_iolib::prepare_deployment($base);
+if(!$deployment){
+    deploy_iolib::disconnect($base);
+      exit 0;
+  }
+
+## effectue un reboot deploiement soft
+bootlib::reboot(\@host_list,"1","0","1");
+
+###############################################
+## (au cas ou si besoin est)                 ##
+## effectue un reboot deploiement hard       ##
+## bootlib::reboot(\@host_list,"0","1","1"); ##
+###############################################
+
+## deployment node set creation
+my %ip_addr;
+foreach my $host (@db_checked_hosts){
+    $ip_addr{$host} = [$dev,$part];
+}
+
+## begins deployment (updates deployed table)
+$environment = deploy_iolib::env_name_to_last_ver_id($base,$env);
+
+my @nodes_ready = ();
+foreach my $key (keys %ip_addr){
+    my $value = $ip_addr{$key};
+    push(@nodes_ready,$value);
+}
+
+
+if(!scalar(@nodes_ready)){
+    halt("deployment canceled");
+}
+
+## creates nodes set for deployment
+# Nodes->new("production") for testing purposes
+# Nodes->new("deployment") for real deployment
+#
+$nodes_set = Nodes->new("deployment"); 
+
+
+
+my $tmp_node;
+# for the moment, nodes' name and IP are the same
+#
+
+
+
+foreach my $host (@db_checked_hosts){
+    $tmp_node = node_bd->new($host, $deployment, $env, $dev, $part);
+    if ($tmp_node) {
+	$nodes_set->add($tmp_node);
+    }
+    else {
+	print "node $host not included in current deployment\n";
+    }
+}
+
+
+## runs the deployment (changes state to run)
+deploy_iolib::run_deployment($base,$deployment);
+
+## waits for all the nodes to be ready
+# first check is important before ready to ensure
+# node state coherancy
+my $checkTimeout = 200;
+my $reference_time_check = deploy_iolib::get_time($base,$deployment);
+my $time_check = 0;
+$nodes_set->check();
+while((!$nodes_set->ready()) and ($time_check < $checkTimeout)) {
+    $nodes_set->check();
+    $time_check = deploy_iolib::get_time($base,$deployment) - $reference_time_check;
+}
+if ($nodes_set->ready()) {
+    print "All nodes are ready!\n";
+} else {
+    print "There are some missing nodes, rebooting them hard!\n";
+    # hardreboot of the missing nodes
+    my @timedoutnodes = $nodes_set->getFailedNodes();
+    bootlib::reboot(\@timedoutnodes,"0","1","1");
+
+    # let's wait for another timeout
+    $reference_time_check = deploy_iolib::get_time($base,$deployment);
+    $time_check = 0;
+    $nodes_set->check();
+    while((!$nodes_set->ready()) and ($time_check < $checkTimeout)) {
+	$nodes_set->check();
+	$time_check = deploy_iolib::get_time($base,$deployment) - $reference_time_check;
+    }
+    if ($nodes_set->ready()) {
+	print "All nodes are ready!\n";
+    } else {
+	print "There are some missing nodes, pursuing deploy process!\n"
+    }
+}
+
+
+
+# time bench
+my $time_first_check = deploy_iolib::get_time($base,$deployment);
+deploy_iolib::set_time($base,$deployment);
+print "First Check: " . $time_first_check . "\n";
+
+#$nodes_set->runReportedRemoteCommand("\"echo coucou > ~/test\"", "le noeud est parti au moment d'ecrire dans le fichier /tmp/test");
+#$nodes_set->runReportedRemoteCommand("\" cat ~/test\"", "le noeud est parti");
+
+#
+# Let's go!
+#
+$destination_partition = "/dev/" . $dev . $part;
+
+# pre-installation
+# mount rambin to perform hd optimizations and benches,...
+#$nodes_set->runCommand(" cat $pre_install_archive  |", "\"tar $pre_install_option /rambin \"");
+print "Retrieving preinstall\n";
+$nodes_set->runCommandMput("$pre_install_archive /pre_pipe");
+print "Executing preinstall...";
+$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
+print "Done\n";
+
+# format desired partition and mount it
+print "Formatting destination partition $destination_partition on the nodes...";
+$nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
+$nodes_set->runRemoteCommand("\" mount $destination_partition /mnt/dest \"");
+print "Done\n";
+
+# time bench
+my $time_preinstall = deploy_iolib::get_time($base,$deployment);
+deploy_iolib::set_time($base,$deployment);
+print "Preinstall: " . $time_preinstall . "\n";
+
+# let's send our environment!!
+#$nodes_set->runEfficientPipelinedCommand(" cat $filebase |", "\"tar $filebase_option /mnt/dest \"", "erreur dans l'envoi de l'image!!");
+print "Sending Computing environment to the nodes...";
+$nodes_set->runCommandMput("$filebase /dest_pipe");
+print "Done\n";
+
+# post-installation
+#$nodes_set->runCommand(" cat $filesite |", "\"tar $filesite_option /rambin \"");
+print "Executing postinstall...";
+$nodes_set->runCommandMput("$filesite /post_pipe");
+$nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
+print "Done\n";
+
+# grub and pxe
+bootlib::setup_grub_pxe($base,$deployment);
+
+my @to_reboot = @db_checked_hosts;
+
+# reboot
+#$nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
+#$nodes_set->runRemoteSystemCommand("\"reboot -f\"");
+#$nodes_set->runRemoteSystemCommand("\"(sleep 5 ; reboot -f) &> /dev/null &\"");
+$nodes_set->runRemoteSystemCommand("\"reboot_detach &\"");
+
+print "rebooting the nodes...\n";
+
+# time transfert
+my $time_transfert = deploy_iolib::get_time($base,$deployment);
+deploy_iolib::set_time($base,$deployment);
+print "Transfert: " . $time_transfert . "\n";
+
+@to_reboot = $nodes_set->getReadyNodes();
+# discard the previous nodes' set to allow the creation of a new one
+$nodes_set->discard();
+# Waits for all the nodes to be there
+$deployed_nodes_set = Nodes->new("production"); 
+
+foreach my $hostName (@to_reboot){
+    $tmp_node = $nodes_set->get_node_by_name($hostName);
+    $tmp_node->get_name();
+    $deployed_nodes_set->add($tmp_node);
+}
+
+
+# check if all the nodes rebooted
+#
+# the first check is important, because the added nodes were there,
+# during the deployment procedure.
+# It ensures that their state is synchronized with the new conditions
+# that grants that a node is there
+$deployed_nodes_set->check();
+while(!$deployed_nodes_set->ready()) {
+    $deployed_nodes_set->check();
+}
+print "All nodes are deployed!\n";
+
+# time end
+my $time_end = deploy_iolib::get_time($base,$deployment);
+deploy_iolib::set_time($base,$deployment);
+print "Last Reboot: " . $time_end . "\n";
+
+## error if a node failed then checks which node has failed
+## and turns the others to 'deployed' state
+deploy_iolib::end_deployment($base,$deployment);
+deploy_iolib::debug_print($base,$deployment);
+deploy_iolib::disconnect($base);
+
+print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\ttreatement:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
+
+1;
+
+###################### End of Main ########################
+
+
+################## Function Definition ####################
+
+# check_nodes
+# checks if the specified nodes exist in the database
+# parameters : base, host list (name or ip adress)
+# return value : list of hosts that exist in the database or 0 if empty
+sub check_nodes($$){
+    my $dbh = shift;
+    my $ref_hosts = shift;
+    my @checked;
+
+    foreach my $host (@{$ref_hosts}){
+	if(!deploy_iolib::node_name_to_name($dbh,$host)){
+	    my $hostname = deploy_iolib::node_ip_to_name($dbh,$host);
+	    if(!$hostname){
+		print "WARNING : node $host does not exist in the database\n";
+		print "WARNING : it is excluded from deployment\n";
+	    }else{
+		push(@checked,$hostname);
+	    }
+	}else{
+	    push(@checked,$host);
+	}
+    }
+    return @checked;
+}
+
+# check_partition
+# checks if the partition exists
+# parameters : base, disk, partition
+# return value : 0 if disk or partition does not exist
+# NB : very simple version ; to be improved...
+#      disk_dev_to_id & part_nb_to_id should make a join
+#      with the deployed table...
+sub check_partition($$$){
+    my $dbh = shift;
+    my $dev = shift;
+    my $part = shift;
+
+    return (deploy_iolib::disk_dev_to_id($dbh,$dev) && deploy_iolib::part_nb_to_id($dbh,$part));
+}
+
+# check_env
+# checks if the environment exists
+# parameters : base, environment
+# return value : 0 if env does not exist
+# NB : naive version, should check if needed fields are filled in or not
+#      and if values are consistent ; except if done by KaCreateEnv
+sub check_env($$){
+    my $dbh = shift;
+    my $env = shift;
+
+    return deploy_iolib::env_name_to_last_ver_id($dbh,$env);
+}
+
+# set_tar_options
+# set the tar options
+# parameters : archive name
+# return value : the tar options or 0 if unknown format
+sub set_tar_options($){
+    my $archive = shift;
+    my $extension = substr($archive, -3);
+    
+    if($extension eq "bz2"){
+	return "jxC";
+    }elsif($extension eq "tgz"){
+	return "zxC";
+    }elsif($extension eq "tar"){
+	return "xC";
+    }else{
+	print "ERROR : unknown archive format\n";
+	return 0;
+    }
+}
+
+# set_mkfs_option
+# only replace ext3 by ext2 for the moment
+# parameters : filesystem
+# return value : filesystem
+sub set_mkfs_option($){
+    my $fs = shift;
+    
+    if($fs eq "ext3"){
+	return "ext2";
+    }else{
+	return $fs;
+    }
+}
+
+# check_options
+# make all sort of checks
+# parameters :
+# return value : 1 if successful
+sub check_options(){
+
+    if (!@ARGV){
+	print "Usage : kadeploy -e|--environment environment_name -m|--machine hostname -p|--partition partition\n";
+	exit 0;
+    }
+    
+    ## gets the database login information needed
+    if(!(conflib::check_db_access == 1)){
+	print "ERROR : database access failed\n";
+	exit 0;
+    }
+    
+    ## gets the options
+    GetOptions('e=s' => \$env,
+	       'environment=s' => \$env,
+	       'm=s' => \@host_list,
+	       'machine=s' => \@host_list,
+	       'p=s' => \$device,
+	       'partition=s' => \$device,
+	       );
+
+    ## checks if needed options are defined
+    if (!$env){
+	print "ERROR : environment name needed\n";
+	exit 0;
+    }
+    if (!@host_list){
+	print "WARNING : no host specified\n";
+	print "WARNING : environment will be deployed on all the nodes\n";
+	print "WARNING : do you want to continue ? (y/N) ";
+	my $ans = <STDIN>;
+	chomp($ans);
+	if ($ans eq "y"){
+	    # TO DO : gérer le cas "all nodes" !
+	    print "ERROR : deploiement sur TOUS les noeuds non traité pour le moment\n";
+	    exit 0;
+	}else{
+	    print "ERROR : please enter target nodes\n";
+	    exit 0;
+	}
+    }
+    if (!$device){
+	print "ERROR : target partition unspecified\n";
+	exit 0;
+    }
+    
+    ## separates device and partition number from $device
+    $dev = substr($device, 0, 3);
+    my @nb = split(/$dev/, $device);
+    $part = $nb[1];
+    
+}
+
+# check_consistency
+# make all sort of checks
+# parameters : 
+# return value : 1 if successful
+sub check_consistency(){
+
+    ## checks if specified nodes are registered
+    @db_checked_hosts = check_nodes($base,\@host_list);
+    if(!scalar(@db_checked_hosts)){ 
+	halt("none of the specified nodes is registered");
+    }
+
+    ## checks if specified partition exists
+    if(!check_partition($base,$dev,$part)){
+	halt("target partition does not exist");
+    }
+
+     ## checks if specified environment exists
+    if(!check_env($base,$env)){
+	halt("specified env does not exist");
+    }
+
+    # gets filebase path
+    $filebase = deploy_iolib::env_name_to_filebase($base,$env);
+    # instead of the following line ? (cleaner) (not tried yet)
+    # my @cut = split(/:/, $filebase);
+    # $filebase = $cut[1];
+    $filebase = substr($filebase,6);
+
+    # checks if the file exists
+    if(!(-e $filebase)){
+	halt("base file does not exist");
+    }elsif(!(-r $filebase)){
+	halt("base file exists but is not allowed to be read by user $username");
+    }
+    # checks format file and prepare tar options
+    $filebase_option = set_tar_options($filebase);
+    if (!$filebase_option){
+	halt("unknown pre install archive format");
+    }
+    
+    # gets kernel path
+    $kernel_path = deploy_iolib::env_name_to_kernel($base,$env);
+
+    # checks if kernel path is specified
+    if(!$kernel_path){
+	halt("no kernel path specified in the database !");
+    }
+    
+    # gets filesystem
+    $filesystem = deploy_iolib::env_name_to_filesystem($base,$env);
+
+    # checks if the filesystem is defined
+    if(!$filesystem){
+	halt("no file system specified in the database !");
+    }
+    
+    # prepare mkfs options
+    $mkfs_fs = set_mkfs_option($filesystem);
+
+    # pre-install preparation and check
+
+    # gets needed stuff from conf file
+    $pre_install_archive = conflib::get_conf("pre_install_archive");
+
+    # checks if it exists
+    if(!(-e $pre_install_archive) ){
+	halt("pre install archive does not exist");
+    }elsif(!(-r $pre_install_archive) ){
+	halt("pre install archive exists but is not allowed to be read by $username");
+    }
+
+    # checks format file and prepare tar options
+    $pre_install_option = set_tar_options($pre_install_archive);
+    if (!$pre_install_option){
+	halt("unknown pre install archive format");
+    }
+
+    $pre_install_script = conflib::get_conf("pre_install_script");
+
+    # checks if it exists
+    if(!$pre_install_script){
+	halt("pre install script is not specified !");
+    }
+
+    # post-install preparation and check
+
+    # gets filesite path
+    $filesite = deploy_iolib::env_name_to_filesite($base,$env);
+    # instead of the following line ? (cleaner) (not tried yet)
+    # @cut = split(/:/, $filesite);
+    # $filesite = $cut[1];
+    $filesite = substr($filesite,6);
+
+    # checks if the file exists
+    if(!(-e $filesite)){
+	halt("site file does not exist");
+    }elsif(!(-r $filesite)){
+	halt("site file exists but is not allowed to be read by $username");
+    }
+
+    # checks format file and prepare tar options
+    $filesite_option = set_tar_options($filesite);
+    if (!$filesite_option){
+	halt("unknown pre install archive format");
+    }
+
+    # gets needed stuff from conf file
+    $post_script = conflib::get_conf("post_install_script");
+
+    # checks if it exists
+    if(!$post_script){
+	halt("post install script is not specified !");
+    }
+
+    # kernel param 
+    $kernel_param = '';
+    $kernel_param = conflib::get_conf("kernel_param");
+    
+    return 1;
+}
+
+# halt
+# cancel a deployment, disconnect from database and exit from program
+# parameters : string to print
+# return value : 1 if successful
+sub halt($){
+    my $msg = shift;
+
+    print "ERROR : $msg\n";
+    deploy_iolib::cancel_deployment($base,$deployment);
+    deploy_iolib::disconnect($base);
+    exit 0;
+}
