@@ -1,0 +1,16 @@
+#!/bin/bash
+
+NAME=makedev
+SCRIPTNAME=rc.$NAME
+
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+
+
+cp $MAKEDEV $FSDEST/dev
+cd $FSDEST/dev/
+
+echo -n "Make device node..."
+./MAKEDEV $MAKEDEVPARAMS
+echo "done"

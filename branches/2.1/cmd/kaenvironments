@@ -1,0 +1,234 @@
+#!/usr/bin/perl
+# Author: Guillaume Mornet
+# Copyright (C) 2005 Inria
+# Created: 2005.05.30
+# 
+
+# Lists deployed environments
+
+# We use libraries from kadeploy2
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use libkadeploy2::conflib;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::hexlib;
+
+# DB accessors
+sub get_environments($);
+sub get_environments_byname($$);
+sub delete_environments_byname($$);
+# Displayers
+sub print_environment($);
+
+sub print_usage();
+
+
+# Command-line arguments
+
+# Name of the environments the user wants to display. If empty, we list a summary
+my @env_list;
+my @envToDelete;
+		      
+# True if the user wants help
+my $display_help;
+		      
+# db handler
+my $base; 
+		      
+# get the command-line options
+GetOptions('e=s'           => \@env_list,
+           'environment=s'     => \@env_list,
+	   'h!'          => \$display_help,
+	   'help!' => \$display_help,
+	   'd=s'   => \@envToDelete,
+	   );
+
+
+	
+			 
+if ($display_help) {
+    print_usage();
+    exit 0;
+}
+
+
+if (@envToDelete)
+{
+    $base = libkadeploy2::deploy_iolib::connect();
+    my $env_name;
+    foreach $env_name (@envToDelete) 
+    {
+	my %environments = get_environments_byname($base, $env_name);
+	if (scalar(keys(%environments)) != 0) 
+	{
+	    if (delete_environments_byname($base,$env_name)==1)
+	    { print "environment $env_name deleted succefully\n"; }
+	}
+	else
+	{
+	    print "Environment $env_name doesn't exist...\n";
+	}
+    }
+    libkadeploy2::deploy_iolib::disconnect($base);
+    exit(0);
+}
+
+if (@env_list)
+    {
+	my %environments;
+	$base = libkadeploy2::deploy_iolib::connect();
+	for my $env_name (@env_list) 
+	{
+	    %environments = get_environments_byname($base, $env_name);
+	    
+	    if (scalar(keys(%environments)) == 0) 
+	    {
+		print "No environment named '$env_name'\n";
+	    }
+	}
+	    
+	while ((my $envid, my $envinfo) = each(%environments)) 
+	{
+	    print_environment($envinfo);
+	}
+	libkadeploy2::deploy_iolib::disconnect($base);
+    }
+    
+if (! @env_list && ! @envToDelete){
+    # List all the environemnts
+    $base = libkadeploy2::deploy_iolib::connect();
+    my %environments = get_environments($base);
+
+    my $format = "%-17s %12s %-15s %s\n";
+
+    printf ($format, "Name", "Version", "Author", "Description");
+    printf ($format, "----", "-------", "------", "-----------");
+
+
+    while ((my $envid, my $envinfo) = each(%environments)) {
+	my $description = $envinfo->{'description'};
+	$description = "-" unless defined($description);
+
+        printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
+            $envinfo->{'author'}, $description
+	);
+    }
+    libkadeploy2::deploy_iolib::disconnect($base);
+    exit(0);
+}
+
+
+
+
+	
+    print "Woops..\n";
+    exit 0;
+
+ 
+sub print_usage() {
+    print "Usage: \t$0 \n";
+    print "                                        - lists all environments\n";
+    print "            -e | --environment env1 ... - lists the given environment\n";
+    print "            -d | --delete env1 ...      - delete this give environment\n";
+    print "            -h | --help                 - this help\n";
+    print "You may use short arguments (-e and -h)\n";
+}
+
+
+# Displays an environment on stdout with a oarnodes-like format
+sub print_environment($) 
+{
+    my $env = shift;
+    
+    my $format = "\t%s = %s\n";
+    my @attributes = ('id', 'version', 'description', 'author', 'filebase',
+		      'filesite', 'size', 'initrdpath', 'kernelpath',
+		      'kernelparam', 'fdisktype', 'filesystem', 'siteid');
+    
+    print "$env->{name}\n";
+    
+    for my $attr (@attributes) 
+    {
+	if ($attr =~ /^fdisktype$/)
+	{
+	    printf($format,$attr, libkadeploy2::hexlib::hexalize($env->{$attr})) if defined($env->{$attr});
+	}
+	else
+	{
+	    printf($format, $attr, $env->{$attr}) if defined($env->{$attr});
+	}
+    }
+
+       print "\n";
+}
+
+
+# Return all the environments
+# Fixme: does not return all fields
+sub get_environments($) {
+    my $dbh = shift;
+    
+    my %environments;
+    
+    my $sth = $dbh->prepare("SELECT * FROM environment");
+    $sth->execute();
+
+    while (my $ref = $sth->fetchrow_hashref()) {
+        $environments{$ref->{id}} 
+	    = {id => $ref->{id}, name => $ref->{name}, version => $ref->{version},
+	       author => $ref->{author}, description => $ref->{description},
+	       fdisktype => $ref->{fdisktype}, filesystem => $ref->{filesystem} 
+	};
+    }
+			          				   
+    $sth->finish();							      
+
+    return %environments;
+}
+
+
+# Returns all environments that match the given name
+sub get_environments_byname($$) {
+
+    my $dbh = shift;
+    my $name = shift;
+        
+    my %environments;
+    
+    my $sth = $dbh->prepare("SELECT * FROM environment WHERE name=?");
+    $sth->execute($name);
+
+    while (my $ref = $sth->fetchrow_hashref()) {
+        $environments{$ref->{id}} 
+	    = {id => $ref->{id}, 
+	       name => $ref->{name}, version => $ref->{version},
+	       author => $ref->{author}, description => $ref->{description},
+	       filebase => $ref->{filebase}, filesite => $ref->{filesite},
+	       size => $ref->{size}, initrdpath => $ref->{initrdpath},
+	       kernelpath => $ref->{kernelpath}, kernelparam => $ref->{kernelparam},
+	       fdisktype => $ref->{fdisktype}, filesystem => $ref->{filesystem},
+	       siteid => $ref->{siteid} 
+	};
+    }
+			          				   
+    $sth->finish();							      
+
+    return %environments;
+}
+
+# Return 1 if success
+sub delete_environments_byname($$) {
+    my $dbh = shift;
+    my $name = shift;
+
+    my $sth;
+    my $result;
+
+    $sth = $dbh->prepare("DELETE FROM environment WHERE name=?");
+    $result=$sth->execute($name);
+    $sth->finish;
+    return $result;
+}

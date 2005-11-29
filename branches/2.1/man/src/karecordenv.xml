@@ -1,0 +1,66 @@
+<refentry id="kacreateenv">
+
+  <refmeta>
+    <refentrytitle>kacreateenv</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>karecordenv</refname>
+    <refpurpose> registers a environment </refpurpose>
+  </refnamediv>
+  
+
+
+  <refsect1>
+      <title>SYNOPSIS</title>
+karecordenv
+   -n |  --name        registration name
+   -v |  --version     version            # default is 1
+   -d |  --description description
+   -a |  --author      author email
+   -fb| --filebase    environment image path
+   -ft| --filesite    post-installation file path
+   -s |  --size        size (Mo)
+   -i |  --initrdpath  initrdpath        # default is none
+   -k |  --kernelpath  kernel path
+   -p |  --param       kernel param 
+   -fd| --fdisktype   fdisk type         # default is 82
+   -fs| --filesystem  file system        # default is ext2
+
+Name, kernel_path, environment_image_path and post-installation_file_path must be defined
+  </refsect1>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    karecordenv registers an environment in order to be able to use it with the deployment system.
+  </refsect1>
+      
+  <refsect1>	
+    <title>OPTIONS</title>
+    
+    
+    <command>-n,  --name registration_name</command>the registration name for the environment
+    <command>-v,  --version version</command>the version number of the environment (if needed) ; default is 1
+    <command>-d,  --description "description"</command>a brief description of the environment
+    <command>-a,  --author author_email</command>the author email address
+    <command>-fb, --filebase environment_image_path</command>the complete path to the environment image
+    <command>-ft, --filesite post-installation_file_path</command>the complete path to the post-installation file
+    <command>-s,  --size size (Mo)</command>the size of the environment ; in order to perform partition size check before a deployment
+    <command>-i,  --initrdpath</command>the complete initrd path in the environment (including intrd name)
+    <command>-k,  --kernelpath kernel_path</command>the complete kernel path in the environment (including kernel name)
+    <command>-p,  --param</command>arguments passed to kernel at boot (<verb>root</verb> parameter is set automatically), if left empty, default can be configured
+    <command>-fd, --fdisktype fdisk_type</command>the fdisk type ; default is 82
+    <command>-fs, --filesystem file_system</command>the file system type ; default is ext2
+  </refsect1>
+      
+  <refsect1>
+    <title>EXAMPLE</title>
+    <command>karecordenv -n debian -v 2 -d "debian maison" -a katools@imag.fr -fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current.tgz -ft file://home/nis/jleduc/Boulot/postinstall/traitement.tgz -size 650 -k /boot/vmlinuz -i /initrd -p "console=ttyS0,38400n8 ETH_DRV=tg3" -fd 83 -fs ext2</command>
+    
+    <para>registers a debian image whose features are explicitly given in parameter</para>
+  </refsect1>
+
+
+</refentry>

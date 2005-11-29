@@ -1,0 +1,2 @@
+bin_SCRIPTS=DKsentinelle
+EXTRA_DIST = $(bin_SCRIPTS) README

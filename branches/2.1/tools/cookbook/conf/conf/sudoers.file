@@ -1,0 +1,21 @@
+# ############################## #
+#     Kadeploy Sudoers File      #
+#                                #
+# /etc/kadeploy/deploy_sudo.conf #
+#                                #
+# lines to add in the sudo file  #
+# ############################## #
+
+# User alias specification
+User_Alias      KADEPLOYER = deploy
+
+# Host alias specification
+Host_Alias      CLUSTER = 192.168.10.1
+
+# Cmnd alias specification
+Cmnd_Alias      KADEPLOY = /usr/sbin/adduser, /usr/sbin/deluser
+
+# User privilege specification
+root    ALL=(ALL) ALL
+
+KADEPLOYER CLUSTER=NOPASSWD:KADEPLOY

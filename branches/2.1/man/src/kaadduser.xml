@@ -1,0 +1,77 @@
+  <refentry id="kaadduser">
+    
+    <refmeta>
+      <refentrytitle>kaadduser</refentrytitle>
+      <manvolnum>1</manvolnum>
+    </refmeta>
+    
+    <refnamediv>
+      <refname>kaadduser</refname>
+      <refpurpose>grants deployment rights to the specified user on the given partition</refpurpose>
+    </refnamediv>
+    
+<refsect1>
+    <title>SYNOPSIS</title>
+    <para>
+      <command>kaadduser [-l|--login login] [-m|--machine hostname] [-p|--partition partition]</command>
+    </para>
+</refsect1>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kaadduser grants deployment rights to the specified user on the given partition
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+    <para>
+      <command>-l, --login</command> login
+      the login of the user. This option can be used more than once to specify several users. By default, the deployment rights are granted to all the users.
+    </para>
+
+    <para>
+      <command>-m, --machine</command> hostname
+      specifies a host. This option can be used more than once to specify several hosts. By default, the deployment rights are granted for all the nodes.
+    </para>
+
+    <para>
+      <command>-p, --partition</command> partition
+      the target partition. This option can be used more than once to specify several partitions. By default, the deployment rights are granted for all the partitions.*
+    </para>
+
+    </refsect1>
+
+  <refsect1>
+    <title>RETURN VALUE</title>
+    <para>
+      kaadduser returns 0 if it fails. Otherwise, it returns 1.
+    </para>
+    </refsect1>
+
+  <refsect1>
+    <title>EXAMPLE</title>
+    <para>
+      <command>kaadduser -l titi -p hda3</command>                       # grants rights to user titi on all nodes on partition hda3
+      <command>kaadduser -m node1 -p hdb6</command>                      # grants rights to all the users on node1 partition hdb6
+      <command>kaadduser -l toto -m node1 -m node2</command> -p hda1     # grants rights to user toto on node1 and node2 partition hda1
+      <command>kaadduser -l toto -m node1 -p hda</command>               # grants rights to user toto on node1 for all hda device partition
+      <command>kaadduser -l toto -m node1 -p \*</command>                # grants rights to user toto on node1 for all device AND partition
+      etc.
+      </para>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <command>kaadduser, kadeluser, kaconsole, kacreateenv, kaaddnode, kadelnode, kadeploy, kareboot</command>
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright  2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+  </refentry>
