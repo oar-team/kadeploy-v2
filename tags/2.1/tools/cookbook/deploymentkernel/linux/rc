@@ -1,0 +1,30 @@
+#!/bin/sh
+source etc/rc.conf
+
+echo "linuconfig    : $LINUXCONFIG"
+echo "busyboxconfig : $BUSYBOXCONFIG" 
+
+echo "createdir"
+./rc.createdir
+echo "makedev"
+./rc.makedev
+echo "linux"
+./rc.linux
+echo "busybox"
+./rc.busybox
+echo "copyrootfs"
+./rc.copyrootfs
+echo "initrd"
+./rc.initrd
+echo "Done..."
+echo ""
+echo "kernel dest   : $KERNELDEST" 
+echo "image  dest   : $IMAGEDEST"
+
+LINUXCONFIG=etc/linuxconfig
+BUSYBOXCONF=etc/busyboxconfig
+KERNELDEST=/tmp/deployment/kerndst
+FSDEST=/tmp/deployment/fsdst
+IMAGEDEST=/tmp/deployment/initrd.img
+BUILDDIR=/tmp/build
+

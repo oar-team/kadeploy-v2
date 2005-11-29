@@ -1,0 +1,61 @@
+kadeploy
+
+NAME
+	 kadeploy - deploys an environment on the given nodes
+
+SYNOPSIS
+	 kadeploy -e|--environment environment_name -m|--machine hostname -p|--partition partition
+
+DESCRIPTION
+	 kadeploy deploys the specified environment on the specified locations. It installs the specified environment and reboots the hosts.
+	 It needs critic variables to be defined in the /etc/kadeploy/deploy.conf configuration file ; see configuration file section for further details.
+
+OPTIONS
+	 -e, --environment environment_name
+		the name of the environment to deploy.
+
+	 -m, --machine hostname
+		specifies a host. This option can be used more than once to specify several hosts. By default, it tries to deploy on all the nodes.
+
+	 -p, --partition partition
+		the target partition. This option can't be used more than once and the partition is the same for all the nodes.
+
+RETURN VALUE
+        kadeploy returns the successful deployed hostnames or 0 if all failed.
+
+CONFIGURATION FILES
+	/etc/kadeploy/deploy.conf
+		Contains variables that should be defined prior to the command execution. These variables are grouped into several sections. A very short description is available for each variable and sometimes example values are given in commentary. The file is read once at the beginning of the execution and prior to any other action. If values are missing, it will be told as precisely as possible.
+		The syntax is as follow :
+
+		        # section_name #
+		    	# ------------ #
+		
+			# short description
+			var_name1 = var_value1	# example_value
+
+			# short description
+			var_name2 = var_value2	# example_value
+
+			...
+
+		Also, an example of this file can be found at in the tools/cookbook/ folder.
+
+	/etc/kadeploy/deploy_cmd.conf
+		Contain entries describing reboot command needed for deployment. See kareboot man page for further details.
+
+FILES
+	kadeploy needs read and write access to several folder and files into to acheive a deployment. These rights should be granted to the deploy user. Here are the files and folder list :
+		 - $KADEPLOYDIR/boot/ contains utilities (binaries etc.) for grub/pxe/reboot stories
+		 - the tftp folder    where grub and pxe files will be written
+		 - and /tmp/	      for a few temporary files
+
+EXAMPLE
+	kadeploy -e debian -m node7 -p hda3	 	# deploys the debian on partition hda3 of node 7
+	kadeploy -e debian -m node1 -m node2 -p hdb6	# deploys the debian on partition hdb6 of nodes 1 and 2
+
+SEE ALSO
+	kaadduser, kadeluser, kaconsole, kacreateenv, kaaddnode, kadelnode, kadeploy, kareboot
+
+COPYRIGHTS
+	Copyright © 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

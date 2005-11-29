@@ -1,0 +1,28 @@
+HOWTO DEPLOY using kadeploy2
+
+BOOTING THE NODES
+=================
+
+First, you have to boot the nodes on the deployment kernel, to give kadeploy the ability to control your target nodes, and by the way deploy the computing environment.
+
+This is done through the setup_pxe.pl command, typing, as root user, 'setup_pxe.pl <target_nodes>:duke-vmlinuz-x.x.xx:"duke-initrd-x.x.xx_idpot.gz ETH_DRV=<yourNICmodule> console=tty0 console=ttyS0,9600n8 ramdisk_size=20000"'.
+
+Let have a look at this strange but common line: as you may have guessed those parameters at the end are the deployment kernel options 'console=...' are optional if you want to read output from the serial output of your nodes.
+
+An important option, is the one called 'ETH_DRV', it allows to specify wich NIC you want to use for deployment, if you have multiple ones. In case You have just one NIC, do not worry, it should be guessed on boot.
+
+
+TEST
+----
+
+The first time, you may find usefull to test if everything works, so execute the previous command and when you can ping the nodes, execute this command from the server: 'rsh <your_node> -l root ash'. Normally, you should get a small shell on your node.
+
+
+TIP
+---
+
+You can add labels in the configuration file to type shorter commands, to control setup_pxe.pl
+
+
+
+

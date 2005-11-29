@@ -1,0 +1,75 @@
+kareboot
+
+NAME
+	kareboot - reboots a node
+
+SYNOPSIS
+	kareboot [-s|--soft] [-h|--hard] [-d|--deploy] -m|--machine hostname [-e|--environment name] [-p|--partition partition]
+
+DESCRIPTION
+	kareboot executes a software or hardware reboot on given nodes. It can execute four types of query : simple reboot, deploy reboot, environment reboot and partition reboot. For all of them, the user can specify one or several host.
+
+	Here is a brief description of the effects of each reboot type :
+	     * simple reboot : executes a 'normal' (classic) reboot of the given nodes
+	     * deploy reboot : reboots the given nodes on the deployment kernel
+	     * environment reboot : looks for the environment (that should already be installed on the nodes) and reboots on it
+	     * partition reboot : reboots the given nodes on the requested partition if an environment is found
+
+	Consult the example section below for more explicit usage descriptions.
+
+	kareboot needs the appropriate command (softboot, hardboot, deployboot) to be defined in the configuration file in order to be able to execute the requested reboot on the given node ; see configuration file section for further details.
+
+OPTIONS
+	-s, --soft
+		requests a software reboot (default reboot type)
+	-h, --hard
+		requests a hardware reboot
+	-d, --deploy
+		specify a reboot on the deployment kernel
+	-m, --machine hostname
+		specifies a host. This option can be used more than once to specify several hosts.
+	-e, --environment
+		specifies an (already installed) environment to boot
+	-p, --partition
+		specifies a partition to boot on
+
+CONFIGURATION FILE
+	/etc/kadeploy/deploy_cmd.conf
+		Can contain four entry types per node whose three are relative to the kareboot command. Those three entries describe the reboot commands for each reboot type i.e. soft, hard and deploy. Here is the description of the expected syntax :
+
+		        host_name reboot_type command
+
+		where reboot_type can be either softboot, hardboot or deployboot. 
+
+		Example for idpot1 of idpot cluster :
+			idpot1 softboot ssh root@idpot1 -o ConnectTimeout=2 /sbin/reboot
+			idpot1 hardboot ssh localuser@ldap-idpot ~/commande_modules/logiciel/dio_reset 0x81 0
+			idpot1 deployboot 192.168.10.1:label_deploy_tg3
+
+		In this example, 
+			soft reboot is actually a simple "reboot" command done via a ssh connection as root
+			hard reboot is a hard signal sent via a ssh connection on a precise server as a special user
+			deploy boot describes special arguments
+
+EXAMPLE
+	Simple reboot
+	       kareboot -s -m node1		# executes a software reboot of node1
+	       kareboot -h -m node7 -m node6	# executes a hardware reboot of nodes 7 and 6
+	       kareboot -m node7		# executes a software reboot of node7
+
+	Deploy reboot
+	       kareboot -d -m node2		# (soft) reboots on kernel deployment
+	       kareboot -d -h -m node2		# (hard) reboots on kernel deployment
+
+	Environment reboot
+	       kareboot -e debian -m node3      # looks for environment debian on node3 and (soft) reboots on it
+	       kareboot -h -e debian -m node3   # looks for environment debian on node3 and (hard) reboots on it
+
+	Partition reboot
+	       kareboot -s -p hda6 -m node4     # checks the environment installed on partition hda6 of node4 and (soft) reboots on it
+
+SEE ALSO
+	kaadduser, kadeluser, kaconsole, kacreateenv, kaaddnode, kadelnode, kadeploy, kareboot
+
+COPYRIGHTS
+	Copyright © 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

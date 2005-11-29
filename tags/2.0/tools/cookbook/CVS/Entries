@@ -1,0 +1,16 @@
+/cluster_description.txt/1.2/Fri Jun  4 14:23:24 2004//
+D/pre_install////
+/README/1.2/Mon Oct 25 08:14:50 2004//
+/cmd.conf/1.15/Mon Oct 25 08:14:50 2004//
+/conf_file.txt/1.15/Mon Oct 25 08:14:50 2004//
+/correct_db.pl/1.2/Mon Oct 25 08:14:50 2004//
+/db_feeder.pl/1.1.1.1/Mon Oct 25 08:14:50 2004//
+/db_feeder.pm/1.1.1.1/Mon Oct 25 08:14:50 2004//
+/post_install.tgz/1.1/Mon Oct 25 08:14:50 2004//
+/sudoers.file/1.2/Mon Oct 25 08:14:50 2004//
+/test_conflib.pl/1.2/Mon Oct 25 08:14:50 2004//
+/test_deploy_iolib.pl/1.4/Mon Oct 25 08:14:50 2004//
+/test_kalib.pl/1.1.1.1/Mon Oct 25 08:14:50 2004//
+/test_node_bd.pl/1.1.1.1/Mon Oct 25 08:14:50 2004//
+/test_node_cmd.pl/1.1.1.1/Mon Oct 25 08:14:50 2004//
+/test_rights_iolib.pl/1.1.1.1/Mon Oct 25 08:14:50 2004//

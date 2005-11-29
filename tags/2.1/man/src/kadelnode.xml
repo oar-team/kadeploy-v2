@@ -1,0 +1,42 @@
+  <refentry id="kadelnode">
+    
+    <refmeta>
+      <refentrytitle>kadelnode</refentrytitle>
+      <manvolnum>1</manvolnum>
+    </refmeta>
+    
+    <refnamediv>
+      <refname>kadelnode</refname>
+      <refpurpose>unregisters nodes</refpurpose>
+    </refnamediv>
+    
+    <refsect1>
+      <title>SYNOPSIS</title>
+      <para>
+	<command>kadelnode -m|--machine hostname</command>
+	</para>
+    </refsect1> 
+
+    <refsect1>
+      <title>DESCRIPTION</title>
+      <para>
+	kadelnode unregisters nodes and their disk and partition features from the deployment system.
+      </para>
+    </refsect1> 
+
+    <refsect1>
+      <title>OPTIONS</title>
+      <para>
+	
+	<emphasis>-m, --machine hostname</emphasis> specifies a host. This option can be used more than once to specify several hosts
+      </para>
+    </refsect1> 
+
+    <refsect1>
+      <title>EXAMPLE</title>
+      <para>
+
+	<emphasis> kadelnode -m node1</emphasis> remove all information relative to node1 from the deployment system database
+      </para>
+    </refsect1>
+  </refentry>

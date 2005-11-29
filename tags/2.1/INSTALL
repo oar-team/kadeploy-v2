@@ -1,0 +1,122 @@
+INSTALLING THE KA DEPLOYMENT SYSTEM
+
+
+What do you need ?
+	- a cluster
+	- to be admin of this cluster
+	- to get the install package of Ka Deployment System
+
+
+REQUIREMENTS
+============
+
+The system is designed to run on a server enabling deployment on compute nodes.
+
+On the server, the following packages must be installed :
+	- sudo
+	- Perl
+	- Perl-base
+	- Perl-suid
+
+On the server, the following ones are also needed for database management purposes :
+	- Perl-Mysql
+	- Perl-DBI
+	- MySQL
+	- MySQL-shared
+	- libmysql
+
+
+SYSTEM REQUIREMENTS ON THE SERVER
+=================================
+
+Required system tools:
+	- Nmap to check if the target nodes are there
+	- copy DKsentinelle binary (located in kadeploy2/cookbook/bin) to /usr/local/bin on the server
+
+Required user's priviledges:
+	- user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
+
+
+CONFIGURATION OF THE CLUSTER
+============================
+
+add a "deploy" user etc. ?
+
+The installation is composed of several steps :
+	- databaseInstall : creates the databases and the user in mysql
+	- etc.
+	[- serverInstall : installs the daemon that must be running on the server]
+	[- ...]
+
+You can mix modes when installing. The installation should be pretty straightforward:
+	- become root
+	- go into the "tools" folder
+	- type "./install.pl databaseInstall serverInstall" and answer the questions. Such a command will install the databases and the Ka-Tools daemon.
+
+N.B. : the installation script install.pl does not exist yet.
+
+DATABASE INSTALLATION
+=====================
+
+If you don't want to use the automatic installation script, you can also create both databases manually. All you have to do is to run the command lines below. This will create the deployment and user_rights databases and the appropriate users with read and/or write rights.
+
+# mysql -u root -p < tools/db/deploy_db_creation.sql > mysql_deploy.out
+Enter password: ********
+
+# mysql -u root -p < tools/db/rights_db_creation.sql > mysql_rights.out
+Enter password: ********
+
+Next step will be to fill in the database. That can be done later easily using the kaaddnode command (cf. the manual for details)
+
+
+BINARIES INSTALLATION
+=====================
+
+Those are just hints and standard way of doing things, because those depends on your system configuration.
+Copy the kadeploy2/cmd content to /usr/local/bin.
+Copy the kadeploy2/lib content to /usr/lib/perl5/site_perl/X.X.X (or a directory included in your local Perl @INC).
+You may conduct a test right now, to see if:
+* you can execute the binaries
+* you don't get any warning from Perl
+
+
+CONFIGURATION FILES
+===================
+
+The Ka-Tools need two configuration files that can be found in the /etc/kadeploy/ folder. 
+
+1. deploy.conf
+--------------
+This file presents all the variables the user must defined in order to be able to use the deployment system. It is divided into several sections. A very short description is available for each variable and sometimes exemple values are given in commentary.
+
+2. deploy_cmd.conf
+------------------
+This file should contain the appropriate reboot and remote console opening commands. The kareboot and kaconsole tools will get the command to execute according to node given in parameter from it. This file is very temporary and may change (even disappear ?) in next development steps.
+
+Also, the user can find exemples of both files in the tools/cookbook folder with a brief description of the syntax to use.
+
+
+TFTP CONFIGURATION
+------------------
+This covers the modifications required on the tftp server, to boot the deployment kernel.
+- create a directory in your tftp root(s) dedicated to the deployment tool, if you have several entries (ie intel and others because of multiple NIC vendors), you have to create it twice, with the same relative path (examples follow).
+- copy kadeploy2/boot/deployment_kernel/duke-initrd-x.x.xx_idpot.gz and kadeploy2/boot/deployment_kernel/duke-vmlinuz-x.x.xx to this (those) directory.
+- copy memdisk binary to this (those) directory, this file is provided by syslinux.
+- edit your configuration file (section # pxe conf #), the file is explained and comes with sample configuration:
+	tftp_repository_intel: 	directory for the tftp repository for intel NICs
+	pxe_rep_intel:		relative path to pxe repository from tftp_repository_intel
+
+	tftp_repository:	directory for the tftp repository for other vendors
+	pxe_rep:		relative path to pxe repository from tftp_repository
+	
+	tftp_relative_path:	the directory you have created ie all the file you copied are now in tftp_repository_intel/tftp_relative_path and tftp_repository/tftp_relative_path
+
+
+
+
+
+
+
+FURTHER INFORMATION
+===================
+For further information, please contact ka-tools@imag.fr

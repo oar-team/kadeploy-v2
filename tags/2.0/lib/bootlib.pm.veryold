@@ -1,0 +1,332 @@
+package bootlib;
+
+use strict;
+use warnings;
+
+use File::Copy;
+use lib::conflib;
+
+if(!(conflib::check_cmd_exist() == 1)){
+    print "ERROR : command configuration file loading failed\n";
+    exit 0;
+}
+
+## prototypes
+sub setup_grub_pxe($$);
+sub manage_grub_pxe($$);
+sub generate_grub_files($$$$$$$);
+sub setup_pxe($$$);
+sub reboot($$$$);
+
+## function definition
+
+## setup_grub_pxe
+## wrapper kadeploy - manage_grub_pxe
+## parameters : base, deployment identifier
+## return value : /
+sub setup_grub_pxe($$){
+    my $dbh = shift;
+    my $deploy_id = shift;
+
+    my @env_info = deploy_iolib::deploy_id_to_env_info($dbh,$deploy_id);
+    my %node_info = deploy_iolib::deploy_id_to_node_info($dbh,$deploy_id);
+    
+    manage_grub_pxe(\%node_info,\@env_info);
+}
+
+## manage_grub_pxe
+## setups grub and pxe 
+## parameters : base, ref to host info, ref to env info
+## return value : 1 if successful
+sub manage_grub_pxe($$){
+    my $ref_to_node_info = shift;
+    my $ref_to_env_info  = shift;
+
+    my %node_info = %{$ref_to_node_info};
+    my @env_info  = @{$ref_to_env_info};
+    
+    my $env = $env_info[0];
+    my $kernel_path = $env_info[1];
+    my $kernel_param = $env_info[2];
+    my $initrd_path = $env_info[3];
+    my $env_id = $env_info[4];
+
+    ## global loop in case differents node would be associated to different devices and partitions
+    ## (it should be the case in futur development steps)
+    foreach my $ip (keys %node_info){
+
+	my $dev = $node_info{$ip}[0];
+	my $part = $node_info{$ip}[1];
+
+	if (! $kernel_param) { # take default parameters if any
+	    print "No kernel parameter, taking default ones defined in the configuration file\n";
+	    $kernel_param = conflib::get_conf("kernel_param");
+	}
+	my $kernel_path_tmp = $kernel_path;
+	$kernel_path_tmp =~ s/\///g;
+	my $grub_boot_img_name = "grub_img_env".$env_id."_".$dev.$part;
+	my $grub_menu_file_name = "grub_menu_env".$env_id."_".$dev.$part;
+
+	bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path);
+    
+	# setups pxe
+	# host_name/host-range:memdisk:$grub_boot_img_name
+	my @pxe_ips;
+	my @pxe_kernels;
+	my @pxe_initrds;
+
+	push(@pxe_ips, $ip);
+	push(@pxe_kernels, "memdisk");
+	push(@pxe_initrds, $grub_boot_img_name);
+    
+	# sends grub image on the appropriate server
+	my $tftp_destination_folder = conflib::get_conf("tftp_repository_intel") . conflib::get_conf("tftp_relative_path");
+	copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
+	$tftp_destination_folder = conflib::get_conf("tftp_repository") . conflib::get_conf("tftp_relative_path");
+	copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
+	bootlib::setup_pxe(\@pxe_ips,\@pxe_kernels,\@pxe_initrds);
+
+    }
+
+    return 1;
+}
+
+
+## generate_grub_files
+## generate_grub_files generates grub image and menu
+## parameters : image_output_name, menu_name, title, root, kernel, param
+## return value : 1 if successful
+sub generate_grub_files($$$$$$$){
+    my $output = shift;
+    my $menu   = shift;
+    my $title  = shift;
+    my $root   = shift;
+    my $kernel = shift;
+    my $param  = shift;
+    my $initrd_path = shift;
+
+    # debug print
+    #print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
+
+    ## "hard-coded" options
+    my $grub_dir = conflib::get_conf("kadeploy2_directory") . "/boot/";    
+    my $floppy_blks = 720;
+    my $default = 0;
+    my $fallback = 1;
+    my $timeout = 1;
+    my $serial_speed = 38400;
+
+    my $timeout_conf = conflib::get_conf("grub_timeout");
+    if($timeout_conf){
+	$timeout = $timeout_conf;
+    }
+
+    ## sub function declaration and definition
+    sub getlen($$){
+	my $file = shift;
+	my $output_file = shift;
+	my @len = ();
+	
+	my $grub_tmp_file_name = $output_file.".tmp";
+
+	# checks if file exists ! (if path is correct actually...)
+	if (-e $file){
+	    open (GRUBTMP, "ls -lL $file |");
+	    while (<GRUBTMP>) {
+		@len = split(/\t+| +/);
+	    }
+	    close (GRUBTMP);
+	    return $len[4];
+	}else{
+	    print "ERROR : file $file does not exist or path is incorrect\n";
+	}
+    }
+
+    ## let's put the generated files in the /tmp/ directory
+    $output = "/tmp/".$output;
+    $menu = "/tmp/".$menu;
+	       
+    my $stage1="$grub_dir/stage1";
+    my $stage2="$grub_dir/stage2";
+    my $stage2_len=getlen($stage2,$output);
+
+    my $menu_len=2;
+    my $menu_offset=($floppy_blks - $menu_len);
+	       
+    print "* Creating floppy grub menu\n";
+    my $i = 0;
+    open(MENU,">$menu");
+    print MENU "#autogen grub conf file\nserial --unit=0 --speed=$serial_speed\nterminal --timeout=0 serial\ntimeout $timeout\ncolor black/red yellow/red\ndefault $default\nfallback $fallback\n";
+    my $dev = substr($root, 0, 3);
+    my @nb = split(/$dev/, $root);
+    my $part = $nb[1] - 1;
+    my $letter = chop($dev);
+	
+    # to be improved...
+    if ($letter eq "a"){
+	$letter = "0";
+    }elsif ($letter eq "b"){
+	$letter = "1";
+    }
+
+    if (!$param){
+	print MENU "\ntitle $title\nroot ($dev$letter,$part)\nkernel $kernel root=/dev/$root\n";
+    }else{
+	print MENU "\ntitle $title\nroot ($dev$letter,$part)\nkernel $kernel root=/dev/$root $param\n";
+    }
+    if ($initrd_path){
+	print MENU "initrd $initrd_path\n";
+    }
+    close MENU;
+	       
+    print "* Creating blank floppy image of $floppy_blks blocks...\n";
+    system("dd if=/dev/zero of=$output bs=512 count=$floppy_blks");
+    print "* Copying grub stage1 starting from block 0\n";
+    system("dd if=$stage1 of=$output bs=512 conv=notrunc");
+    print "* Copying grub stage2 starting from block 1\n";
+    system("dd if=$stage2 of=$output bs=512 seek=1 conv=notrunc");
+    print "* Copying grub menu starting from block $menu_offset\n";
+    system("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
+    print "$output has been generated.\n";
+
+    return 1;
+}
+
+
+## setup_pxe
+## setup_pxe generate files for the tftp/dhcp server
+## parameters : ips, kernels, initrds in arrays
+## return value : 1 if successful
+sub setup_pxe($$$){
+    my $ref_to_reboot = shift;
+    my $ref_to_kernel = shift;
+    my $ref_to_initrd = shift;
+
+    my @to_reboot = @{$ref_to_reboot};
+    my @kernels = @{$ref_to_kernel};
+    my @initrds = @{$ref_to_initrd};
+
+    my $PROMPT = 1;
+    my $DISPLAY = "messages";
+    my $TIMEOUT = 50;
+
+    ## gets appropriate parameters from configuration file
+    #my $network = conflib::get_conf("network");
+    my $tftp_repository_intel = conflib::get_conf("tftp_repository_intel");
+    my $pxe_rep_intel = $tftp_repository_intel . conflib::get_conf("pxe_rep_intel");
+    my $tftp_repository = conflib::get_conf("tftp_repository");
+    my $pxe_rep = $tftp_repository . conflib::get_conf("pxe_rep");
+    my $tftp_relative_path = conflib::get_conf("tftp_relative_path");
+    
+    my $images_repository_intel = $tftp_repository_intel . $tftp_relative_path;
+    my $images_repository = $tftp_repository . $tftp_relative_path;
+    
+    # debug print
+    # print "1. network\n2. $tftp_repository_intel\n3. $pxe_rep_intel\n4. $tftp_repository\n5. $pxe_rep\n6. $tftp_relative_path\n7. $images_repository_intel\n8. $images_repository\n";
+    
+    my @hexnetworks;
+    #my @ranges1;
+    #my @ranges2;
+    
+    sub hexalize($) {
+	my $number = shift;
+	if ($number<16) {
+	    return (sprintf "0%X", $number);
+	} else {
+	    return (sprintf "%X", $number);
+	}
+    }
+
+    my $template_default_content="PROMPT $PROMPT\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
+    
+    # generate files in pxe directories and overwrite old ones
+    for (my $i=0; $i<scalar(@kernels); $i++) {
+	#print "kernel $kernels[$i], initrd $initrds[$i] from ",hexalize($ranges1[$i])," to ", hexalize($ranges2[$i]) ,"\n";
+	
+	my $kernel = $tftp_relative_path . "/" . $kernels[$i];
+	my $initrd = $initrds[$i];
+	
+	my $append = "initrd=$tftp_relative_path/$initrd";
+	my $append_intel = $append; 
+	
+	foreach my $ip (@to_reboot){
+
+	    my $hex_ip;
+
+	    if ($ip =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) {
+		$hex_ip = hexalize($1) . hexalize($2) . hexalize($3) . hexalize($4);
+	    }else{
+		print "ERROR : wrong ip syntax ($ip) - this sould not happen\n";
+	    }
+	    
+	    my $destination=$pxe_rep.$hex_ip;
+	    
+	    open(DEST, "> $destination")
+		or die "Couldn't open $destination for writing: $!\n";
+	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
+	    close(DEST);
+	    
+	    my $destination_intel=$pxe_rep_intel.$hex_ip;
+	    open(DEST, "> $destination_intel")
+		or die "Couldn't open $destination_intel for writing: $!\n";
+	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append_intel";
+	    close(DEST);
+	}
+    }
+
+    return 1;
+}
+
+## reboot
+## reboots the given nodes according to the appropriate method
+## parameters : ref to host list, soft, hard, deploy
+## return value : 1 if successful
+sub reboot($$$$){
+    my $ref_to_host_list = shift;
+    my $soft = shift;
+    my $hard = shift;
+    my $deploy = shift;
+    my $reboot = "";
+    
+    my @host_list = @{$ref_to_host_list};
+
+    # defines correct reboot type
+    if ($deploy){
+	$reboot = "deployboot";
+    }elsif ($soft){
+	$reboot = "softboot";
+    }elsif ($hard){
+	$reboot = "hardboot";
+    }else{
+	print "ERROR : this case should never happen... you are in big trouble...\n";
+	exit 0;
+    }
+    ## Available variables are :
+    ## - @host_list - list of hosts to reboot
+    ## - $reboot    - type of reboot
+
+    my %cmd = conflib::check_cmd;
+    
+    foreach my $host (@host_list){
+	if(!$cmd{$host}{$reboot}){
+	    print "WARNING : no $reboot command found for $host !\n";
+	}else{
+	    # debug print
+	    # print "to be executed : $host -> $cmd{$host}{$reboot}\n";
+	    system("$cmd{$host}{$reboot}");
+	    if($deploy){
+		if($hard){
+		    system("$cmd{$host}{\"hardboot\"}");
+		}else{
+		    # default is soft boot
+		    system("$cmd{$host}{\"softboot\"}");
+		}
+	    }
+	}
+    }
+    
+    return 1;
+}
+
+1;
+

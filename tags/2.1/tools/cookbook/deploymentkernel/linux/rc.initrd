@@ -1,0 +1,11 @@
+#!/bin/sh
+
+NAME=initrd
+SCRIPTNAME=rc.$NAME
+
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+
+mkcramfs $FSDEST $IMAGEDEST
+du $IMAGEDEST
