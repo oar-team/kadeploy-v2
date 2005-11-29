@@ -1,0 +1,56 @@
+<refentry id="kaconsole">
+
+<refmeta>
+    <refentrytitle>kaconsole</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>kaconsole</refname>
+    <refpurpose>opens a console on a remote node</refpurpose>
+  </refnamediv>
+
+  
+  <refsect1>
+    <title>SYNOPSIS</title>
+    
+    <command>kaconsole </command>  <command>-m|--machine</command> hostname
+  </refsect1>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kaconsole opens a console on a remote node. This tool is designed to help the user that would try to find out the reason of a deployment failure or to follow a boot sequence for instance. It needs the appropriate command to be defined in the configuration file in order to be able to open a remote console on the given node ; see configuration file section for further details.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+    <para>
+      
+      <command>-m, --machine</command> hostname
+	specifies a host. This option cannot be used more than once.
+    </para>
+  </refsect1>
+  <refsect1>
+    <title>CONFIGURATION FILE</title>
+    <emphasis>/etc/kadeploy/deploy_cmd.conf</emphasis> Can contain four entry types per node whose only one is relative to the kaconsole command. This entry describes the command to open a remote console on the specified node of the cluster. Here is the description of the expected syntax :
+    
+    host_name console command
+    
+    Example for idpot1 of idpot cluster :
+    
+    idpot1 console ssh -t localuser@ldap-idpot kermit -l /dev/emphasisyUSB0 -b 38400 -c
+    
+    In this example, kaconsole -m idpot1 means to open a serial connection on idpot1 node via kermit software from ldap-idpot
+    
+  </refsect1>
+  
+  <refsect1>
+    <title>EXAMPLE</title>
+    
+    
+    <command>kaconsole -m node</command>
+    opens a console on node (if appropriately equipped)
+      
+  </refsect1>
+  </refentry>

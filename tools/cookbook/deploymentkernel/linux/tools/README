@@ -1,0 +1,1 @@
+mke2fs was build with LDFLAGS=-static

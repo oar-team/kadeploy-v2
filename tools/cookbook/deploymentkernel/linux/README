@@ -1,0 +1,4 @@
+script for creating a deployment kernel with busybox
+config are in etc.
+
+main script : ./rc

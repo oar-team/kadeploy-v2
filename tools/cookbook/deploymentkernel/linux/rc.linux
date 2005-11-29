@@ -1,0 +1,21 @@
+#!/bin/sh
+#set -x
+NAME=linux
+SCRIPTNAME=rc.$NAME
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+CONFIGFILE=`pwd`/$CONFIGFILE
+cd $BUILDDIR
+
+if [ ! -f $CONFIGFILE ] ; then echo "No config for $NAME" ; exit 1 ; fi
+if [ ! -f $FILENAME ] ; then $LEECHER $URL ; fi
+if [ ! -d $NAME-$VERSION ] ; then tar $TAROPTS $FILENAME ; fi
+if [ ! -f $NAME ] ; then ln -s $REALNAME $NAME ; fi
+cp -f $CONFIGFILE $NAME/.config
+cd $REALNAME ; 
+make modules 
+INSTALL_MOD_PATH=$FSDEST make modules_install 
+make bzImage
+INSTALL_PATH=$KERNELDEST make install 
+cd -
