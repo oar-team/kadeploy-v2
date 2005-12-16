@@ -9,6 +9,7 @@
 use Getopt::Long;
 use strict;
 use Data::Dumper;
+use libkadeploy2::conflib;
 
 # useless now
 #my $server_addr = "172.24.100.2";
@@ -29,10 +30,12 @@ GetOptions('p=s'             => \@port,
            'machine=s'     => \@host_list,
 	   );
 
+#my $sentinelle_path = "/usr/local/bin/DKsentinelle";
+#my $args_sentinelle = "-crsh -lroot -ctimeout=2000 -v ";
 
+my $sentinelle_path = libkadeploy2::conflib::get_conf("deploy_sentinelle_cmd");
+my $args_sentinelle = libkadeploy2::conflib::get_conf("deploy_sentinelle_default_args");
 
-my $sentinelle_path = "/usr/local/bin/DKsentinelle";
-my $args_sentinelle = "-crsh -lroot -ctimeout=2000 -v ";
 
 my $port = $port[0];
 my $mcat_path = $cmd_path[0];
@@ -44,7 +47,8 @@ my $nodes = join(" ", @host_list);
 
 
 # for the nodes
-my $mputcat_nodes = $sentinelle_path." ".$args_sentinelle." ".$sentinelle_nodes." -- /usr/local/bin/mcatseg 1 ".$port." \"\\\"".$cmd_scr."\"\\\" \"\\\"".$cmd."\"\\\" ".$nodes;
+#my $mputcat_nodes = $sentinelle_path." ".$args_sentinelle." ".$sentinelle_nodes." -- /usr/local/bin/mcatseg 1 ".$port." \"\\\"".$cmd_scr."\"\\\" \"\\\"".$cmd."\"\\\" ".$nodes;
+my $mputcat_nodes = $sentinelle_path." ".$args_sentinelle." ".$sentinelle_nodes." -- $mcat_path 1 ".$port." \"\\\"".$cmd_scr."\"\\\" \"\\\"".$cmd."\"\\\" ".$nodes;
 my $mputcat_src = $mcat_path . " 4 " . $port . "  \"" . $cmd_scr . "\" \"\\\"" .$cmd."\"\\\" " . $host_list[0];  
 
 #my $mputcat = $sentinelle_path." ".$args_sentinelle." ".$sentinelle_nodes." -- ".$mcat_path." ".$port." \"\\\"".$cmd_scr."\"\\\" \"\\\"".$cmd."\"\\\" ".$nodes;

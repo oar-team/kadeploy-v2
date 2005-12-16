@@ -9,6 +9,7 @@
 use Getopt::Long;
 use strict;
 use Data::Dumper;
+use libkadeploy2::conflib;
 
 # useless now
 #my $server_addr = "172.24.100.2";
@@ -31,8 +32,12 @@ GetOptions('p=s'             => \@port,
 
 
 
-my $sentinelle_path = "/usr/local/bin/sentinelle.pl";
-my $args_sentinelle = "-cssh -ctimeout=2000 -v ";
+#my $sentinelle_path = "/usr/bin/sentinelle";
+#my $args_sentinelle = "-cssh -ctimeout=2000 -v ";
+
+my $sentinelle_path = libkadeploy2::conflib::get_conf("prod_sentinelle_cmd");
+my $args_sentinelle = libkadeploy2::conflib::get_conf("prod_sentinelle_default_args");
+
 
 my $port = $port[0];
 my $mcat_path = $cmd_path[0];

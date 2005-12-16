@@ -624,7 +624,7 @@ sub runIt {
     }
      if ($executedCommand =~ "sentinelle.pl"  ){
      $executedCommand .= " -p " .  "\"" . "\\\"" . $commandRemote . "\&\\\"\&"  . "\"";
-     #print $executedCommand .  "\n";
+     print $executedCommand .  "\n";
      system($executedCommand);
      }
      else{
@@ -632,7 +632,7 @@ sub runIt {
 
 
 
-#print $executedCommand .  "\n";
+print $executedCommand .  "\n";
     
     my $pid = open3(\*WRITER, \*READER, \*READER, $executedCommand );
     $sentinellePID=$pid;
@@ -682,13 +682,13 @@ sub runCommand {
 #
 # runs local command and use mput for copy
 #
-sub runCommandMput {
-    my $self = shift;
-    my $remoteNamedPipe = "-p " . shift; # remote named pipe targetted with mput -p option
-    my $parallelLauncher = "/usr/local/bin/mput" . " " . $sentinelleDefaultArgs . " -v ";
-
-    return ($self->runIt($parallelLauncher, "", $remoteNamedPipe));
-}
+#sub runCommandMput {
+#    my $self = shift;
+#    my $remoteNamedPipe = "-p " . shift; # remote named pipe targetted with mput -p option
+#    my $parallelLauncher = "/usr/local/bin/mput" . " " . $sentinelleDefaultArgs . " -v ";
+#
+#    return ($self->runIt($parallelLauncher, "", $remoteNamedPipe));
+#}
 
 # #
 # added for optimisation methods support
@@ -698,9 +698,12 @@ sub runCommandMput {
 sub runCommandSimplessh {
     my $self = shift;
     my $commandRemote = shift;
-    my $parallelLauncher = "/home/deploy/kadeploy2/tools/sentinelle/sentinelle.pl " . " -c ssh -l root -t 2 -w 50 ";
-
-    return ($self->runIt($parallelLauncher, "", $commandRemote));
+#    my $parallelLauncher = "/home/deploy/kadeploy2/tools/sentinelle/sentinelle.pl " . " -c ssh -l root -t 2 -w 50 ";
+    
+    my $parallelLauncher = libkadeploy2::conflib::get_conf("perl_sentinelle_cmd");
+    my $launcherOpts = libkadeploy2::conflib::get_conf("perl_sentinelle_default_args");
+    
+    return ($self->runIt($parallelLauncher." ".$launcherOpts, "", $commandRemote));
 }
 	
 
@@ -831,9 +834,11 @@ sub runEfficientPipelinedCommand {
 
 sub tar {
 my $self = shift;
-    my $launcherOpts = "-c ssh -l root -t 2 -w 50";
-    my $launcherDirectory = "/home/deploy/kadeploy2/tools/sentinelle/";
-    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
+    #my $launcherOpts = "-c ssh -l root -t 2 -w 50";
+    #my $launcherDirectory = "/home/deploy/kadeploy2/tools/sentinelle/";
+    #my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
+    my $parallelLauncher = libkadeploy2::conflib::get_conf("perl_sentinelle_cmd");
+    my $launcherOpts = libkadeploy2::conflib::get_conf("perl_sentinelle_default_args");
     my $remoteCommand = "/root/tar";
 		 
     my $executedCommand = $parallelLauncher . " " . $launcherOpts;
@@ -857,28 +862,28 @@ my $self = shift;
 #
 # Reboot nodes from deployment system
 #
-sub rebootNodes {
-    my $self = shift;
-    my $launcherOpts = "-c rsh -l root -t 2 -w 50";
-    my $launcherDirectory = $kadeploy2Directory . "/tools/sentinelle/";
-    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
-    my $remoteCommand = "shutdown  -r now";
-
-    my $executedCommand = $parallelLauncher . " " . $launcherOpts;
-
-    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-
-    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-        return 1;
-    }
-
-    foreach my $key (sort keys %{$self->{nodesReady}}) {
-        $executedCommand .= " -m $key";
-    }
-    $executedCommand .=	" -p " . "\"" . $remoteCommand . "\"";
-    system ($executedCommand);
-    return 1;
-}
+#sub rebootNodes {
+#    my $self = shift;
+#    my $launcherOpts = "-c rsh -l root -t 2 -w 50";
+#    my $launcherDirectory = $kadeploy2Directory . "/tools/sentinelle/";
+#    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
+#    my $remoteCommand = "shutdown  -r now";
+#
+#    my $executedCommand = $parallelLauncher . " " . $launcherOpts;
+#
+#    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+#
+#    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+#        return 1;
+#    }
+#
+#    foreach my $key (sort keys %{$self->{nodesReady}}) {
+#        $executedCommand .= " -m $key";
+#    }
+#    $executedCommand .=	" -p " . "\"" . $remoteCommand . "\"";
+#    system ($executedCommand);
+#    return 1;
+#}
 
 
 sub rebootThoseNodes {

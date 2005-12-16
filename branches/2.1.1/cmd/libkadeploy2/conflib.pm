@@ -81,11 +81,16 @@ sub check_conf {
 		  "deploy_sentinelle_pipelined_args" => 1,
 		  "deploy_sentinelle_endings" => 1,
 		  "deploy_sentinelle_timeout" => 1,
+
 		  "prod_sentinelle_cmd" => 3,
 		  "prod_sentinelle_default_args" => 1,
 		  "prod_sentinelle_pipelined_args" => 1,
 		  "prod_sentinelle_endings" => 1,
 		  "prod_sentinelle_timeout" => 1,
+
+		  "perl_sentinelle_cmd" => 3,
+		  "perl_sentinelle_default_args" => 1,
+
 
 		  "deploy_db_host" => 1,
 		  "deploy_db_name" => 1,

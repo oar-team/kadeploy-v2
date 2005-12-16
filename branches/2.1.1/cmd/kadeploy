@@ -9,8 +9,6 @@ use libkadeploy2::bootlib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
 use strict;
-use Time::HiRes qw(gettimeofday tv_interval);
-use FileHandle;
 
 
 
@@ -63,6 +61,9 @@ my @to_check = ();          # deployed nodes to check
 my @ready = ();             # deployed nodes that are ready 
 my $time_preinstall;        # used for time bench
 my $usetar=0;
+my $pre_pipe;			
+my $dest_pipe;
+my $post_pipe;
 
 ## Nodes sets used during depoymetnt process
 my $nodes_set;
@@ -170,9 +171,18 @@ else
 
 
 ## effectue un reboot deploiement soft
-if ($bootstrap==0)
-{
+if ($depmethod==0)
+{	
     libkadeploy2::bootlib::reboot(\@host_list,"1","0","1");
+    $pre_pipe="/pre_pipe";
+    $dest_pipe="/dest_pipe";
+    $post_pipe="/post_pipe";        
+    $pre_install_script="$pre_install_script fdisk";
+}
+else{
+	$pre_pipe="/tmp/pre_pipe";
+    	$dest_pipe="/tmp/dest_pipe";
+        $post_pipe="/tmp/post_pipe";
 }
 	
 ###############################################
@@ -301,7 +311,6 @@ $destination_partition = "/dev/" . $dev . $part;
 #
 #preparation for deployment optimisation method 
 #
-
 if($depmethod!=0)
 {
     $nodes_set->runRemoteCommand("\" mkdir /mnt/rambin \"");
@@ -319,9 +328,6 @@ if($depmethod!=0)
 }
 
 
-
-
-
 print "<PreInstall>\n";
 # pre-installation
 # mount rambin to perform hd optimizations and benches,...
@@ -330,10 +336,10 @@ print "Retrieving preinstall\n";
 #$nodes_set->runCommandMput("$pre_install_archive /pre_pipe");
 my $mcat_first_port = ($deployment%100)*3+12000;
 
-$nodes_set->runCommandMcat("cat $pre_install_archive", "cat > /pre_pipe", $mcat_first_port);
+$nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
 
 print "Executing preinstall...";
-$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
+	$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
 print "Done\n";
 # time bench
 my $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
@@ -356,17 +362,11 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $nodes_set->runRemoteCommand("\" mount $destination_partition /mnt/dest \"");
     print "Done\n";
 
-# time bench
-    $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-    libkadeploy2::deploy_iolib::set_time($base,$deployment);
-    print "Preinstall: " . $time_preinstall . "\n";
     
     print "<tar Transfert>\n";
 # let's send our environment!!
-#$nodes_set->runEfficientPipelinedCommand(" cat $filebase |", "\"tar $filebase_option /mnt/dest \"", "erreur dans l'envoi de l'image!!");
     print "Sending Computing environment to the nodes...\n";
-#$nodes_set->runCommandMput("$filebase /dest_pipe");
-    $nodes_set->runCommandMcat("cat $filebase", "cat > /dest_pipe", $mcat_first_port+1);
+            $nodes_set->runCommandMcat("cat $filebase", "cat > $dest_pipe", $mcat_first_port+1);
     print "Done\n";
 }
 if ($filebase =~ /^.+\.dd$/ ||
@@ -394,17 +394,9 @@ if ($usetar)
 {
     print "<PostInstall>\n";
 # post-installation
-#$nodes_set->runCommand(" cat $filesite |", "\"tar $filesite_option /rambin \"");
     print "Executing postinstall...";
-#$nodes_set->runCommandMput("$filesite /post_pipe");
-    if($depmethod==0)
-    {
-	$nodes_set->runCommandMcat("cat $filesite", "cat > /post_pipe", $mcat_first_port+2);
-    }
-    else
-    {
-	$nodes_set->runCommandMcat("cat /usr/local/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
-    }
+    #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
+    $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port+2);
     $nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
     print "Done\n";
 
@@ -416,6 +408,8 @@ if ($usetar)
     my @to_reboot = @db_checked_hosts;
 }
 
+my @to_reboot = @db_checked_hosts;
+
 #2nd optimisation method pivot root
 #problems to be resolved: mysql ...
 if($depmethod==2)
@@ -423,16 +417,15 @@ if($depmethod==2)
     print "Proceeding with pivot-deployment method...";
     $nodes_set->runRemoteCommand("\" mkdir /mnt/dest/old_root \"");
     $nodes_set->runRemoteCommand("\" rm -f /mnt/dest/etc/mtab \"");
-    #$nodes_set->runRemoteCommand("\" rm -f /mnt/dest/var/run/mysqld/mysqld.pid \"");
     $nodes_set->runRemoteCommand("\" mkdir /new_root \"");
     $nodes_set->runCommandSimplessh("/rambin/rc1stop");
-    sleep(5);
+    sleep(10);
     $nodes_set->runRemoteCommand("\" mount $destination_partition /new_root \"");
     $nodes_set->runCommandSimplessh("/rambin/pivot");
-    sleep(11);	
+    sleep(13);	
     print "Pivot-deployment method finished.";
 }
-
+else{
 if ($usetar)
 {
     print "Umounting fs... ";
@@ -446,7 +439,6 @@ if ($usetar)
 # grub and pxe
 libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
 
-my @to_reboot = @db_checked_hosts;
 #my @to_reboot = @db_checked_hosts;
 if($depmethod==0)
 {
@@ -458,16 +450,17 @@ else
 }
 print "rebooting the nodes...\n";
 
-
+}
 
 # reboot
-$nodes_set->rebootThoseNodes();
+#$nodes_set->rebootThoseNodes();
+
 #$nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
 #$nodes_set->runRemoteSystemCommand("\"reboot -f\"");
 #$nodes_set->runRemoteSystemCommand("\"(sleep 5 ; reboot -f) &> /dev/null &\"");
 #$nodes_set->runRemoteSystemCommand("\"reboot_detach &\"");
 
-print "rebooting the nodes...\n";
+#print "rebooting the nodes...\n";
 
 # time transfert
 my $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
@@ -529,7 +522,7 @@ libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
 libkadeploy2::deploy_iolib::debug_print($base,$deployment);
 libkadeploy2::deploy_iolib::disconnect($base);
 
-print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\ttreatement:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
+print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
 
 1;
 ###################### End of Main ########################
@@ -642,12 +635,12 @@ sub set_mkfs_option($){
 sub usages()
 {
 print "Use : kadeploy 
-\t[-m|--machine hostname]
-\t[-f|--file node_file]
+\t[-m|--machine hostname] 
+\t[-f|--file node_file]                 Choose -m XOR -f
 \t[-e|--environment environment_name]
 \t[-p|--partition partition]
-\t[-d 0|1|2] Optimisation support
-\t[-bootstrap] Deploy nodes in deploy environment\n";
+\t[-d 0|1|2] Optimisation support\n";
+#\t[-bootstrap] Deploy nodes in deploy environment\n";
 }
 
 

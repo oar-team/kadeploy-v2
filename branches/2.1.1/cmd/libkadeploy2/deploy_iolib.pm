@@ -1002,6 +1002,7 @@ sub node_last_dep($$){
 	my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
                                  FROM deployed, node
                                  WHERE deployed.nodeid = node.id
+				 AND deployed.state = 'deployed'
                                  AND node.name = \"$hostname\"");
         $sth->execute();
         my $max_id = $sth->fetchrow_hashref();
