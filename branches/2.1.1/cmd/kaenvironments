@@ -25,6 +25,9 @@ sub print_environment($);
 
 sub print_usage();
 
+sub get_unixuser();
+sub get_userdb($);
+sub get_environments_byuser($$);
 
 # Command-line arguments
 
@@ -34,24 +37,58 @@ my @envToDelete;
 		      
 # True if the user wants help
 my $display_help;
-		      
+my $user;		      
+
 # db handler
-my $base; 
+my $base;
+my $userdb;
 		      
 # get the command-line options
 GetOptions('e=s'           => \@env_list,
            'environment=s'     => \@env_list,
 	   'h!'          => \$display_help,
+	   'l=s'         => \$userdb,
+	   'login=s'     => \$userdb,
 	   'help!' => \$display_help,
 	   'd=s'   => \@envToDelete,
 	   );
 
 
-	
+       
 			 
 if ($display_help) {
     print_usage();
     exit 0;
+}
+
+
+
+
+if ($userdb)
+{
+    my @listuser;
+    my $i;
+    $user="";
+    $base = libkadeploy2::deploy_iolib::connect();
+    @listuser=get_userdb($base);
+    foreach $i (@listuser)
+    {
+	if ($i eq $userdb)
+	{
+	    $user=$i;
+	}
+    }
+    if ($user eq "")
+    {
+	print "Bad login...\n";
+	exit 1;
+    }
+
+    libkadeploy2::deploy_iolib::disconnect($base);
+}
+else
+{
+    $user=get_unixuser();
 }
 
 
@@ -65,7 +102,13 @@ if (@envToDelete)
 	if (scalar(keys(%environments)) != 0) 
 	{
 	    if (delete_environments_byname($base,$env_name)==1)
-	    { print "environment $env_name deleted succefully\n"; }
+	    { 
+		print "environment $env_name deleted succefully\n"; 
+	    }
+	    else
+	    {
+		print "Error removing $env_name, \n";
+	    }
 	}
 	else
 	{
@@ -97,10 +140,26 @@ if (@env_list)
 	libkadeploy2::deploy_iolib::disconnect($base);
     }
     
+
+
+# FINAL ELSE 
 if (! @env_list && ! @envToDelete){
     # List all the environemnts
     $base = libkadeploy2::deploy_iolib::connect();
-    my %environments = get_environments($base);
+    my $i;
+    my @userlist=get_userdb($base);
+    print "user selected : $user";
+
+    print "\n\n";
+    print "kadeploy users:\n";
+    print "---------------\n";
+    foreach $i (@userlist)
+    {
+	print "$i\n";
+    }
+    print "\n\n";
+
+    my %environments = get_environments_byuser($base,$user);
 
     my $format = "%-17s %12s %-15s %s\n";
 
@@ -116,6 +175,7 @@ if (! @env_list && ! @envToDelete){
             $envinfo->{'author'}, $description
 	);
     }
+    print "\n\n";
     libkadeploy2::deploy_iolib::disconnect($base);
     exit(0);
 }
@@ -124,17 +184,22 @@ if (! @env_list && ! @envToDelete){
 
 
 	
-    print "Woops..\n";
-    exit 0;
+print "Woops..\n";
+exit 0;
 
- 
+
+
+
+
+########################################END OF MAIN########################################
 sub print_usage() {
     print "Usage: \t$0 \n";
-    print "                                        - lists all environments\n";
-    print "            -e | --environment env1 ... - lists the given environment\n";
-    print "            -d | --delete env1 ...      - delete this give environment\n";
+    print "                                        - lists my recorded environments\n";
+    print "            -e | --environment env1 ... - lists a given environment\n";
+    print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
+    print "            -l | --login  login         - list environment from user 'login'\n";
+    print "            --listlogin                 - list all 'login' recorded\n";
     print "            -h | --help                 - this help\n";
-    print "You may use short arguments (-e and -h)\n";
 }
 
 
@@ -219,6 +284,52 @@ sub get_environments_byname($$) {
     return %environments;
 }
 
+sub get_environments_byuser($$) {
+
+    my $dbh = shift;
+    my $name = shift;
+        
+    my %environments;
+    
+    my $sth = $dbh->prepare("SELECT * FROM environment WHERE user=?");
+    $sth->execute($name);
+
+    while (my $ref = $sth->fetchrow_hashref()) {
+        $environments{$ref->{id}} 
+	    = {id => $ref->{id}, 
+	       name => $ref->{name}, version => $ref->{version},
+	       author => $ref->{author}, description => $ref->{description},
+	       filebase => $ref->{filebase}, filesite => $ref->{filesite},
+	       size => $ref->{size}, initrdpath => $ref->{initrdpath},
+	       kernelpath => $ref->{kernelpath}, kernelparam => $ref->{kernelparam},
+	       fdisktype => $ref->{fdisktype}, filesystem => $ref->{filesystem},
+	       siteid => $ref->{siteid} 
+	};
+    }
+			          				   
+    $sth->finish();							      
+
+    return %environments;
+}
+
+
+sub get_userdb($)
+{
+    my $dbh = shift;
+
+    my @listuser;
+    my @tmp;
+
+    my $sth = $dbh->prepare("select user from environment group by user");
+    $sth->execute();
+    while (my $ref =  $sth->fetchrow_hashref()) 
+    {
+	@tmp=$ref->{user};
+	push(@listuser, @tmp);
+    }
+    return @listuser;
+}
+
 # Return 1 if success
 sub delete_environments_byname($$) {
     my $dbh = shift;
@@ -226,9 +337,29 @@ sub delete_environments_byname($$) {
 
     my $sth;
     my $result;
+    my $user;
 
-    $sth = $dbh->prepare("DELETE FROM environment WHERE name=?");
-    $result=$sth->execute($name);
+    $user=get_unixuser();
+    $sth = $dbh->prepare("DELETE FROM environment WHERE name=? and user=?");
+    $result=$sth->execute($name,$user);
     $sth->finish;
     return $result;
+}
+
+
+#Retun username 
+#depend of getent
+sub get_unixuser()
+{
+    my $line;
+    my $user;
+    open(FD,"printenv|");
+    while ($line=<FD>)
+    {
+	if ($line=~/^USER=(.+)$/)
+	{
+	    $user=$1;
+	}
+    }
+    return $user;
 }

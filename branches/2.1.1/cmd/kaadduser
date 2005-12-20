@@ -37,7 +37,7 @@ if (!@user_list){
     @user_list = ("*");
 }
 
-my $base = deploy_iolib::connect();
+my $base = libkadeploy2::deploy_iolib::connect();
 
 ## sets default values if needed
 if (!@host_list){
@@ -48,7 +48,7 @@ if (!@host_list){
     @checked_hosts = check_nodes($base,\@host_list);
     if(!scalar(@checked_hosts)){ 
 	print "ERROR : none of the specified nodes is registered\n";
-	deploy_iolib::disconnect($base);
+	libkadeploy2::deploy_iolib::disconnect($base);
 	exit 0;
       }
 }
@@ -70,13 +70,13 @@ if (!@part_list){
     		$part = "0";
 		if(!check_dev($base,$dev)){
 		    print "ERROR : target device $device does not exist\n";
-		    deploy_iolib::disconnect($base);
+		    libkadeploy2::deploy_iolib::disconnect($base);
 		    exit 0;
 		}
     	    }else{
 		if(!check_partition($base,$dev,$part)){
 		    print "ERROR : target partition $device does not exist\n";
-		    deploy_iolib::disconnect($base);
+		    libkadeploy2::deploy_iolib::disconnect($base);
 		    exit 0;
 		}
 	    }
@@ -84,7 +84,7 @@ if (!@part_list){
     }
 }
 
-deploy_iolib::disconnect($base);
+libkadeploy2::deploy_iolib::disconnect($base);
 
 
 ## Available variables are :
@@ -94,19 +94,19 @@ deploy_iolib::disconnect($base);
 
 ## Time to fill in database
 
-$base = deploy_iolib::connect();
+$base = libkadeploy2::deploy_iolib::connect();
 
 #rights_iolib::clean_db($base);
 
 foreach my $user (@user_list){
     foreach my $host (@checked_hosts){
 	foreach my $device (@part_list){
-	    rights_iolib::add_user($base,$user,$host,$device);
+	    libkadeploy2::rights_iolib::add_user($base,$user,$host,$device);
 	}
     }
 }
 
-deploy_iolib::disconnect($base);
+libkadeploy2::deploy_iolib::disconnect($base);
 
 print "Rights granted.\n";
 
@@ -123,8 +123,8 @@ sub check_nodes($$){
     my @checked;
 
     foreach my $host (@{$ref_hosts}){
-	if(!deploy_iolib::node_name_to_name($dbh,$host)){
-	    my $name = deploy_iolib::node_ip_to_name($dbh,$host);
+	if(!libkadeploy2::deploy_iolib::node_name_to_name($dbh,$host)){
+	    my $name = libkadeploy2::deploy_iolib::node_ip_to_name($dbh,$host);
 	    if(!$name){
 		print "WARNING : node $host does not exist ; it is excluded from rights attribution\n";
 	    }else{
@@ -151,7 +151,7 @@ sub check_partition($$$){
     my $part = shift;
 
 #    return (deploy_iolib::disk_dev_to_id($dbh,$dev) && deploy_iolib::part_nb_to_id($dbh,$part));
-     return (deploy_iolib::disk_dev_to_id($dbh,$dev));
+     return (libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$dev));
 }
 
 
@@ -163,5 +163,5 @@ sub check_dev($$){
     my $dbh = shift;
     my $dev = shift;
 
-    return (deploy_iolib::disk_dev_to_id($dbh,$dev));
+    return (libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$dev));
 }

@@ -14,8 +14,25 @@ use libkadeploy2::hexlib;
 use strict;
 use warnings;
 
+sub get_unixuser();
+
 if (!@ARGV){
-    print "Usage : karecordenv\n            -n,  --name        registration name\n            -v,  --version     version            # default is 1\n            -d,  --description description\n            -a,  --author      author email\n            -fb, --filebase    environment image path\n            -ft, --filesite    post-installation file path\n            -s,  --size        size (Mo)\n            -i,  --initrdpath  inirdpath\n            -k,  --kernelpath  kernel path\n            -p,  --param       kernel param\n            -fd, --fdisktype   fdisk type         # default is 82\n            -fs, --filesystem  file system        # default is ext2\n\nName, kernel path, environment image path and post-installation file path must be defined\n";
+    print "
+Usage : karecordenv\n
+\t-n  | --name        environmentname
+\t-v  | --version     version              (default is 1)
+\t-d  | --description description
+\t-a  | --author      author email
+\t-fb | --filebase    environment image path
+\t-ft | --filesite    post-installation file path
+\t-s  | --size        size (Mo)
+\t-i  | --initrdpath  inirdpath
+\t-k  | --kernelpath  kernel path
+\t-p  | --param       kernel param
+\t-fd | --fdisktype   fdisk type           (default is 82)
+\t-fs | --filesystem  file system          (default is ext2)
+\t-o  | --optsupport  optimisation support (default is 0)\n
+Name, kernel path, environment image path and post-installation file path must be defined\n";
     exit 0;
 }
 
@@ -33,6 +50,7 @@ my $kernel_param;
 my $fdisk_type;
 my $file_system="ext2";
 my $file_environment;
+my $optsupport=0;
 
 my $successful = 0;
 
@@ -62,7 +80,9 @@ GetOptions('n=s' => \$name,
            'fs=s' => \$file_system,
 	   'filesystem=s' => \$file_system,
 	   'fe=s' => \$file_environment,
-	   'file_environment=s' => \$file_environment
+	   'file_environment=s' => \$file_environment,
+	   'optsupport=s' => \$optsupport,
+	   'o=s'          => \$optsupport,
 	   );
 
 ## open file environment description
@@ -115,6 +135,7 @@ else
 }
 
 
+
 # ajouter des vérifs sur l'existence des fichiers filebase et filesite?
 
 ## modification for database registration
@@ -123,7 +144,7 @@ else
 ## registers the environment
 my $base = libkadeploy2::deploy_iolib::connect();
 	
-$successful =  libkadeploy2::deploy_iolib::add_environment($base,$name,$version,$description,$author,$filebase_path,$filesite_path,$size,$initrd_path,$kernel_path,$kernel_param,$fdisk_type,$file_system,"1");
+$successful =  libkadeploy2::deploy_iolib::add_environment($base,$name,$version,$description,$author,$filebase_path,$filesite_path,$size,$initrd_path,$kernel_path,$kernel_param,$fdisk_type,$file_system,"1",$optsupport,get_unixuser());
 
 libkadeploy2::deploy_iolib::disconnect($base);
 
@@ -134,3 +155,20 @@ if ($successful){
 }
 
 1;
+
+#Retun username 
+#depend of getent
+sub get_unixuser()
+{
+    my $line;
+    my $user;
+    open(FD,"printenv|");
+    while ($line=<FD>)
+    {
+	if ($line=~/^USER=(.+)$/)
+	{
+	    $user=$1;
+	}
+    }
+    return $user;
+}

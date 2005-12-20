@@ -639,7 +639,7 @@ print "Use : kadeploy
 \t[-f|--file node_file]                 Choose -m XOR -f
 \t[-e|--environment environment_name]
 \t[-p|--partition partition]
-\t[-d 0|1|2] Optimisation support\n";
+\t[-d 0|1] Optimisation support\n";
 #\t[-bootstrap] Deploy nodes in deploy environment\n";
 }
 

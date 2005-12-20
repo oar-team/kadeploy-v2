@@ -90,7 +90,6 @@ CREATE TABLE `environment` (
   `fdisktype` int(10) unsigned default NULL,
   `filesystem` varchar(9) default NULL,
   `siteid` int(10) unsigned NOT NULL default '0',
-  `optsupport` int(10) unsigned NOT NULL default '0', # added for optimisation methods  
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM AUTO_INCREMENT=5 ;
 

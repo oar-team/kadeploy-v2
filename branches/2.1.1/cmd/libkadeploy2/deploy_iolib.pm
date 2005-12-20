@@ -67,7 +67,7 @@ sub add_node($$);
 sub add_deploy($$$$);
 sub add_disk($$);
 sub add_partition($$$);
-sub add_environment($$$$$$$$$$$$$$);
+sub add_environment($$$$$$$$$$$$$$$$);
 sub del_node($$);
 
 # deployment tools #
@@ -1395,7 +1395,7 @@ sub add_disk($$){
 # registers a new environment into the database
 # parameters : base, name, version, description, author, filebase, filesite, size, initrdpath, kernelpath, kernelparam, fdisktype, filesystem, site id
 # return value : 1 if successful, 0 otherwise
-sub add_environment($$$$$$$$$$$$$$){
+sub add_environment($$$$$$$$$$$$$$$$){
     my $dbh = shift;
     my $name = shift;
     my $version = shift;
@@ -1410,6 +1410,8 @@ sub add_environment($$$$$$$$$$$$$$){
     my $fdisktype = shift;
     my $filesystem = shift;
     my $siteid = shift;
+    my $optsupport = shift;
+    my $unixuser = shift;
 
     # debug print
     #print "$name , $version , $description , $author , $filebase , $filesite , $size , $initrdpath , $kernelpath , $kernelparam , $fdisktype , $filesystem , $siteid\n";
@@ -1422,7 +1424,7 @@ sub add_environment($$$$$$$$$$$$$$){
 	return 0;
     }else{
 	my $successful = 0;
-	$successful = $dbh->do("INSERT environment (name,version,description,author,filebase,filesite,size,initrdpath,kernelpath,kernelparam,fdisktype,filesystem,siteid) VALUES (\"$name\",\"$version\",\"$description\",\"$author\",\"$filebase\",\"$filesite\",$size,\"$initrdpath\",\"$kernelpath\",\"$kernelparam\",\"$fdisktype\",\"$filesystem\",$siteid)");
+	$successful = $dbh->do("INSERT environment (name,version,description,author,filebase,filesite,size,initrdpath,kernelpath,kernelparam,fdisktype,filesystem,siteid,optsupport,user) VALUES (\"$name\",\"$version\",\"$description\",\"$author\",\"$filebase\",\"$filesite\",$size,\"$initrdpath\",\"$kernelpath\",\"$kernelparam\",\"$fdisktype\",\"$filesystem\",$siteid,$optsupport,\"$unixuser\")");
 	return $successful;
     }
 
