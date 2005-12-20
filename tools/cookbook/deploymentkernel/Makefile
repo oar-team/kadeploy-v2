@@ -16,7 +16,7 @@ SHELL = /bin/sh
 srcdir = .
 top_srcdir = ../../..
 
-prefix = /usr/local/kadeploy
+prefix = /usr/local
 exec_prefix = ${prefix}
 
 bindir = ${exec_prefix}/bin
@@ -57,17 +57,22 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = 
+host_triplet = @host@
 CC = gcc
 DD = dd
+HAVE_LIB = @HAVE_LIB@
 LATEX2HTML = latex2html
+LIB = @LIB@
 LINUXDOC = linuxdoc
 LN_S = ln -s
-MAKEINFO = /root/build/kadeploy-2.0/missing makeinfo
+LTLIB = @LTLIB@
+MAKEINFO = makeinfo
 MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
-VERSION = 2.0
+VERSION = 2.1
 XSLTPROC = xsltproc
 
 SUBDIRS = linux
