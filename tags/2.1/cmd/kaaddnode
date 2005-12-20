@@ -18,7 +18,7 @@ if (!@ARGV){
 ## declares the options
 my $desc_file = $ARGV[0];
 
-my $base = deploy_iolib::connect();
+my $base = libkadeploy2::deploy_iolib::connect();
 
 ## checks if option is defined
 if(!(-e $desc_file)){
@@ -45,22 +45,22 @@ foreach my $line (<DESC>){
 	    }elsif($step == 0){
 		# nodes description
 		my @info = split(/\s+/, $line);
-		my $node_id = deploy_iolib::add_node($base,\@info);
+		my $node_id = libkadeploy2::deploy_iolib::add_node($base,\@info);
 		push(@host_id_list, $node_id);
 	    }elsif($step == 1){
 		# disk description
 		my @info = split(/\s+/, $line);
-		$disk_id = deploy_iolib::add_disk($base,\@info);
+		$disk_id = libkadeploy2::deploy_iolib::add_disk($base,\@info);
 		$step = 2;
 	    }else{
 		# partition description
 		my @info = split(/\s+/, $line);
-		my $part_id = deploy_iolib::add_partition($base,\@info,$disk_id);
-		my $env_id = deploy_iolib::env_name_to_last_ver_id($base,$info[2]);
+		my $part_id = libkadeploy2::deploy_iolib::add_partition($base,\@info,$disk_id);
+		my $env_id = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$info[2]);
 		if(!$env_id){
-		    my $part_nb = deploy_iolib::part_id_to_nb($base,$part_id);
+		    my $part_nb = libkadeploy2::deploy_iolib::part_id_to_nb($base,$part_id);
 		    print "WARNING : special 'undefined' environment will be affected to partition number $part_nb\n";
-		    $env_id = deploy_iolib::env_undefined_to_id($base);
+		    $env_id = libkadeploy2::deploy_iolib::env_undefined_to_id($base);
 		}
 		push(@part_env_id_list, [$part_id,$env_id]);
 	    }
@@ -70,13 +70,13 @@ foreach my $line (<DESC>){
     # deploy state
     foreach my $host (@host_id_list){
 	foreach my $part_env (@part_env_id_list){
-	    deploy_iolib::add_deploy($base,\$part_env,$disk_id,$host);
+	    libkadeploy2::deploy_iolib::add_deploy($base,\$part_env,$disk_id,$host);
 	}
     }
 }
 close(DESC);
 
-deploy_iolib::disconnect($base);
+libkadeploy2::deploy_iolib::disconnect($base);
 
 print "Registration completed.\n";
 
