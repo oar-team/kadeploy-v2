@@ -12,19 +12,6 @@ REQUIREMENTS
 
 The system is designed to run on a server enabling deployment on compute nodes.
 
-On the server, the following packages must be installed :
-	- sudo
-	- Perl
-	- Perl-base
-	- Perl-suid
-
-On the server, the following ones are also needed for database management purposes :
-	- Perl-Mysql
-	- Perl-DBI
-	- MySQL
-	- MySQL-shared
-	- libmysql
-
 
 SYSTEM REQUIREMENTS ON THE SERVER
 =================================

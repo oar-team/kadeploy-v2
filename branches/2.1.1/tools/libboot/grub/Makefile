@@ -16,7 +16,7 @@ SHELL = /bin/sh
 srcdir = .
 top_srcdir = ../../..
 
-prefix = /usr/local/kadeploy
+prefix = /usr/local
 exec_prefix = ${prefix}
 
 bindir = ${exec_prefix}/bin
@@ -62,12 +62,12 @@ DD = dd
 LATEX2HTML = latex2html
 LINUXDOC = linuxdoc
 LN_S = ln -s
-MAKEINFO = /root/build/kadeploy-2.0/missing makeinfo
+MAKEINFO = makeinfo
 MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
-VERSION = 2.0
+VERSION = 2.1
 XSLTPROC = xsltproc
 
 grubdir = $(prefix)/lib/grub
