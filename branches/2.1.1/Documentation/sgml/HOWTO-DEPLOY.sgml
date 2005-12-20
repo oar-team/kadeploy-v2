@@ -25,7 +25,7 @@ Deploying multiple computing environment on clusters or grids cannot be easily h
 
 <sect1>Copyright
 <p>
-Copyright &copy; 2004-07-20 by Julien Leduc, Gaetan Peaquin.
+Copyright &copy; 2004-07-20 by Julien Leduc, Gaetan Peaquin, Peyrard Johann.
 You are free:
 <itemize><item>to copy, distribute, display, and perform the work
 <item>to make derivative works
@@ -186,6 +186,58 @@ These four directories (two in each tftp directory) should be writtable by the <
 <p>
 The goal of this part is to ease the deployment system installation steps and give information about all the relevant required tools and their configuration.
 
+
+
+
+<!-- =========================== -->
+<sect1>Perl
+<p>
+A decent version of Perl need to be installed on the box. 
+Actually the 5.8 works fine.
+<p>
+Package name : perl, perl-base, perl-mysql, perl-dbi, perl-suid.
+<!-- =========================== -->
+
+<sect1>Mysql
+<p>
+Kadeploy has been tested with mysql 4.1.
+<p>
+Package name : mysql-server, mysql-client, libmysql, mysql-shared, 
+
+<sect1>Sudo
+<p>
+In order to secure the system, you need sudo package.
+It provide ways to grant access to simple users. 
+
+<sect1>dhcpd
+<p>
+PXE boot is provided by ISC dhcpd software.
+Use the package of your distributions.
+A simple <tt>dhcpd.conf</tt> file is provided modify it for your needs <tt>tools/cookbook/conf/</tt>.
+
+<sect1>nmap
+<p>
+Nmap is a tool for scanning remote system.
+Kadeploy use it, because it is fast and scalable.
+
+<sect1>Inetd/Xinetd
+<p>
+Daemon launcher use by many linux distribution.
+
+<sect1>SYSLINUX
+<p>
+It is include in kadeploy package <tt>libboot/pxelinux/</tt>.
+It contains a lot of booloader. 
+<p>Pxelinux.0 (pxe bootloader), 
+<p>Memdisk (floppy/hard drive image loader ). 
+<p>In our case we use <tt>pxelinux.0</tt> from <url url="http://syslinux.zytor.com" name="syslinux">. 
+This file is downloaded by the client, then launch, finally it download is conf from the pxelinux.cfg 
+directory (see the syslinux doc for more).
+
+<sect1>TFTP server
+<p>
+particulary <em>tftp-hpa</em> server also available under package.
+
 <!-- =========================== -->
 <sect1>Network configuration
 <p>
@@ -194,36 +246,29 @@ The cluster nodes have Ip from 192.168.0.1 to 192.168.0.250.
 The gateway, dns, dhcp, tftp, mysql services are located on the node 192.168.0.254.
 
 
-<!-- =========================== -->
-<sect1>Perl
+<sect2>Database creation
 <p>
-A decent version of Perl need to be installed on the box. 
-Actually the 5.8 works fine.
-<!-- =========================== -->
-<sect1>Mysql
-<p>
-Kadeploy has been tested with mysql 4.1.
+The mysql schema are in <tt>share/mysql/</tt>.
+You have to feed mysql with creation files, and patch.
 
-<sect2>How to i create the database ?
-<p>
-It is possible to create both databases manually. 
-All you have to do is to run the command lines below. 
-This will create the deploy and deploy_right databases and the appropriate 
-users with read and/or write rights.
 
-<p><tt># mysql -u root -p < share/mysql//deploy_db_creation.sql</tt>
+<p><tt># mysql -u root -p < share/mysql/deploy_db_creation.sql</tt>
 <p><tt>Enter password: ********</tt>
+
 <p><tt># mysql -u root -p < share/mysql/rights_db_creation.sql</tt>
 <p><tt>Enter password: ********</tt>
-<p><tt># mysql -u root -p < share/mysql/patch_dbdeploy_fdisktype.pl</tt>
-<p>
 
+<p><tt># mysql -u root -p < share/mysql/patch_kadeploy_version.sql<tt>
+<p><tt>Enter password: ********</tt>
 
-Next step will be to fill in the database. That can be done easily using the kaaddnode command.
+Next step will be to fill in the database. 
+That can be done easily using the kaaddnode command.
+See the man pages for more about it.
+
 <!-- =========================== -->
 <sect2>How to configure access to databse ?
 <p>
-In order for the deployment system to access to the database, correct information e.g. database name, login and password should be filled in the configuration file for each database. See the <ref id="database" name="database"> part in the configuration file section for further details.
+In order for the deployment system to access to the database, correct information e.g. hostname, database name, login and password should be filled in the configuration file for each database. 
 
 
 
@@ -238,35 +283,7 @@ The nodes' hardware must be <tt>PXE</tt> compliant, this means that the <tt>BIOS
 <!-- =========================== -->
 
 
-<sect2>Required software
-<p>
-To be able to handle <tt>PXE</tt> requests from the booting nodes, 
-the server should have a set of running servers, which must 
-fit minimum requirements:
-<itemize>
-  <item><tt>DHCP</tt> server, the easiest is to use the one developped by <url url="http://www.isc.org/index.pl?/sw/dhcp/" name="ISC"> in its third version. It is available in many distributions:
-	<itemize>
-		<item>Debian <em>dhcp3-server</em>
-		<item>Mandrake <em>dhcp-server</em> and you should ensure the 
-                package release is at least 3.0
-  	</itemize>
-  <item>Inetd/Xinetd super server a daemon launcher use by many linux distribution.
-  <item>TFTP server, particulary <em>tftp-hpa</em> server also available under package :
-      	<itemize>
-	       	<item>Debian <em>tftpd-hpa</em> 
-                <item>Mandrake <em>tftp-server</em> rpm in a minimum 0.29-1mdk version is required to take <url url="http://rpmfind.net/linux/RPM/mandrake/9.2/i586/Mandrake/RPMS/tftp-server-0.34-1mdk.i586.html" name="hpa support"> into account
-	</itemize>
-   <item><tt>SYSLINUX</tt> include in kadeploy package <tt>libboot/pxelinux/</tt>.
-It contains a lot of booloader. 
-Pxelinux.0 (pxe bootloader), Memdisk (floppy/hard drive image loader ). 
-In our case we use <tt>pxelinux.0</tt> from <url url="http://syslinux.zytor.com" name="syslinux">. 
-This file is downloaded by the client, then launch, finally it download is conf from the pxelinux.cfg 
-directory (see the syslinux doc for more).
-</itemize>
 
-
-
-<!-- =========================== -->
 <sect2><label id="dhcpd.conf"> <tt>dhcpd.conf</tt> example
 <p>
 An example of server configuration.
@@ -325,7 +342,7 @@ tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd
  <item>A line like this one must be in your <tt>/etc/kadeploy/deploy.conf</tt>
   <verb>kadeploy2_directory = /my_path_to_kadeploy_directory/</verb>
  <item>kadeploy need some lib perl, "pm" files.
-This file are located in <tt>cmd/libkadeploy2/</tt> directory in the package.
+This files are located in <tt>$prefix/share/perl/5.8/libkadeploy2/</tt>.
 You can symlink it in <tt>/usr/lib/perl/5.8/</tt> (or a directory included in your local Perl @INC).
 </itemize>
 
@@ -348,22 +365,27 @@ Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 <!-- =========================== -->
 <sect2>Required privileges to execute <em>kadeploy</em>
 <p>
-<em>kadeploy</em> requires to perform some changes on the server, to control the way the nodes are booting. Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
+<em>kadeploy</em> requires to perform some changes on the server, to control the way the nodes are booting. 
+Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. 
+The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
 
 <!-- =========================== -->
-<sect>Using kadeploy v2
+<sect>Using kadeploy 2
 <p>
 The deployment system is composed of several tools or commands whose aim is the execution of all the needed actions to carry out deployments and other administrative tasks.
-<p>
-Every tool has his own <ref id="Man_pages" name="man page"> available at the end of this documentation. This could be useful to answer some pertinent questions the reader may wonder.
+Every tool has his own man page.
+
 <!-- =========================== -->
 <sect1>The first time...
 <p>
 The two first steps are to register the cluster "software and hardware composition" in its current state. 
 <p>
-If any environment is already installed on some partitions of some nodes, it is necessary to register it. This operation is done by giving the appropriate information (image name, image location, kernel path etc.) to the <ref id="karecordenv" name="karecordenv"> tool. 
+If any environment is already installed on some partitions of some nodes, it is necessary to register it. 
+This operation is done by giving the appropriate information (image name, image location, kernel path etc.) to the <ref id="karecordenv" name="karecordenv"> tool. 
 <p>
-Then, <ref id="kaaddnode" name="kaaddnode"> is used to register the cluster "hardware" composition. It needs the description of hosts, disks and partitions in a text file. The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
+Then, <ref id="kaaddnode" name="kaaddnode"> is used to register the cluster "hardware" composition. 
+It needs the description of hosts, disks and partitions in a text file. 
+The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
 <p>
 Once these operations completed, the system is ready for deployments.
 
@@ -491,8 +513,10 @@ A solution, is
 
 <p>
 Now you can ssh the node, and kadeploy a new environnement.
-If you want to simplify your life, set ssh in public key authentification, it will be
-much simplier...
+If you want to simplify your administrator life.
+Use a sudoers and sudowrapper.sh for kadeploy, a simple one is in <tt>tools/cookbook/conf/</tt>.
+set ssh in public key authentification for the master and the compute nodes.
+
 
 
 
@@ -767,7 +791,7 @@ with description.txt as below:
 # Nodes
 node1    00:02:73:49:9C:8D    192.168.10.1
 node2    00:02:73:49:9C:8E    192.168.10.2
-...	 ...		      ...
+
 
 \#
 
@@ -775,7 +799,7 @@ node2    00:02:73:49:9C:8E    192.168.10.2
 hda  80000
 1    5000    swap
 2    20000   debian
-...  ...     ...
+
 </verb>
 <!-- =========================== -->
 <sect1>kadelnode<label id="kadelnode">
