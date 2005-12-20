@@ -332,9 +332,9 @@ sub generate_grub_files($$$$$$$$){
     }
 
     if (!$param){
-	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot ($dev$letter,$part)\nkernel $kernel root=/dev/$root\n";
+	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root\n";
     }else{
-	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot ($dev$letter,$part)\nkernel $kernel root=/dev/$root $param\n";
+	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root $param\n";
     }
     if ($initrd_path){
 	print MENU "initrd $initrd_path\n";

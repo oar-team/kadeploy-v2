@@ -16,7 +16,7 @@ SHELL = /bin/sh
 srcdir = .
 top_srcdir = ../..
 
-prefix = /usr/local
+prefix = /tmp/2.1.1
 exec_prefix = ${prefix}
 
 bindir = ${exec_prefix}/bin
@@ -57,11 +57,16 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = 
+host_triplet = @host@
 CC = gcc
 DD = dd
+HAVE_LIB = @HAVE_LIB@
 LATEX2HTML = latex2html
+LIB = @LIB@
 LINUXDOC = linuxdoc
 LN_S = ln -s
+LTLIB = @LTLIB@
 MAKEINFO = makeinfo
 MYSQL = mysql
 NMAP = nmap
