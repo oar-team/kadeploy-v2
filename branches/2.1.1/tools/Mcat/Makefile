@@ -72,7 +72,7 @@ MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
-VERSION = 2.1
+VERSION = 2.1.1
 XSLTPROC = xsltproc
 
 bin_PROGRAMS = mcatseg
@@ -86,7 +86,7 @@ CONFIG_CLEAN_FILES =
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS = -DPACKAGE_NAME=\"kadeploy\" -DPACKAGE_TARNAME=\"kadeploy\" -DPACKAGE_VERSION=\"2.1\" -DPACKAGE_STRING=\"kadeploy\ 2.1\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"kadeploy\" -DVERSION=\"2.1\"  -I. -I$(srcdir) 
+DEFS = -DPACKAGE_NAME=\"kadeploy\" -DPACKAGE_TARNAME=\"kadeploy\" -DPACKAGE_VERSION=\"2.1.1\" -DPACKAGE_STRING=\"kadeploy\ 2.1.1\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"kadeploy\" -DVERSION=\"2.1.1\"  -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 LIBS = 

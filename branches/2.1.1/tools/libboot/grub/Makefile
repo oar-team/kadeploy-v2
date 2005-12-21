@@ -72,7 +72,7 @@ MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
-VERSION = 2.1
+VERSION = 2.1.1
 XSLTPROC = xsltproc
 
 grubdir = $(prefix)/lib/grub
