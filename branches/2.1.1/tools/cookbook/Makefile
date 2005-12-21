@@ -75,7 +75,8 @@ PERL = perl
 VERSION = 2.1.1
 XSLTPROC = xsltproc
 
-SUBDIRS = conf scripts deploymentkernel
+SUBDIRS = conf scripts 
+#SUBDIRS=conf scripts deploymentkernel
 cookbookdir = $(prefix)/share/cookbook
 cookbook_DATA = README scripts conf
 EXTRA_DIST = $(cookbook_DATA)

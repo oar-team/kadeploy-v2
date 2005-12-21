@@ -43,10 +43,6 @@ AC_CONFIG_FILES([Makefile
 		tools/cookbook/Makefile
 		tools/cookbook/conf/Makefile
 		tools/cookbook/scripts/Makefile
-		tools/cookbook/deploymentkernel/Makefile
-		tools/cookbook/deploymentkernel/linux/Makefile
-		tools/cookbook/deploymentkernel/linux/etc/Makefile
-		tools/cookbook/deploymentkernel/linux/tools/Makefile
 		tools/libboot/Makefile
 		tools/libboot/pxelinux/Makefile
 		tools/libboot/deployment_kernel/Makefile
