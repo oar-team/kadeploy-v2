@@ -889,7 +889,7 @@ my $self = shift;
 sub rebootThoseNodes {
     my $self = shift;
     my $connector = "rsh -l root";
-    my $remoteCommand = "reboot -f";
+    my $remoteCommand = "reboot -f &";
 
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
