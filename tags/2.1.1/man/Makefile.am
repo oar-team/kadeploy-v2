@@ -1,2 +1,0 @@
-SUBDIRS=src man1
-EXTRA_DIST = src
