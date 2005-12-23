@@ -195,7 +195,7 @@ The goal of this part is to ease the deployment system installation steps and gi
 A decent version of Perl need to be installed on the box. 
 Actually the 5.8 works fine.
 <p>
-Package name : perl, perl-base, perl-mysql, perl-dbi, perl-suid.
+Package name : perl, perl-base, perl-mysql, perl-dbi, perl-suid, libterm-readkey-perl.
 <!-- =========================== -->
 
 <sect1>Mysql
