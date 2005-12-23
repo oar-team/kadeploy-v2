@@ -22,6 +22,7 @@ my $addmysqlrights;
 my $delmysqlrights;
 my $create_db_deploy;
 my $drop_db_deploy;
+my $clean_db_deploy;
 my $patch21;
 my $patch211;
 my $login;
@@ -38,6 +39,7 @@ GetOptions('addmysqlrights'        => \$addmysqlrights,
 	   'delmysqlrights'        => \$delmysqlrights,
 	   'create_db_deploy'      => \$create_db_deploy,
 	   'drop_db_deploy'        => \$drop_db_deploy,
+	   'clean_db_deploy'       => \$clean_db_deploy,
 	   'patch21'               => \$patch21,
 	   'patch211'              => \$patch211,
 	   'h!'                    => \$help,
@@ -50,6 +52,7 @@ if ($addmysqlrights        ||
     $delmysqlrights        ||
     $drop_db_deploy        ||
     $create_db_deploy      ||
+    $clean_db_deploy       ||
     $patch21               ||
     $patch211
     ) 
@@ -69,6 +72,7 @@ if ($delmysqlrights)         { mysqlload("delmysqlrights");   }
 if ($addmysqlrights)         { mysqlload("addmysqlrights");   }
 if ($drop_db_deploy)         { mysqlload("drop_db_deploy");   }
 if ($create_db_deploy)       { mysqlload("create_db_deploy"); }
+if ($clean_db_deploy)        { mysqlload("clean_db_deploy"); }
 if ($patch21)                { mysqlload("patch-kadeploy-2.1"); }
 if ($patch211)               { mysqlload("patch-kadeploy-2.1.1"); }
 
@@ -88,6 +92,7 @@ $0
 
 \t-create_db_deploy
 \t-drop_db_deploy
+\t-clean_db_deploy
 
 \t-patch21
 \t-patch211
