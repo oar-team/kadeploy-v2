@@ -1,0 +1,38 @@
+<refentry id="kaconsole">
+
+<refmeta>
+    <refentrytitle>katftp</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>katftp</refname>
+    <refpurpose>Install required file for PXE</refpurpose>
+  </refnamediv>
+
+  
+  <refsect1>
+    <title>SYNOPSIS</title>
+    
+    <command>katftp </command>  <command>[-create]</command> <command> [-h] </command> 
+  </refsect1>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      katftp copy the required file to manage the PXE boot mechanism.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>CONFIGURATION FILE</title>
+    <emphasis>/etc/kadeploy/deploy_cmd.conf</emphasis>     
+  </refsect1>
+  
+  <refsect1>
+    <title>EXAMPLE</title>
+    
+    
+    <command>katftp -create</command>
+      
+  </refsect1>
+  </refentry>

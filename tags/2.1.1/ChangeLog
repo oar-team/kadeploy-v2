@@ -1,0 +1,14 @@
+version 2.1.1:
+--------------
+* optimisation support
+* Added Changelog files
+
+version 2.1:
+------------
+* autoconf
+* dd deploy method
+
+
+version 2:
+----------
+* initial release.
