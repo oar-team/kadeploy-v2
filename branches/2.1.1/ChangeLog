@@ -2,7 +2,9 @@ version 2.1.1:
 --------------
 * optimisation support
 * Added Changelog files
-
+* Added kenel and initrd for 64 bit opteron
+	* Sata support
+	
 version 2.1:
 ------------
 * autoconf
