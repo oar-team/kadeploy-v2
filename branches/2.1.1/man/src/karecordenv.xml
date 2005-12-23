@@ -49,7 +49,7 @@ Name, kernel_path, environment_image_path and post-installation_file_path must b
     <command>-ft, --filesite post-installation_file_path</command>the complete path to the post-installation file
     <command>-s,  --size size (Mo)</command>the size of the environment ; in order to perform partition size check before a deployment
     <command>-i,  --initrdpath</command>the complete initrd path in the environment (including intrd name)
-    <command>-k,  --kernelpath kernel_path</command>the complete kernel path in the environment (including kernel name)
+    <command>-k,  --kernelpath kernel_path</command>the complete kernel path in the environment (including kernel name). You have to use "chainload" keyword, when deploying a "dd" image.
     <command>-p,  --param</command>arguments passed to kernel at boot (<verb>root</verb> parameter is set automatically), if left empty, default can be configured
     <command>-fd, --fdisktype fdisk_type</command>the fdisk type ; default is 82
     <command>-fs, --filesystem file_system</command>the file system type ; default is ext2

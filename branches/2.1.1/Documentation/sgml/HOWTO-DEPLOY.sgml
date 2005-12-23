@@ -257,7 +257,7 @@ In order for the deployment system to access to the database, correct informatio
 <p>
 The mysql schema are in <tt>share/mysql/</tt>.
 You have to feed mysql with creation files, and patch.
-You have to use kadatabase and kaaddnode command for this see man page for examples.
+You have to use kadatabase and kaaddnode command for this see next and man page.
 
 
 
@@ -368,17 +368,14 @@ Every tool has his own man page.
 <!-- =========================== -->
 <sect1>The first time...
 <p>
-The two first steps are to register the cluster "software and hardware composition" in its current state. 
-<p>
-If any environment is already installed on some partitions of some nodes, it is necessary to register it. 
-This operation is done by giving the appropriate information (image name, image location, kernel path etc.) to the <ref id="karecordenv" name="karecordenv"> tool. 
+You have to feed mysql with kadeploy schema.
+the <tt>kadatabase</tt> command was created for this.
+<verb>#kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211</verb>
+
 <p>
 Then, <ref id="kaaddnode" name="kaaddnode"> is used to register the cluster "hardware" composition. 
 It needs the description of hosts, disks and partitions in a text file. 
 The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
-<p>
-Once these operations completed, the system is ready for deployments.
-
 
 <p>
 Example of <tt>cluster_description.txt</tt> file.
@@ -405,6 +402,11 @@ You need to execute the command:
 Checking variable definition...
 Registration completed.
 </verb>
+
+<p>
+Once these operations completed, the system is almost ready for deployments.
+You have to put some right to your user with the command kaaduser.
+<verb>#kaadduser -l root -m cls2 -p hda2</verb>
 
 
 <!-- =========================== -->
@@ -447,10 +449,14 @@ This file is liked a fdisk, script.
 Not hard but boring, it will be fix sooner.
 
 
+
+
 <!-- =========================== -->
 <sect1>Cluster BootStrap
 <p>
-You need a tarball of a linuxbox.
+We will install a node named cls2, with ip 192.168.0.2.
+You need a tarball of a linux box.
+Ssh services, a user deploy are mandatory.
 something like <tt>myLinux.tgz</tt> that can be created simply like this:
 <verb>
 #cd /
@@ -480,31 +486,16 @@ The cluster need a reference environnement to boot up properly.
 It's a chicken eggs problem.
 A solution, is 
 <itemize>
-<item>Set the nodes in deployement state with the <tt>pxe_setup.pl</tt> tools (grep label in deploy.conf).
- <verb>#setup_pxe.pl 129.88.69.111:label_deploy_ecluster_hda2 </verb>
-<item>Test the communication with <tt>rsh</tt>.
- <verb>#rsh nodeName /bin/ash </verb>
-<item>fdisk the node.
- <verb>#fdisk /dev/hda </verb>
-<item>mkfs the node.
- <verb>#mkfs /dev/hda1 </verb>
-<item>mount the reference partition.
- <verb>#mkdir /mnt/hda1 && mount /dev/hda1 /mnt/hda1 </verb>
-<item>push a reference image on it.
- <verb>rsh nodeName "cd /mnt/hda1 ; tar xzvf -" < /pathTo/myLinux.tgz </verb>
-<item>umount it.
- <verb>#rsh nodeName /sbin/umount /mnt/hda1 </verb>
-<item>Set the node in reference state with <tt>pxe_setup.pl</tt>.
- <verb>#setup_pxe.pl 129.88.69.111:label_deploy_ecluster_ref </verb>
-<item>reboot the node.
- <verb>#rsh nodeName /sbin/reboot </verb>
+<item>Set the nodes in deployement state with the <tt>setup_pxe.pl</tt> tools (grep label in deploy.conf).
+ <verb>#setup_pxe.pl 192.168.0.2:label_deploy_x86 </verb>
+<item>reboot the node whith what you want.
+<item>When the node is reachable with ping and <tt>rsh -l root cls2 ls</tt> you can bootstrap the node kadeploy.
+ <verb>kadeploy -e myLinux -p hda2 -m cls2 -bootstrap</verb>
 </itemize>
 
 <p>
-Now you can ssh the node, and kadeploy a new environnement.
-If you want to simplify your administrator life.
-Use a sudoers and sudowrapper.sh for kadeploy, a simple one is in <tt>tools/cookbook/conf/</tt>.
-set ssh in public key authentification for the master and the compute nodes.
+When this step is succefully done, you can ssh the node, and kadeploy a new environnement.
+Your training is completed.
 
 
 
