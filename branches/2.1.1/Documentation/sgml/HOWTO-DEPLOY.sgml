@@ -246,29 +246,19 @@ The cluster nodes have Ip from 192.168.0.1 to 192.168.0.250.
 The gateway, dns, dhcp, tftp, mysql services are located on the node 192.168.0.254.
 
 
-<sect2>Database creation
-<p>
-The mysql schema are in <tt>share/mysql/</tt>.
-You have to feed mysql with creation files, and patch.
-
-
-<p><tt># mysql -u root -p < share/mysql/deploy_db_creation.sql</tt>
-<p><tt>Enter password: ********</tt>
-
-<p><tt># mysql -u root -p < share/mysql/rights_db_creation.sql</tt>
-<p><tt>Enter password: ********</tt>
-
-<p><tt># mysql -u root -p < share/mysql/patch_kadeploy_version.sql<tt>
-<p><tt>Enter password: ********</tt>
-
-Next step will be to fill in the database. 
-That can be done easily using the kaaddnode command.
-See the man pages for more about it.
 
 <!-- =========================== -->
 <sect2>How to configure access to databse ?
 <p>
-In order for the deployment system to access to the database, correct information e.g. hostname, database name, login and password should be filled in the configuration file for each database. 
+In order for the deployment system to access to the database, correct information e.g. hostname, database name, login and password should be filled in the configuration file for the database. 
+
+
+<sect2>Database creation
+<p>
+The mysql schema are in <tt>share/mysql/</tt>.
+You have to feed mysql with creation files, and patch.
+You have to use kadatabase and kaaddnode command for this see man page for examples.
+
 
 
 
@@ -429,7 +419,7 @@ The deployment itself i.e. of a given environment on target partitions of a set 
 A complete deployment is composed of the following steps :
 <itemize>
   <item>reboot on the deployment kernel via pxe protocol
-  <item>pre-installation actions (bench, partitionning and/or file system building if needed etc.)
+  <item>pre-installation actions (partitionning and/or file system building if needed etc.)
   <item>environment copy
   <item>post-installation script sending and execution
   <item>reboot on the freshly installed environment
@@ -437,7 +427,6 @@ A complete deployment is composed of the following steps :
 <p>
 If the deployment fails on some nodes, these are rebooted on a default environment.
 <p>
-Please refer to the <ref id="About_the_customization_scripts" name="customization scripts section"> for further details about preinstall and postinstall scripts.
 <!-- =========================== -->
 
 <sect1>Preinstall & Postinstall
@@ -544,6 +533,8 @@ The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types 
 <p><tt>kadeploy</tt> - deploys an environment image
 <p><tt>kaconsole</tt> - opens a remote console 
 <p><tt>kareboot</tt> - reboots according to requested reboot type
+<p><tt>katftp</tt> - create the minimum files required for PXE boot.
+<p><tt>kadatabase</tt> - manage mysql schema.
 <p>
 <sect2>Use summary
 <p>The first time...
@@ -566,7 +557,7 @@ The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types 
 <verb>
 # karecordenv -n debian -d "custom debian" -fb file://home/toto/images/custom_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz -size 750 -k /boot/vmlinuz 
 # kaaddnode cluster_description.txt
-# kacreateenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz --root-directory /
+# karecordenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz --root-directory /
 # kadeploy -e new_debian -m node1 -m node2 -p hda7
 # kaconsole -m node2
 # kareboot -s -e custom_debian -m node2
