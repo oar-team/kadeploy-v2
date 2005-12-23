@@ -138,6 +138,7 @@ if (@env_list)
 	    print_environment($envinfo);
 	}
 	libkadeploy2::deploy_iolib::disconnect($base);
+	exit(0);
     }
     
 
