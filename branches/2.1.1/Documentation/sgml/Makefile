@@ -13,6 +13,8 @@ install:
 
 distdir:
 
+distclean:
+
 clean:
 	rm -f *.aux *.dvi *.toc *.log
 	rm -rf ../html/*
