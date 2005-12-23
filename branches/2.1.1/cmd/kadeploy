@@ -74,7 +74,8 @@ my $depmethod;    #command variable for deployment method
 		  #	0    	default (normal kadeploy 2reboots)
 		  #     1	kadeploy with no 1st reboot 
 		  #     2	kadeploy with no 1st, no 2nd reboot
-my $bootstrap=0;  # bootstrap deploy a system in deploy environment (no first reboot)
+
+my $bootstrap=0;  # deploy an environment from the linuxdeploy env
 my $nodetype;
 my $help;
 
@@ -173,7 +174,10 @@ else
 ## effectue un reboot deploiement soft
 if ($depmethod==0)
 {	
-    libkadeploy2::bootlib::reboot(\@host_list,"1","0","1");
+    if ($bootstrap==0) 
+    { 
+	libkadeploy2::bootlib::reboot(\@host_list,"1","0","1");
+      }
     $pre_pipe="/pre_pipe";
     $dest_pipe="/dest_pipe";
     $post_pipe="/post_pipe";        
@@ -270,7 +274,7 @@ else
 	print "There are some missing nodes, rebooting them hard!\n";
 	# hardreboot of the missing nodes
 	my @timedoutnodes = $nodes_set->getFailedNodes();
-	libkadeploy2::bootlib::reboot(\@timedoutnodes,"0","1","1");
+	if ($bootstrap==0) { libkadeploy2::bootlib::reboot(\@timedoutnodes,"0","1","1"); }
 
     # let's wait for another timeout
 	$reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
@@ -639,7 +643,8 @@ print "Use : kadeploy
 \t[-f|--file node_file]                 Choose -m XOR -f
 \t[-e|--environment environment_name]
 \t[-p|--partition partition]
-\t[-d 0|1] Optimisation support\n";
+\t[-d 0|1] Optimisation support
+\t[-bootstrap] deploy a node from deployment kernel\n";
 #\t[-bootstrap] Deploy nodes in deploy environment\n";
 }
 
