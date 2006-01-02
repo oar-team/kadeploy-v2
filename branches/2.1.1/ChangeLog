@@ -1,5 +1,9 @@
 version 2.1.1:
 --------------
+* sudowrapper
+* kaenvironment and karecordenv improved
+* katftp ( fast installation )
+* kadatabase ( fast installation )
 * optimisation support
 * Added Changelog files
 * Added kenel and initrd for 64 bit opteron
