@@ -69,6 +69,7 @@ sub check_conf {
 		  #   4                                      - 4 check pas / debut mais / fin
 		  #   5                                      - 5 check pas de / ni debut ni fin
 		  #   6                                      - 6 check / debut & peu importe fin
+		  "deploy_user"         => 1,
 		  "kadeploy2_directory" => 6,
 		  "first_check_timeout" => 1,
 		  "last_check_timeout" => 1,
