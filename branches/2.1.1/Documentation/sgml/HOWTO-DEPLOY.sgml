@@ -358,6 +358,8 @@ Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 <em>kadeploy</em> requires to perform some changes on the server, to control the way the nodes are booting. 
 Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. 
 The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
+Kadeploy 2 support sudo wrapper system.
+A sample configuration files is provided to ease the pain.
 
 <!-- =========================== -->
 <sect>Using kadeploy 2
