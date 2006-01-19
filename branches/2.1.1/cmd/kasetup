@@ -1,0 +1,275 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+
+my $kadeployconfdir="/etc/kadeploy";
+my $deployconf=$kadeployconfdir."/deploy.conf";
+my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
+
+my $checkdeployconf;
+my $checksudoers;
+my $generatesudoers;
+my $help;
+
+
+sub help();
+sub check_etc_deploy();
+sub checksudoers();
+sub checkdeployconf();
+sub checkwriteaccess();
+
+GetOptions('checkdeployconf!'    => \$checkdeployconf,
+           'checksudoers!'       => \$checksudoers,
+	   'printvalidsudoers!'  => \$generatesudoers,
+	   'checkwriteaccess!'   => \$checkwriteaccess,
+	   'h!'                  => \$help,
+	   );
+
+if (!$checkdeployconf &&
+    !$checksudoers)
+{
+    help();
+    exit 1;
+}
+
+if (!check_etc_deploy()) { exit 1; }
+use libkadeploy2::conflib;
+if ($checkdeployconf) { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
+if ($checksudoers)    { if (!checksudoers()) { print "Failed\n"; exit 1; } else { print "OK\n";}  }
+
+
+exit 0;
+
+
+################################################################################
+
+sub check_etc_deploy()
+{
+    my $ok=1;
+
+    if (! -d $kadeployconfdir)
+    {
+	print "kadeploy configuration directory $kadeployconfdir is not created\n";
+	$ok=0;
+    }
+    if ( ! -e $deployconf)
+    {
+	print "$deployconf not found\n";
+	$ok=0;
+    }
+    if ( ! -e $deploycmdconf)
+    {
+	print "$deploycmdconf not found\n";
+	$ok=0;
+    }
+    return($ok);
+}
+
+sub checkdeployconf()
+{
+    my $kadeploy2_directory;
+    my $tftpdir;
+    my $pxe_rep;
+    my $deploy_user;
+    my $userok=0;
+    my $ok=1;
+    my $line;
+    my $remotesentinelle;
+    my $remotemcat;
+    my $deploy_sentinelle_cmd;
+    my $prod_sentinelle_cmd;
+    my $DK="/usr/local/bin/DKsentinelle";    
+    my $RMC="/usr/local/bin/mcatseg";
+    my $pre_install_archive;
+    my $post_install_archive;
+    my $tftp_relative_path;
+
+    $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
+    $tftpdir=libkadeploy2::conflib::get_conf("tftp_repository");
+    $pxe_rep=libkadeploy2::conflib::get_conf("pxe_rep");
+    $remotesentinelle=libkadeploy2::conflib::get_conf("remote_sentinelle_rsh");
+    $remotemcat=libkadeploy2::conflib::get_conf("remote_mcat");
+    $deploy_sentinelle_cmd=libkadeploy2::conflib::get_conf("deploy_sentinelle_cmd");
+    $prod_sentinelle_cmd=libkadeploy2::conflib::get_conf("prod_sentinelle_cmd");
+    $pre_install_archive=libkadeploy2::conflib::get_conf("pre_install_archive");
+    $post_install_archive=libkadeploy2::conflib::get_conf("post_install_archive");
+    $tftp_relative_path=libkadeploy2::conflib::get_conf("tftp_relative_path");
+
+    #CHECK KADEPLOY DIR
+    if (! -d $kadeploy2_directory)
+    {
+	print "* kadeploy directory $kadeploy2_directory not found\n";
+	$ok=0;	
+    }
+    else
+    {
+	print "* kadeploy directory $kadeploy2_directory exist\n";
+    }
+
+    #CHECK TFTP
+    if (! -d  $tftpdir)
+    {
+	print "* tftp directory $tftpdir not found\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* tftp directory $tftpdir exist\n";       
+    }
+    #CHECK TFTP PXE
+    if (! -d $tftpdir.$pxe_rep)
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep." not found\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep. " exist\n";
+    }
+
+    #CHECK TFTP PXE BOOT
+    if (! -d $tftpdir.$tftp_relative_path)
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path." not found\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path. " exist\n";
+    }
+
+
+    #CHECK USER
+    if (open(FH,"getent passwd | grep $deploy_user |"))
+    {
+	while ($line=<FH>)
+	{
+	    if ($line=~/^$deploy_user/)
+	    {
+		$userok=1;
+	    }
+	}
+	close(FH);
+	print "* $deploy_user user exist\n";
+    }
+    
+    #CHECK DKsentinelle 
+    if ( -x "$DK" &&
+	 ( ! -l "$DK") && 
+	 open(FH,"$DK -h 2>&1|") )
+    {
+	while ($line=<FH>) { }
+	close(FH);
+	print "* DKsentinelle was found\n";
+    }
+    else
+    {
+	print "* You have to copy DKsentinelle to $DK... And check if it works.\n";
+	$ok=0;
+    }
+
+    if ($remotesentinelle eq $DK)
+    {
+	print "* remote_sentinelle_rsh is correct\n";
+    }
+    else
+    {
+	print "* remote_sentinelle_rsh must be $DK\n";
+	$ok=0;
+    }
+
+    if ($deploy_sentinelle_cmd eq $DK)
+    {
+	print "* deploy_sentinelle_cmd is correct\n";
+    }
+    else
+    {
+	print "* deploy_sentinelle_cmd is not correct, set it to $DK\n";
+	$ok=0;
+    }
+
+    if ($prod_sentinelle_cmd eq $DK)
+    {
+	print "* prod_sentinelle_cmd is correct\n";
+    }
+    else
+    {
+	print "* prod_sentinelle_cmd is not correct, set it to $DK\n";
+    }
+
+
+    #CHECK MCAT
+    if ($remotemcat eq $RMC)
+    {
+	print "* remote_mcat is correct\n";
+    }
+    else
+    {
+	print "* remote_mcat must be $RMC\n";
+	$ok=0;
+    }
+    
+    #CHECK PREINSTALL
+    if (-e $pre_install_archive)
+    {
+	print "* pre_install_archive exist\n";
+    }
+    else
+    {
+	print "* You have to correct your pre_install_archive path\n";
+	$ok=0;
+    }
+
+    #CHECK POSTINSTALL
+    if (-e $post_install_archive)
+    {
+	print "* post_install_archive exist\n";
+    }
+    else
+    {
+	print "* You have to correct your post_install_archive path\n";
+	$ok=0;	
+    }
+
+    return $ok;
+         
+}
+
+
+sub checksudoers()
+{
+    my $sudoers="/etc/sudoers";
+    my $ok=1;
+
+    if ( -e $sudoers)
+    {
+	print "* sudoers exist\n";
+    }
+    else
+    {
+	print "* sudoers was not found : $sudoers\n";
+	$ok=0;
+    }
+
+    return $ok;
+}
+
+sub checkwriteaccess()
+{
+    $kadeploy2_directory=libkadeploy2::conflib::get_conf("tftp_repository");
+    $kadeploy2_directory=libkadeploy2::conflib::get_conf("pxe_rep_intel");
+    =libkadeploy2::conflib::get_conf("tftp_relative_path");
+}
+
+sub help()
+{
+	print "$0
+\t-checkdeployconf               check $deployconf
+\t-checksudoers                  print a valid sudoers
+\t-printvalidsudoers             generate a sudoers from deploy.conf
+";
+}
+
