@@ -59,6 +59,9 @@ if(!(check_conf() == 1)){
 ## parameters : /
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_conf {
+    my $deployconf="/etc/kadeploy/deploy.conf";
+    my $deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
+
     my %critic = (
 		  #######                   legende                    ########
                   #   nb  type de data                   - action realisee
@@ -69,13 +72,15 @@ sub check_conf {
 		  #   4                                      - 4 check pas / debut mais / fin
 		  #   5                                      - 5 check pas de / ni debut ni fin
 		  #   6                                      - 6 check / debut & peu importe fin
-		  "deploy_user"         => 1,
+		  "remote_sentinelle_rsh" => 3,
+		  "remote_sentinelle_rsh_default_args" => 1,
+		  "remote_mcat" => 3,
+
 		  "kadeploy2_directory" => 6,
 		  "first_check_timeout" => 1,
 		  "last_check_timeout" => 1,
 		  "enable_nmap" => 1,
 		  "nmap_cmd" => 3,
-		  "mcat_directory" => 6,
 
 		  "deploy_sentinelle_cmd" => 3,
 		  "deploy_sentinelle_default_args" => 1,
@@ -115,13 +120,13 @@ sub check_conf {
     my $undefined = 0;
     my $missing = 0;
 
-    if(!(-e "/etc/kadeploy/deploy.conf")){
+    if(!(-e $deployconf)){
 	print "ERROR : variable configuration file does not exist\n";
 	return 0;
     }
 
     print "Checking variable definition...\n";
-    open(DEPLOYCONF,"/etc/kadeploy/deploy.conf");
+    open(DEPLOYCONF,$deployconf);
     %params = ();
 
     foreach my $line (<DEPLOYCONF>){
@@ -185,6 +190,37 @@ sub check_conf {
 
     #checks if the values of the critic variables are correct (when possible) ?
     #print "Checking variables values...\n";
+
+    my $DK="/usr/local/bin/DKsentinelle";
+    my $MC="/usr/local/bin/mcatseg";
+
+    my $line;
+    
+    if ( -x "$DK" &&
+	 ( ! -l "$DK") && 
+	 open(FH,"$DK -h 2>&1|") )
+    {
+	while ($line=<FH>) { }
+	close(FH);
+    }
+    else
+    {
+	print "You have to copy DKsentinelle to $DK...\nAnd check if it works.\n";
+	exit 1;
+    }
+
+    
+    if ( -x "$MC" &&
+	 open(FH,"$DK  2>&1|") )
+    {
+	while ($line=<FH>) { }
+	close(FH);
+    }
+    else
+    {
+	print "Please copy or link mcatseg to $MC...\n";
+	exit 1;
+    }
 
     return 1;
 }
