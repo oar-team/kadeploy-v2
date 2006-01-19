@@ -316,7 +316,7 @@ sub setNodesErrorMessage {
 # fills $self->{nodesPinged} with hosts'IPs
 sub checkNmap {
     my $self = shift;
-    my $command = "sudo " . $nmapCmd . " -sP ";
+    my $command = $nmapCmd . " -sP ";
     my $commandArgs = join(" ",@{$self->{nodesToPing}});
     my $pingedIP;
     $self->{nodesPinged} = []; # should be reset when using nmap or multiple node's occurrences appear
@@ -708,19 +708,16 @@ sub runCommandSimplessh {
 	
 
 
-# for testing purposes
 sub runCommandMcat {
     my $self = shift;
     my $server_command = shift;
     my $nodes_command = shift;
     my $mcatPort = shift; # port to use for data transfert
     my $test=0;
-#    my $mcatDirectory = $kadeploy2Directory . "/tools/Mcat/";
-#    my $remoteCommand = $mcatDirectory . "mcatseg";
-    my $mcatDirectory = libkadeploy2::conflib::get_conf("mcat_directory");
-    my $parallelLauncher = $mcatDirectory."/";# . "mcat_rsh.pl";
+    my $kadeploydir = libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    my $parallelLauncher = $kadeploydir."/bin/";# . "mcat_rsh.pl";
 
-    my $remoteCommand = $mcatDirectory."/"."mcatseg";
+    my $remoteCommand = libkadeploy2::conflib::get_conf("remote_mcat");
     
 
     if($nodes_command =~ m/tmp/){
@@ -729,7 +726,7 @@ sub runCommandMcat {
            $parallelLauncher = $parallelLauncher.  "mcat_rsh.pl";
     }
  
-    my $executedCommand = $parallelLauncher . " -p $mcatPort -cp $remoteCommand -sc \"" . $server_command . "\" -dc \"" . $nodes_command . "\"";
+    my $executedCommand = $parallelLauncher . " -p $mcatPort -sc \"" . $server_command . "\" -dc \"" . $nodes_command . "\"";
     
     print "Command Mcat: $executedCommand";
     

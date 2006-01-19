@@ -500,9 +500,10 @@ sub reboot($$$$){
 	if ($test == 1) { # means that kill effectively signaled 1 job
 	    if ($hard) {
 		print "Warning: node $key did not hard reboot properly\n";
-	    } else {
-		print "Warning: node $key did not soft reboot properly\n";
-	    }
+	    } 
+#	    else {
+#		print "Warning: node $key did not soft reboot properly\n";
+#	    }
 	}
     }
    
