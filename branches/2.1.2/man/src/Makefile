@@ -8,6 +8,8 @@ all: $(DESTMAN1)
 clean:
 	rm -f ../man1/*.1 *~
 
+distclean:
+
 install:
 	@echo "nothing to do"
 

@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 use strict;
 use warnings;
 use Getopt::Long;
@@ -11,7 +10,12 @@ my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
 my $checkdeployconf;
 my $checksudoers;
 my $generatesudoers;
+my $checkwriteaccess;
+my $checkbinfiles;
 my $help;
+my $sudowrapping;
+my $copybinfiles;
+my $printvalidsudoers;
 
 
 sub help();
@@ -19,29 +23,54 @@ sub check_etc_deploy();
 sub checksudoers();
 sub checkdeployconf();
 sub checkwriteaccess();
+sub checkbinfiles();
+sub sudowrapping();
+sub copybinfiles();
+
+
 
 GetOptions('checkdeployconf!'    => \$checkdeployconf,
            'checksudoers!'       => \$checksudoers,
 	   'printvalidsudoers!'  => \$generatesudoers,
 	   'checkwriteaccess!'   => \$checkwriteaccess,
+	   'checkbinfiles!'      => \$checkbinfiles,
+	   'copybinfiles!'       => \$copybinfiles,
+	   'sudowrapping'        => \$sudowrapping,
 	   'h!'                  => \$help,
 	   );
+if ($help)
+{
+    help();
+    exit(0);
+}
 
-if (!$checkdeployconf &&
-    !$checksudoers)
+if ($checkdeployconf   ||
+    $checksudoers      || 
+    $printvalidsudoers ||
+    $checkwriteaccess  ||
+    $checkbinfiles     ||
+    $copybinfiles      ||
+    $sudowrapping      )
+{
+
+
+    if (!check_etc_deploy()) { print "there is problem with /etc/kadeploy\n"; exit 1; }
+    
+    use libkadeploy2::conflib;
+    if ($checkdeployconf) { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
+    if ($checksudoers)    { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
+    if ($checkbinfiles)   { if (checkdeployconf())  { checkbinfiles(); } }
+    if ($copybinfiles)    { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
+    if ($sudowrapping)    { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
+    
+    exit 0;
+}
+else
 {
     help();
     exit 1;
+    
 }
-
-if (!check_etc_deploy()) { exit 1; }
-use libkadeploy2::conflib;
-if ($checkdeployconf) { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
-if ($checksudoers)    { if (!checksudoers()) { print "Failed\n"; exit 1; } else { print "OK\n";}  }
-
-
-exit 0;
-
 
 ################################################################################
 
@@ -66,6 +95,98 @@ sub check_etc_deploy()
     }
     return($ok);
 }
+
+sub checkbinfiles()
+{
+     my $file;
+     my $command;
+     my $ret=1;
+     my @filetocheck=("DKsentinelle",
+		      "mcatseg");
+     foreach $file (@filetocheck)
+     {
+	 $command="ls /usr/local/bin/$file";
+	 if (system($command)!=0)
+	 {
+	     $ret=0;
+	 }
+     }
+     return $ret;
+}
+
+sub copybinfiles()
+{
+    my $kadeploy2_directory;
+    my $file;
+    my $command;
+    $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+
+    my @filetocopy=("DKsentinelle",
+		    "mcatseg");
+    foreach $file (@filetocopy)
+    {
+	$command="cp $kadeploy2_directory/bin/$file /usr/local/bin";
+	print "Exec : $command\n";
+	system($command);
+    }
+}
+
+
+sub sudowrapping()
+{
+    
+    my @listfiletowrap=("kaadduser",
+			"kacreateenv",
+			"kadelnode",
+			"kadeploy",
+			"kareboot",
+			"kasetup",
+			"katftp",
+			"sentinelle.pl",
+			"kaaddnode",
+			"kaconsole",
+			"kadatabase",
+			"kadeluser",
+			"kaenvironments",
+			"karecordenv",
+			"mcat_rsh.pl",
+			"mcat_ssh.pl");
+    my $kadeploy2_directory;
+    my $file;
+    my $command;
+    $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    foreach $file (@listfiletowrap)
+    {
+	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
+	print "Exec : $command\n";
+	system($command);
+
+    }
+}
+
+
+sub checkDKsentinelle()
+{
+    my $DK="/usr/local/bin/DKsentinelle";    
+    my $line;
+    my $ok;
+    #CHECK DKsentinelle 
+    if ( -x "$DK" &&
+	 ( ! -l "$DK") && 
+	 open(FH,"$DK -h 2>&1|") )
+    {
+	while ($line=<FH>) { }
+	close(FH);
+	print "* DKsentinelle was found\n";
+    }
+    else
+    {
+	print "* You have to copy DKsentinelle to $DK... And check if it works.\n";
+	$ok=0;
+    }
+    return $ok; 
+}
+
 
 sub checkdeployconf()
 {
@@ -156,21 +277,6 @@ sub checkdeployconf()
 	print "* $deploy_user user exist\n";
     }
     
-    #CHECK DKsentinelle 
-    if ( -x "$DK" &&
-	 ( ! -l "$DK") && 
-	 open(FH,"$DK -h 2>&1|") )
-    {
-	while ($line=<FH>) { }
-	close(FH);
-	print "* DKsentinelle was found\n";
-    }
-    else
-    {
-	print "* You have to copy DKsentinelle to $DK... And check if it works.\n";
-	$ok=0;
-    }
-
     if ($remotesentinelle eq $DK)
     {
 	print "* remote_sentinelle_rsh is correct\n";
@@ -259,9 +365,10 @@ sub checksudoers()
 
 sub checkwriteaccess()
 {
-    $kadeploy2_directory=libkadeploy2::conflib::get_conf("tftp_repository");
-    $kadeploy2_directory=libkadeploy2::conflib::get_conf("pxe_rep_intel");
-    =libkadeploy2::conflib::get_conf("tftp_relative_path");
+    my $tftp_repository;
+    my $pxe_rep;
+    $tftp_repository=libkadeploy2::conflib::get_conf("tftp_repository");
+    $pxe_rep=libkadeploy2::conflib::get_conf("pxe_rep");
 }
 
 sub help()
@@ -270,6 +377,8 @@ sub help()
 \t-checkdeployconf               check $deployconf
 \t-checksudoers                  print a valid sudoers
 \t-printvalidsudoers             generate a sudoers from deploy.conf
+\t-sudowrapping                  wrap files with kasudowrapper.sh
+\t-copybinfiles                  copy required files in /usr/local/bin
 ";
 }
 
