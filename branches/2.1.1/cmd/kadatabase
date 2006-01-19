@@ -27,6 +27,7 @@ my $patch21;
 my $patch211;
 my $login;
 my $password;
+my $ok=0;
 my $host=libkadeploy2::conflib::get_conf("deploy_db_host");
 my $mysqlschemapath=libkadeploy2::conflib::get_conf("kadeploy2_directory")."/share/mysql/";
 
@@ -47,12 +48,18 @@ GetOptions('addmysqlrights'        => \$addmysqlrights,
 	   );
 
 
+if ($clean_db_deploy)
+{
+    $login=$deploy_db_login;
+    $password=$deploy_db_password;
+    mysqlload("clean_db_deploy");
+    $ok=1;
+}
 
 if ($addmysqlrights        || 
     $delmysqlrights        ||
     $drop_db_deploy        ||
     $create_db_deploy      ||
-    $clean_db_deploy       ||
     $patch21               ||
     $patch211
     ) 
@@ -61,22 +68,21 @@ if ($addmysqlrights        ||
     $login    = mygetlogin();
     $password = mygetpassword();
 }
-else
-{
-    usage();
-    exit(0);
+
+
+
+if ($delmysqlrights)         { mysqlload("delmysqlrights"); $ok=1; }
+if ($addmysqlrights)         { mysqlload("addmysqlrights"); $ok=1; }
+if ($drop_db_deploy)         { mysqlload("drop_db_deploy"); $ok=1; }
+if ($create_db_deploy)       { mysqlload("create_db_deploy"); $ok=1;}
+if ($patch21)                { mysqlload("patch-kadeploy-2.1"); $ok=1;}
+if ($patch211)               { mysqlload("patch-kadeploy-2.1.1"); $ok=1;}
+
+if ($ok==0 ||
+    $help) 
+{ 
+    usage(); 
 }
-
-
-if ($delmysqlrights)         { mysqlload("delmysqlrights");   }
-if ($addmysqlrights)         { mysqlload("addmysqlrights");   }
-if ($drop_db_deploy)         { mysqlload("drop_db_deploy");   }
-if ($create_db_deploy)       { mysqlload("create_db_deploy"); }
-if ($clean_db_deploy)        { mysqlload("clean_db_deploy"); }
-if ($patch21)                { mysqlload("patch-kadeploy-2.1"); }
-if ($patch211)               { mysqlload("patch-kadeploy-2.1.1"); }
-
-
 
 
 
