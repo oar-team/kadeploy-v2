@@ -9,6 +9,8 @@ all: mkoutput $(TEXTOHTML) $(SGMLTOHTML)
 mkoutput:
 	mkdir -p $(OUTPUTDIR)
 
+distclean:
+
 install:
 
 distdir:
