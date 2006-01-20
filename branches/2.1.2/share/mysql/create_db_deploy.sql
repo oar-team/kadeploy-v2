@@ -1,4 +1,4 @@
-
+CREATE DATABASE SUBSTmydeploydbSUBST;
 CONNECT SUBSTmydeploydbSUBST;
 
 # --------------------------------------------------------
