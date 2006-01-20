@@ -75,7 +75,8 @@ my $depmethod;    #command variable for deployment method
 		  #     1	kadeploy with no 1st reboot 
 		  #     2	kadeploy with no 1st, no 2nd reboot
 
-my $bootstrap=0;  # deploy an environment from the linuxdeploy env
+my $bootstrap=0;  # deploy an environment from the linuxdeploy env (rsh) : no first reboot
+my $user;
 my $nodetype;
 my $help;
 
@@ -204,7 +205,7 @@ my %ip_addr;
 foreach my $host (@db_checked_hosts) { $ip_addr{$host} = [$dev,$part]; }
 
 ## begins deployment (updates deployed table)
-$environment = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$env);
+$environment = libkadeploy2::deploy_iolib::env_name_user_to_last_ver_id($base,$env,$user);
 
 my @nodes_ready = ();
 foreach my $key (keys %ip_addr)
@@ -677,24 +678,31 @@ sub check_options(){
 	       'partition=s' => \$device,
 	       'd=s' => \$depmethod,
 	       'bootstrap' => \$bootstrap,
+	       'l=s'       => \$user,
 	       'h' => \$help	       
 	       );
 
 
     if ($help) { usages(); exit(0); }
     
+    if (!$user)
+    {
+	print "ERROR : user needed (-l)\n";
+	exit 1;
+    }
+
     ## checks if needed options are defined
     if (!$env){
 	print "ERROR : environment name needed\n";
-	exit 0;
+	exit 1;
     }
     if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
 	print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
-	exit 0;
+	exit 1;
     }
     if (!$device){
 	print "ERROR : target partition unspecified\n";
-	exit 0;
+	exit 1;
     }
 if(!$depmethod){
     	print"No deployment method specified, proceeding with normal deployment";
@@ -705,7 +713,7 @@ if(!$depmethod){
     	print"   0     default (normal deployment 2reboots)\n";
 	print"   1     1st optimized deployment with no 1st reboot\n";
         print"   2     2nd optimized deployment with no 1st, no 2nd reboot\n";
-	exit 0;
+	exit 1;
     }
 
     
@@ -718,7 +726,7 @@ if(!$depmethod){
     if ($node_file){
 	if(!(-s $node_file)){
 	    print "ERROR : specified node file does not exist or is empty\n";
-	    exit 0;
+	    exit 1;
 	}
 	## goes through the file and get the hostnames
 	my $line;

@@ -39,6 +39,7 @@ sub autochoose_partition($%);
 sub env_name_ver_to_id($$$);
 sub env_name_to_last_ver_id($$);
 sub env_name_to_versions($$);
+sub env_name_user_to_last_ver_id($$$);
 sub env_id_to_name($$);
 sub env_id_to_size($$);
 sub env_id_to_version($$);
@@ -534,6 +535,43 @@ sub env_name_to_last_ver_id($$){
 	return $id;
     }
 }
+
+sub env_name_user_to_last_ver_id($$$)
+{
+    my $dbh = shift;
+    my $name = shift;
+    my $user = shift;
+    my $sth = $dbh->prepare("
+SELECT MAX(environment.version) as max_version
+FROM environment 
+WHERE environment.name = \"$name\"
+AND   environment.user = \"$user\"
+");
+    $sth->execute();
+    my $version = $sth->fetchrow_hashref();
+    $version = $version->{'max_version'};
+    $sth->finish();
+
+    if(!$version){
+	print "WARNING : there is no environment named $name with user $user\n";
+	return 0;
+    }else{
+	my $sth = $dbh->prepare("
+SELECT environment.id
+FROM environment 
+WHERE environment.name = \"$name\" 
+AND environment.version = \"$version\"
+AND environment.user = \"$user\"
+");
+	$sth->execute();
+	my $id = $sth->fetchrow_hashref();
+	$id = $id->{'id'};
+	$sth->finish();
+	return $id;
+    }
+
+}
+
 
 # env_undefined_to_id
 # gets the id of the special 'undefined' environment
@@ -1411,20 +1449,31 @@ sub add_environment($$$$$$$$$$$$$$$$){
     my $filesystem = shift;
     my $siteid = shift;
     my $optsupport = shift;
-    my $unixuser = shift;
+    my $user = shift;
 
     # debug print
     #print "$name , $version , $description , $author , $filebase , $filesite , $size , $initrdpath , $kernelpath , $kernelparam , $fdisktype , $filesystem , $siteid\n";
     
-    my $sth = $dbh->do("SELECT environment.name, environment.version FROM environment
-                        WHERE environment.name = \"$name\" AND environment.version = $version");
+    my $sth = $dbh->do("
+SELECT 
+environment.name, 
+environment.version 
+FROM environment
+WHERE 
+environment.name = \"$name\" 
+AND environment.version = $version
+AND environment.user = \"$user\"");
 
     if($sth == 1){
 	print "ERROR : environment $name version $version already exists\n";
 	return 0;
     }else{
 	my $successful = 0;
-	$successful = $dbh->do("INSERT environment (name,version,description,author,filebase,filesite,size,initrdpath,kernelpath,kernelparam,fdisktype,filesystem,siteid,optsupport,user) VALUES (\"$name\",\"$version\",\"$description\",\"$author\",\"$filebase\",\"$filesite\",$size,\"$initrdpath\",\"$kernelpath\",\"$kernelparam\",\"$fdisktype\",\"$filesystem\",$siteid,$optsupport,\"$unixuser\")");
+	$successful = $dbh->do("
+INSERT environment 
+(name,version,description,author,filebase,filesite,size,initrdpath,kernelpath,kernelparam,fdisktype,filesystem,siteid,optsupport,user) 
+VALUES 
+(\"$name\",\"$version\",\"$description\",\"$author\",\"$filebase\",\"$filesite\",$size,\"$initrdpath\",\"$kernelpath\",\"$kernelparam\",\"$fdisktype\",\"$filesystem\",$siteid,$optsupport,\"$user\")");
 	return $successful;
     }
 

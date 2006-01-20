@@ -205,8 +205,8 @@ sub check_conf {
     }
     else
     {
-	print "You have to copy DKsentinelle to $DK...\nAnd check if it works.\n";
-	exit 1;
+	print "!!! WARNING You have to copy DKsentinelle to $DK...\nAnd check if it works !!!\n";
+	sleep(1);
     }
 
     
@@ -218,8 +218,8 @@ sub check_conf {
     }
     else
     {
-	print "Please copy or link mcatseg to $MC...\n";
-	exit 1;
+	print "!!! WARNING You have to copy or link mcatseg to $MC!!!\n";
+	sleep(1);
     }
 
     return 1;

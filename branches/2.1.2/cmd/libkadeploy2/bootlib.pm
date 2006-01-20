@@ -255,7 +255,7 @@ sub generate_grub_files_chainload($$$$){
 
 	 
 
-    print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nrootnoverify ($dev$letter,$part)\nchainloader +1\nboot\n";
+    print MENU "\ntitle $title\nparttype (hd$letter,$part) 0x$hexfdisktype\nrootnoverify (hd$letter,$part)\nchainloader +1\nboot\n";
     
     close MENU;
 	       
@@ -332,9 +332,9 @@ sub generate_grub_files($$$$$$$$){
     }
 
     if (!$param){
-	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root\n";
+	print MENU "\ntitle $title\nparttype (hd$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root\n";
     }else{
-	print MENU "\ntitle $title\nparttype ($dev$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root $param\n";
+	print MENU "\ntitle $title\nparttype (hd$letter,$part) 0x$hexfdisktype\nroot (hd$letter,$part)\nkernel $kernel root=/dev/$root $param\n";
     }
     if ($initrd_path){
 	print MENU "initrd $initrd_path\n";
