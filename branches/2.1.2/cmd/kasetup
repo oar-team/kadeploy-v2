@@ -6,16 +6,37 @@ use Getopt::Long;
 my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
 my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
+my @listfiletowrapuser=(
+			"kaconsole",
+			"kacreateenv",
+			"kadeploy",
+			"kaenvironments",
+			"kareboot",
+			"karecordenv",
+			"mcat_rsh.pl",
+			"mcat_ssh.pl",
+			"sentinelle.pl",
+			);			
+
+my @listfiletowraproot=(
+			"kaadduser",
+			"kaaddnode",
+			"kadatabase",
+			"kadelnode",
+			"kadeluser",
+			"kasetup",
+			"katftp",
+			);
 
 my $checkdeployconf;
 my $checksudoers;
-my $generatesudoers;
+my $printvalidsudoers;
 my $checkwriteaccess;
 my $checkbinfiles;
 my $help;
 my $sudowrapping;
 my $copybinfiles;
-my $printvalidsudoers;
+
 
 
 sub help();
@@ -26,12 +47,12 @@ sub checkwriteaccess();
 sub checkbinfiles();
 sub sudowrapping();
 sub copybinfiles();
-
+sub printvalidsudoers();
 
 
 GetOptions('checkdeployconf!'    => \$checkdeployconf,
            'checksudoers!'       => \$checksudoers,
-	   'printvalidsudoers!'  => \$generatesudoers,
+	   'printvalidsudoers!'  => \$printvalidsudoers,
 	   'checkwriteaccess!'   => \$checkwriteaccess,
 	   'checkbinfiles!'      => \$checkbinfiles,
 	   'copybinfiles!'       => \$copybinfiles,
@@ -57,11 +78,12 @@ if ($checkdeployconf   ||
     if (!check_etc_deploy()) { print "there is problem with /etc/kadeploy\n"; exit 1; }
     
     use libkadeploy2::conflib;
-    if ($checkdeployconf) { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
-    if ($checksudoers)    { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
-    if ($checkbinfiles)   { if (checkdeployconf())  { checkbinfiles(); } }
-    if ($copybinfiles)    { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
-    if ($sudowrapping)    { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
+    if ($checkdeployconf)  { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
+    if ($checksudoers)     { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
+    if ($checkbinfiles)    { if (checkdeployconf())  { checkbinfiles(); } }
+    if ($copybinfiles)     { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
+    if ($sudowrapping)     { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
+    if ($printvalidsudoers){ if (checkdeployconf()) { printvalidsudoers(); } }
     
     exit 0;
 }
@@ -73,6 +95,38 @@ else
 }
 
 ################################################################################
+
+sub printvalidsudoers()
+{
+    my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+    my $tmpcmd;
+    my $i;
+    print "
+Cmnd_Alias DEPLOYCMDUSER = ";
+    for ($i=0; $i<=$#listfiletowrapuser; $i++)
+    {
+	print "$kadeploydir/bin/$listfiletowrapuser[$i]";
+	if ($i!=$#listfiletowrapuser) { print ", "; }
+    }    
+    print "\n";
+
+
+    print "
+Cmnd_Alias DEPLOYCMDROOT = ";
+    for ($i=0; $i<=$#listfiletowraproot; $i++)
+    {
+	print "$kadeploydir/bin/$listfiletowraproot[$i]";
+	if ($i!=$#listfiletowraproot) { print ", "; }
+    }    
+    print "\n";
+
+    print "
+$kadeployuser  ALL=(ALL) NOPASSWD: DEPLOYCMDUSER
+ALL ALL=($kadeployuser) NOPASSWD: DEPLOYCMDUSER
+\n";
+
+}
 
 sub check_etc_deploy()
 {
@@ -135,27 +189,11 @@ sub copybinfiles()
 sub sudowrapping()
 {
     
-    my @listfiletowrap=("kaadduser",
-			"kacreateenv",
-			"kadelnode",
-			"kadeploy",
-			"kareboot",
-			"kasetup",
-			"katftp",
-			"sentinelle.pl",
-			"kaaddnode",
-			"kaconsole",
-			"kadatabase",
-			"kadeluser",
-			"kaenvironments",
-			"karecordenv",
-			"mcat_rsh.pl",
-			"mcat_ssh.pl");
     my $kadeploy2_directory;
     my $file;
     my $command;
     $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-    foreach $file (@listfiletowrap)
+    foreach $file (@listfiletowrapuser)
     {
 	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
 	print "Exec : $command\n";
@@ -206,6 +244,7 @@ sub checkdeployconf()
     my $pre_install_archive;
     my $post_install_archive;
     my $tftp_relative_path;
+    my $user;
 
     $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
@@ -218,50 +257,18 @@ sub checkdeployconf()
     $pre_install_archive=libkadeploy2::conflib::get_conf("pre_install_archive");
     $post_install_archive=libkadeploy2::conflib::get_conf("post_install_archive");
     $tftp_relative_path=libkadeploy2::conflib::get_conf("tftp_relative_path");
+    $user=$ENV{USER};
 
     #CHECK KADEPLOY DIR
     if (! -d $kadeploy2_directory)
     {
-	print "* kadeploy directory $kadeploy2_directory not found\n";
+	print "* kadeploy directory $kadeploy2_directory not found.\n";
 	$ok=0;	
     }
     else
     {
-	print "* kadeploy directory $kadeploy2_directory exist\n";
+	print "* kadeploy directory $kadeploy2_directory exist.\n";
     }
-
-    #CHECK TFTP
-    if (! -d  $tftpdir)
-    {
-	print "* tftp directory $tftpdir not found\n";
-	$ok=0;
-    }
-    else
-    {
-	print "* tftp directory $tftpdir exist\n";       
-    }
-    #CHECK TFTP PXE
-    if (! -d $tftpdir.$pxe_rep)
-    {
-	print "* pxe directory ".$tftpdir.$pxe_rep." not found\n";
-	$ok=0;
-    }
-    else
-    {
-	print "* pxe directory ".$tftpdir.$pxe_rep. " exist\n";
-    }
-
-    #CHECK TFTP PXE BOOT
-    if (! -d $tftpdir.$tftp_relative_path)
-    {
-	print "* tftp relative path ".$tftpdir.$tftp_relative_path." not found\n";
-	$ok=0;
-    }
-    else
-    {
-	print "* tftp relative path ".$tftpdir.$tftp_relative_path. " exist\n";
-    }
-
 
     #CHECK USER
     if (open(FH,"getent passwd | grep $deploy_user |"))
@@ -274,70 +281,146 @@ sub checkdeployconf()
 	    }
 	}
 	close(FH);
-	print "* $deploy_user user exist\n";
-    }
-    
-    if ($remotesentinelle eq $DK)
-    {
-	print "* remote_sentinelle_rsh is correct\n";
+	if ($userok) { 	print "* $deploy_user user exist.\n"; }
     }
     else
     {
-	print "* remote_sentinelle_rsh must be $DK\n";
+	print "* $deploy_user user don't exist.\n";	
 	$ok=0;
+	return $ok;
+    }
+
+    if (!($user eq $deploy_user))
+    {
+	print "* WARNING you have to be $deploy_user user !!!\n";
+    }
+    else
+    {
+	print "* You are $deploy_user user.\n";
+    }
+
+
+    #CHECK TFTP
+    if (! -d  $tftpdir)
+    {
+	print "* tftp directory $tftpdir not found\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* tftp directory $tftpdir exist.\n";       
+    }
+    #CHECK TFTP PXE
+    if (! -d $tftpdir.$pxe_rep)
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep." not found.\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep. " exist.\n";
+    }
+    #CHECK TFTP PXE WRITE ACCESS
+    if (! -w $tftpdir.$pxe_rep)
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep." not writable.\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* pxe directory ".$tftpdir.$pxe_rep. " writable.\n";
+    }
+
+    #CHECK TFTP PXE BOOT
+    if (! -d $tftpdir.$tftp_relative_path)
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path." not found.\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path. " exist.\n";
+    }
+    if (! -w $tftpdir.$tftp_relative_path)
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path." not writable.\n";
+	$ok=0;
+    }
+    else
+    {
+	print "* tftp relative path ".$tftpdir.$tftp_relative_path. " writable.\n";
+    }
+
+
+    
+    if ($remotesentinelle eq $DK)
+    {
+	print "* remote_sentinelle_rsh is correct.\n";
+    }
+    else
+    {
+	print "* remote_sentinelle_rsh must be $DK.\n";
+	$ok=0;
+	return $ok;
     }
 
     if ($deploy_sentinelle_cmd eq $DK)
     {
-	print "* deploy_sentinelle_cmd is correct\n";
+	print "* deploy_sentinelle_cmd is correct.\n";
     }
     else
     {
-	print "* deploy_sentinelle_cmd is not correct, set it to $DK\n";
+	print "* deploy_sentinelle_cmd is not correct, set it to $DK.\n";
 	$ok=0;
+	return $ok;
     }
 
     if ($prod_sentinelle_cmd eq $DK)
     {
-	print "* prod_sentinelle_cmd is correct\n";
+	print "* prod_sentinelle_cmd is correct.\n";
     }
     else
     {
-	print "* prod_sentinelle_cmd is not correct, set it to $DK\n";
+	print "* prod_sentinelle_cmd is not correct, set it to $DK.\n";
+	$ok=0;
+	return $ok;
     }
 
 
     #CHECK MCAT
     if ($remotemcat eq $RMC)
     {
-	print "* remote_mcat is correct\n";
+	print "* remote_mcat is correct.\n";
     }
     else
     {
-	print "* remote_mcat must be $RMC\n";
+	print "* remote_mcat must be $RMC.\n";
 	$ok=0;
+	return $ok;
     }
     
     #CHECK PREINSTALL
     if (-e $pre_install_archive)
     {
-	print "* pre_install_archive exist\n";
+	print "* pre_install_archive exist.\n";
     }
     else
     {
-	print "* You have to correct your pre_install_archive path\n";
+	print "* You have to correct your pre_install_archive path.\n";
 	$ok=0;
+	return $ok;
     }
 
     #CHECK POSTINSTALL
     if (-e $post_install_archive)
     {
-	print "* post_install_archive exist\n";
+	print "* post_install_archive exist.\n";
     }
     else
     {
-	print "* You have to correct your post_install_archive path\n";
+	print "* You have to correct your post_install_archive path.\n";
 	$ok=0;	
+	return $ok;
     }
 
     return $ok;
