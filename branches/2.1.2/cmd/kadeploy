@@ -705,7 +705,7 @@ sub check_options(){
 	exit 1;
     }
 if(!$depmethod){
-    	print"No deployment method specified, proceeding with normal deployment";
+    	print"No deployment method specified, proceeding with normal deployment\n";
 	$depmethod=0;
     }   
     if($depmethod<0 || $depmethod>2){

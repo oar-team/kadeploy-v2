@@ -36,7 +36,7 @@ my $checkbinfiles;
 my $help;
 my $sudowrapping;
 my $copybinfiles;
-
+my $createtftp;
 
 
 sub help();
@@ -48,7 +48,7 @@ sub checkbinfiles();
 sub sudowrapping();
 sub copybinfiles();
 sub printvalidsudoers();
-
+sub createtftp();
 
 GetOptions('checkdeployconf!'    => \$checkdeployconf,
            'checksudoers!'       => \$checksudoers,
@@ -57,6 +57,7 @@ GetOptions('checkdeployconf!'    => \$checkdeployconf,
 	   'checkbinfiles!'      => \$checkbinfiles,
 	   'copybinfiles!'       => \$copybinfiles,
 	   'sudowrapping'        => \$sudowrapping,
+	   'createtftp'          => \$createtftp,
 	   'h!'                  => \$help,
 	   );
 if ($help)
@@ -71,12 +72,14 @@ if ($checkdeployconf   ||
     $checkwriteaccess  ||
     $checkbinfiles     ||
     $copybinfiles      ||
+    $createtftp        ||
     $sudowrapping      )
 {
 
 
     if (!check_etc_deploy()) { print "there is problem with /etc/kadeploy\n"; exit 1; }
-    
+
+
     use libkadeploy2::conflib;
     if ($checkdeployconf)  { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
     if ($checksudoers)     { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
@@ -84,6 +87,7 @@ if ($checkdeployconf   ||
     if ($copybinfiles)     { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
     if ($sudowrapping)     { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
     if ($printvalidsudoers){ if (checkdeployconf()) { printvalidsudoers(); } }
+    if ($createtftp)       { createtftp(); }
     
     exit 0;
 }
@@ -95,6 +99,43 @@ else
 }
 
 ################################################################################
+
+sub createtftp()
+{
+    my $kadeployuser;
+    my $kadeploydir; 
+    my $tftpdir;
+    my $pxedir;
+    my $tftpbootdir;
+    my $pxelinux;
+    my $memdisk;
+    my $deployx86;
+    my $deployx8664;
+
+    $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+    $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    $tftpdir=libkadeploy2::conflib::get_conf("tftp_repository");
+    $pxedir=$tftpdir."/".libkadeploy2::conflib::get_conf("pxe_rep");
+    $tftpbootdir=$tftpdir."/".libkadeploy2::conflib::get_conf("tftp_relative_path");
+    $pxelinux="$kadeploydir/lib/pxelinux/pxelinux.0";
+    $memdisk="$kadeploydir/lib/pxelinux/memdisk";
+    $deployx86="$kadeploydir/lib/deployment_kernel/x86/";
+    $deployx8664="$kadeploydir/lib/deployment_kernel/x86_64/";
+
+
+    system("mkdir -p $tftpdir");
+    system("mkdir -p $pxedir");
+    system("mkdir -p $tftpbootdir");
+
+    system("cp $pxelinux $tftpdir");
+    system("cp $memdisk  $tftpbootdir");
+    system("cp $deployx86/*   $tftpbootdir");
+    system("cp $deployx8664/* $tftpbootdir");
+    system("chown -R $kadeployuser $tftpdir");
+    print("Done !!!!\n");
+
+}
+
 
 sub printvalidsudoers()
 {
@@ -462,6 +503,7 @@ sub help()
 \t-printvalidsudoers             generate a sudoers from deploy.conf
 \t-sudowrapping                  wrap files with kasudowrapper.sh
 \t-copybinfiles                  copy required files in /usr/local/bin
+\t-createtftp                    copy all the files required for tftp boot
 ";
 }
 
