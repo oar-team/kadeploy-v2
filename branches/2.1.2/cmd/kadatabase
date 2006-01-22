@@ -21,6 +21,7 @@ my $help;
 my $addmysqlrights;
 my $delmysqlrights;
 my $create_db_deploy;
+my $create_table_deploy;
 my $drop_db_deploy;
 my $clean_db_deploy;
 my $patch21;
@@ -39,6 +40,7 @@ my $deploy_db_password=libkadeploy2::conflib::get_conf("deploy_db_psswd");
 GetOptions('addmysqlrights'        => \$addmysqlrights,
 	   'delmysqlrights'        => \$delmysqlrights,
 	   'create_db_deploy'      => \$create_db_deploy,
+	   'create_table_deploy'   => \$create_table_deploy,
 	   'drop_db_deploy'        => \$drop_db_deploy,
 	   'clean_db_deploy'       => \$clean_db_deploy,
 	   'patch21'               => \$patch21,
@@ -60,6 +62,7 @@ if ($addmysqlrights        ||
     $delmysqlrights        ||
     $drop_db_deploy        ||
     $create_db_deploy      ||
+    $create_table_deploy   ||
     $patch21               ||
     $patch211
     ) 
@@ -75,6 +78,7 @@ if ($delmysqlrights)         { mysqlload("delmysqlrights"); $ok=1; }
 if ($addmysqlrights)         { mysqlload("addmysqlrights"); $ok=1; }
 if ($drop_db_deploy)         { mysqlload("drop_db_deploy"); $ok=1; }
 if ($create_db_deploy)       { mysqlload("create_db_deploy"); $ok=1;}
+if ($create_table_deploy)    { mysqlload("create_table_deploy"); $ok=1;}
 if ($patch21)                { mysqlload("patch-kadeploy-2.1"); $ok=1;}
 if ($patch211)               { mysqlload("patch-kadeploy-2.1.1"); $ok=1;}
 
@@ -93,15 +97,16 @@ sub usage()
 {
     print "
 $0 
-\t-addmysqlrights
-\t-delmysqlrights    
+\t-addmysqlrights             # create the \"deploy\" user for the db
+\t-delmysqlrights             # delete this user from the db
 
-\t-create_db_deploy
-\t-drop_db_deploy
-\t-clean_db_deploy
+\t-create_db_deploy           # create database
+\t-create_table_deploy        # create table
+\t-drop_db_deploy             # drop database
+\t-clean_db_deploy            # clean deployed and deployement table
 
-\t-patch21
-\t-patch211
+\t-patch21                    # patch db 2.0 -> 2.1
+\t-patch211                   # patch db 2.1 -> 2.1.1
 
 \t      
 \t-clean     correct error in kadeploy database
