@@ -10,74 +10,135 @@ use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
 use strict;
 
-if (!@ARGV){
-    print "Usage : kaaddnode description_file\n";
-    exit 0;
-}
+sub loadnodesfile($);
+sub loadpartitionfile($);
+sub updatedeployedtable();
 
-## declares the options
-my $desc_file = $ARGV[0];
-
-my $base = libkadeploy2::deploy_iolib::connect();
-
-## checks if option is defined
-if(!(-e $desc_file)){
-    print "ERROR : description file does not exist\n";
-    exit 0;
-}
+my $nodesfile="/etc/kadeploy/clusternodes.conf";
+my $nodespartitionfile="/etc/kadeploy/cluserpartition.conf";
 
 
-## Available variables are :
-## - $desc_file
 
-my $step = 0;
 my $disk_id;
 my @host_id_list = ();
 my @part_env_id_list = ();
-open(DESC,$desc_file);
-foreach my $line (<DESC>){
-    # checks if it is a commentary
-    chomp($line);
-    if($line){
-	if($line !~ /^\s*#.*/){
-	    if($line =~ /^\s*(\\#).*/){
-		$step = 1;
-	    }elsif($step == 0){
-		# nodes description
-		my @info = split(/\s+/, $line);
-		my $node_id = libkadeploy2::deploy_iolib::add_node($base,\@info);
-		push(@host_id_list, $node_id);
-	    }elsif($step == 1){
+my $ok=1;
+
+print "\n";
+
+
+print "Checking $nodesfile\n";
+if (!loadnodesfile($nodesfile)) { print "Error loading $nodesfile\n"; $ok=0; }
+print "\n";
+
+print "Checking $nodespartitionfile\n";
+if (!loadpartitionfile($nodespartitionfile)) { print "Error loading $nodespartitionfile\n"; $ok=0; }
+print "\n";
+
+if ($ok)
+{
+    updatedeployedtable(); 
+    print "Now you have to kasetup -buildpreinstall\n";
+    exit 0;
+}
+else
+{
+    print "Check your configuration files...\n";
+    exit 1;
+}
+
+################################################################################
+
+sub loadnodesfile($)
+{
+    my $file = shift;
+    open(DESC,$file);    
+    my $base = libkadeploy2::deploy_iolib::connect();
+    open(DESC,$file);
+    foreach my $line (<DESC>)
+    {
+	# checks if it is a commentary
+	chomp($line);
+	if($line)
+	{
+	    #check line 
+	    #node1 11:22:33:44:55:66 192.168.0.1
+	    if($line =~ /^([a-z0-9]+) (..:..:..:..:..:..) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*$/)
+	       {
+		   # nodes description
+		   my ($name,$ether,$ip)=($1,$2,$3);
+		   my @info = ($name,$ether,$ip);
+		   my $node_id = libkadeploy2::deploy_iolib::add_node($base,\@info);
+		   push(@host_id_list, $node_id);
+		   print "Registring $name\n";
+	       }	       
+	}	    
+    }   
+
+    close(DESC);
+    libkadeploy2::deploy_iolib::disconnect($base);    
+    print "Nodes Registration completed.\n";    
+}
+
+sub loadpartitionfile($)
+		      {
+    my $file = shift;
+    open(DESC,$file);
+    my $base = libkadeploy2::deploy_iolib::connect();
+    foreach my $line (<DESC>)
+    {
+	# checks if it is a commentary
+	chomp($line);
+	if($line)
+	{
+	    #check line
+	    #hda 8000
+	    if($line =~ /^(hd[a-z]) ([0-9]+)$/)
+	    {		
 		# disk description
-		my @info = split(/\s+/, $line);
+		my ($harddisk,$sizeMB);
+		($harddisk,$sizeMB)=($1,$2);
+		my @info = ($harddisk,$sizeMB);
 		$disk_id = libkadeploy2::deploy_iolib::add_disk($base,\@info);
-		$step = 2;
-	    }else{
-		# partition description
-		my @info = split(/\s+/, $line);
+	    }
+	    #check line
+	    #1 500 swap
+	    if ($line =~ /^([0-9]+) ([0-9]+) ([a-zA-Z]+)$/)
+	    {
+		my ($id,$sizeMB,$label);		
+		($id,$sizeMB,$label)=($1,$2,$3);
+
+		# partition description		
+		my @info = ($id,$sizeMB,$label);
 		my $part_id = libkadeploy2::deploy_iolib::add_partition($base,\@info,$disk_id);
 		my $env_id = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$info[2]);
-		if(!$env_id){
+		if(!$env_id)
+		{
 		    my $part_nb = libkadeploy2::deploy_iolib::part_id_to_nb($base,$part_id);
 		    print "WARNING : special 'undefined' environment will be affected to partition number $part_nb\n";
 		    $env_id = libkadeploy2::deploy_iolib::env_undefined_to_id($base);
 		}
 		push(@part_env_id_list, [$part_id,$env_id]);
+		print "Registring $label\n";
 	    }
 	}
-    }
-
-    # deploy state
-    foreach my $host (@host_id_list){
-	foreach my $part_env (@part_env_id_list){
-	    libkadeploy2::deploy_iolib::add_deploy($base,\$part_env,$disk_id,$host);
-	}
-    }
+    }    
+    close(DESC);    
+    libkadeploy2::deploy_iolib::disconnect($base);    
+    print "Registration completed.\n";    
 }
-close(DESC);
 
-libkadeploy2::deploy_iolib::disconnect($base);
 
-print "Registration completed.\n";
-
-1;
+sub updatedeployedtable()
+{
+    my $base = libkadeploy2::deploy_iolib::connect();
+    foreach my $host (@host_id_list)
+    {
+	foreach my $part_env (@part_env_id_list)
+	{
+	    libkadeploy2::deploy_iolib::add_deploy($base,\$part_env,$disk_id,$host);
+	  }
+    }
+    
+    libkadeploy2::deploy_iolib::disconnect($base);    
+}
