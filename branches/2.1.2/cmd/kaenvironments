@@ -88,12 +88,12 @@ if ($user)
     {
 	print "You don't have an environment recorded.\n";
 
-#	print "kadeploy users:\n";
-#	print "---------------\n";
-#	foreach $i (@listuser)
-#	{
-#	    print "$i\n";
-#	}
+	print "kadeploy users:\n";
+	print "---------------\n";
+	foreach $i (@listuser)
+	{
+	    print "$i\n";
+	}
     }
     
     libkadeploy2::deploy_iolib::disconnect($base);
