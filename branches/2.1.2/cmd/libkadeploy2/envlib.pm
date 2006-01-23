@@ -26,7 +26,7 @@
 ##  > print "toto = ".get_env("toto")."\n" if if_env("toto");
 ##
 ###############################################################################
-package envlib;
+package libkadeploy2::envlib;
 
 use strict;
 use warnings;

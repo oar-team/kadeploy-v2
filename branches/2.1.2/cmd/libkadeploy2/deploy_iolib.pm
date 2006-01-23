@@ -1299,7 +1299,7 @@ sub deploy_id_to_node_info($$){
 
 # add_node
 # registers a new node into the database
-# parameters : base, node_description
+# parameters : base, node_description=(name, macaddr, ipaddr)
 # return value : node id
 sub add_node($$){
     my $dbh = shift;
