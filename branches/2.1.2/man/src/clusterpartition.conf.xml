@@ -49,7 +49,7 @@ part=5 size=1000   fdisktype=82 label=empty type=logical
     <para>
       WARNING : they are a maximum of 4 primary and 0 extended or 3 primary and 1 extended.
     </para>
-
+    </refsect1>
     <refsect1>
       <title>EXAMPLE</title>
       <programlisting>

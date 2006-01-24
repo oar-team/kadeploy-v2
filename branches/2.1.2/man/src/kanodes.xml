@@ -35,7 +35,7 @@
       It use two files named <emphasis>/etc/kadeploy/clusternodes.conf</emphasis> 
       <emphasis>/etc/kadeploy/clusterpartition.conf</emphasis>.
     </para>
-     
+    </refsect1>
     <refsect1>
       <title>OPTIONS</title>
       <para>      

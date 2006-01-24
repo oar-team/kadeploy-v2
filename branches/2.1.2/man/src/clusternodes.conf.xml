@@ -1,4 +1,4 @@
-  <refentry id="clusternodes.conf">
+	  <refentry id="clusternodes.conf">
   
   <refmeta>
     <refentrytitle>clusternodes.conf</refentrytitle>
@@ -29,7 +29,7 @@ node_name3    mac_address3    ip_address3
     <para>
 N.B. : each node is described on a separate line; fields on each line are separated by tabs or spaces. 
     </para>
-
+	</refsect1>
     <refsect1>
       <title>EXAMPLE</title>
       <programlisting>
