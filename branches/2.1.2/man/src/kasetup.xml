@@ -15,13 +15,13 @@
     <title>SYNOPSIS</title>
     
     <command>kasetup </command>  
-    <command>-checkdeployconf</command> 
-    <command>-checksudoers</command> 
-    <command>-printvalidfdisk</command> 
-    <command>-printvalidsudoers</command> 
-    <command>-sudowrapping</command> 
-    <command>-copybinfiles</command> 
-    <command>-createtftp</command> 
+    <command>[-checkdeployconf]</command> 
+    <command>[-checksudoers]</command> 
+    <command>[-printvalidfdisk]</command> 
+    <command>[-printvalidsudoers]</command> 
+    <command>[-sudowrapping]</command> 
+    <command>[-copybinfiles]</command> 
+    <command>[-createtftp]</command> 
   </refsect1>
   <refsect1>
     <title>DESCRIPTION</title>

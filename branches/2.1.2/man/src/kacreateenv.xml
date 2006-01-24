@@ -14,22 +14,22 @@
   <refsect1>
     <title>SYNOPSIS</title>
     <programlisting>
-kacreateenv 
-   <command>-e | --environment</command>  environment_name 
-   <command>-v | --version</command>      version 
-   <command>-X | --exclude-from</command> file 
-   <command>-z | --gzip</command>
-   <command>--output-directory</command>  output_directory
-   <command>--root-directory</command>    root_directory
-   <command>--author</command>            email_address
-   <command>--description</command>       "description"
-   <command>--file-base</command>         file
-   <command>--file-site</command>         file
-   <command>--size</command>              size
-   <command>--kernel-path</command>       kernel_path
-   <command>--fdisk-type</command>        fdisk_type_number
-   <command>--file-system</command>       file_system_type
-      </programlisting>
+      kacreateenv 
+      <command>[-e | --environment</command> environment_name]
+      <command>[-v | --version</command>      version]
+      <command>[-X | --exclude-from</command> file]
+      <command>[-z | --gzip</command>]
+      <command>[--output-directory</command> output_directory]
+      <command>[--root-directory</command> root_directory]
+      <command>[--author</command> email_address]
+      <command>[--description</command> "description"]
+      <command>[--file-base</command> file]
+      <command>[--file-site</command> file]
+      <command>[--size</command> sizeMo]
+      <command>[--kernel-path</command> kernel_path]
+      <command>[--fdisk-type</command> fdisk_type_number]
+      <command>[--file-system</command> file_system_type]
+    </programlisting>
 
   </refsect1>
 

@@ -14,7 +14,7 @@
   <refsect1>
     <title>SYNOPSIS</title>
     
-    <command>kaconsole </command>  <command>-m|--machine</command> hostname
+    <command>kaconsole </command>  <command>[-m|--machine</command> hostname]
   </refsect1>
   <refsect1>
     <title>DESCRIPTION</title>

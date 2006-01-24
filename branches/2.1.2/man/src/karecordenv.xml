@@ -13,24 +13,24 @@
 
 
   <refsect1>
-      <title>SYNOPSIS</title>
-karecordenv
-   -n |  --name        registration name
-   -v |  --version     version            # default is 1
-   -d |  --description description
-   -a |  --author      author email
-   -fb| --filebase    environment image path
-   -ft| --filesite    post-installation file path
-   -s |  --size        size (Mo)
-   -i |  --initrdpath  initrdpath        # default is none
-   -k |  --kernelpath  kernel path
-   -p |  --param       kernel param 
-   -fd| --fdisktype   fdisk type         # default is 82
-   -fs| --filesystem  file system        # default is ext2
-
+    <title>SYNOPSIS</title>
+    <command>karecordenv</command>
+    <command>[-n | --name </command>registration_name]
+    <command>[-v | --version </command>version]            # default is 1
+    <command>[-d | --description </command>description]
+    <command>[-a | --author </command>author_email]
+    <command>[-fb | --filebase </command>environment_image_path]
+    <command>[-ft | --filesite </command>post-installation_file_path]
+    <command>[-s |  --size </command>sizeMo]
+    <command>[-i |  --initrdpath </command>initrdpath]        # default is none
+    <command>[-k |  --kernelpath </command>kernel_path]
+    <command>[-p |  --param </command>kernel_param]
+    <command>[-fd| --fdisktype </command>fdisk_type]         # default is 82
+    <command>[-fs| --filesystem </command>file_system]        # default is ext2
+    
 Name, kernel_path, environment_image_path and post-installation_file_path must be defined
   </refsect1>
-
+  
   <refsect1>
     <title>DESCRIPTION</title>
 

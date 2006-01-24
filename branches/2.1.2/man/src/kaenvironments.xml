@@ -14,18 +14,18 @@
 
   <refsect1>
     <title>SYNOPSIS</title>
-    <command>karecordenv</command>
+    <command>kaenvironments</command>
     <para>
-      <command>-e</command> environment to display.
+      <command>[-e environmentname]</command> environment to display.
     </para>
     <para>
-      <command>-d</command> environment to delete.
+      <command>[-d environmentname]</command> environment to delete.
     </para>
     <para>
-      <command>-l</command> login to use.
+      <command>[-l login]</command> login to use.
     </para>
     <para>
-      <command>-h</command> help screen.
+      <command>[-h]</command> help screen.
     </para>
     
   </refsect1>
