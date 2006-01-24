@@ -1,0 +1,69 @@
+  <refentry id="clusternodes.conf">
+
+  <refmeta>
+    <refentrytitle>clusterpartition.conf</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>clusterpartition.conf</refname>
+    <refpurpose>Nodes partition file</refpurpose>
+  </refnamediv>
+
+<refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      This file describe the nodes partition schema.
+      Actually you can partition only one drive.
+      The syntax is simple, they are only three "class" of line.
+    </para>
+
+    <programlisting>
+hda size=8000
+    </programlisting>
+    <para>
+      It describe a harddrive named hda of the specified size.
+    </para>
+
+    <programlisting>
+part=1 size=4000  fdisktype=83 label=empty type=primary
+    </programlisting>
+    <para>
+      A first primary partition of the specified size and fdisktype.
+    </para>
+
+    <programlisting>
+part=2 size=4000  label=empty type=extended
+    </programlisting>
+    <para>
+      An extended partition of the specified size.
+    </para>
+
+    <programlisting>
+part=5 size=1000   fdisktype=82 label=empty type=logical
+    </programlisting>
+    <para>
+      A logical partition include in the extended partition...
+    </para>
+
+    <para>
+      WARNING : they are a maximum of 4 primary and 0 extended or 3 primary and 1 extended.
+    </para>
+
+    <refsect1>
+      <title>EXAMPLE</title>
+      <programlisting>
+hda size=8000
+part=1 size=4000  fdisktype=83 label=empty type=primary
+part=2 size=4000  label=empty type=extended
+
+part=5 size=1000   fdisktype=82 label=empty type=logical
+part=6 size=1000   fdisktype=82 label=empty type=logical
+      </programlisting>
+      <para>
+	In this schema, you have <emphasis>TWO</emphasis> main partition and <emphasis>Three</emphasis> real partition.
+	The two main are 4Go, and the Three real are 4Go, 1Go and 1Go.
+	Extended partition contain logicals partition.
+      </para>
+    </refsect1>
+</refentry>
