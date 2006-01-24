@@ -63,14 +63,15 @@ sub node_name_to_name($$);
 sub deploy_id_to_env_info($$);
 sub deploy_id_to_node_info($$);
 
-# kaaddnode/kadelnode tools #
+# kanode tools #
 sub add_node($$);
 sub add_deploy($$$$);
 sub add_disk($$);
 sub add_partition($$$);
+sub del_partition_table($);
 sub add_environment($$$$$$$$$$$$$$$$);
 sub del_node($$);
-
+sub list_partition($);
 # deployment tools #
 sub report_state($$$$$);
 sub is_node_free($$$);
@@ -1389,6 +1390,33 @@ sub add_partition($$$){
 	$sth->finish();
     }
     return $part_id;
+}
+
+# del_partition_table
+# delete all entry in partition table
+# parameters : base, 
+# return value : mysql 
+sub del_partition_table($)
+{
+    my $dbh = shift;
+    # TODO : faire des vérifications !
+    my $sth = $dbh->prepare("DELETE FROM partition");
+    return $sth->execute();
+}
+
+sub list_partition($)
+{
+    my $dbh = shift;
+    my @partitionsize;
+    # TODO : faire des vérifications !
+    my $sth = $dbh->prepare("select partition.size from partition");
+    $sth->execute();
+    while (my $row = $sth->fetchrow_hashref()) 
+    {
+        push(@partitionsize, $row->{'size'});
+    }
+    $sth->finish();
+    return @partitionsize;
 }
 
 # add_disk
