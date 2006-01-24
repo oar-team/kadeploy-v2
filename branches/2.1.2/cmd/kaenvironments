@@ -25,6 +25,7 @@ sub delete_environments_by_name_and_user($$$);
 sub print_environment($);
 
 sub print_usage();
+sub print_user();
 
 sub get_unixuser();
 sub get_userdb($);
@@ -84,17 +85,8 @@ if ($user)
 	    $tmpuser=$i;
 	}
     }
-    if ($tmpuser eq "")
-    {
-	print "You don't have an environment recorded.\n";
-
-	print "kadeploy users:\n";
-	print "---------------\n";
-	foreach $i (@listuser)
-	{
-	    print "$i\n";
-	}
-    }
+    print "user selected : $spoofuser\n\n";
+    print_user();
     
     libkadeploy2::deploy_iolib::disconnect($base);
 }
@@ -162,16 +154,8 @@ if (! @env_list && ! @envToDelete){
     $base = libkadeploy2::deploy_iolib::connect();
     my $i;
     my @userlist=get_userdb($base);
-    print "user selected : $spoofuser";
 
-    print "\n\n";
-    print "kadeploy users:\n";
-    print "---------------\n";
-    foreach $i (@userlist)
-    {
-	print "$i\n";
-    }
-    print "\n\n";
+
 
     my %environments = get_environments_by_user($base,$spoofuser);
 
@@ -217,6 +201,30 @@ sub print_usage() {
     print "            -h | --help                 - this help\n";
 }
 
+sub print_user()
+{
+    my @listuser;
+    my $i;
+    my $base = libkadeploy2::deploy_iolib::connect();
+    @listuser=get_userdb($base);
+
+    print "kadeploy users:\n";
+    print "---------------\n";
+    foreach $i (@listuser)
+    {
+	if ($i eq $user)
+	{
+	    print "[$i]\n";
+	}
+	else
+	{
+	    print "$i\n";
+	}
+    }
+    print "\n";   
+    libkadeploy2::deploy_iolib::disconnect($base);    
+}
+
 
 # Displays an environment on stdout with a oarnodes-like format
 sub print_environment($) 
@@ -224,11 +232,11 @@ sub print_environment($)
     my $env = shift;
     
     my $format = "\t%s = %s\n";
-    my @attributes = ('id', 'version', 'description', 'author', 'filebase',
+    my @attributes = ('name','id', 'version', 'description', 'author', 'filebase',
 		      'filesite', 'size', 'initrdpath', 'kernelpath',
 		      'kernelparam', 'fdisktype', 'filesystem', 'siteid','user');
     
-    print "$env->{name}\n";
+    print "########################################$env->{name} v$env->{version}########################################\n\n";
     
     for my $attr (@attributes) 
     {
