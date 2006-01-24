@@ -1,0 +1,52 @@
+<refentry id="kaenvironmentsv">
+
+  <refmeta>
+    <refentrytitle>kaenvironments</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>kaenvironments</refname>
+    <refpurpose> list and remove an environment </refpurpose>
+  </refnamediv>
+  
+
+
+  <refsect1>
+    <title>SYNOPSIS</title>
+    <command>karecordenv</command>
+    <para>
+      <command>-e</command> environment to display.
+    </para>
+    <para>
+      <command>-d</command> environment to delete.
+    </para>
+    <para>
+      <command>-l</command> login to use.
+    </para>
+    <para>
+      <command>-h</command> help screen.
+    </para>
+    
+  </refsect1>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    kaenvironments display the registred environment, you can see all the information of an environment with <emphasis>-e</emphasis> or
+    delete it with <emphasis>-d</emphasis>.
+    You can see the environment of another user with <emphasis>-l</emphasis>.
+  </refsect1>
+      
+  <refsect1>
+    <title>EXAMPLE</title>
+    <command> kaenvironments -e debian</command>  
+    <para> display the environment debian for the current user.</para>
+
+    <command> kaenvironments -d debian</command>  
+    <para> remove the environment debian for the current user.</para>
+
+    <command> kaenvironments -l nobody -e debian4all</command>  
+    <para> display the environment debian4all of the nobody user.</para>
+  </refsect1>
+</refentry>
