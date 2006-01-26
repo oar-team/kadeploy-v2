@@ -69,7 +69,7 @@ Name, kernel_path, environment_image_path and post-installation_file_path must b
     <para>
       Registers a debian from file
       <programlisting>
-$cat > /tmp/myenv << EOF
+$cat &gt; /tmp/myenv &lt;&lt; EOF
 name = debian
 id = 7
 version = 2

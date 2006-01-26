@@ -1,5 +1,5 @@
   <refentry id="clusternodes.conf">
-
+  
   <refmeta>
     <refentrytitle>clusterpartition.conf</refentrytitle>
     <manvolnum>1</manvolnum>
@@ -18,30 +18,25 @@
       The syntax is simple, they are only three "class" of line.
     </para>
 
-    <programlisting>
-hda size=8000
-    </programlisting>
+    <emphasis>hda size=8000</emphasis>
     <para>
       It describe a harddrive named hda of the specified size.
     </para>
 
-    <programlisting>
-part=1 size=4000  fdisktype=83 label=empty type=primary
-    </programlisting>
+    <emphasis>part=1 size=4000  fdisktype=83 label=empty type=primary</emphasis>
+
     <para>
       A first primary partition of the specified size and fdisktype.
     </para>
 
-    <programlisting>
-part=2 size=4000  label=empty type=extended
-    </programlisting>
+    <emphasis>part=2 size=4000  label=empty type=extended</emphasis>
+
     <para>
       An extended partition of the specified size.
     </para>
 
-    <programlisting>
-part=5 size=1000   fdisktype=82 label=empty type=logical
-    </programlisting>
+<emphasis>part=5 size=1000   fdisktype=82 label=empty type=logical</emphasis>
+
     <para>
       A logical partition include in the extended partition...
     </para>
