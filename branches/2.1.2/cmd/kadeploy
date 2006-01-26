@@ -462,7 +462,7 @@ if($depmethod==0)
 # reboot
 else
 {
-    $nodes_set->runRemoteSystemCommand("\"/mnt/rambin/bin/reboot_detach \& \"");
+    $nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
 }
 print "rebooting the nodes...\n";
 
