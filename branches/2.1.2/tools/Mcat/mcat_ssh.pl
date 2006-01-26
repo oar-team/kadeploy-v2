@@ -23,7 +23,7 @@ my @host_list;
 
 ## gets the options
 GetOptions('p=s'             => \@port,
-           'cp=s'            => \@cmd_path,
+#           'cp=s'            => \@cmd_path,
 	   'sc=s'            => \@src_cmd,
 	   'dc=s'            => \@dest_cmd,
            'm=s'           => \@host_list,
@@ -37,10 +37,10 @@ GetOptions('p=s'             => \@port,
 
 my $sentinelle_path = libkadeploy2::conflib::get_conf("prod_sentinelle_cmd");
 my $args_sentinelle = libkadeploy2::conflib::get_conf("prod_sentinelle_default_args");
-
+my $mcat_path       = libkadeploy2::conflib::get_conf("remote_mcat");
 
 my $port = $port[0];
-my $mcat_path = $cmd_path[0];
+#my $mcat_path = $cmd_path[0];
 my $cmd_scr = $src_cmd[0];
 my $cmd     = $dest_cmd[0];
 

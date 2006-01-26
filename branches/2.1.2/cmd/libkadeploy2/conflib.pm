@@ -125,7 +125,7 @@ sub check_conf {
 	return 0;
     }
 
-    print "Checking variable definition...\n";
+    print STDERR "Checking variable definition...\n";
     open(DEPLOYCONF,$deployconf);
     %params = ();
 

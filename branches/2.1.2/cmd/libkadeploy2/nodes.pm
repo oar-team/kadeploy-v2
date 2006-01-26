@@ -720,10 +720,13 @@ sub runCommandMcat {
     my $remoteCommand = libkadeploy2::conflib::get_conf("remote_mcat");
     
 
-    if($nodes_command =~ m/tmp/){
-          $parallelLauncher = $parallelLauncher. "mcat_ssh.pl";
-    }else{
-           $parallelLauncher = $parallelLauncher.  "mcat_rsh.pl";
+    if($nodes_command =~ m/tmp/)
+    {
+	$parallelLauncher = $parallelLauncher. "mcat_ssh.pl";
+    }
+    else
+    {
+	$parallelLauncher = $parallelLauncher.  "mcat_rsh.pl";
     }
  
     my $executedCommand = $parallelLauncher . " -p $mcatPort -sc \"" . $server_command . "\" -dc \"" . $nodes_command . "\"";

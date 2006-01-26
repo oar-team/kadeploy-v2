@@ -202,6 +202,7 @@ sub loadpartitionfile($)
     open(DESC,$file);
     my $base = libkadeploy2::deploy_iolib::connect();
     my $ok=0;
+    my @listid=();
     foreach my $line (<DESC>)
     {
 	# checks if it is a commentary
@@ -220,12 +221,16 @@ sub loadpartitionfile($)
 		print "Registring harddisk $harddisk\n";
 	    }
 	    #check line
-	    #hda part=1 size=500  fdisktype=82 label=swap
+	    #hda part=1 size=500  fdisktype=82 label=swap type=logical
 	    if ($line =~ /^part=([0-9]+)\ +size=([0-9]+)\ +fdisktype=[0-9a-zA-Z]+\ +label=([a-zA-Z]+)\ +type=[a-zA-Z]+$/)
 	    {
 		my ($id,$sizeMB,$label);		
 		($id,$sizeMB,$label)=($1,$2,$3);
-
+		foreach my $tmpid (@listid)
+		{
+		    if ($tmpid==$id) { print STDERR "ERROR part=$id already defined\n"; exit 1; }
+		}
+		@listid=(@listid,$id);
 		$ok=1;
 		# partition description		
 		my @info = ($id,$sizeMB,$label);

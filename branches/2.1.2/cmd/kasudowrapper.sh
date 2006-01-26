@@ -12,6 +12,7 @@ if [ -z $DEPLOYUSER ] ; then echo "deploy_user not found in your configuration f
 export PERL5LIB=${DEPLOYDIR}/:$PERL5LIB
 export DEPLOYDIR
 
+if [ $(basename $0) == "kadeploy" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ;  fi
 if [ $(basename $0) == "kaenvironments" ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ; fi
 if [ $(basename $0) == "karecordenv" ]   ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ; fi
 if [ $(basename $0) == "setup_pxe.pl" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` -l $USER "$@" ; $OK=1 ;  fi

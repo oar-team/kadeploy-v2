@@ -234,7 +234,7 @@ sub print_environment($)
     my $format = "\t%s = %s\n";
     my @attributes = ('name','id', 'version', 'description', 'author', 'filebase',
 		      'filesite', 'size', 'initrdpath', 'kernelpath',
-		      'kernelparam', 'fdisktype', 'filesystem', 'siteid','user');
+		      'kernelparam', 'fdisktype', 'filesystem', 'siteid','optsupport','user');
     
     print "########################################$env->{name} v$env->{version}########################################\n\n";
     
@@ -324,6 +324,7 @@ environment.user=?
 	    filesystem => $ref->{filesystem},
 	    siteid => $ref->{siteid}, 
 	    user   => $ref->{user},
+	    optsupport   => $ref->{optsupport},
 	};
     }
 			          				   

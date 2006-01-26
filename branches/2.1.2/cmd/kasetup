@@ -39,6 +39,10 @@ my $sudowrapping;
 my $copybinfiles;
 my $createtftp;
 my $printvalidfdisk;
+my $printvalidfstablinux;
+my $rootdev;
+my $rootpartnumber;
+my $swappartnumber;
 
 sub help();
 sub check_etc_deploy();
@@ -57,19 +61,22 @@ sub printfdiskformat($);
 sub printfdiskdeleteprimary();
 sub printfdiskwrite();
 sub checkcorrectness($);
+sub printvalidfstablinux($$);
+sub getlinuxswapdevicenumber($);
 
-
-
-GetOptions('checkdeployconf!'    => \$checkdeployconf,
-           'checksudoers!'       => \$checksudoers,
-	   'printvalidsudoers!'  => \$printvalidsudoers,
-	   'printvalidfdisk!'    => \$printvalidfdisk,
-	   'checkwriteaccess!'   => \$checkwriteaccess,
-	   'checkbinfiles!'      => \$checkbinfiles,
-	   'copybinfiles!'       => \$copybinfiles,
-	   'sudowrapping'        => \$sudowrapping,
-	   'createtftp'          => \$createtftp,
-	   'h!'                  => \$help,
+GetOptions('checkdeployconf!'         => \$checkdeployconf,
+           'checksudoers!'            => \$checksudoers,
+	   'printvalidsudoers!'       => \$printvalidsudoers,
+	   'printvalidfdisk!'         => \$printvalidfdisk,
+	   'printvalidfstab!'         => \$printvalidfstablinux,
+	   'rootdev=s'                => \$rootdev,
+	   'rootpartnumber=i'         => \$rootpartnumber,
+	   'checkwriteaccess!'        => \$checkwriteaccess,
+	   'checkbinfiles!'           => \$checkbinfiles,
+	   'copybinfiles!'            => \$copybinfiles,
+	   'sudowrapping'             => \$sudowrapping,
+	   'createtftp'               => \$createtftp,
+	   'h!'                       => \$help,
 	   );
 if ($help)
 {
@@ -77,15 +84,17 @@ if ($help)
     exit(0);
 }
 
-if ($checkdeployconf   ||
-    $checksudoers      || 
-    $printvalidsudoers ||
-    $checkwriteaccess  ||
-    $checkbinfiles     ||
-    $copybinfiles      ||
-    $createtftp        ||
-    $printvalidfdisk   ||
-    $sudowrapping      )
+if ($checkdeployconf      ||
+    $checksudoers         || 
+    $printvalidsudoers    ||
+    $checkwriteaccess     ||
+    $checkbinfiles        ||
+    $copybinfiles         ||
+    $createtftp           ||
+    $printvalidfdisk      ||
+    $printvalidfstablinux ||
+    $sudowrapping      
+    )
 {
 
 
@@ -93,14 +102,15 @@ if ($checkdeployconf   ||
 
 
     use libkadeploy2::conflib;
-    if ($checkdeployconf)  { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
-    if ($checksudoers)     { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
-    if ($checkbinfiles)    { if (checkdeployconf())  { checkbinfiles(); } }
-    if ($copybinfiles)     { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
-    if ($sudowrapping)     { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
-    if ($printvalidsudoers){ if (checkdeployconf()) { printvalidsudoers(); } }
-    if ($createtftp)       { createtftp(); }
-    if ($printvalidfdisk)  { printvalidfdisk(); }    
+    if ($printvalidfstablinux) {  printvalidfstablinux($rootdev,$rootpartnumber); } 
+    if ($checkdeployconf)      { if (!checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
+    if ($checksudoers)         { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
+    if ($checkbinfiles)        { if (checkdeployconf())  { checkbinfiles(); } }
+    if ($copybinfiles)         { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
+    if ($sudowrapping)         { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
+    if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
+    if ($createtftp)           { createtftp(); }
+    if ($printvalidfdisk)      { printvalidfdisk(); }    
     exit 0;
 }
 else
@@ -111,6 +121,58 @@ else
 }
 
 ################################################################################
+
+sub printvalidfstablinux($$)
+{
+    my $rootdev=shift;
+    my $rootpartnumber=shift;
+    my $swapdevnumber=shift;
+    
+    my %disk;
+    %disk=loadpartitionfile($partitionfile);
+
+    $swapdevnumber=getlinuxswapdevicenumber(\%disk);
+
+    if (!$rootdev)
+    {
+	print STDERR "ERROR : rootdev not set\n";
+	exit 1;
+    }
+
+    if (!$rootpartnumber)
+    {
+	print STDERR "ERROR : rootpartnumber not set\n";
+	exit 1;
+    }
+
+
+    if ($rootdev=~ /^\/dev\/[hs]d[a-d]+$/ &&
+	$rootpartnumber > 0 && 
+	$rootpartnumber < 21)
+    {
+	print "
+# /etc/fstab: static file system information.
+#
+# <file system> <mount point>   <type>  <options>               <dump>  <pass>
+proc            /proc           proc    defaults                0       0
+/dev/fd0        /floppy         auto    user,noauto             0       0
+/dev/cdrom      /cdrom          iso9660 ro,user,noauto          0       0
+$rootdev$rootpartnumber       /               ext2    errors=remount-ro       0       0";
+	if ($swapdevnumber>0 &&
+	    $swapdevnumber<21)   
+	{
+	    print "
+$rootdev$swapdevnumber       none            swap    sw                      0       0";    
+	}
+    }
+    else
+    {
+	print "Error checking $rootdev\n";
+	exit 1;
+    }
+	print "\n";
+}
+
 
 sub printvalidfdisk()
 {
@@ -226,13 +288,25 @@ sub loadpartitionfile($)
 
     my ($number,$size,$fdisktype,$label,$type);
     my $linecorrect=0;
+    my @listnumber;
+    my $sizeofextended=0;
+    my $sizeoflogical=0;
+    my $sizeofprimary=0;
+    my $numberofprimary=0;
+    my $numberofextended=0;
     $type="";
 
     if (open(FH,$partitionfile))
     {
 	foreach $line (<FH>)
 	{
+	    my $linenotseen=1;
 	    my %partition;
+
+	    if ($numberofextended > 1) { print STDERR "ERROR you can only have one extended part\n"; exit 1; }
+	    if ($numberofprimary > 4   ) { print STDERR "ERROR you can only have four primary part\n"; exit 1; }
+	    if ($numberofprimary + $numberofextended > 4   ) { print STDERR "ERROR you can only have four part (primary + extended)\n"; exit 1; }
+
 	    if($line =~ /^(hd[a-z]) size=([0-9]+)$/)
 	    {
 		$disk{name}=$1;
@@ -243,14 +317,32 @@ sub loadpartitionfile($)
 	    if ($line =~ /^part=([0-9]+)\ +size=([0-9]+)\ +fdisktype=([0-9a-zA-Z]+)\ +label=([a-zA-Z]+)\ +type=([a-zA-Z]+)$/)
 	    {
 		($number,$size,$fdisktype,$label,$type)=($1,$2,$3,$4,$5);
+		if ($type eq "logical" && $number < 4) { print STDERR "ERROR logical part begin at 5\n"; $linecorrect=0;}
+		if ($type eq "primary" && $number > 4) { print STDERR "ERROR primary part must be [1..4]\n"; $linecorrect=0;}
+		if ($type eq "primary") { $numberofprimary++; $sizeofprimary+=$size; }
+		if ($type eq "logical") { $sizeoflogical+=$size; }
+		foreach my $tmpnumber (@listnumber)
+		{
+		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
+		}
+		@listnumber=(@listnumber,$number);
 		$linecorrect=1;
 	    }
 		
-	    if ($line =~/^part=([0-9]+)\ +size=([0-9]+)\ +label=([a-zA-Z]+)\ +type=([a-zA-Z]+)$/)
+	    if ($line =~/^part=([0-9]+)\ +size=([0-9]+)\ +label=([a-zA-Z]+)\ +type=(extended)$/)
 	    {
 		($number,$size,$label,$type)=($1,$2,$3,$4);
+		if ($number > 4) { print STDERR "ERROR extended partition must be in [1..4]\n"; $linecorrect=0; }
+		if ($type eq "extended") { $numberofextended++; $sizeofextended=$size; }
+		foreach my $tmpnumber (@listnumber)
+		{
+		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
+		}
+		@listnumber=(@listnumber,$number);
 		$linecorrect=1;
 	    }
+
+
 	    if (
 		(
 		 $type eq "primary"  ||
@@ -288,8 +380,49 @@ sub loadpartitionfile($)
 	print "Error opening $partitionfile\n";
 	exit 1;
     }
+    if ($sizeoflogical >= $sizeofextended) { print STDERR "ERROR size of extended part >= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }
     return %disk;
 }
+
+sub getlinuxswapdevicenumber($)
+{
+    my $diskref=shift;
+    my %disk=%$diskref;
+    my $swapdev=0;
+    my $key1;
+    my $key2;
+    my $key3;
+    my $key4;
+    my $tmphash1;
+    my $tmphash2;
+    my $tmphash3;
+    foreach $key1 (sort keys %disk)
+    {
+	$tmphash1 = $disk{$key1};
+	if (ref($tmphash1) eq 'HASH')
+	{
+	    foreach $key2 (sort keys %$tmphash1)
+	    {		    
+		$tmphash2 = $$tmphash1{$key2};
+		if (ref($tmphash2) eq 'HASH')
+		{
+		    foreach $key3 (sort keys %$tmphash2) 
+		    {
+			if ($key3 eq "fdisktype" &&
+			    $$tmphash2{$key3} == 82)
+			{
+			    return $key2; # device number : 7 => /dev/hda7
+			}
+		    }
+		}
+	    }
+	}
+	
+    }
+}
+
+
+
 
 sub printpart($)
 {
@@ -851,6 +984,8 @@ sub help()
 \t-checksudoers                  print a valid sudoers
 \t-printvalidfdisk               print a fdisk file from 
 \t-printvalidsudoers             generate a sudoers from deploy.conf
+\t-printvalidfstab               generate a fstab for linux with rootfs parameters
+\t-rootfs                        printvalidfstab parameters to know the boot device /dev/hda1        
 \t-sudowrapping                  wrap files with kasudowrapper.sh
 \t-copybinfiles                  copy required files in /usr/local/bin
 \t-createtftp                    copy all the files required for tftp boot

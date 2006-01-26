@@ -78,6 +78,8 @@ my $depmethod;    #command variable for deployment method
 my $bootstrap=0;  # deploy an environment from the linuxdeploy env (rsh) : no first reboot
 my $user;
 my $nodetype;
+my $verbose;
+my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
 my $help;
 
 ## to prevent zombie processes
@@ -342,9 +344,13 @@ print "Retrieving preinstall\n";
 my $mcat_first_port = ($deployment%100)*3+12000;
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
-
+if ($depmethod==0)
+{
+    $mcat_first_port++;
+    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfdisk", "cat > /mnt/rambin/fdisk.txt", $mcat_first_port);
+}
 print "Executing preinstall...";
-	$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
+$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
 print "Done\n";
 # time bench
 my $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
@@ -402,6 +408,11 @@ if ($usetar)
     print "Executing postinstall...";
     #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
     $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port+2);
+    if ($depmethod==0)
+    {
+	$mcat_first_port++;
+	$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfstab -rootdev=/dev/$dev -rootpartnumber=$part", "cat > /rambin/fstab", $mcat_first_port+2);
+    }
     $nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
     print "Done\n";
 
@@ -436,7 +447,7 @@ if ($usetar)
     print "Umounting fs... ";
     $nodes_set->runRemoteCommand("\" sync  \"");
     $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-    sleep(5);
+    sleep(15);
     print "Done\n";
 }
 
@@ -607,15 +618,27 @@ sub check_env($$){
 # return value : the tar options or 0 if unknown format
 sub set_tar_options($){
     my $archive = shift;
-    my $extension = substr($archive, -3);
+    my $extension = $archive;
     
-    if($extension eq "bz2"){
+    if($extension=~ /\.tar\.bz2$/)
+    {
 	return "jxC";
-    }elsif($extension eq "tgz"){
+    }
+    elsif($extension =~ /\.tar\.gz$/)
+    {
 	return "zxC";
-    }elsif($extension eq "tar"){
+    }
+    elsif($extension =~ /\.tgz$/)
+    {
+	return "zxC";
+
+    }
+    elsif($extension =~ /\.tar$/)
+    {
 	return "xC";
-    }else{
+    }
+    else
+    {
 	print "ERROR : unknown archive format\n";
 	return 0;
     }
@@ -679,6 +702,8 @@ sub check_options(){
 	       'd=s' => \$depmethod,
 	       'bootstrap' => \$bootstrap,
 	       'l=s'       => \$user,
+	       'v!'        => \$verbose,
+	       'verbose'   => \$verbose,
 	       'h' => \$help	       
 	       );
 
