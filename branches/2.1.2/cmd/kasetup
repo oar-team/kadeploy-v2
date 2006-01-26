@@ -501,9 +501,10 @@ sub printfdiskformat($)
 			    $fdisktype=$$tmphash2{$key3}
 			}
 			if ($key3 eq "size")
-			{
-			    $size=int($size/1.1); #Stupid hack for fdisk...
-			    $size="+$$tmphash2{$key3}M"
+			{			    
+			    $size=$$tmphash2{$key3};
+			    $size=int($size/1.1); #Stupid hack for fdisk because of this fucking 1000 and 1024 ...
+			    $size="+$sizeM";
 			}
 			if ($key3 eq "type")
 			{
