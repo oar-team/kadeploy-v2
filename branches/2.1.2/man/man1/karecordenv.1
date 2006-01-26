@@ -21,21 +21,20 @@
 .SH NAME
 karecordenv \- registers a environment
 .SH "SYNOPSIS"
-
-karecordenv
-   \-n |  \-\-name        registration name
-   \-v |  \-\-version     version            # default is 1
-   \-d |  \-\-description description
-   \-a |  \-\-author      author email
-   \-fb| \-\-filebase    environment image path
-   \-ft| \-\-filesite    post\-installation file path
-   \-s |  \-\-size        size (Mo)
-   \-i |  \-\-initrdpath  initrdpath        # default is none
-   \-k |  \-\-kernelpath  kernel path
-   \-p |  \-\-param       kernel param 
-   \-fd| \-\-fdisktype   fdisk type         # default is 82
-   \-fs| \-\-filesystem  file system        # default is ext2
-
+\fBkarecordenv\fR\fB[\-n  | \-\-name \fRregistration_name]
+    \fB[\-v  | \-\-version \fRversion]            # default is 1
+    \fB[\-d  | \-\-description \fRdescription]
+    \fB[\-a  | \-\-author \fRauthor_email]
+    \fB[\-fb | \-\-filebase \fRenvironment_image_path]
+    \fB[\-ft | \-\-filesite \fRpost\-installation_file_path]
+    \fB[\-s  |  \-\-size \fRsizeMo]
+    \fB[\-i  |  \-\-initrdpath \fRinitrdpath]        # default is none
+    \fB[\-k  |  \-\-kernelpath \fRkernel_path]
+    \fB[\-p  |  \-\-param \fRkernel_param]
+    \fB[\-fd | \-\-fdisktype \fRfdisk_type]         # default is 82
+    \fB[\-fs | \-\-filesystem \fRfile_system]        # default is ext2
+    \fB[\-fe | file_environment \fRfile_environment]
+    
 Name, kernel_path, environment_image_path and post\-installation_file_path must be defined
   
 .SH "DESCRIPTION"
@@ -52,13 +51,49 @@ Name, kernel_path, environment_image_path and post\-installation_file_path must 
     \fB\-ft, \-\-filesite post\-installation_file_path\fRthe complete path to the post\-installation file
     \fB\-s,  \-\-size size (Mo)\fRthe size of the environment ; in order to perform partition size check before a deployment
     \fB\-i,  \-\-initrdpath\fRthe complete initrd path in the environment (including intrd name)
-    \fB\-k,  \-\-kernelpath kernel_path\fRthe complete kernel path in the environment (including kernel name)
+    \fB\-k,  \-\-kernelpath kernel_path\fRthe complete kernel path in the environment (including kernel name)\&. You have to use "chainload" keyword, when deploying a "dd" image\&.
     \fB\-p,  \-\-param\fRarguments passed to kernel at boot (<verb>root</verb> parameter is set automatically), if left empty, default can be configured
     \fB\-fd, \-\-fdisktype fdisk_type\fRthe fdisk type ; default is 82
     \fB\-fs, \-\-filesystem file_system\fRthe file system type ; default is ext2
+    \fB\-fe, \-\-file_environment file_environment\fR record and environment from file\&.
   
 .SH "EXAMPLE"
-\fBkarecordenv \-n debian \-v 2 \-d "debian maison" \-a katools@imag\&.fr \-fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current\&.tgz \-ft file://home/nis/jleduc/Boulot/postinstall/traitement\&.tgz \-size 650 \-k /boot/vmlinuz \-i /initrd \-p "console=ttyS0,38400n8 ETH_DRV=tg3" \-fd 83 \-fs ext2\fR
+
 .PP
-registers a debian image whose features are explicitly given in parameter
+Registers a debian image whose features are explicitly given in parameter 
+
+.nf
+
+	karecordenv \-n debian \-v 2 \-d "debian maison" \-a katools@imag\&.fr \-fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current\&.tgz \-ft file://home/nis/jleduc/Boulot/postinstall/traitement\&.tgz \-size 650 \-k /boot/vmlinuz \-i /initrd \-p "console=ttyS0,38400n8 ETH_DRV=tg3" \-fd 83 \-fs ext2
+      
+.fi
+ 
+
+.PP
+Registers a debian from file 
+
+.nf
+
+$cat > /tmp/myenv << EOF
+name = debian
+id = 7
+version = 2
+description = none
+author = @
+filebase = file://usr/local/grid5000/image/rootfs\&.tgz
+filesite = file://usr/local/grid5000/image/postinstall\&.tgz
+size = 100
+initrdpath = /boot/initrd\&.img\-2\&.6\&.8\-1\-686\-smp
+kernelpath = /boot/vmlinuz\-2\&.6\&.8\-1\-686\-smp
+kernelparam =
+fdisktype = 83
+filesystem = ext2
+siteid = 1
+user = jpeyrard
+EOF	
+
+$karecordenv \-fe /tmp/myenv
+      
+.fi
+ 
 
