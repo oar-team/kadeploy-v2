@@ -502,6 +502,7 @@ sub printfdiskformat($)
 			}
 			if ($key3 eq "size")
 			{
+			    $size=int($size/1.1); #Stupid hack for fdisk...
 			    $size="+$$tmphash2{$key3}M"
 			}
 			if ($key3 eq "type")
@@ -523,7 +524,6 @@ sub printfdiskformat($)
 			}
 #			print "\t\t$key3=".$$tmphash2{$key3}."\n";			
 		    }
-		    $size=$size/1.1; #Stupid hack for fdisk...
 		    if ($type eq "p" ||
 			$type eq "e")
 		    {
