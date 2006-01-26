@@ -181,7 +181,7 @@ sub printvalidfdisk()
 	my %disk;	
 	%disk=loadpartitionfile($partitionfile);
 	checkcorrectness(\%disk);
-	printpart(\%disk);
+	#printpart(\%disk);
 	printfdiskdeleteprimary();
 	printfdiskformat(\%disk);
 	printfdiskwrite();
