@@ -483,7 +483,7 @@ sub printfdiskformat($)
 	$tmphash1 = $disk{$key1};
 	if (ref($tmphash1) eq 'HASH')
 	{
-	    foreach $key2 (sort keys %$tmphash1)
+	    foreach $key2 (sort sort_par_num keys %$tmphash1)
 	    {
 #		print "\t$key1=$key2\n";
 		$partnumber=$key2;
@@ -523,7 +523,7 @@ sub printfdiskformat($)
 			}
 #			print "\t\t$key3=".$$tmphash2{$key3}."\n";			
 		    }
-
+		    $size=$size/1.1; #Stupid hack for fdisk...
 		    if ($type eq "p" ||
 			$type eq "e")
 		    {
