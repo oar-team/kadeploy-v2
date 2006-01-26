@@ -18,24 +18,31 @@
       The syntax is simple, they are only three "class" of line.
     </para>
 
-    <emphasis>hda size=8000</emphasis>
     <para>
-      It describe a harddrive named hda of the specified size.
+      <emphasis>hda size=8000</emphasis>
+    </para>
+    <para>
+      The primary master harddrive named "hda" of the specified "size".
     </para>
 
-    <emphasis>part=1 size=4000  fdisktype=83 label=empty type=primary</emphasis>
+    <para>
+      <emphasis>part=1 size=4000  fdisktype=83 label=empty type=primary</emphasis>
+    </para>
 
     <para>
       A first primary partition of the specified size and fdisktype.
     </para>
-
-    <emphasis>part=2 size=4000  label=empty type=extended</emphasis>
+    
+    <para>
+      <emphasis>part=2 size=4000  label=empty type=extended</emphasis>
+    </para>
 
     <para>
       An extended partition of the specified size.
     </para>
-
-<emphasis>part=5 size=1000   fdisktype=82 label=empty type=logical</emphasis>
+    <para>
+      <emphasis>part=5 size=1000   fdisktype=82 label=empty type=logical</emphasis>
+    </para>
 
     <para>
       A logical partition include in the extended partition...

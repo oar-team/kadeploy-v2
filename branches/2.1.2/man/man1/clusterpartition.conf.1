@@ -24,16 +24,28 @@ clusterpartition.conf \- Nodes partition file
 
 .PP
 This file describe the nodes partition schema\&. Actually you can partition only one drive\&. The syntax is simple, they are only three "class" of line\&.
-\fIhda size=8000\fR
+
 .PP
-It describe a harddrive named hda of the specified size\&.
-\fIpart=1 size=4000  fdisktype=83 label=empty type=primary\fR
+ \fIhda size=8000\fR 
+
+.PP
+The primary master harddrive named "hda" of the specified "size"\&.
+
+.PP
+ \fIpart=1 size=4000 fdisktype=83 label=empty type=primary\fR 
+
 .PP
 A first primary partition of the specified size and fdisktype\&.
-\fIpart=2 size=4000  label=empty type=extended\fR
+
+.PP
+ \fIpart=2 size=4000 label=empty type=extended\fR 
+
 .PP
 An extended partition of the specified size\&.
-\fIpart=5 size=1000   fdisktype=82 label=empty type=logical\fR
+
+.PP
+ \fIpart=5 size=1000 fdisktype=82 label=empty type=logical\fR 
+
 .PP
 A logical partition include in the extended partition\&.\&.\&.
 

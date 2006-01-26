@@ -121,6 +121,8 @@ else
 }
 
 ################################################################################
+sub sort_par_num { return $a <=> $b }
+
 
 sub printvalidfstablinux($$)
 {
@@ -179,7 +181,7 @@ sub printvalidfdisk()
 	my %disk;	
 	%disk=loadpartitionfile($partitionfile);
 	checkcorrectness(\%disk);
-       #printpart(\%disk);
+	printpart(\%disk);
 	printfdiskdeleteprimary();
 	printfdiskformat(\%disk);
 	printfdiskwrite();
@@ -440,7 +442,7 @@ sub printpart($)
 	$tmphash1 = $disk{$key1};
 	if (ref($tmphash1) eq 'HASH')
 	{
-	    foreach $key2 (sort keys %$tmphash1)
+	    foreach $key2 (sort sort_par_num keys %$tmphash1)
 	    {
 		print "\t$key1=$key2\n";		    
 		$tmphash2 = $$tmphash1{$key2};

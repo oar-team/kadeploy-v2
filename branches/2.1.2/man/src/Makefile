@@ -9,7 +9,7 @@ clean:
 	rm -f ../man1/*.1 *~
 
 distclean:
-
+distdir:
 install:
 	@echo "nothing to do"
 
