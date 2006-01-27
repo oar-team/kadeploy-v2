@@ -353,13 +353,15 @@ print "Executing preinstall...";
 $nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
 print "Done\n";
 # time bench
-my $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
+my $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 print "Preinstall: " . $time_preinstall . "\n";
 
 
 
 
+print "<Transfert>\n";
+libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 print "filebase: $filebase\n";
 if ($filebase =~ /^.+\.tar\.gz$/ ||
@@ -384,10 +386,6 @@ if ($filebase =~ /^.+\.dd$/ ||
     $filebase =~ /^.+\.dd\.gz$/)
 {
     print "<dd Transfert>\n";
-    $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-    libkadeploy2::deploy_iolib::set_time($base,$deployment);
-    print "Preinstall time : " . $time_preinstall . "\n";
-    print "<Transfert>\n";
     print "Sending Computing environment to the nodes...\n";
     if ($filebase =~ /^.+\.dd$/)
     {
@@ -401,9 +399,14 @@ if ($filebase =~ /^.+\.dd$/ ||
     print "Done\n";
 }
 
+my $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
+print "Transfert: " . $time_transfert . "\n";
+
+
 if ($usetar)
 {
     print "<PostInstall>\n";
+    libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # post-installation
     print "Executing postinstall...";
     #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
@@ -417,8 +420,8 @@ if ($usetar)
     print "Done\n";
 
 # time bench
+
     my $time_postinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-    libkadeploy2::deploy_iolib::set_time($base,$deployment);
     print "Postinstall: " . $time_postinstall . "\n";
     
     my @to_reboot = @db_checked_hosts;
@@ -447,7 +450,7 @@ if ($usetar)
     print "Umounting fs... ";
     $nodes_set->runRemoteCommand("\" sync  \"");
     $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-    sleep(15);
+    sleep(10);
     print "Done\n";
 }
 
