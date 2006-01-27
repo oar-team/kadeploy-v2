@@ -155,7 +155,8 @@ sub prepare_deployment($){
     $sth->finish();
 
     # $nb should be 0 or 1
-    if($nb == 0){
+    if($nb == 0)
+    {
 
 	# create new deployment, set state to waiting and start_date to current mysql server date
 	$sth = $dbh->do("INSERT deployment (state, startdate, enddate)
@@ -166,14 +167,18 @@ sub prepare_deployment($){
 	my $deploy_id = $sth->fetchrow_hashref();
 	$deploy_id = $deploy_id->{'id'};
 	$sth->finish();
- 
+	
 	$dbh->do("UNLOCK TABLES");
 	return $deploy_id;
-    }elsif($nb == 1){
+    }
+    elsif($nb == 1)
+    {
 	print "ERROR : another deployment is already waiting ; please retry later\n";
 	$dbh->do("UNLOCK TABLES");
 	return 0;
-    }else{
+    }
+    else
+    {
 	print "ERROR : unexpected number of waiting deployment \"$nb\"\n";
 	return 0;
     }
