@@ -300,14 +300,12 @@ host cls1 {
   hardware ethernet 00:01:02:04:73:da;
   fixed-address 192.168.0.1;
   filename "pxelinux.0";
-  server-name "cls1";
 }
 
 host cls2 {
   hardware ethernet 00:01:02:02:a7:f5;
   fixed-address 192.168.0.2;
   filename "pxelinux.0";
-  server-name "cls2";
 }
 </verb>
 
@@ -328,7 +326,7 @@ tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd
 <em>kadeploy</em> have to be install somewhere on your system.
 <itemize>
  <item>This can be done by a simple <tt>./configure --prefix=/usr/local && make && make install
- <item>The bin sbin content need to be accessible from the path (symlink or correct your prefix).
+ <item>The bin content need to be accessible from the path (symlink or correct your prefix).
  <item>A line like this one must be in your <tt>/etc/kadeploy/deploy.conf</tt>
   <verb>kadeploy2_directory = /my_path_to_kadeploy_directory/</verb>
  <item>kadeploy need some lib perl, "pm" files.
@@ -340,11 +338,13 @@ You can symlink it in <tt>/usr/lib/perl/5.8/</tt> (or a directory included in yo
 <sect1>Configuration files.
 <p>
 It is mandatory to create a <tt>/etc/kadeploy</tt> directory, and put
-the two configuration file in it.
+the four configuration file in it.
 <itemize>
  <item><tt>/etc/kadeploy/deploy.conf</tt> contain tools and directory path, 
 global variable, database information, and kernel boot parameters.
  <item><tt>/etc/kadeploy/deploy_cmd.conf</tt> contain the command to be exectuted for each node.
+ <item><tt>/etc/kadeploy/clusterpartition.conf</tt> contains default partitionment schema.
+ <item><tt>/etc/kadeploy/clusternodes.conf</tt> contains the nodes informations.
 </itemize>
 Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 
@@ -359,7 +359,7 @@ Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. 
 The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
 Kadeploy 2 support sudo wrapper system.
-A sample configuration files is provided to ease the pain.
+You can set it up with <tt>kasetup -sudowrapping</tt>
 
 <!-- =========================== -->
 <sect>Using kadeploy 2
@@ -375,34 +375,66 @@ the <tt>kadatabase</tt> command was created for this.
 <verb>#kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211</verb>
 
 <p>
-Then, <ref id="kaaddnode" name="kaaddnode"> is used to register the cluster "hardware" composition. 
+Then, <ref id="kaanodes" name="kanodes"> is used to register the cluster "hardware" composition. 
 It needs the description of hosts, disks and partitions in a text file. 
 The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
 
 <p>
-Example of <tt>cluster_description.txt</tt> file.
+Example of <tt>/etc/kadeploy/clusternodes.conf</tt> file.
  <verb>
-# Nodes description
-cls1        00:01:02:04:73:da     192.168.0.1
-
-\#
-
-# Partition description
-
-hda 8000
-1   500  swap
-2   3000 empty
-3   500  tmp
-5   2000 empty
-6   2000 empty
+cls1 00:01:02:04:73:DA 192.168.0.1
+cls2 00:01:02:02:A7:F5 192.168.0.2
 </verb>
+
+<p>
+Example of <tt>/etc/kadeploy/clusterpartition.conf</tt> file.
+ <verb>
+hda size=80000
+part=1 size=2500  fdisktype=82 label=empty type=primary
+part=2 size=2000  fdisktype=83 label=empty type=primary
+part=3 size=20000  fdisktype=83 label=empty type=primary
+part=4 size=55000  label=empty type=extended
+
+part=5 size=5000   fdisktype=83 label=empty type=logical
+part=6 size=5000   fdisktype=83 label=empty type=logical
+part=7 size=5000   fdisktype=83 label=empty type=logical
+part=8 size=5000   fdisktype=83 label=empty type=logical
+part=9 size=5000   fdisktype=83 label=empty type=logical
+part=10 size=5000   fdisktype=83 label=empty type=logical
+part=11 size=5000   fdisktype=83 label=empty type=logical
+part=12 size=5000   fdisktype=83 label=empty type=logical
+part=13 size=5000   fdisktype=83 label=empty type=logical
+</verb>
+
+
 
 <p>
 You need to execute the command:
 <verb>
-#kaaddnode /etc/kadeploy/cluster_description.txt
+#kanodes -add
 Checking variable definition...
-Registration completed.
+
+Deleting partition table
+Checking /etc/kadeploy/clusternodes.conf
+Registring cls1
+Registring cls2
+Nodes Registration completed.
+
+Checking /etc/kadeploy/clusterpartition.conf
+Registring harddisk hda
+Registring part1 empty
+Registring part2 empty
+Registring part3 empty
+Registring part5 empty
+Registring part6 empty
+Registring part7 empty
+Registring part8 empty
+Registring part9 empty
+Registring part10 empty
+Registring part11 empty
+Registring part12 empty
+Registring part13 empty
+Register partition done.
 </verb>
 
 <p>
@@ -416,7 +448,9 @@ You have to put some right to your user with the command kaaduser.
 <p>
 The system has been prepared for deployment. Now what ? To deploy, something to be deployed is needed !
 <p>
-The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. The first case is the simplest since nothing has to be done prior to the deployment itself. In the other cases, <ref id="kacreateenv" name="kacreateenv"> (<ref id="kaarchive" name="kaarchive">/<ref id="karecordenv" name="karecordenv">) are used to create and register (create/register) an environment in the database (cf. the environment section for details about these steps).
+The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. 
+The first case is the simplest since nothing has to be done prior to the deployment itself. 
+In the other cases, <ref id="kacreateenv" name="kacreateenv"> (<ref id="kaarchive" name="kaarchive">/<ref id="karecordenv" name="karecordenv">) are used to create and register (create/register) an environment in the database (cf. the environment section for details about these steps).
 <p>
 The deployment itself i.e. of a given environment on target partitions of a set of cluster nodes is done using the <ref id="kadeploy" name="kadeploy"> tool.
 <p>
@@ -433,24 +467,20 @@ If the deployment fails on some nodes, these are rebooted on a default environme
 <p>
 <!-- =========================== -->
 
-<sect1>Preinstall & Postinstall
+<sect1>Preinstall 
 <p>
-The preinstall and postinstall are tarball archive.
-They contains many files AND a <tt>main</tt> scripts.
+The preinstall is a tarball archive.
+It contains many files AND a <tt>main</tt> scripts.
 They are pushed on the node, extracted, and the <tt>main</tt> script is launched.
 (see <tt>/etc/kadeploy/deploy.conf</tt> for setting tarball and script).
-<itemize>
- <item>Preinstall contains actions that are needed in order to deploy the image on the node.
+Preinstall contains actions that are needed in order to deploy the image on the node.
 fdisk, mkfs, mkswap, mount, bench...
- <item>Postinstall contains actions that can't be put in the preinstall scripts.
-Manage the fstab, the ssh services, and what you think important for a node...
-</itemize>
-<p>
-Actually you have to make yourself your fdisk.txt files...
-This file is liked a fdisk, script.
-Not hard but boring, it will be fix sooner.
 
-
+<sect1>Postinstall
+The postinstall is a tarball archive.
+It contains many files AND a <tt>main</tt> scripts.
+Postinstall contains actions that can't be put in the preinstall scripts.
+Manage the ssh services, and what you think important for a node...
 
 
 <!-- =========================== -->
@@ -458,7 +488,7 @@ Not hard but boring, it will be fix sooner.
 <p>
 We will install a node named cls2, with ip 192.168.0.2.
 You need a tarball of a linux box.
-Ssh services, a user deploy are mandatory.
+This tarball need a ssh server and a user deploy.
 something like <tt>myLinux.tgz</tt> that can be created simply like this:
 <verb>
 #cd /
@@ -480,13 +510,13 @@ You now need to record this environement in kadeploy database.
 </verb>
 
 <p>
-Now you have got, an environnement, you have to watch for a preinstall, postinstall archive.
-An example is given in <tt>kadeploy2/tools/cookbook/</tt>.
+Now you got, an environnement, you have to watch for a preinstall, postinstall archive.
+An example is given in <tt>lib/pre_post_script</tt> in the "$prefix" directory.
 
 <p>
 The cluster need a reference environnement to boot up properly.
-It's a chicken eggs problem.
-A solution, is 
+You can boot up the deployment system, if your node isn't installed.
+A simple solution, is 
 <itemize>
 <item>Set the nodes in deployement state with the <tt>setup_pxe.pl</tt> tools (grep label in deploy.conf).
  <verb>#setup_pxe.pl 192.168.0.2:label_deploy_x86 </verb>
@@ -644,6 +674,7 @@ Numerous modifications can be done here, from authentification server to tailore
 <sect>Configuration Files
 <p>
 <em>kadeploy</em> tools suite is configured through two configuration files : <tt>deploy.conf</tt> and <tt>deploy_cmd.conf</tt> in the <tt>/etc/kadeploy/</tt> folder.
+See the manpage for more.
 <!-- =========================== -->
 <!-- =========================== -->
 
