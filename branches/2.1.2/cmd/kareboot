@@ -113,6 +113,7 @@ foreach my $host (@host_list){
     my $part = "";
     my %node_info;
     my @env_info = ();
+    my $deployment;
 
     # debug print 
     # print "NOREBOOT = $noreboot ; SOFT = $soft ; HARD = $hard ; DEPLOY = $deploy\n";
@@ -127,10 +128,13 @@ foreach my $host (@host_list){
 
 	## added for the optimisation methods
 	## new deployment creation
-	my $deployment = libkadeploy2::deploy_iolib::prepare_deployment($base);
-	if(!$deployment){
-	  libkadeploy2::deploy_iolib::disconnect($base);
-	    exit 0;
+	if ($env)
+	{
+	    $deployment = libkadeploy2::deploy_iolib::prepare_deployment($base);
+	    if(!$deployment){
+		libkadeploy2::deploy_iolib::disconnect($base);
+		  exit 0;
+	      }
 	}
 
 
@@ -202,22 +206,25 @@ foreach my $host (@host_list){
 	  push (@hosts_to_reboot, $host);
 	}
 
-	
+
 	#added for the optimisation methods
 	## begins deployment (updates deployed table)	
-	my $environment = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$env);
+	if ($env)
+	{
+	    my $environment = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$env);
 	
-	my $tmp_node;
-	# for the moment, nodes' name and IP are the same
-	foreach my $host (@hosts_to_reboot){
-	     $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $env, $dev, $part);
-        }
-	## runs the deployment (changes state to run)
-	libkadeploy2::deploy_iolib::run_deployment($base,$deployment);	                                 
-	libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
-	###until here
-
-	libkadeploy2::deploy_iolib::disconnect($base);
+	    my $tmp_node;
+	    # for the moment, nodes' name and IP are the same
+	    foreach my $host (@hosts_to_reboot){
+		$tmp_node = libkadeploy2::node_bd->new($host, $deployment, $env, $dev, $part);
+	    }
+	    ## runs the deployment (changes state to run)
+	    libkadeploy2::deploy_iolib::run_deployment($base,$deployment);	                                 
+	    libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
+	    ###until here
+	    
+	    libkadeploy2::deploy_iolib::disconnect($base);
+	}
       }
   }
 

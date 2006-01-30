@@ -450,7 +450,7 @@ if ($usetar)
     print "Umounting fs... ";
     $nodes_set->runRemoteCommand("\" sync  \"");
     $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-    sleep(10);
+    sleep(5);
     print "Done\n";
 }
 
@@ -771,8 +771,14 @@ if(!$depmethod){
 # make all sort of checks
 # parameters : 
 # return value : 1 if successful
-sub check_consistency(){
-
+sub check_consistency()
+{
+    ## check partitioning schema
+    if (system("$kadeploydir/bin/kasetup -printvalidfdisk >/dev/null")!=0)
+    {
+	print STDERR "ERROR : partition check failed\n";
+	exit 1;
+    }
     ## checks if specified nodes are registered
     @db_checked_hosts = check_nodes($base,\@host_list);
     if(!scalar(@db_checked_hosts)){ 
