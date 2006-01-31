@@ -23,6 +23,7 @@ sub get_environments_by_name_and_user($$$);
 sub delete_environments_by_name_and_user($$$);
 # Displayers
 sub print_environment($);
+sub print_environment_envname_user($$);
 
 sub print_usage();
 sub print_user();
@@ -46,6 +47,7 @@ my $base;
 my @users; # -l user1 -l user2 ....
 my $user; # -l user1
 my $spoofuser;
+my $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
 		      
 # get the command-line options
 GetOptions('e=s'               => \@env_list,
@@ -85,7 +87,7 @@ if ($user)
 	    $tmpuser=$i;
 	}
     }
-    print "user selected : $spoofuser\n\n";
+    print STDERR "user selected : $spoofuser\n\n";
     print_user();
     
     libkadeploy2::deploy_iolib::disconnect($base);
@@ -126,23 +128,8 @@ if (@envToDelete)
 
 if (@env_list)
     {
-	my %environments;
-	$base = libkadeploy2::deploy_iolib::connect();
-	for my $env_name (@env_list) 
-	{
-	    %environments = get_environments_by_name_and_user($base, $env_name,$spoofuser);
-	    
-	    if (scalar(keys(%environments)) == 0) 
-	    {
-		print "No environment named '$env_name'\n";
-	    }
-	}
-	    
-	while ((my $envid, my $envinfo) = each(%environments)) 
-	{
-	    print_environment($envinfo);
-	}
-	libkadeploy2::deploy_iolib::disconnect($base);
+	print_environment_envname_user(\@env_list,$spoofuser);
+	print_environment_envname_user(\@env_list,$deploy_user);
 	exit(0);
     }
     
@@ -161,8 +148,8 @@ if (! @env_list && ! @envToDelete){
 
     my $format = "%-17s %12s %-15s %s\n";
 
-    printf ($format, "Name", "Version", "Author", "Description");
-    printf ($format, "----", "-------", "------", "-----------");
+    printf ($format, "Name", "Version", "user", "Description");
+    printf ($format, "----", "-------", "----", "-----------");
 
 
     while ((my $envid, my $envinfo) = each(%environments)) 
@@ -171,7 +158,17 @@ if (! @env_list && ! @envToDelete){
 	$description = "-" unless defined($description);
 	
         printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
-	       $envinfo->{'author'}, $description
+	       $envinfo->{'user'}, $description
+	       );
+    }
+    %environments = get_environments_by_user($base,$deploy_user);
+    while ((my $envid, my $envinfo) = each(%environments)) 
+    {
+	my $description = $envinfo->{'description'};
+	$description = "-" unless defined($description);
+	
+        printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
+	       $envinfo->{'user'}, $description
 	       );
     }
     print "\n\n";
@@ -191,6 +188,36 @@ exit 0;
 
 
 ########################################END OF MAIN########################################
+sub print_environment_envname_user($$)
+{
+    my $ref_env_list=shift;
+    my $user=shift;
+    my $spoofuser;
+    my @env_list;
+    
+    $spoofuser=$user;
+    @env_list=@$ref_env_list;
+    
+    my %environments;
+    $base = libkadeploy2::deploy_iolib::connect();
+    for my $env_name (@env_list) 
+    {
+	%environments = get_environments_by_name_and_user($base, $env_name,$spoofuser);
+	
+	if (scalar(keys(%environments)) == 0) 
+	{
+	    print "No environment named '$env_name'\n";
+	}
+    }
+    
+    while ((my $envid, my $envinfo) = each(%environments)) 
+    {
+	print_environment($envinfo);
+    }
+    libkadeploy2::deploy_iolib::disconnect($base);
+}
+
+
 sub print_usage() {
     print "Usage: \t$0 \n";
     print "                                        - lists my recorded environments\n";
@@ -208,17 +235,17 @@ sub print_user()
     my $base = libkadeploy2::deploy_iolib::connect();
     @listuser=get_userdb($base);
 
-    print "kadeploy users:\n";
-    print "---------------\n";
+    print STDERR "kadeploy users:\n";
+    print STDERR "---------------\n";
     foreach $i (@listuser)
     {
 	if ($i eq $user)
 	{
-	    print "[$i]\n";
+	    print STDERR "[$i]\n";
 	}
 	else
 	{
-	    print "$i\n";
+	    print STDERR "$i\n";
 	}
     }
     print "\n";   
@@ -231,12 +258,12 @@ sub print_environment($)
 {
     my $env = shift;
     
-    my $format = "\t%s = %s\n";
+    my $format = "%s = %s\n";
     my @attributes = ('name','id', 'version', 'description', 'author', 'filebase',
 		      'filesite', 'size', 'initrdpath', 'kernelpath',
 		      'kernelparam', 'fdisktype', 'filesystem', 'siteid','optsupport','user');
     
-    print "########################################$env->{name} v$env->{version}########################################\n\n";
+    print "#$env->{name} v$env->{version}\n\n";
     
     for my $attr (@attributes) 
     {

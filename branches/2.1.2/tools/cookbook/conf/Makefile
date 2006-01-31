@@ -76,7 +76,7 @@ VERSION = 2.1.2
 XSLTPROC = xsltproc
 
 cookbookconfdir = $(prefix)/share/cookbook/conf
-cookbookconf_DATA = cluster_description.txt  dhcpd.conf  deploy_cmd.conf  deploy.conf  sudoers.file
+cookbookconf_DATA = dhcpd.conf  deploy_cmd.conf  deploy.conf  clusterpartition.conf clusternodes.conf
 EXTRA_DIST = $(cookbookconf_DATA)
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 

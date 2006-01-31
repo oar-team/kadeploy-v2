@@ -30,8 +30,7 @@ GetOptions('p=s'             => \@port,
            'machine=s'     => \@host_list,
 	   );
 
-#my $sentinelle_path = "/usr/local/bin/DKsentinelle";
-#my $args_sentinelle = "-crsh -lroot -ctimeout=2000 -v ";
+if ($#host_list<0) { print STDERR "ERROR : you have to specify at least a node.\n"; exit 1; }
 
 my $sentinelle_path = libkadeploy2::conflib::get_conf("remote_sentinelle_rsh");
 my $args_sentinelle = libkadeploy2::conflib::get_conf("remote_sentinelle_rsh_default_args");

@@ -53,7 +53,7 @@ sub checkbinfiles();
 sub sudowrapping();
 sub copybinfiles();
 sub printvalidsudoers();
-sub printvalidfdisk();
+sub printvalidfdisk($);
 sub createtftp();
 sub loadpartitionfile($);
 sub printpart($);
@@ -68,6 +68,8 @@ GetOptions('checkdeployconf!'         => \$checkdeployconf,
            'checksudoers!'            => \$checksudoers,
 	   'printvalidsudoers!'       => \$printvalidsudoers,
 	   'printvalidfdisk!'         => \$printvalidfdisk,
+	   'loadpartitionfile=s'      => \$partitionfile,
+	   'lpf=s'                    => \$partitionfile,
 	   'printvalidfstab!'         => \$printvalidfstablinux,
 	   'rootdev=s'                => \$rootdev,
 	   'rootpartnumber=i'         => \$rootpartnumber,
@@ -110,7 +112,7 @@ if ($checkdeployconf      ||
     if ($sudowrapping)         { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
     if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
     if ($createtftp)           { createtftp(); }
-    if ($printvalidfdisk)      { printvalidfdisk(); }    
+    if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
     exit 0;
 }
 else
@@ -176,15 +178,16 @@ $rootdev$swapdevnumber       none            swap    sw                      0  
 }
 
 
-sub printvalidfdisk()
+sub printvalidfdisk($)
 {
-	my %disk;	
-	%disk=loadpartitionfile($partitionfile);
-	checkcorrectness(\%disk);
-	#printpart(\%disk);
-	printfdiskdeleteprimary();
-	printfdiskformat(\%disk);
-	printfdiskwrite();
+    my $partitionfile=shift;
+    my %disk;	
+    %disk=loadpartitionfile($partitionfile);
+    checkcorrectness(\%disk);
+    #printpart(\%disk);
+    printfdiskdeleteprimary();
+    printfdiskformat(\%disk);
+    printfdiskwrite();
 }
 
 sub checkcorrectness($)
@@ -296,6 +299,7 @@ sub loadpartitionfile($)
     my $sizeofprimary=0;
     my $numberofprimary=0;
     my $numberofextended=0;
+    my $numberoflogical=0;
     $type="";
 
     if (open(FH,$partitionfile))
@@ -322,7 +326,7 @@ sub loadpartitionfile($)
 		if ($type eq "logical" && $number < 4) { print STDERR "ERROR logical part begin at 5\n"; $linecorrect=0;}
 		if ($type eq "primary" && $number > 4) { print STDERR "ERROR primary part must be [1..4]\n"; $linecorrect=0;}
 		if ($type eq "primary") { $numberofprimary++; $sizeofprimary+=$size; }
-		if ($type eq "logical") { $sizeoflogical+=$size; }
+		if ($type eq "logical") { $sizeoflogical+=$size; $numberoflogical++; }
 		foreach my $tmpnumber (@listnumber)
 		{
 		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
@@ -382,7 +386,11 @@ sub loadpartitionfile($)
 	print "Error opening $partitionfile\n";
 	exit 1;
     }
-    if ($sizeoflogical >= $sizeofextended) { print STDERR "ERROR size of extended part >= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }
+    if ($sizeoflogical >= $sizeofextended &&
+	$numberofextended > 0 &&
+	$numberoflogical  > 0	
+	) 
+    { print STDERR "ERROR size of extended part >= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }
     return %disk;
 }
 
@@ -986,6 +994,7 @@ sub help()
 \t-checkdeployconf               check $deployconf
 \t-checksudoers                  print a valid sudoers
 \t-printvalidfdisk               print a fdisk file from 
+\t-loadpartitionfile             load a custom partition file
 \t-printvalidsudoers             generate a sudoers from deploy.conf
 \t-printvalidfstab               generate a fstab for linux with rootfs parameters
 \t-rootfs                        printvalidfstab parameters to know the boot device /dev/hda1        

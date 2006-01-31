@@ -32,24 +32,27 @@ GetOptions('l=s' => \@user_list,
 	   'partition=s' => \@part_list
 	   );
 
-if (!@user_list){
-    print "WARNING : no user specified ; rights granted to all users\n";
-    @user_list = ("*");
+if (!@user_list)
+{
+    print STDERR "ERROR : no user specified\n";
+    exit 1;
 }
 
 my $base = libkadeploy2::deploy_iolib::connect();
 
 ## sets default values if needed
 if (!@host_list){
-    print "WARNING : no host specified ; rights granted for all nodes\n";
-    @checked_hosts = ("*");
-}else{
+    print STDERR "ERROR : no host specified\n";
+    exit 1;
+}
+else
+{
     ## checks if specified nodes are registered
     @checked_hosts = check_nodes($base,\@host_list);
     if(!scalar(@checked_hosts)){ 
-	print "ERROR : none of the specified nodes is registered\n";
+	print STDERR "ERROR : none of the specified nodes is registered\n";
 	libkadeploy2::deploy_iolib::disconnect($base);
-	exit 0;
+	exit 1;
       }
 }
 if (!@part_list){

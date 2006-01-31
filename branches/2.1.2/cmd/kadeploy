@@ -65,6 +65,7 @@ my $pre_pipe;
 my $dest_pipe;
 my $post_pipe;
 
+
 ## Nodes sets used during depoymetnt process
 my $nodes_set;
 my $deployed_nodes_set;
@@ -77,6 +78,7 @@ my $depmethod;    #command variable for deployment method
 
 my $bootstrap=0;  # deploy an environment from the linuxdeploy env (rsh) : no first reboot
 my $user;
+my $partitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $nodetype;
 my $verbose;
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
@@ -320,6 +322,8 @@ $destination_partition = "/dev/" . $dev . $part;
 #
 if($depmethod!=0)
 {
+    $nodes_set->runRemoteCommand("\" umount /mnt/rambin \"");
+    $nodes_set->runRemoteCommand("\" umount /mnt/dest \"");
     $nodes_set->runRemoteCommand("\" mkdir /mnt/rambin \"");
     $nodes_set->runRemoteCommand("\" mkdir /mnt/dest \"");
     $nodes_set->runRemoteCommand("\" mkdir /mnt/tmp \"");
@@ -334,6 +338,8 @@ if($depmethod!=0)
     $nodes_set->runCommandSimplessh("(tar zxC < /tmp/post_pipe /rambin)");		      
 }
 
+#umount the destination partition ( if a kadeploy has canceled before )
+$nodes_set->runRemoteCommand("\" umount /mnt/dest \"");
 
 print "<PreInstall>\n";
 # pre-installation
@@ -347,7 +353,7 @@ $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_
 if ($depmethod==0)
 {
     $mcat_first_port++;
-    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfdisk", "cat > /mnt/rambin/fdisk.txt", $mcat_first_port);
+    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > /mnt/rambin/fdisk.txt", $mcat_first_port);
 }
 print "Executing preinstall...";
 $nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
@@ -448,9 +454,8 @@ else{
 if ($usetar)
 {
     print "Umounting fs... ";
-    $nodes_set->runRemoteCommand("\" sync  \"");
     $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-    sleep(5);
+    sleep(1);
     print "Done\n";
 }
 
@@ -666,13 +671,13 @@ sub set_mkfs_option($){
 sub usages()
 {
 print "Use : kadeploy 
-\t[-m|--machine hostname] 
-\t[-f|--file node_file]                 Choose -m XOR -f
-\t[-e|--environment environment_name]
-\t[-p|--partition partition]
-\t[-d 0|1] Optimisation support
+\t[-m   | --machine hostname] 
+\t[-f   | --file node_file]                 Choose -m XOR -f
+\t[-e   | --environment environment_name]
+\t[-p   | --partition partition]
+\t[-lpf | --loadpartitionfile partitionfile]
+\t[-d 0 | 1] Optimisation support
 \t[-bootstrap] deploy a node from deployment kernel\n";
-#\t[-bootstrap] Deploy nodes in deploy environment\n";
 }
 
 
@@ -705,6 +710,8 @@ sub check_options(){
 	       'd=s' => \$depmethod,
 	       'bootstrap' => \$bootstrap,
 	       'l=s'       => \$user,
+	       'loadpartitionfile=s' => \$partitionfile,
+	       'lpf=s'               => \$partitionfile,
 	       'v!'        => \$verbose,
 	       'verbose'   => \$verbose,
 	       'h' => \$help	       
@@ -774,10 +781,9 @@ if(!$depmethod){
 sub check_consistency()
 {
     ## check partitioning schema
-    if (system("$kadeploydir/bin/kasetup -printvalidfdisk >/dev/null")!=0)
+    if (system("$kadeploydir/bin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
-	print STDERR "ERROR : partition check failed\n";
-	exit 1;
+	halt("ERROR : partition check failed\n");
     }
     ## checks if specified nodes are registered
     @db_checked_hosts = check_nodes($base,\@host_list);

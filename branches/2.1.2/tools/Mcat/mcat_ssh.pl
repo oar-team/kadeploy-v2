@@ -31,9 +31,7 @@ GetOptions('p=s'             => \@port,
 	   );
 
 
-
-#my $sentinelle_path = "/usr/bin/sentinelle";
-#my $args_sentinelle = "-cssh -ctimeout=2000 -v ";
+if ($#host_list<0) { print STDERR "ERROR : you have to specify at least a node.\n"; exit 1; }
 
 my $sentinelle_path = libkadeploy2::conflib::get_conf("prod_sentinelle_cmd");
 my $args_sentinelle = libkadeploy2::conflib::get_conf("prod_sentinelle_default_args");

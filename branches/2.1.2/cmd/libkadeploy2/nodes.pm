@@ -527,7 +527,7 @@ sub check {
 # window_size: max number of simultaneous processes
 # $errorString: error to register for the nodes on failure
 #
-sub runThose {
+sub runThoseold {
     my $self = shift;
     my $ref_to_commands = shift;
     my $timeout = shift;
@@ -595,6 +595,77 @@ sub runThose {
 
     return 1;
 }
+
+sub runThose {
+    my $self = shift;
+    my $ref_to_commands = shift;
+    my $timeout = shift;
+    my $window_size = shift;
+    my $errorString = shift;
+    my $verbose=1;
+
+
+    my %commandsToRun = %{$ref_to_commands};
+
+    my @nodes=keys(%commandsToRun);
+
+    my $index = 0;
+    my %running_processes;
+    my %finished_processes;
+
+
+    if (!$window_size) {
+        $window_size = scalar(@nodes)+1;
+    }
+
+    while (scalar(keys(%finished_processes)) <= $#nodes){
+      while((scalar(keys(%running_processes)) < $window_size) && ($index <= $#nodes)){
+        print("[VERBOSE] fork process for the node $nodes[$index]\n") if ($verbose);
+        my $pid = fork();
+        if (defined($pid)){
+          if ($pid == 0){
+            #In the child
+            # Initiate timeout
+            alarm($timeout);
+            my $cmd = $commandsToRun{$nodes[$index]};
+            print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
+            exec($cmd);
+          }
+          $running_processes{$pid} = $index;
+          print ("[VERBOSE] job $pid forked\n") if ($verbose);
+        }else{
+          warn("/!\\ fork system call failed for node $nodes[$index].\n");
+        }
+        $index++;
+      }
+      my $waited_pid = wait();
+      my $exit_value = $? >> 8;
+      my $signal_num  = $? & 127;
+      my $dumped_core = $? & 128;
+
+      if ($waited_pid == -1){
+        die("/!\\ wait return -1 so there is no child process. It is a mistake\n");
+      }else{
+        if (defined($running_processes{$waited_pid})){
+          print("[VERBOSE] Child process $waited_pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n") if ($verbose);
+          $finished_processes{$running_processes{$waited_pid}} = [$exit_value,$signal_num,$dumped_core];
+          delete($running_processes{$waited_pid});
+        }
+      }
+    }
+
+    foreach my $i (keys(%finished_processes)){
+      my $verdict = "BAD";
+      if (($finished_processes{$i}->[0] == 0) && ($finished_processes{$i}->[1] == 0) && ($finished_processes{$i}->[2] == 0)){
+        $verdict = "GOOD";
+      }
+      print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])\n");
+    }
+
+    return 1;
+}
+
+
 
 
 #
@@ -760,11 +831,35 @@ sub runCommandMcat {
 
 
 
-
 #
 # runs the remote command only!
 #
 sub runRemoteCommand {
+    my $self = shift;
+    my $remoteCommand = shift;
+    my $connector = "rsh -l root";
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
+
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+    }
+
+    return $self->runThose(\%executedCommands, 10, 50, "failed on node");		    
+
+}
+
+
+
+
+#
+# runs the remote command only!
+#
+sub runRemoteCommandold {
     my $self = shift;
     my $command = shift;
     return ($self->runCommand("", $command));
@@ -886,10 +981,34 @@ my $self = shift;
 #}
 
 
-sub rebootThoseNodes {
+sub rebootThoseNodes 
+{
     my $self = shift;
     my $connector = "rsh -l root";
-    my $remoteCommand = "/rambin/bin/reboot_detach &";
+    my $remoteCommand = "reboot_detach";
+
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
+
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+        $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+    }
+
+    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");             
+}
+
+
+
+
+
+sub rebootThoseNodesold {
+    my $self = shift;
+    my $connector = "rsh -l root";
+    my $remoteCommand = "reboot_detach &";
 
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
