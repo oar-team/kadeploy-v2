@@ -527,7 +527,7 @@ sub check {
 # window_size: max number of simultaneous processes
 # $errorString: error to register for the nodes on failure
 #
-sub runThoseold {
+sub runThoseExtern {
     my $self = shift;
     my $ref_to_commands = shift;
     my $timeout = shift;
@@ -703,7 +703,7 @@ sub runIt {
 
 
 
-print $executedCommand .  "\n";
+    print $executedCommand .  "\n";
     
     my $pid = open3(\*WRITER, \*READER, \*READER, $executedCommand );
     $sentinellePID=$pid;
@@ -785,31 +785,40 @@ sub runCommandMcat {
     my $nodes="";
     my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
+    my $internal_parallel_command=libkadeploy2::conflib::get_conf("use_internal_parallel_command");
     my $pid;
     my $timeout=200;
     my $firstnode="";
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
-    foreach my $key (sort keys %{$self->{nodesReady}}) 
+    if ($internal_parallel_command eq "yes")
     {
-	if ( $firstnode eq "") { $firstnode=$key; }
-        $nodes .= " $key";
-    }
 
-    $pid=fork();
-    if ($pid==0)
-    {
-	$self->runRemoteCommandTimeout("\" $remote_mcat 1 $mcatPort '".$server_command."' '".$nodes_command."' ".$nodes."  \" ",$timeout);
-	exit 0;
+	foreach my $key (sort keys %{$self->{nodesReady}}) 
+	{
+	    if ( $firstnode eq "") { $firstnode=$key; }
+	    $nodes .= " $key";
+	}
+	
+	$pid=fork();
+	if ($pid==0)
+	{
+	    $self->runRemoteCommandTimeout("\" $remote_mcat 1 $mcatPort '".$server_command."' '".$nodes_command."' ".$nodes."  \" ",$timeout);
+	    exit 0;
+	}
+	else
+	{
+	    my $command="$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$firstnode;
+	    sleep(2);
+	    print "mcat local: $command\n";
+	    system($command);
+	    print "mcat local done\n";
+	    waitpid($pid,0);
+	}
     }
-    else
+    else #use external mcat
     {
-	my $command="$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$firstnode;
-	sleep(2);
-	print "mcat local: $command\n";
-	system($command);
-	print "mcat local done\n";
-	waitpid($pid,0);
+	$self->runCommandMcatExtern($server_command,$nodes_command,$mcatPort);
     }
 }
 
@@ -817,7 +826,8 @@ sub runCommandMcat {
 
 
 
-sub runCommandMcatold {
+sub runCommandMcatExtern 
+{
     my $self = shift;
     my $server_command = shift;
     my $nodes_command = shift;
@@ -879,15 +889,24 @@ sub runRemoteCommand($$)
     my $connector = "rsh -l root";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+    my $internal_parallel_command=libkadeploy2::conflib::get_conf("use_internal_parallel_command");
 
     if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
         return 1;
     }
 
-    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
-	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+    if ($internal_parallel_command eq "yes")
+    {
+	foreach my $nodeIP (sort keys %{$self->{nodesReady}}) 
+	{
+	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+	}
+	return $self->runThose(\%executedCommands, 10, 50, "failed on node");		    
     }
-    return $self->runThose(\%executedCommands, 10, 50, "failed on node");		    
+    else
+    {
+	return $self->runRemoteCommandExtern($remoteCommand);
+    }
 }
 
 sub runRemoteCommandTimeout($$$)
@@ -916,7 +935,7 @@ sub runRemoteCommandTimeout($$$)
 #
 # runs the remote command only!
 #
-sub runRemoteCommandold {
+sub runRemoteCommandExtern {
     my $self = shift;
     my $command = shift;
     return ($self->runCommand("", $command));
@@ -1011,31 +1030,6 @@ my $self = shift;
 
 
 
-#
-# Reboot nodes from deployment system
-#
-#sub rebootNodes {
-#    my $self = shift;
-#    my $launcherOpts = "-c rsh -l root -t 2 -w 50";
-#    my $launcherDirectory = $kadeploy2Directory . "/tools/sentinelle/";
-#    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
-#    my $remoteCommand = "shutdown  -r now";
-#
-#    my $executedCommand = $parallelLauncher . " " . $launcherOpts;
-#
-#    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-#
-#    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-#        return 1;
-#    }
-#
-#    foreach my $key (sort keys %{$self->{nodesReady}}) {
-#        $executedCommand .= " -m $key";
-#    }
-#    $executedCommand .=	" -p " . "\"" . $remoteCommand . "\"";
-#    system ($executedCommand);
-#    return 1;
-#}
 
 
 sub rebootThoseNodes 
@@ -1123,6 +1117,33 @@ sub runRemoteSystemCommand {
     return 1;
 }
 
+
+
+#
+# Reboot nodes from deployment system
+#
+#sub rebootNodes {
+#    my $self = shift;
+#    my $launcherOpts = "-c rsh -l root -t 2 -w 50";
+#    my $launcherDirectory = $kadeploy2Directory . "/tools/sentinelle/";
+#    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
+#    my $remoteCommand = "shutdown  -r now";
+#
+#    my $executedCommand = $parallelLauncher . " " . $launcherOpts;
+#
+#    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+#
+#    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+#        return 1;
+#    }
+#
+#    foreach my $key (sort keys %{$self->{nodesReady}}) {
+#        $executedCommand .= " -m $key";
+#    }
+#    $executedCommand .=	" -p " . "\"" . $remoteCommand . "\"";
+#    system ($executedCommand);
+#    return 1;
+#}
 
 
 1;

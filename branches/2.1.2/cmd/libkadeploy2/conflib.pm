@@ -75,6 +75,8 @@ sub check_conf {
 		  "remote_sentinelle_rsh" => 3,
 		  "remote_sentinelle_rsh_default_args" => 1,
 		  "remote_mcat" => 3,
+		  "use_internal_parallel_command" => 7,
+		  "do_fdisk_on_deploy" => 7,
 
 		  "kadeploy2_directory" => 6,
 		  "first_check_timeout" => 1,
@@ -177,6 +179,16 @@ sub check_conf {
 		    print "ERROR : $var variable should start with an /\n";
 		    $missing = 1;
 		}
+	    }elsif($type == 7){
+		if (!(
+		      ($params{$var} =~ /yes/) ||
+		      ($params{$var} =~ /no/)
+		      )
+		    )
+		{
+		    print "ERROR :$var should be yes or no\n";
+		    $missing = 1;
+		}		    	
 	    }else{ # pas de check
 		;
 	    }
