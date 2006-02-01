@@ -786,12 +786,13 @@ sub runCommandMcat {
     my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
     my $pid;
-    my $timeout=100;
-
+    my $timeout=200;
+    my $firstnode="";
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
     foreach my $key (sort keys %{$self->{nodesReady}}) 
     {
+	if ( $firstnode eq "") { $firstnode=$key; }
         $nodes .= " $key";
     }
 
@@ -803,8 +804,11 @@ sub runCommandMcat {
     }
     else
     {
-	sleep(1);
-	system("$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$nodes);
+	my $command="$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$firstnode;
+	sleep(2);
+	print "mcat local: $command\n";
+	system($command);
+	print "mcat local done\n";
 	waitpid($pid,0);
     }
 }

@@ -42,6 +42,7 @@ my @db_checked_hosts = ();  # nodes existing in database
 my $dev;                    # device e.g. hda
 my $part;                   # partition number e.g. 1
 my $destination_partition;  # deployment target partition e.g. /dev/hda1
+my $destination_disk;       # deployment target disk e.g /dev/hda
 my $grub_boot_img_name;     # grub boot image name e.g. grub_deploy_debian_bootvmlinuz_hda1
 my $grub_menu_file_name;    # grub menu file name e.g. menu1_hda1
 my $pre_install_archive;    # path to pre-install archive
@@ -81,6 +82,8 @@ my $user;
 my $partitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $nodetype;
 my $verbose;
+my $remote_fdisk_file="/mnt/rambin/fdisk.txt";
+my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
 my $help;
 
@@ -317,6 +320,7 @@ print "First Check: " . $time_first_check . "\n";
 #
 # Let's go!
 #
+$destination_disk = "/dev/".$dev;
 $destination_partition = "/dev/" . $dev . $part;
 
 #
@@ -352,14 +356,17 @@ print "Retrieving preinstall\n";
 my $mcat_first_port = ($deployment%100)*3+12000;
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
-if ($depmethod==0)
+if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
     $mcat_first_port++;
-    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > /mnt/rambin/fdisk.txt", $mcat_first_port);
+    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
+    $nodes_set->runRemoteCommand("\" cat $remote_fdisk_file | fdisk $destination_disk \"");
 }
+
 print "Executing preinstall...";
 $nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
 print "Done\n";
+
 # time bench
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 my $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
