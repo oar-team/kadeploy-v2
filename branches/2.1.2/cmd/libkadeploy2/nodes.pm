@@ -777,9 +777,43 @@ sub runCommandSimplessh {
     return ($self->runIt($parallelLauncher." ".$launcherOpts, "", $commandRemote));
 }
 	
-
-
 sub runCommandMcat {
+    my $self = shift;
+    my $server_command = shift;
+    my $nodes_command = shift;
+    my $mcatPort = shift; # port to use for data transfert
+    my $nodes="";
+    my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
+    my $pid;
+    my $timeout=100;
+
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    foreach my $key (sort keys %{$self->{nodesReady}}) 
+    {
+        $nodes .= " $key";
+    }
+
+    $pid=fork();
+    if ($pid==0)
+    {
+	$self->runRemoteCommandTimeout("\" $remote_mcat 1 $mcatPort '".$server_command."' '".$nodes_command."' ".$nodes."  \" ",$timeout);
+	exit 0;
+    }
+    else
+    {
+	sleep(1);
+	system("$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$nodes);
+	waitpid($pid,0);
+    }
+}
+
+
+
+
+
+sub runCommandMcatold {
     my $self = shift;
     my $server_command = shift;
     my $nodes_command = shift;
@@ -834,7 +868,8 @@ sub runCommandMcat {
 #
 # runs the remote command only!
 #
-sub runRemoteCommand {
+sub runRemoteCommand($$)
+{
     my $self = shift;
     my $remoteCommand = shift;
     my $connector = "rsh -l root";
@@ -848,10 +883,28 @@ sub runRemoteCommand {
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
 	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
-
     return $self->runThose(\%executedCommands, 10, 50, "failed on node");		    
-
 }
+
+sub runRemoteCommandTimeout($$$)
+{
+    my $self = shift;
+    my $remoteCommand = shift;
+    my $timeout = shift;
+    my $connector = "rsh -l root";
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
+
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+    }
+    return $self->runThose(\%executedCommands, $timeout, 50, "failed on node");		    
+}
+
 
 
 
@@ -998,7 +1051,7 @@ sub rebootThoseNodes
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
 
-    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");             
+    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");
 }
 
 

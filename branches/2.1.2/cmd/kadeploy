@@ -240,10 +240,12 @@ my $tmp_node;
 
 foreach my $host (@db_checked_hosts){
     $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $env, $dev, $part);
-    if ($tmp_node) {
+    if ($tmp_node) 
+    {
 	$nodes_set->add($tmp_node);
     }
-    else {
+    else 
+    {
 	print "node $host not included in current deployment\n";
     }
 }
@@ -461,6 +463,8 @@ if ($usetar)
 
 
 # grub and pxe
+#libkadeploy2::deploy_iolib::disconnect($base);
+#$base=libkadeploy2::deploy_iolib::connect();
 libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
 
 #my @to_reboot = @db_checked_hosts;

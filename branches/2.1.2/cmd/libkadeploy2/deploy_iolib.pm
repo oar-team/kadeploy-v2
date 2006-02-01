@@ -110,7 +110,7 @@ sub connect() {
     my $user = libkadeploy2::conflib::get_conf("deploy_db_login");
     my $pwd  = libkadeploy2::conflib::get_conf("deploy_db_psswd");
 
-    my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0}) or $status = 0;
+    my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0,'InactiveDestroy'=>1}) or $status = 0;
     
     if($status == 0){
 	print "ERROR : connection to database $name failed\n";
