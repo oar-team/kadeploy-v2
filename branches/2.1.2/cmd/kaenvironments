@@ -24,6 +24,7 @@ sub delete_environments_by_name_and_user($$$);
 # Displayers
 sub print_environment($);
 sub print_environment_envname_user($$);
+sub print_all_environment_by_user($$$);
 
 sub print_usage();
 sub print_user();
