@@ -490,7 +490,7 @@ sub printpreinstallconf($)
     my $tmphash1;
     my $tmphash2;
     my $tmphash3;
-
+    my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
     my $HARDDRIVE;
     my $SWAP_DEV;
     my $TMP_DEV;
@@ -542,6 +542,7 @@ sub printpreinstallconf($)
     if ($HARDDRIVE)
     {
 	$output.="HARDDRIVE=$HARDDRIVE\n";
+	if ($do_fdisk_on_deploy eq "yes") { $output.="DO_FDISK=1\n"; } else { "DO_FDISK=0\n"; }
 	if ($SWAP_DEV)    { $output.="SWAP_FORMAT=1\nSWAP_DEV=$SWAP_DEV\n"; }
 	if ($SCRATCH_DEV) { $output.="SCRATCH_FORMAT=1\nSCRATCH_FS=ext2\nSCRATCH_DEV=$SCRATCH_DEV\n"; }
 	if ($TMP_DEV)     { $output.="TMP_FORMAT=1\nTMP_FS=ext2\nTMP_DEV=$TMP_DEV\n"; }
