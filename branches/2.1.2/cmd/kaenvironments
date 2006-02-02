@@ -206,7 +206,7 @@ sub print_environment_envname_user($$)
 	
 	if (scalar(keys(%environments)) == 0) 
 	{
-	    print "No environment named '$env_name'\n";
+	    print "No environment named '$env_name' with user $spoofuser\n";
 	}
     }
     

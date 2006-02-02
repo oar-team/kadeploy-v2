@@ -23,6 +23,7 @@ my $query = "";
 my @hosts_to_reboot = (); # list of nodes to reboot
 my $verbose = 0;
 my $debug = 1;
+my $username = getpwuid($ENV{SUDO_UID}); # real user
 
 if (!@ARGV){
     print "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] -m|--machine hostname [-e|--environment name] [-p|--partition partition]\n";
@@ -213,8 +214,6 @@ foreach my $host (@host_list){
 	## begins deployment (updates deployed table)	
 	if ($env)
 	{
-	    my $environment = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($base,$env);
-	
 	    my $tmp_node;
 	    # for the moment, nodes' name and IP are the same
 	    foreach my $host (@hosts_to_reboot){
@@ -223,8 +222,7 @@ foreach my $host (@host_list){
 	    ## runs the deployment (changes state to run)
 	    libkadeploy2::deploy_iolib::run_deployment($base,$deployment);	                                 
 	    libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
-	    ###until here
-	    
+	    ###until here	    
 	    libkadeploy2::deploy_iolib::disconnect($base);
 	}
       }

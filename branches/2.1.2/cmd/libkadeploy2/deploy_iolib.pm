@@ -36,9 +36,10 @@ sub search_deployed_env($$$);
 sub autochoose_partition($%);
 
 # database accessors #
-sub env_name_ver_to_id($$$);
-sub env_name_to_last_ver_id($$);
-sub env_name_to_versions($$);
+#sub env_name_ver_to_id($$$);
+#sub env_name_to_last_ver_id($$);
+#sub env_name_to_versions($$);
+
 sub env_name_user_to_last_ver_id($$$);
 
 sub env_id_to_name($$);
