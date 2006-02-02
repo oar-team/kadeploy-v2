@@ -129,7 +129,10 @@ if (@envToDelete)
 if (@env_list)
     {
 	print_environment_envname_user(\@env_list,$spoofuser);
-	print_environment_envname_user(\@env_list,$deploy_user);
+	if (!($spoofuser eq $deploy_user))
+	{
+	    print_environment_envname_user(\@env_list,$deploy_user);
+	}
 	exit(0);
     }
     
