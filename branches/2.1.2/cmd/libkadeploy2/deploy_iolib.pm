@@ -763,6 +763,29 @@ sub env_id_to_filesite($$){
     return $filesite;
 }
 
+# env_id_to_filebase
+# gets the filebase matching the id environment
+# parameters : base, environment id
+# return value : filebase
+sub env_id_to_filebase($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.filebase FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $filebase = $ref->{'filebase'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+    return $filebase;
+}
+
+
 
 # env_id_to_filesystem
 # gets the filesystem matching the id environment
