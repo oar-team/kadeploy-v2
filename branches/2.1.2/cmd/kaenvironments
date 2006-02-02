@@ -128,11 +128,11 @@ if (@envToDelete)
 
 if (@env_list)
     {
-	print_environment_envname_user(\@env_list,$spoofuser);
 	if (!($spoofuser eq $deploy_user))
 	{
-	    print_environment_envname_user(\@env_list,$deploy_user);
+	    print_environment_envname_user(\@env_list,$spoofuser);
 	}
+	print_environment_envname_user(\@env_list,$deploy_user);
 	exit(0);
     }
     
@@ -145,36 +145,14 @@ if (! @env_list && ! @envToDelete){
     my $i;
     my @userlist=get_userdb($base);
 
-
-
-    my %environments = get_environments_by_user($base,$spoofuser);
-
-    my $format = "%-17s %12s %-15s %s\n";
-
-    printf ($format, "Name", "Version", "user", "Description");
-    printf ($format, "----", "-------", "----", "-----------");
-
-
-    while ((my $envid, my $envinfo) = each(%environments)) 
+    if (!($spoofuser eq $deploy_user))
     {
-	my $description = $envinfo->{'description'};
-	$description = "-" unless defined($description);
-	
-        printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
-	       $envinfo->{'user'}, $description
-	       );
+	print_all_environment_by_user($base,$spoofuser);
     }
-    %environments = get_environments_by_user($base,$deploy_user);
-    while ((my $envid, my $envinfo) = each(%environments)) 
-    {
-	my $description = $envinfo->{'description'};
-	$description = "-" unless defined($description);
-	
-        printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
-	       $envinfo->{'user'}, $description
-	       );
-    }
+    print_all_environment_by_user($base,$deploy_user);	
+
     print "\n\n";
+
     libkadeploy2::deploy_iolib::disconnect($base);
     exit(0);
 }
@@ -191,6 +169,36 @@ exit 0;
 
 
 ########################################END OF MAIN########################################
+sub print_all_environment_by_user($$)
+{
+    my $base=shift;
+    my $spoofuser=shift;
+    my %environments = get_environments_by_user($base,$spoofuser);
+    
+    my $format = "%-17s %12s %-15s %s\n";
+    
+    printf ($format, "Name", "Version", "user", "Description");
+    printf ($format, "----", "-------", "----", "-----------");
+
+    
+    while ((my $envid, my $envinfo) = each(%environments)) 
+    {
+	my $description = $envinfo->{'description'};
+	$description = "-" unless defined($description);
+	
+        printf($format, $envinfo->{'name'}, $envinfo->{'version'}, 
+	       $envinfo->{'user'}, $description
+	       );
+    }
+    
+}
+
+
+
+
+
+
+
 sub print_environment_envname_user($$)
 {
     my $ref_env_list=shift;
