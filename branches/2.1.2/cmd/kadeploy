@@ -658,7 +658,7 @@ sub set_tar_options($){
     }
     else
     {
-	print "ERROR : unknown archive format\n";
+	print "ERROR : unknown archive format $extension\n";
 	return 0;
     }
 }
