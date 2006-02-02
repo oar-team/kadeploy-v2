@@ -142,14 +142,15 @@ if (@env_list)
 if (! @env_list && ! @envToDelete){
     # List all the environemnts
     $base = libkadeploy2::deploy_iolib::connect();
-    my $i;
+    my $start=1;
     my @userlist=get_userdb($base);
 
     if (!($spoofuser eq $deploy_user))
     {
-	print_all_environment_by_user($base,$spoofuser);
+	print_all_environment_by_user($base,$spoofuser,$start);
+	$start--;
     }
-    print_all_environment_by_user($base,$deploy_user);	
+    print_all_environment_by_user($base,$deploy_user,$start);	
 
     print "\n\n";
 
@@ -169,16 +170,20 @@ exit 0;
 
 
 ########################################END OF MAIN########################################
-sub print_all_environment_by_user($$)
+sub print_all_environment_by_user($$$)
 {
     my $base=shift;
     my $spoofuser=shift;
+    my $start;
     my %environments = get_environments_by_user($base,$spoofuser);
     
-    my $format = "%-17s %12s %-15s %s\n";
+    if ($start)
+    {
+	my $format = "%-17s %12s %-15s %s\n";
     
-    printf ($format, "Name", "Version", "user", "Description");
-    printf ($format, "----", "-------", "----", "-----------");
+	printf ($format, "Name", "Version", "user", "Description");
+	printf ($format, "----", "-------", "----", "-----------");
+    }
 
     
     while ((my $envid, my $envinfo) = each(%environments)) 
