@@ -791,6 +791,7 @@ if(!$depmethod){
 # return value : 1 if successful
 sub check_consistency()
 {
+    my $dopostinstall=1;
     ## check partitioning schema
     if (system("$kadeploydir/bin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
@@ -834,8 +835,11 @@ sub check_consistency()
 	if (!$filebase_option)
 	{
 	    halt("unknown pre install archive format");
-	}
-	
+	}	
+    }
+    else
+    {
+	$dopostinstall=0;
     }
     
     # gets kernel path
@@ -892,10 +896,17 @@ sub check_consistency()
     $filesite = substr($filesite,6);
 
     # checks if the file exists
-    if(!(-e $filesite)){
-	halt("site file does not exist");
-    }elsif(!(-r $filesite)){
-	halt("site file exists but is not allowed to be read by $username");
+    if ($dopostinstall)
+    {
+	if(!(-e $filesite))
+	{
+	    halt("site file does not exist");
+	}
+	elsif(!(-r $filesite))
+	{
+	    halt("site file exists but is not allowed to be read by $username");
+	    
+	}
     }
 
     # checks format file and prepare tar options
