@@ -705,7 +705,7 @@ sub env_id_to_version($$){
 
     $sth->execute();
     my $ref = $sth->fetchrow_hashref();
-    my $size = $ref->{'version'};
+    my $version = $ref->{'version'};
     $sth->finish();
     
     if (!$sth){
