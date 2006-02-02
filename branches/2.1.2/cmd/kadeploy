@@ -79,7 +79,6 @@ my $depmethod;    #command variable for deployment method
 
 my $bootstrap=0;  # deploy an environment from the linuxdeploy env (rsh) : no first reboot
 my $user;
-my $partitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $nodetype;
 my $verbose;
 my $rambinpath="/mnt/rambin/";
@@ -88,6 +87,10 @@ my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
 my $help;
+my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
+my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
+
+
 
 ## to prevent zombie processes
 ## SIGCHLD is ignored and when the child dies, his father does not care...
@@ -683,14 +686,20 @@ sub set_mkfs_option($){
 
 sub usages()
 {
-print "Use : kadeploy 
+    print "Use : kadeploy 
 \t[-m   | --machine hostname] 
 \t[-f   | --file node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
 \t[-p   | --partition partition]
-\t[-lpf | --loadpartitionfile partitionfile]
-\t[-d 0 | 1] Optimisation support
-\t[-bootstrap] deploy a node from deployment kernel\n";
+\t[-bootstrap] deploy a node from deployment kernel
+";
+
+#print "\t[-d 0 | 1] Optimisation support\n"
+
+    if ($do_fdisk_on_deploy eq "yes")
+    {
+	print "\t[-lpf | --loadpartitionfile partitionfile]\n";
+    }
 }
 
 
@@ -732,6 +741,14 @@ sub check_options(){
 
 
     if ($help) { usages(); exit(0); }
+    
+    if ($do_fdisk_on_deploy eq "no" && 
+	$partitionfile)
+    {
+	print "ERROR : you are not allowed to repartition your harddrive.\n";
+	exit 1;
+    }
+
     
     if (!$user)
     {
