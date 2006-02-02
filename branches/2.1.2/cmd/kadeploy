@@ -20,7 +20,7 @@ sub check_options();
 sub check_consistency();
 sub check_nodes($$);
 sub check_partition($$$);
-sub check_env($$);
+sub check_env($$$);
 sub set_tar_options($);
 sub set_mkfs_option($);
 sub halt($);
@@ -632,7 +632,7 @@ sub check_partition($$$){
 # return value : 0 if env does not exist
 # NB : naive version, should check if needed fields are filled in or not
 #      and if values are consistent ; except if done by KaCreateEnv
-sub check_env($$)
+sub check_env($$$)
 {
     my $dbh  = shift;
     my $env  = shift;
