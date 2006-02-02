@@ -901,7 +901,7 @@ sub runRemoteCommand($$)
 	{
 	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
 	}
-	return $self->runThose(\%executedCommands, 10, 50, "failed on node");		    
+	return $self->runThose(\%executedCommands, 20, 50, "failed on node");		    
     }
     else
     {
