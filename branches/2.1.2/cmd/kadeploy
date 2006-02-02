@@ -82,7 +82,9 @@ my $user;
 my $partitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $nodetype;
 my $verbose;
-my $remote_fdisk_file="/mnt/rambin/fdisk.txt";
+my $rambinpath="/mnt/rambin/";
+my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
+my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
 my $help;
@@ -314,9 +316,6 @@ my $time_first_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 print "First Check: " . $time_first_check . "\n";
 
-#$nodes_set->runReportedRemoteCommand("\"echo coucou > ~/test\"", "le noeud est parti au moment d'ecrire dans le fichier /tmp/test");
-#$nodes_set->runReportedRemoteCommand("\" cat ~/test\"", "le noeud est parti");
-
 #
 # Let's go!
 #
@@ -356,6 +355,7 @@ print "Retrieving preinstall\n";
 my $mcat_first_port = ($deployment%100)*3+12000;
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
+
 if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
     $mcat_first_port++;
@@ -363,8 +363,10 @@ if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
     $nodes_set->runRemoteCommand("\" cat $remote_fdisk_file | fdisk $destination_disk \"");
 }
 
+$mcat_first_port++;
+$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
 print "Executing preinstall...";
-$nodes_set->runRemoteCommand("\" /rambin/$pre_install_script \"");
+$nodes_set->runRemoteCommand("\" $rambinpath/$pre_install_script \"");
 print "Done\n";
 
 # time bench
@@ -426,11 +428,11 @@ if ($usetar)
     print "Executing postinstall...";
     #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
     $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port+2);
-    if ($depmethod==0)
-    {
-	$mcat_first_port++;
-	$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfstab -rootdev=/dev/$dev -rootpartnumber=$part", "cat > /rambin/fstab", $mcat_first_port+2);
-    }
+#    if ($depmethod==0)
+#    {
+#	$mcat_first_port++;
+#	$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfstab -rootdev=/dev/$dev -rootpartnumber=$part", "cat > /rambin/fstab", $mcat_first_port+2);
+#    }
     $nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
     print "Done\n";
 

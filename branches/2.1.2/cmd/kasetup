@@ -43,6 +43,7 @@ my $printvalidfstablinux;
 my $rootdev;
 my $rootpartnumber;
 my $swappartnumber;
+my $printpreinstallconf;
 
 sub help();
 sub check_etc_deploy();
@@ -60,6 +61,7 @@ sub printpart($);
 sub printfdiskformat($);
 sub printfdiskdeleteprimary();
 sub printfdiskwrite();
+sub printpreinstallconf($);
 sub checkcorrectness($);
 sub printvalidfstablinux($$);
 sub getlinuxswapdevicenumber($);
@@ -76,10 +78,12 @@ GetOptions('checkdeployconf!'         => \$checkdeployconf,
 	   'checkwriteaccess!'        => \$checkwriteaccess,
 	   'checkbinfiles!'           => \$checkbinfiles,
 	   'copybinfiles!'            => \$copybinfiles,
+	   'printpreinstallconf!'     => \$printpreinstallconf,
 	   'sudowrapping'             => \$sudowrapping,
 	   'createtftp'               => \$createtftp,
 	   'h!'                       => \$help,
 	   );
+
 if ($help)
 {
     help();
@@ -95,7 +99,9 @@ if ($checkdeployconf      ||
     $createtftp           ||
     $printvalidfdisk      ||
     $printvalidfstablinux ||
-    $sudowrapping      
+    $sudowrapping         ||
+    $printpreinstallconf 
+    
     )
 {
 
@@ -113,6 +119,7 @@ if ($checkdeployconf      ||
     if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
     if ($createtftp)           { createtftp(); }
     if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
+    if ($printpreinstallconf)  { printpreinstallconf($partitionfile); }
     exit 0;
 }
 else
@@ -469,6 +476,79 @@ sub printpart($)
 	}
     }
 }
+
+
+sub printpreinstallconf($)
+{
+    my $partitionfile=shift;
+    my %disk;	
+    my $output="";
+    my $key1;
+    my $key2;
+    my $key3;
+    my $key4;
+    my $tmphash1;
+    my $tmphash2;
+    my $tmphash3;
+
+    my $HARDDRIVE;
+    my $SWAP_DEV;
+    my $TMP_DEV;
+    my $SCRATCH_DEV;
+
+    %disk=loadpartitionfile($partitionfile);
+    checkcorrectness(\%disk);
+    foreach $key1 (sort keys %disk)
+    {
+	$tmphash1 = $disk{$key1};
+	if (ref($tmphash1) eq 'HASH')
+	{
+	    foreach $key2 (sort sort_par_num keys %$tmphash1)
+	    {	
+		$tmphash2 = $$tmphash1{$key2};
+		if (ref($tmphash2) eq 'HASH')
+		{
+		    foreach $key3 (sort keys %$tmphash2) 
+		    {
+			if ($key3 eq "label")
+			{
+			    if ($$tmphash2{$key3} eq "swap")
+			    {
+				$SWAP_DEV="$HARDDRIVE$key2";
+			    }
+			    if ($$tmphash2{$key3} eq "scratch")
+			    {
+				$SCRATCH_DEV="$HARDDRIVE$key2";
+			    }
+			    if ($$tmphash2{$key3} eq "tmp")
+			    {
+				$TMP_DEV="$HARDDRIVE$key2";
+			    }
+
+			}
+
+		    }
+		}
+	    }
+	}
+	else
+	{
+	    if ($key1 eq "name")
+	    {
+		$HARDDRIVE="/dev/$disk{$key1}";
+	    }
+	}
+    }
+    if ($HARDDRIVE)
+    {
+	$output.="HARDDRIVE=$HARDDRIVE\n";
+	if ($SWAP_DEV)    { $output.="SWAP_FORMAT=1\nSWAP_DEV=$SWAP_DEV\n"; }
+	if ($SCRATCH_DEV) { $output.="SCRATCH_FORMAT=1\nSCRATCH_FS=ext2\nSCRATCH_DEV=$SCRATCH_DEV\n"; }
+	if ($TMP_DEV)     { $output.="TMP_FORMAT=1\nTMP_FS=ext2\nTMP_DEV=$TMP_DEV\n"; }
+    }
+    print "$output";
+}
+
 
 sub printfdiskformat($)
 {
