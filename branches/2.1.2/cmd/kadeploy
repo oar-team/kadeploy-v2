@@ -752,6 +752,17 @@ sub check_options(){
 	exit 1;
     }
 
+    if ($do_fdisk_on_deploy eq "yes")
+    {
+	if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
+	elsif(! -e $partitionfile)
+	{
+	    print "ERROR : partition file $partitionfile not found.\n";
+	    exit 1;
+	}
+	   
+    }
+
     
     if (!$user)
     {
@@ -772,7 +783,7 @@ sub check_options(){
 	print "ERROR : target partition unspecified\n";
 	exit 1;
     }
-if(!$depmethod){
+    if(!$depmethod){
     	print"No deployment method specified, proceeding with normal deployment\n";
 	$depmethod=0;
     }   
