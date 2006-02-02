@@ -40,20 +40,31 @@ sub env_name_ver_to_id($$$);
 sub env_name_to_last_ver_id($$);
 sub env_name_to_versions($$);
 sub env_name_user_to_last_ver_id($$$);
+
 sub env_id_to_name($$);
 sub env_id_to_size($$);
 sub env_id_to_version($$);
+sub env_id_to_kernel($$);
+sub env_id_to_filebase($$);
+sub env_id_to_filesite($$);
+sub env_id_to_filesystem($$);
+
+
 sub env_name_to_filesystem($$);
 sub env_name_to_kernel($$);
 sub env_name_to_filebase($$);
 sub env_name_to_filesite($$);
 sub env_name_to_size($$);
+
 sub env_undefined_to_id($);
+
 sub disk_id_to_dev($$);
 sub disk_dev_to_id($$);
+
 sub part_nb_to_id($$$);
 sub part_id_to_nb($$);
 sub part_id_to_size($$);
+
 sub node_name_to_id($$);
 sub node_id_to_name($$);
 sub node_name_to_ip($$);
@@ -658,9 +669,9 @@ sub env_id_to_name($$){
 }
 
 # env_id_to_size
-# gets the version matching the id environment
+# gets the size matching the id environment
 # parameters : base, environment id
-# return value : environment version
+# return value : environment size
 sub env_id_to_size($$){
     my $dbh = shift;
     my $id = shift;
@@ -680,6 +691,101 @@ sub env_id_to_size($$){
 
     return $size;
 }
+
+
+# env_id_to_version
+# gets the version matching the id environment
+# parameters : base, environment id
+# return value : environment version
+sub env_id_to_version($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.version FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $size = $ref->{'version'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+
+    return $version;
+}
+
+
+# env_id_to_kernel
+# gets the kernel path matching the id environment
+# parameters : base, environment id
+# return value : kernel path
+sub env_id_to_kernel($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.kernelpath FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $kernelpath = $ref->{'kernelpath'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+    return $kernelpath;
+}
+
+
+# env_id_to_filesite
+# gets the postinstall matching the id environment
+# parameters : base, environment id
+# return value : filesite
+sub env_id_to_filesite($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.filesite FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $filesite = $ref->{'filesite'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+    return $filesite;
+}
+
+
+# env_id_to_filesystem
+# gets the filesystem matching the id environment
+# parameters : base, environment id
+# return value : filesystem
+sub env_id_to_filesystem($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.filesystem FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $filesystem = $ref->{'filesystem'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+    return $filesystem;
+}
+
+
 
 # env_name_to_filesystem
 # gets the filesystem  for last ver of given env
