@@ -845,11 +845,12 @@ sub check_consistency()
     }
 
      ## checks if specified environment exists
-    if(!check_env($base,$env,$user)){
+    if(!check_env($base,$env,$user))
+    {
 	halt("specified env does not exist");
     }
 
-    $envid=check_env($base,$env,$user)
+    $envid=check_env($base,$env,$user);
 
     # gets filebase path
     $filebase =  libkadeploy2::deploy_iolib::env_id_to_filebase($base,$envid);
