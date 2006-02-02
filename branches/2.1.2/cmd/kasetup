@@ -109,7 +109,7 @@ if ($checkdeployconf      ||
     if ($checksudoers)         { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
     if ($checkbinfiles)        { if (checkdeployconf())  { checkbinfiles(); } }
     if ($copybinfiles)         { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
-    if ($sudowrapping)         { if (checkdeployconf() && checkbinfiles() )  { sudowrapping(); } }
+    if ($sudowrapping)         { if (checkdeployconf())  { sudowrapping(); } }
     if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
     if ($createtftp)           { createtftp(); }
     if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
