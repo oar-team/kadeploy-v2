@@ -1078,6 +1078,7 @@ sub help()
 \t-loadpartitionfile             load a custom partition file
 \t-printvalidsudoers             generate a sudoers from deploy.conf
 \t-printvalidfstab               generate a fstab for linux with rootfs parameters
+\t-printpreinstallconf           print preinstall configuration file
 \t-rootfs                        printvalidfstab parameters to know the boot device /dev/hda1        
 \t-sudowrapping                  wrap files with kasudowrapper.sh
 \t-copybinfiles                  copy required files in /usr/local/bin
