@@ -175,7 +175,7 @@ sub print_all_environment_by_user($$$)
 {
     my $base=shift;
     my $spoofuser=shift;
-    my $start;
+    my $start=shift;
     my %environments = get_environments_by_user($base,$spoofuser);
     my $format = "%-17s %12s %-15s %s\n";
 
