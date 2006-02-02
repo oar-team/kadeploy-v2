@@ -827,9 +827,11 @@ sub check_consistency()
 	halt("base file exists but is not allowed to be read by user $username");
     }
     # checks format file and prepare tar options
-    if (!($filebase =~ /^.+\.dd$/ || 
-	  $filebase =~ /^.+\.dd\.gz/
-	  ))
+    if (!
+	($filebase =~ /\.dd$/ || 
+	 $filebase =~ /\.dd\.gz$/
+	 )
+	)
     {
 	$filebase_option = set_tar_options($filebase);
 	if (!$filebase_option)
