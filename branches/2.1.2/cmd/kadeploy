@@ -827,9 +827,9 @@ sub check_consistency()
 	halt("base file exists but is not allowed to be read by user $username");
     }
     # checks format file and prepare tar options
-    if (!
-	($filebase =~ /\.dd$/ || 
-	 $filebase =~ /\.dd\.gz$/
+    if (
+	($filebase =~ /\.tgz$/ || 
+	 $filebase =~ /\.tar\.gz$/
 	 )
 	)
     {
@@ -909,13 +909,14 @@ sub check_consistency()
 	    halt("site file exists but is not allowed to be read by $username");
 	    
 	}
+	# checks format file and prepare tar options
+	$filesite_option = set_tar_options($filesite);
+	if (!$filesite_option)
+	{
+	    halt("unknown post install archive format");
+	}
     }
 
-    # checks format file and prepare tar options
-    $filesite_option = set_tar_options($filesite);
-    if (!$filesite_option){
-	halt("unknown pre install archive format");
-    }
 
     # gets needed stuff from conf file
     $post_script =  libkadeploy2::conflib::get_conf("post_install_script");
