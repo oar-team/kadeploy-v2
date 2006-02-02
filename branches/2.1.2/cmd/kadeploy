@@ -363,7 +363,6 @@ if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
     $mcat_first_port++;
     $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
-    $nodes_set->runRemoteCommand("\" cat $remote_fdisk_file | fdisk $destination_disk \"");
 }
 
 $mcat_first_port++;
@@ -383,6 +382,9 @@ print "Preinstall: " . $time_preinstall . "\n";
 print "<Transfert>\n";
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
+
+$mcat_first_port++;
+
 print "filebase: $filebase\n";
 if ($filebase =~ /^.+\.tar\.gz$/ ||
     $filebase =~ /^.+\.tgz$/     ||
@@ -397,9 +399,9 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
 
     
     print "<tar Transfert>\n";
-# let's send our environment!!
+# send the environment!!
     print "Sending Computing environment to the nodes...\n";
-            $nodes_set->runCommandMcat("cat $filebase", "cat > $dest_pipe", $mcat_first_port+1);
+    $nodes_set->runCommandMcat("cat $filebase", "cat > $dest_pipe", $mcat_first_port);
     print "Done\n";
 }
 if ($filebase =~ /^.+\.dd$/ ||
@@ -409,11 +411,11 @@ if ($filebase =~ /^.+\.dd$/ ||
     print "Sending Computing environment to the nodes...\n";
     if ($filebase =~ /^.+\.dd$/)
     {
-	$nodes_set->runCommandMcat("cat $filebase", "cat > $destination_partition", $mcat_first_port+1);
+	$nodes_set->runCommandMcat("cat $filebase", "cat > $destination_partition", $mcat_first_port);
     }
     if ($filebase =~ /^.+\.dd\.gz$/)
     {
-	$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port+1);
+	$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port);
     }
     
     print "Done\n";
@@ -430,7 +432,8 @@ if ($usetar)
 # post-installation
     print "Executing postinstall...";
     #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
-    $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port+2);
+    $mcat_first_port++;
+    $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port);
 #    if ($depmethod==0)
 #    {
 #	$mcat_first_port++;
