@@ -131,9 +131,11 @@ foreach my $host (@host_list){
 	if ($env)
 	{
 	    $deployment = libkadeploy2::deploy_iolib::prepare_deployment($base);
-	    if(!$deployment){
+	    if (!$deployment)
+	    {
 		libkadeploy2::deploy_iolib::disconnect($base);
-		  exit 0;
+		  print "ERROR : can't create a new deployment\n";
+		  exit 1;
 	      }
 	}
 
