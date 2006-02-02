@@ -255,7 +255,7 @@ sub generate_grub_files_chainload($$$$){
 
 	 
 
-    print MENU "\ntitle $title\nparttype (hd$letter,$part) 0x$hexfdisktype\nrootnoverify (hd$letter,$part)\nchainloader +1\nboot\n";
+    print MENU "\ntitle $title\nparttype (hd$letter,$part) 0x$hexfdisktype\nrootnoverify (hd$letter,$part)\nmakeactive\nchainloader +1\nboot\n";
     
     close MENU;
 	       

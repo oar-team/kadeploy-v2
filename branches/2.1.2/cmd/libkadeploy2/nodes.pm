@@ -787,7 +787,7 @@ sub runCommandMcat {
     my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
     my $internal_parallel_command=libkadeploy2::conflib::get_conf("use_internal_parallel_command");
     my $pid;
-    my $timeout=200;
+    my $timeout=400;
     my $firstnode="";
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 

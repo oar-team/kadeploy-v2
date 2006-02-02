@@ -164,13 +164,16 @@ else
     $filebase_path=$filebase_url;
 }
 
-if ($filesite_url =~ /^\/.+$/)
+if ($filesite_url)
 {
-    $filesite_path.="file:/".$filesite_url;
-}
-else
-{
-    $filesite_path=$filesite_url;
+    if ($filesite_url =~ /^\/.+$/)
+    {
+	$filesite_path.="file:/".$filesite_url;
+    }
+    else
+    {
+	$filesite_path=$filesite_url;
+    }
 }
 
 
