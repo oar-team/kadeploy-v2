@@ -40,7 +40,7 @@ my @host_id_list = ();
 my @part_env_id_list = ();
 my $ok=1;
 
-if ($help) { usage(); }
+if ($help) { usage(); $iwanthelp=0; }
 
 if ($add)
 {
