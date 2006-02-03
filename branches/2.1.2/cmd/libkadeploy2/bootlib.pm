@@ -488,11 +488,11 @@ sub reboot($$$$){
 		{
 		    
 		    exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute hardboot $host $cmd{$host}{\"hardboot\"}: $!\n";
-	
+		    
 		} 
 		else 
 		{
-			exec ("$cmd{$host}{\"softboot\"}") or die "Couldn't execute softboot $host $cmd{$host}{\"softboot\"}: $!\n";
+		    exec ("$cmd{$host}{\"softboot\"}") or die "Couldn't execute softboot $host $cmd{$host}{\"softboot\"}: $!\n";
 		}
 	    }
 	}
