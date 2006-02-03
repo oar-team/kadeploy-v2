@@ -651,7 +651,7 @@ sub env_id_to_name($$){
     my $dbh = shift;
     my $id = shift;
 
-    print "YOP";
+
 
     my $sth = $dbh->prepare("SELECT environment.name
                              FROM environment 
