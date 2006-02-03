@@ -1224,7 +1224,7 @@ sub node_last_dep_env_optsupport($$){
        my $pn = $ref->{'optsupport'};
        $sth->finish();
 
-       return $pn;
+   return $pn;
 }
 
 #node_last_dep_env
@@ -1253,7 +1253,7 @@ sub node_last_dep_env($$){
          my $ref = $sth->fetchrow_hashref();
          my $pn = $ref->{'name'};
          $sth->finish();
-                                                                                                                                                                                                                               return $pn;
+   return $pn;
 }                                                       
 
 #node_last_dep_dev
@@ -1283,9 +1283,41 @@ sub node_last_dep_dev($$){
 	 my $ref = $sth->fetchrow_hashref();
 	 my $pn = $ref->{'device'};
 	 $sth->finish();
-	                                                                                                            return $pn;
-	
+   return $pn;
+   
 }                    
+
+#node_last_envid
+##find the envid of the last deployed environment of the partition of a node
+##parameters: base, hostname
+##return :envid 
+
+sub node_last_envid($$){
+   my $dbh = shift;
+   my $hostname = shift;
+   my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+                            FROM deployed, node
+                            WHERE deployed.nodeid = node.id
+                            AND node.name = \"$hostname\"");
+   
+   $sth->execute();
+	my $max_id = $sth->fetchrow_hashref();
+   $max_id = $max_id->{'maxid'};
+   $sth->finish();
+   
+   my $sth = $dbh->prepare("
+SELECT MAX(envid) as envid 
+FROM deployed 
+WHERE deployid=\"$max_id\"
+	                        ");
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'envid'};
+   $sth->finish();
+   return $pn;
+   
+}                    
+
 
 
 

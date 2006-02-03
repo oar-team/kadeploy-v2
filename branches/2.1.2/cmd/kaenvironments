@@ -48,6 +48,7 @@ my $base;
 my @users; # -l user1 -l user2 ....
 my $user; # -l user1
 my $spoofuser;
+my $host;
 my $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
 		      
 # get the command-line options
@@ -55,6 +56,7 @@ GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
 	   'd=s'               => \@envToDelete,
 	   'l=s'               => \@users,
+	   'm=s'               => \$host,
 	   'login=s'           => \@users,
 	   'h!'                => \$display_help,
 	   'help!'             => \$display_help,
@@ -71,7 +73,27 @@ if ($display_help) {
     exit 0;
 }
 
+if ($host)
+{
+    my $envid;
+    my $envname;
 
+    $base = libkadeploy2::deploy_iolib::connect();
+    $envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
+    if ($envid)
+    {
+	$envname=libkadeploy2::deploy_iolib::node_last_envid($base,$envid);
+	if ($envname)
+	{
+	    print "environment name for node $host : $envname\n";
+	}
+	else
+	{
+	    print "No environment found for node $host\n";
+	}
+    }
+    libkadeploy2::deploy_iolib::disconnect($base);
+}
 
 
 if ($user)
