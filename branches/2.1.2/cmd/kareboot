@@ -33,6 +33,7 @@ if (!@ARGV){
 ## gets the options
 GetOptions('m=s'           => \@host_list,
 	   'machine=s'     => \@host_list,
+	   'f=s'           => \$node_file,	   
 	   'e=s'           => \$env,
 	   'environment=s' => \$env,
 	   's'             => \$soft,
@@ -48,6 +49,21 @@ GetOptions('m=s'           => \@host_list,
 	   'verbose'       => \$verbose,
 	   'v'             => \$verbose
 	   );
+
+
+if ($node_file)
+{
+    my $line;
+    open(NODEFILE,$node_file) or die "Can't open node_file : $node_file\n";
+    while ($line = <NODEFILE>)
+    {
+	if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+	chomp($line);
+	push(@host_list, $line);
+    }
+    close(NODEFILE);
+}
+
 
 ## checks if needed options are defined
 if (!scalar(@host_list)){

@@ -484,10 +484,27 @@ sub reboot($$$$){
 		if ($deploy) {
 		    system("$cmd{$host}{$reboot}");
 		}
-		if ($hard) {
-		    exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute $cmd{$host}{\"hardboot\"}: $!\n";
-		} else {
-		    exec ("$cmd{$host}{\"softboot\"}") or die "Couldn't execute $cmd{$host}{\"softboot\"}: $!\n";
+		if ($hard) 
+		{
+		    if (defined($cmd{$host}{\"hardboot\"}))
+		    {
+			exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute $cmd{$host}{\"hardboot\"}: $!\n";
+		    }
+		    else
+		    {
+			die "hardboot command for host $host does not exist\n";			
+		    }
+		} 
+		else 
+		{
+		    if (defined($cmd{$host}{\"hardboot\"}))
+		    {
+			exec ("$cmd{$host}{\"softboot\"}") or die "Couldn't execute $cmd{$host}{\"softboot\"}: $!\n";
+		    }
+		    else
+		    {
+			die "softboot command for host $host does not exist\n";			
+		    }
 		}
 	    }
 	}
