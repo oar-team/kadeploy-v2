@@ -696,7 +696,9 @@ sub usages()
 \t[-f   | --file        node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
 \t[-p   | --partition   partition]
+\t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
+
 ";
 
 
@@ -727,22 +729,23 @@ sub check_options(){
     }
     
     ## gets the options
-    GetOptions('e=s' => \$env,
-	       'environment=s' => \$env,
-	       'm=s' => \@host_list,
-	       'machine=s' => \@host_list,
-	       'f=s' => \$node_file,
-	       'file=s' => \$node_file,
-	       'p=s' => \$device,
-	       'partition=s' => \$device,
-	       'd=s' => \$depmethod,
-	       'bootstrap' => \$bootstrap,
-	       'l=s'       => \$user,
+    GetOptions('e=s'                 => \$env,
+	       'environment=s'       => \$env,
+	       'm=s'                 => \@host_list,
+	       'machine=s'           => \@host_list,
+	       'f=s'                 => \$node_file,
+	       'file=s'              => \$node_file,
+	       'p=s'                 => \$device,
+	       'partition=s'         => \$device,
+	       'd=s'                 => \$depmethod,
+	       'bootstrap'           => \$bootstrap,
+	       'l=s'                 => \$user,
 	       'loadpartitionfile=s' => \$partitionfile,
 	       'lpf=s'               => \$partitionfile,
-	       'v!'        => \$verbose,
-	       'verbose'   => \$verbose,
-	       'h' => \$help	       
+	       'v!'                  => \$verbose,
+	       'verbose'             => \$verbose,
+	       'h'                   => \$help,       
+	       'help!'               => \$help,
 	       );
 
 
@@ -764,11 +767,6 @@ sub check_options(){
 	    exit 1;
 	}	   
     }
-    if ($partitionfile && $do_fdisk_on_deploy eq "no")
-    {
-	print "WARNING : do_fdisk_on_deploy disabled\n";
-    }
-
 
     #FIX partitionfile to default
     if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
