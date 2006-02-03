@@ -56,7 +56,8 @@ GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
 	   'd=s'               => \@envToDelete,
 	   'l=s'               => \@users,
-	   'm=s'               => \$host,
+	   'm=s'               => \@hostlist,
+	   'f=s'               => \$hostfile,
 	   'login=s'           => \@users,
 	   'h!'                => \$display_help,
 	   'help!'             => \$display_help,
@@ -73,26 +74,43 @@ if ($display_help) {
     exit 0;
 }
 
-if ($host)
+if ($hostfile)
+{
+    open(NODEFILE,$node_file);
+    while ($line = <NODEFILE>)
+    {
+	if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+	chomp($line);
+	push(@hostlist, $line);
+    }
+    close(NODEFILE);
+}
+
+
+if (@hostlist)
 {
     my $envid;
     my $envname;
-
+    my $host;
     $base = libkadeploy2::deploy_iolib::connect();
-    $envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
-    if ($envid)
+    foreach $host (@hostlist)
     {
-	$envname=libkadeploy2::deploy_iolib::node_last_envid($base,$envid);
-	if ($envname)
+	$envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
+	if ($envid)
 	{
+	    $envname=libkadeploy2::deploy_iolib::env_id_to_name($base,$envid);
+	    if ($envname)
+	    {
 	    print "environment name for node $host : $envname\n";
 	}
-	else
-	{
-	    print "No environment found for node $host\n";
+	    else
+	    {
+		print "No environment found for node $host\n";
+	    }
 	}
     }
     libkadeploy2::deploy_iolib::disconnect($base);
+    exit 0;
 }
 
 
