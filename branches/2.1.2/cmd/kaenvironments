@@ -49,6 +49,8 @@ my @users; # -l user1 -l user2 ....
 my $user; # -l user1
 my $spoofuser;
 my $host;
+my @hostlist;
+my $hostfile;
 my $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
 		      
 # get the command-line options
@@ -76,6 +78,7 @@ if ($display_help) {
 
 if ($hostfile)
 {
+    my $line;
     open(NODEFILE,$node_file);
     while ($line = <NODEFILE>)
     {
