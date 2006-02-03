@@ -817,7 +817,9 @@ sub check_options(){
 	## goes through the file and get the hostnames
 	my $line;
 	open(NODEFILE,$node_file);
-	while ($line = <NODEFILE>){
+	while ($line = <NODEFILE>)
+	{
+	    if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
 	    chomp($line);
 	    push(@host_list, $line);
 	}
