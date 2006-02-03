@@ -23,6 +23,7 @@ my $query = "";
 my @hosts_to_reboot = (); # list of nodes to reboot
 my $verbose = 0;
 my $debug = 1;
+my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 
 if (!@ARGV){
