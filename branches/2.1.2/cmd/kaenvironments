@@ -96,14 +96,17 @@ if (@hostlist)
     my $envname;
     my $host;
     $base = libkadeploy2::deploy_iolib::connect();
+    if (@hostlist) 
+    {
+	print STDERR "Environment name for node\n";
+	print STDERR "-------------------------\n";	
+    }
     foreach $host (@hostlist)
     {
 	$envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
 	if ($envid)
 	{
 	    $envname=libkadeploy2::deploy_iolib::env_id_to_name($base,$envid);
-	    print STDERR "Environment name for node";
-	    print STDERR "-------------------------";
 	    if ($envname)
 	    {
 	    print "$host : $envname\n";
