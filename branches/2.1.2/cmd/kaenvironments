@@ -281,6 +281,8 @@ sub print_usage() {
     print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
     print "            -l | --login  login         - list environment from user 'login'\n";
     print "            --listlogin                 - list all 'login' recorded\n";
+    print "            -m            host          - give last environment deployed on the host";
+    print "            -f            nodesfile     - give last environment deployed on the nodesfile";
     print "            -h | --help                 - this help\n";
 }
 
