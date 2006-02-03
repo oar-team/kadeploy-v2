@@ -692,10 +692,11 @@ sub set_mkfs_option($){
 sub usages()
 {
     print "Use : kadeploy 
-\t[-m   | --machine hostname] 
-\t[-f   | --file node_file]                 Choose -m XOR -f
+\t[-m   | --machine     hostname] 
+\t[-f   | --file        node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
-\t[-p   | --partition partition]
+\t[-p   | --partition   partition]
+\t[-l                   username]                  Default : $username
 ";
 
 
@@ -765,7 +766,7 @@ sub check_options(){
     }
     if ($partitionfile && $do_fdisk_on_deploy eq "no")
     {
-	print "Warning : do_fdisk_on_deploy disabled\n";
+	print "WARNING : do_fdisk_on_deploy disabled\n";
     }
 
 
