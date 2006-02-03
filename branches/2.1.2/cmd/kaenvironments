@@ -79,7 +79,7 @@ if ($display_help) {
 if ($hostfile)
 {
     my $line;
-    open(NODEFILE,$host_file);
+    open(NODEFILE,$hostfile);
     while ($line = <NODEFILE>)
     {
 	if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
