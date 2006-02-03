@@ -486,14 +486,9 @@ sub reboot($$$$){
 		}
 		if ($hard) 
 		{
-		    if (defined($cmd{$host}{\"hardboot\"}))
-		    {
-			exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute hardboot $host $cmd{$host}{\"hardboot\"}: $!\n";
-		    }
-		    else
-		    {
-			die "hardboot command for host $host does not exist\n";			
-		    }
+		    
+		    exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute hardboot $host $cmd{$host}{\"hardboot\"}: $!\n";
+	
 		} 
 		else 
 		{
