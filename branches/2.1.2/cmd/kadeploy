@@ -756,6 +756,7 @@ sub check_options(){
 
     if ($do_fdisk_on_deploy eq "yes")
     {	
+	if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
 	if(! -e $partitionfile)
 	{
 	    print "ERROR : partition file $partitionfile not found.\n";
