@@ -696,8 +696,8 @@ sub usages()
 \t[-f   | --file node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
 \t[-p   | --partition partition]
-\t[-bootstrap] deploy a node from deployment kernel
 ";
+
 
 #print "\t[-d 0 | 1] Optimisation support\n"
 
