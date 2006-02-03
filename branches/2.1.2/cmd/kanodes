@@ -128,8 +128,8 @@ sub listpartition()
     my $partnumber=1;
     my $base = libkadeploy2::deploy_iolib::connect();
     @partitionlist=libkadeploy2::deploy_iolib::list_partition($base);
-    print "partition list\n";
-    print "--------------\n";
+    print STDERR "partition list\n";
+    print STDERR "--------------\n";
 
     foreach $partsize (@partitionlist)
     {
@@ -146,8 +146,8 @@ sub listnodes()
     my $node;
     my $base = libkadeploy2::deploy_iolib::connect();
     @nodelist=libkadeploy2::deploy_iolib::list_node($base);
-    print "node list\n";
-    print "---------\n";
+    print STDERR "node list\n";
+    print STDERR "---------\n";
     foreach $node (@nodelist)
     {
 	print "$node\n";

@@ -102,13 +102,15 @@ if (@hostlist)
 	if ($envid)
 	{
 	    $envname=libkadeploy2::deploy_iolib::env_id_to_name($base,$envid);
+	    print STDERR "Environment name for node";
+	    print STDERR "-------------------------";
 	    if ($envname)
 	    {
-	    print "environment name for node $host : $envname\n";
+	    print "$host : $envname\n";
 	}
 	    else
 	    {
-		print "No environment found for node $host\n";
+		print STDERR "No environment found for node $host\n";
 	    }
 	}
     }
