@@ -53,14 +53,12 @@
 
   <refsect1>
     <title>EXAMPLE</title>
+
     <para>
-      <command>kaadduser -l titi -p hda3</command>                       # grants rights to user titi on all nodes on partition hda3
-      <command>kaadduser -m node1 -p hdb6</command>                      # grants rights to all the users on node1 partition hdb6
-      <command>kaadduser -l toto -m node1 -m node2</command> -p hda1     # grants rights to user toto on node1 and node2 partition hda1
-      <command>kaadduser -l toto -m node1 -p hda</command>               # grants rights to user toto on node1 for all hda device partition
-      <command>kaadduser -l toto -m node1 -p \*</command>                # grants rights to user toto on node1 for all device AND partition
-      etc.
-      </para>
+      <command>kaadduser -l titi -p hda3 -m node1</command>
+      grants rights to user titi on node "node1" on partition hda3
+    </para>
+
   </refsect1>
 
   <refsect1>

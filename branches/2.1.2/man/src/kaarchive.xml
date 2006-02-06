@@ -14,9 +14,9 @@
   <refsect1>kaarchive
     <title>SYNOPSIS</title>
 
-<tt>
+<command>
 kaarchive [-X | --exclude-from file] [-z | --gzip] [--output-directory output_directory] [-i | --image image_name] --root-directory root_directory
-</tt>
+</command>
   </refsect1>
 
 
