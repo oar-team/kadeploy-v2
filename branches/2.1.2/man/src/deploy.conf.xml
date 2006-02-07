@@ -16,82 +16,294 @@
     <title>DESCRIPTION</title>
     
     <para>
-      This file presents all the variables the user must defined in order to be able to use the deployment system. 
+      This file presents all the variables the user must defined in order to be able 
+      to use the deployment system. 
       It is divided into several sections. 
-      A very short description is available for each variable and sometimes example values are given in commentary.
+      A very short description is available for each variable and 
+      sometimes example values are given in commentary.
     </para>
-    The user can find an example in the tools/cookbook folder.
+    <para>
+      The user can find an example in the tools/cookbook folder.
+    </para>
 
     <para>
-      sentinelle is a parallel launcher that is used by <emphasis>kadeploy</emphasis> to perform all the parallel tasks required during the deployment process. 
-      Two different task are defined : the first is the deploy environment, which should be configured to let the parallel launcher work when the target nodes are running the deployment kernel, and the prod environment, which is used to issue parallel commands when the nodes are rebooted under the deployed system.
+      sentinelle is a parallel launcher that is used by <emphasis>kadeploy</emphasis> to perform 
+      all the parallel tasks required during the deployment process. 
+      Two different task are defined : the first is the deploy environment, 
+      which should be configured to let the parallel launcher work when the target 
+      nodes are running the deployment kernel, and the prod environment, 
+      which is used to issue parallel commands when the nodes are rebooted under the deployed system.
+    </para>
+
+    <para>
+      <command>deploy_user</command> The UNIX user used with kadeploy. 
+      All the process launch by kadeploy will swith to this user.
+    </para>
+    
+    <para>
+      <command>kadeploy2_directory</command> The base directory of kadeploy equal 
+      to <emphasis>--prefix=/basepath/</emphasis>
+    </para>
+
+    <para>
+      <command>enable_nmap</command> value is 0 or 1, setting it to 1 enables ping checks before 
+      <emphasis>rsh</emphasis> or <emphasis>ssh</emphasis> checks, to fasten checks on 
+      the arrival of the nodes.
+    </para>
+
+    <para>
+      <command>nmap_cmd</command> value is the absolute path of the nmap command.
+    </para>
+
+    <para>
+      <command>do_fdisk_on_deploy</command> value is "yes" or "no".
+      It give you the ability to set the partition table of a node when you deploy it.
     </para>
 
 
-    <command>enable_nmap</command> value is 0 or 1, setting it to 1 enables ping checks before <emphasis>rsh</emphasis> or <emphasis>ssh</emphasis> checks, to fasten checks on the arrival of the nodes.
+    <para>
+      <emphasis>Parallel command set up</emphasis>
+    </para>
 
-    <command>nmap_cmd</command> value is the absolute path of the nmap command.
 
 
-    <command>deploy_sentinelle_cmd</command> value is the absolute path of the sentinelle command used when the nodes are running the deployment kernel, this should be <emphasis>/usr/local/bin/DKsentinelle</emphasis>, and that is where you should copy the <emphasis>DKsentinelle</emphasis> binary.
 
-    <command>deploy_sentinelle_default_args</command> value is the default arguments given to the <emphasis>deploy_sentinelle_cmd</emphasis> to be able to connect to the nodes and timeout
+    <para>
+      <command>use_internal_parallel_command</command> value is "yes" or "no".
+      The internal parallel command is in beta test.
+      It will be the default choice in the near future.
+      If you say yes, deploy_sentinelle_cmd, prod_sentinelle_cmd won't be used.
+    </para>
+
+
+    <para>
+      <command>deploy_sentinelle_cmd</command> value is the absolute path of the sentinelle command used 
+      when the nodes are running the deployment kernel, 
+      this should be <emphasis>/usr/local/bin/DKsentinelle</emphasis>, 
+      and that is where you should copy the <emphasis>DKsentinelle</emphasis> binary.
+    </para>
+
+    <para>
+      <command>deploy_sentinelle_default_args</command> value is the default arguments given to the 
+      <emphasis>deploy_sentinelle_cmd</emphasis> to be able to connect to the 
+      nodes and timeout
+    </para>
     
-    <command>deploy_sentinelle_pipelined_args</command> value is the <emphasis>deploy_sentinelle_cmd</emphasis> arguments given during pipelined operations, it is possible to adapt it to ensure that the pipeline topology will meet the throughput constraints and the reliability needs.
+    <para>
+    <command>deploy_sentinelle_pipelined_args</command> value is the 
+      <emphasis>deploy_sentinelle_cmd</emphasis> 
+      arguments given during pipelined operations, 
+      it is possible to adapt it to ensure that the pipeline topology 
+      will meet the throughput constraints and the reliability needs.
+    </para>
     
-    <command>deploy_sentinelle_endings</command> value is the command to issue to get a node's IP when it is running the deployment kernel.
+    <para>
+      <command>deploy_sentinelle_endings</command> value is the command to issue to 
+      get a node's IP when it is running the deployment kernel.
+    </para>
 
-
-    <command>deploy_sentinelle_timeout</command> value is the number of seconds to wait for a parallel command to succeed.
+    <para>
+      <command>deploy_sentinelle_timeout</command> value is the number of seconds 
+      to wait for a parallel command to succeed.
+    </para>
     
-    <command>prod_sentinelle_cmd</command> value is the absolute path of the sentinelle command used when the nodes are running the deployed system, this path is common to the server issuing the deployment, and the target nodes.
+    <para>
+      <command>prod_sentinelle_cmd</command> value is the absolute path of the 
+      sentinelle command used when the nodes are running the deployed 
+      system, this path is common to the server issuing the deployment, 
+      and the target nodes.
+    </para>
 
-    <command>prod_sentinelle_default_args</command> value is the default arguments given to the <emphasis>prod_sentinelle_cmd</emphasis> to be able to connect to the nodes and timeout.
+
+    <para>
+      <command>prod_sentinelle_default_args</command> value is 
+      the default arguments 
+      given to the <emphasis>prod_sentinelle_cmd</emphasis> to be able to 
+      connect to the nodes and timeout.
+    </para>
     
-    <command>prod_sentinelle_pipelined_args</command> value is the <emphasis>prod_sentinelle_cmd</emphasis> arguments given during pipelined operations, it is possible to adapt it to ensure that the pipeline topology will meet the throughput constraints and the reliability needs.
+    <para>
+      <command>prod_sentinelle_pipelined_args</command> value is the 
+      <emphasis>prod_sentinelle_cmd</emphasis> arguments given during 
+      pipelined operations, it is possible to adapt it to ensure that 
+      the pipeline topology will meet the throughput constraints 
+      and the reliability needs.
+    </para>
     
-    <command>prod_sentinelle_endings</command> value is the command to issue to get a node's IP when it is running the deployed system.
 
-    <command>prod_sentinelle_timeout</command> value is the number of seconds to wait for a parallel command to succeed.
+    <para>
+      <command>prod_sentinelle_endings</command> value is the command to issue 
+      to get a node's IP when it is running the deployed system.
+    </para>
 
 
-    <command>deploy_db_host</command> value is the hostname where the mysql server that owns the deployment system database is running.
+    <para>
+      <command>prod_sentinelle_timeout</command> value is the number of 
+      seconds to wait for a parallel command to succeed.
+    </para>
 
-    <command>deploy_db_name</command> value is the name of the deploy database.
+    <para>
+      <command>remote_sentinelle_rsh</command> Path to remote sentinelle command 
+      (will be deprecated soon).
+      If you don't know what that mean, set it up with 
+      <emphasis>/usr/local/bin/DKsentinelle</emphasis>.
+    </para>
+
+    <para>
+      <command>remote_sentinelle_rsh_default_args</command> value is 
+      the default arguments 
+      given to the <emphasis>remote_sentinelle_rsh</emphasis> to be able to 
+      connect to the nodes and timeout.
+    </para>
+
+
+    <para>
+      <emphasis>Pipelining tool</emphasis>
+    </para>
+
+    <para>
+      <command>remote_mcat</command> Path to remote mcatseg.
+      This program is used to pipeline stream from server to nodes.
+      Default is:
+      <emphasis>/usr/local/bin/mcatseg</emphasis>
+    </para>
+
+
+
+
+    <para>
+      <emphasis>Mysql database set up</emphasis>
+    </para>
+
+
+
+
+
     
-    <command>deploy_db_login</command> value is the login to access to the deploy database.
+    <para>
+      <command>deploy_db_host</command> value is the hostname 
+      where the mysql server that owns the deployment system database is running.
+    </para>
+
+    <para>
+      <command>deploy_db_name</command> value is the name of the deploy database.
+    </para>
     
-    <command>deploy_db_psswd</command> value is the password to access to the deploy database.
+
+    <para>
+      <command>deploy_db_login</command> value is the login to
+      access to the deploy database.
+    </para>
     
-    <command>rights_db_host</command> value is the hostname where the mysql server that owns the deployment rights database is running.
-
-    <command>rights_db_name</command> value is the name of the rights database.
-
-    <command>rights_db_login</command> value is the login to access to the rights database.
-
-    <command>rights_db_psswd</command> value is the password to access to the rights database.
+    <para>
+      <command>deploy_db_psswd</command> value is the password to 
+      access to the deploy database.
+    </para>
     
-    <command>pre_install_archive</command> value is the absolute path to the preinstall archive containing the pre_install_script.
+    <para>
+      <command>rights_db_host</command> value is the hostname where the 
+      mysql server that owns the deployment rights database is running.
+    </para>
 
-    <command>pre_install_script</command> value is the name of the script in the preinstall archive that is supposed to be launched during the preinstall step.
+    <para>
+      <command>rights_db_name</command> value is the name of the rights database.
+    </para>
+
+    <para>
+      <command>rights_db_login</command> value is the login to 
+      access to the rights database.
+    </para>
+
+    <para>
+      <command>rights_db_psswd</command> value is the password to 
+      access to the rights database.
+    </para>
     
-    <command>post_install_script</command> value is the name of the script in the postinstall archive, defined in the database for each environment, that is supposed to be executed during the postinstall step.
 
-    <command>kernel_param</command> value is the default kernel parameters given to the deployed kernel on boot, if none is specified with the environment, these parameters often deals with console redirection during kernel booting process.
 
-    <command>tftp_repository_intel</command> value is the base directory in the TFTP structure for Intel NICs (for our TFTP_structure, value should be <emphasis>/tftpboot/X86PC/linux/</emphasis>).
 
-    <command>pxe_rep_intel</command> value is the relative path from <emphasis>tftp_repository_intel</emphasis> to to the folder where kernel/initrd are associated to each node (for our TFTP_structure, value should be <emphasis>pxelinux.cfg/</emphasis>).
+    <para>
+      <emphasis>Preinstall configuration</emphasis>
+    </para>
 
-    <command>tftp_repository</command> value is the base directory in the TFTP structure for non Intel NICs (for our TFTP_structure, value should be <emphasis>/tftpboot/PXEClient/</emphasis>).
 
-    <command>pxe_rep</command> value is the relative path from <emphasis>tftp_repository</emphasis> to to the folder where kernel/initrd are associated to each node (for our TFTP_structure, value should be <emphasis>pxelinux.cfg/</emphasis>).
 
-    <command>tftp_relative_path</command> value is the directory where the <emphasis>grub</emphasis> files are generated (for our TFTP_structure, value should be <emphasis>images_grub/</emphasis>).
-Some other custom variables are available here to ease the cluster management, by defining kernel/initrd shortcuts for <emphasis>kareboot</emphasis>. These custom variables begin with <emphasis>label_</emphasis> their values are kernel/initrd pairs that can be assigned to a booting node.
 
-<emphasis>label_deploy_tg3 = duke-vmlinuz:duke-initrd  ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000</emphasis> means that the booting node will load <emphasis>duke-vmlinuz</emphasis> and <emphasis>duke-initrd</emphasis> from the <emphasis>/tftpboot/PXEClient/images_grub</emphasis> directory passing the following parameters to the kernel <emphasis>ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000</emphasis>
+    <para>
+      <command>pre_install_archive</command> value is the absolute path to 
+      the preinstall archive containing the pre_install_script.
+    </para>
 
+    <para>
+      <command>pre_install_script</command> value is the name of the 
+      script in the preinstall archive that is supposed to be launched 
+      during the preinstall step.
+    </para>
+    
+    <para>
+      <command>post_install_script</command> value is the name of the 
+      script in the postinstall archive, defined in the database 
+      for each environment, that is supposed to be executed during 
+      the postinstall step.
+    </para>
+
+
+    <para>
+      <emphasis>kernel parameters</emphasis>
+    </para>
+
+    <para>
+      <command>kernel_param</command> value is the default kernel 
+      parameters given to the deployed kernel on boot, 
+      if none is specified with the environment, these parameters 
+      often deals with console redirection during kernel booting process.
+    </para>
+
+
+    <para>
+      <emphasis>PXE setting</emphasis>
+    </para>
+
+    <para>
+      <command>tftp_repository_intel</command> value is the base 
+      directory in the TFTP structure for Intel NICs 
+      (for our TFTP_structure, value should be 
+      <emphasis>/tftpboot/X86PC/linux/</emphasis>).
+    </para>
+
+    <para>
+      <command>pxe_rep_intel</command> value is the relative 
+      path from <emphasis>tftp_repository_intel</emphasis> to to the 
+      folder where kernel/initrd are associated to each node 
+      (for our TFTP_structure, value should be <emphasis>pxelinux.cfg/</emphasis>).
+    </para>
+
+    <para>
+      <command>tftp_repository</command> value is the base directory 
+      in the TFTP structure for non Intel NICs (for our TFTP_structure, 
+      value should be <emphasis>/tftpboot/PXEClient/</emphasis>).
+    </para>
+
+    <para>
+      <command>pxe_rep</command> value is the relative path from 
+      <emphasis>tftp_repository</emphasis> to to the folder 
+      where kernel/initrd are associated to each node 
+      (for our TFTP_structure, value should be <emphasis>pxelinux.cfg/</emphasis>).
+    </para>
+
+    <para>
+      <command>tftp_relative_path</command> value is the directory 
+      where the <emphasis>grub</emphasis> files are generated 
+      (for our TFTP_structure, value should be <emphasis>images_grub/</emphasis>).
+      Some other custom variables are available here to ease the 
+      cluster management, by defining kernel/initrd shortcuts for 
+      <emphasis>kareboot</emphasis>. 
+      These custom variables begin 
+      with <emphasis>label_</emphasis> their values are 
+      kernel/initrd pairs that can be assigned to a booting node.
+
+      <emphasis>label_deploy_tg3 = duke-vmlinuz:duke-initrd  ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000</emphasis> means that the booting node will load <emphasis>duke-vmlinuz</emphasis> and <emphasis>duke-initrd</emphasis> from the <emphasis>/tftpboot/PXEClient/images_grub</emphasis> directory passing the following parameters to the kernel <emphasis>ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000</emphasis>
+    </para>
   </refsect1>
 
   <refsect1>
