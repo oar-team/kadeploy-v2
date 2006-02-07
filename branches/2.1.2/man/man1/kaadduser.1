@@ -49,7 +49,22 @@ kaadduser returns 0 if it fails\&. Otherwise, it returns 1\&.
 .SH "EXAMPLE"
 
 .PP
- \fBkaadduser \-l titi \-p hda3\fR # grants rights to user titi on all nodes on partition hda3 \fBkaadduser \-m node1 \-p hdb6\fR # grants rights to all the users on node1 partition hdb6 \fBkaadduser \-l toto \-m node1 \-m node2\fR \-p hda1 # grants rights to user toto on node1 and node2 partition hda1 \fBkaadduser \-l toto \-m node1 \-p hda\fR # grants rights to user toto on node1 for all hda device partition \fBkaadduser \-l toto \-m node1 \-p \\*\fR # grants rights to user toto on node1 for all device AND partition etc\&.
+ \fBkaadduser \-l titi \-p hda3\fR # grants rights to user titi on all nodes on partition hda3
+
+.PP
+ \fBkaadduser \-m node1 \-p hdb6\fR # grants rights to all the users on node1 partition hdb6
+
+.PP
+ \fBkaadduser \-l toto \-m node1 \-m node2\fR \-p hda1 # grants rights to user toto on node1 and node2 partition hda1
+
+.PP
+ \fBkaadduser \-l toto \-m node1 \-p hda\fR # grants rights to user toto on node1 for all hda device partition
+
+.PP
+ \fBkaadduser \-l toto \-m node1 \-p \\*\fR # grants rights to user toto on node1 for all device AND partition
+
+.PP
+etc\&.
 
 .SH "SEE ALSO"
 \fBkaadduser, kadeluser, kaconsole, kacreateenv, kaaddnode, kadelnode, kadeploy, kareboot\fR

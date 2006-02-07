@@ -123,8 +123,13 @@ The two conventions above guarantee that a node cannot be involved in two differ
 <p>
 When a deployment ends :
 <itemize>
-  <item> if it has failed on (at least) one node, it is changed to error state. When possible, a brief description of what (or when it) happened is associated to the matching partition ; the ones for which the deployment ended successfully are switched to the 'deployed' state. Thus, during a same deployment, two failures that would occur on two different partitions for different reasons would have different error messages. This enables to know if a failure is due to a global problem or to different local ones.
-  <item> on the contrary, if the deployment ended successfully on all the nodes, it is changed to the 'terminated' state. The nodes are ready to be used on the new and freshly deployed environment.
+  <item> if it has failed on (at least) one node, it is changed to error state. 
+When possible, a brief description of what (or when it) happened is associated to the matching partition ; 
+the ones for which the deployment ended successfully are switched to the 'deployed' state. 
+Thus, during a same deployment, two failures that would occur on two different partitions for different reasons would have different error messages. 
+This enables to know if a failure is due to a global problem or to different local ones.
+  <item> on the contrary, if the deployment ended successfully on all the nodes, it is changed to the 'terminated' state. 
+The nodes are ready to be used on the new and freshly deployed environment.
 </itemize>
 
 
@@ -200,7 +205,7 @@ Package name : perl, perl-base, perl-mysql, perl-dbi, perl-suid, libterm-readkey
 
 <sect1>Mysql
 <p>
-Kadeploy has been tested with mysql 4.1.
+Kadeploy has been tested with mysql 4.1 and mysql 5.0.
 <p>
 Package name : mysql-server, mysql-client, libmysql, mysql-shared, 
 
@@ -228,8 +233,8 @@ Daemon launcher use by many linux distribution.
 <p>
 It is include in kadeploy package <tt>libboot/pxelinux/</tt>.
 It contains a lot of booloader. 
-<p>Pxelinux.0 (pxe bootloader), 
-<p>Memdisk (floppy/hard drive image loader ). 
+<p>pxelinux.0 (pxe bootloader), 
+<p>memdisk (floppy/hard drive image loader ). 
 <p>In our case we use <tt>pxelinux.0</tt> from <url url="http://syslinux.zytor.com" name="syslinux">. 
 This file is downloaded by the client, then launch, finally it download is conf from the pxelinux.cfg 
 directory (see the syslinux doc for more).
@@ -325,8 +330,9 @@ tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd
 <p>
 <em>kadeploy</em> have to be install somewhere on your system.
 <itemize>
- <item>This can be done by a simple <tt>./configure --prefix=/usr/local && make && make install
+ <item>This can be done by a simple <tt>./configure --prefix=/usr/local/kadeploy && make && make install
  <item>The bin content need to be accessible from the path (symlink or correct your prefix).
+A command <tt>kasetup -sudowrapping</tt> can do the job for you.
  <item>A line like this one must be in your <tt>/etc/kadeploy/deploy.conf</tt>
   <verb>kadeploy2_directory = /my_path_to_kadeploy_directory/</verb>
  <item>kadeploy need some lib perl, "pm" files.
@@ -373,6 +379,9 @@ Every tool has his own man page.
 You have to feed mysql with kadeploy schema.
 the <tt>kadatabase</tt> command was created for this.
 <verb>#kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211</verb>
+
+<p>
+You can test it with <tt>kaenvironments</tt> command.
 
 <p>
 Then, <ref id="kaanodes" name="kanodes"> is used to register the cluster "hardware" composition. 
@@ -442,6 +451,9 @@ Once these operations completed, the system is almost ready for deployments.
 You have to put some right to your user with the command kaaduser.
 <verb>#kaadduser -l root -m cls2 -p hda2</verb>
 
+<p>
+Warning, when you change on of this two file you have to recall <tt>kanodes -add</tt>.
+
 
 <!-- =========================== -->
 <sect1>Deployment
@@ -450,7 +462,7 @@ The system has been prepared for deployment. Now what ? To deploy, something to 
 <p>
 The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. 
 The first case is the simplest since nothing has to be done prior to the deployment itself. 
-In the other cases, <ref id="kacreateenv" name="kacreateenv"> (<ref id="kaarchive" name="kaarchive">/<ref id="karecordenv" name="karecordenv">) are used to create and register (create/register) an environment in the database (cf. the environment section for details about these steps).
+In the other cases, <ref id="karecordenv" name="karecordenv">) are used to create and register (create/register) an environment in the database 
 <p>
 The deployment itself i.e. of a given environment on target partitions of a set of cluster nodes is done using the <ref id="kadeploy" name="kadeploy"> tool.
 <p>
@@ -472,15 +484,16 @@ If the deployment fails on some nodes, these are rebooted on a default environme
 The preinstall is a tarball archive.
 It contains many files AND a <tt>main</tt> scripts.
 They are pushed on the node, extracted, and the <tt>main</tt> script is launched.
+The main script is found with : <tt> pre_install_script </tt> in configuration file.
 (see <tt>/etc/kadeploy/deploy.conf</tt> for setting tarball and script).
-Preinstall contains actions that are needed in order to deploy the image on the node.
-fdisk, mkfs, mkswap, mount, bench...
+Preinstall contains needed actions in order to deploy the image on the node (fdisk, mkfs, mkswap, bench)...
+Some configuration files are pushed on the node (fdisk_user.txt and preinstall.conf). 
 
 <sect1>Postinstall
 The postinstall is a tarball archive.
 It contains many files AND a <tt>main</tt> scripts.
 Postinstall contains actions that can't be put in the preinstall scripts.
-Manage the ssh services, and what you think important for a node...
+Manage the ssh services, and the ldap what you think important for a node...
 
 
 <!-- =========================== -->
@@ -522,7 +535,7 @@ A simple solution, is
  <verb>#setup_pxe.pl 192.168.0.2:label_deploy_x86 </verb>
 <item>reboot the node whith what you want.
 <item>When the node is reachable with ping and <tt>rsh -l root cls2 ls</tt> you can bootstrap the node kadeploy.
- <verb>kadeploy -e myLinux -p hda2 -m cls2 -bootstrap</verb>
+ <verb>kadeploy -e myLinux -p hda2 -m cls2</verb>
 </itemize>
 
 <p>
@@ -537,10 +550,16 @@ Your training is completed.
 <p>
 Two remote management tools are available to diagnostic and if possible take control of cluster nodes that would be for instance in an unstable or undefined state further to a deployment failure. 
 <p>
-The <ref id="kaconsole" name="kaconsole"> tool enables to open a console on a remote node. It needs special hardware equipment and special command configuration as described in the second part of the configuartion files section.
+The <ref id="kaconsole" name="kaconsole"> tool enables to open a console on a remote node. 
+It needs special hardware equipment and special command configuration. 
 <p>
-The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types on cluster nodes. The possibilities are numerous : the reboot on a given (already installed) environment or on a given partition or even on the deployment kernel for instance. It also enables to hard reboot nodes appropriately equiped.
+The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types on cluster nodes. 
+The possibilities are numerous : the reboot on a given (already installed) environment or 
+on a given partition or 
+even on the deployment kernel for instance. 
+It also enables to hard reboot nodes appropriately equiped.
 <!-- =========================== -->
+
 <sect1>What if the cluster hardware composition changes ?
 <p>
 <ref id="kaaddnode" name="kaaddnode"> and <ref id="kadelnode" name="kadelnode"> enable to add and remove nodes from the deployment system if the cluster composition changes.
@@ -548,26 +567,25 @@ The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types 
 <sect1>Command summary 
 <p>
 <sect2>Functionalities summary
-<p><tt>kaaddnode</tt> - registers nodes in deployment system
-<p><tt>kadelnode</tt> - unregisters nodes in deployment system
+<p><tt>kanodes</tt> - registers nodes in deployment system
 <p><tt>karecordenv</tt> - registers an environment image in deployment system
-<p><tt>kaarchive</tt> - creates an environment image
-<p><tt>kacreateenv</tt> - creates and registers an environment image in deployment system
+<p><tt>kaenvironments</tt> - list existing registered environment.
 <p><tt>kadeploy</tt> - deploys an environment image
 <p><tt>kaconsole</tt> - opens a remote console 
 <p><tt>kareboot</tt> - reboots according to requested reboot type
 <p><tt>katftp</tt> - create the minimum files required for PXE boot.
 <p><tt>kadatabase</tt> - manage mysql schema.
 <p>
+
 <sect2>Use summary
 <p>The first time...
 <itemize>
   <item<tt>karecordenv</tt> - to register environments already installed (if any)
-  <item><tt>kaaddnode</tt> - to register the cluster hardware composition
+  <item><tt>kanodes</tt> - to register the cluster hardware composition
 </itemize>
 <p>Deployment
 <itemize>
-  <item><tt>kacreateenv/karecordenv/kaarchive</tt> - to create and/or register an environment and make it available for deployment
+  <item><tt>karecordenv</tt> - to create and/or register an environment and make it available for deployment
   <item><tt>kadeploy</tt> - to deploy a registered environment
 </itemize>
 <p>Other tools
@@ -579,8 +597,8 @@ The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types 
 <p>
 <verb>
 # karecordenv -n debian -d "custom debian" -fb file://home/toto/images/custom_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz -size 750 -k /boot/vmlinuz 
-# kaaddnode cluster_description.txt
-# karecordenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz --root-directory /
+# kaanode -add
+# karecordenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz
 # kadeploy -e new_debian -m node1 -m node2 -p hda7
 # kaconsole -m node2
 # kareboot -s -e custom_debian -m node2
@@ -661,13 +679,20 @@ The directory structure allows to custom the configuration script to your needs.
 <!-- =========================== -->
 <sect2>Administrative aspects
 <p>
-Many other basic files can be handled by putting them in the archive and replace the existing ones. They are not all listed here but only the most important ones :
+Many other basic files can be handled by putting them in the archive and replace the existing ones. 
+They are not all listed here but only the most important ones :
 <enum>
-   <item><verb>/root/.ssh/authorized_keys</verb> should contain the administrator's public key and also the public key of user <tt>deploy</tt>, to allow him to get a root shell on every node to reboot those. In order to do that this authorized_keys file has to be built and put in the archive's root directory
-   <item><verb>/etc/hosts /etc/hosts.allow /etc/hosts.deny</verb> should be set to fit the cluster's configuration, and ensure network connection within the cluster's network
+   <item><verb>/root/.ssh/authorized_keys</verb> should contain the administrator's public key and also the public key of user <tt>deploy</tt>, 
+to allow him to get a root shell on every node to reboot those. 
+In order to do that this authorized_keys file has to be built and put in the archive's root directory
+   <item><verb>/etc/hosts /etc/hosts.allow /etc/hosts.deny</verb> should be set to fit the cluster's configuration, 
+and ensure network connection within the cluster's network
 </enum>
 
-Numerous modifications can be done here, from authentification server to tailored modification depending on the node's IP. A good idea should be to modify <tt>rc</tt> scripts to prevent the first boot hard disk drive verification, because it is just a waste of time here, and avoid all the manual intervention that could occur on system boot : for example, by default, many distributions ask the root password before checking a filesystem on boot time.
+Numerous modifications can be done here, from authentification server to tailored modification depending on the node's IP. 
+A good idea should be to modify <tt>rc</tt> scripts to prevent the first boot hard disk drive verification, 
+because it is just a waste of time here, and avoid all the manual intervention that could occur on system boot : 
+for example, by default, many distributions ask the root password before checking a filesystem on boot time.
 
 
 <!-- =========================== -->
