@@ -199,26 +199,6 @@
       <command>deploy_db_psswd</command> value is the password to 
       access to the deploy database.
     </para>
-    
-    <para>
-      <command>rights_db_host</command> value is the hostname where the 
-      mysql server that owns the deployment rights database is running.
-    </para>
-
-    <para>
-      <command>rights_db_name</command> value is the name of the rights database.
-    </para>
-
-    <para>
-      <command>rights_db_login</command> value is the login to 
-      access to the rights database.
-    </para>
-
-    <para>
-      <command>rights_db_psswd</command> value is the password to 
-      access to the rights database.
-    </para>
-    
 
 
 
