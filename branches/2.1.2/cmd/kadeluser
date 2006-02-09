@@ -42,17 +42,17 @@ if (!@part_list){
 }
 
 ## time to revoke rights
-my $base = deploy_iolib::connect();
+my $base = libkadeploy2::deploy_iolib::connect();
 
 foreach my $user (@user_list){
     foreach my $host (@host_list){
 	foreach my $device (@part_list){
-	    rights_iolib::del_user($base,$user,$host,$device);
+	    libkadeploy2::rights_iolib::del_user($base,$user,$host,$device);
 	}
     }
 }
 
-deploy_iolib::disconnect($base);
+libkadeploy2::deploy_iolib::disconnect($base);
 
 print "Done.\n";
 

@@ -84,7 +84,8 @@ my $verbose;
 my $rambinpath="/mnt/rambin/";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
-my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
+my $do_fdisk_on_deploy="no"; # default behaviour
+$do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
 my $help;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
@@ -265,7 +266,12 @@ libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
 ## waits for all the nodes to be ready
 # first check is important before ready to ensure
 # node state coherancy
-my $checkTimeout = 200;
+my $checkTimeout = libkadeploy2::conflib::get_conf("first_check_timeout");
+if ($checkTimeout <= 0) { # invalid value
+	$checkTimeout = 200;
+}
+print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
+
 my $reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 my $time_check = 0;
 
@@ -486,13 +492,11 @@ libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
 if($depmethod==0)
 {
     $nodes_set->rebootThoseNodes();}
-# reboot
 else
 {
     $nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
 }
 print "rebooting the nodes...\n";
-
 }
 
 # reboot
@@ -534,8 +538,13 @@ foreach my $hostName (@to_reboot)
 # let's wait for another timeout
 $reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 $time_check = 0;
-$checkTimeout=300;
 
+
+$checkTimeout = libkadeploy2::conflib::get_conf("last_check_timeout");
+if ($checkTimeout <= 0) { # invalid value
+        $checkTimeout = 300;
+}
+print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
 print "<BootEnv 0>\n";
 
 $deployed_nodes_set->check();
@@ -561,11 +570,14 @@ print "Last Reboot: " . $time_end . "\n";
 
 ## error if a node failed then checks which node has failed
 ## and turns the others to 'deployed' state
-libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
+my $exit_value = libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
 libkadeploy2::deploy_iolib::debug_print($base,$deployment);
 libkadeploy2::deploy_iolib::disconnect($base);
 
 print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
+
+# exits with a shell compatible status
+exit (1-$exit_value);
 
 1;
 ###################### End of Main ########################

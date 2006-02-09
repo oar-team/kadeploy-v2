@@ -7,8 +7,7 @@ use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::bootlib;
 use libkadeploy2::deploy_iolib;
-use libkadeploy2::node_bd;
-
+use libkadeploy2::rights_iolib;
 use strict;
 
 my $soft = 0;
@@ -16,6 +15,7 @@ my $hard = 0;
 my $deploy = 0;
 my $noreboot = 0;
 my @host_list = ();
+my $host;
 my $env = "";
 my $device="";
 my $reboot = "";
@@ -26,15 +26,17 @@ my $debug = 1;
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 
+my $kareboot_usage = "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] [-m|--machine hostname] -f nodefile [-e|--environment name] [-p|--partition partition]\n";
+
 if (!@ARGV){
-    print "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] -m|--machine hostname [-e|--environment name] [-p|--partition partition]\n";
+    print $kareboot_usage;
     exit 0;
 }
 
 ## gets the options
 GetOptions('m=s'           => \@host_list,
 	   'machine=s'     => \@host_list,
-	   'f=s'           => \$node_file,	   
+           'f=s'           => \$node_file,
 	   'e=s'           => \$env,
 	   'environment=s' => \$env,
 	   's'             => \$soft,
@@ -58,17 +60,18 @@ if ($node_file)
     open(NODEFILE,$node_file) or die "Can't open node_file : $node_file\n";
     while ($line = <NODEFILE>)
     {
-	if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
-	chomp($line);
-	push(@host_list, $line);
+        if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+        chomp($line);
+        push(@host_list, $line);
     }
     close(NODEFILE);
 }
 
 
+
 ## checks if needed options are defined
 if (!scalar(@host_list)){
-    print "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] -m|--machine hostname [-e|--environment name] [-p|--partition partition]\n";
+    print $kareboot_usage;
     exit 0;
 }
 if ($soft && $hard){
@@ -124,40 +127,49 @@ if ($deploy) {
 ## - $device - device and partition number
 
 my %cmd = libkadeploy2::conflib::check_cmd;
+my $base = libkadeploy2::deploy_iolib::connect();
 
 
-foreach my $host (@host_list){
+#Check rights on DB
+foreach $host (@host_list)
+{
+    my @hl=($host);
+    if ($device)
+    {
+	if (libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@hl,$device)==0)
+	{
+	    print "ERROR : you are not allowed to reboot on partition $device on node $host\n";
+	    exit 1;
+	}
+    }
+    else
+    {
+	if (libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl)==0)
+	{
+	    print "ERROR : you have no rights to reboot on node $host\n";	    
+            exit 1;                                                                                    
+        }                                                                                              
+    }                                                                                                  
+}
+
+
+
+foreach $host (@host_list){
     my $dev = "";
     my $part = "";
     my %node_info;
     my @env_info = ();
-    my $deployment;
-
+    
     # debug print 
     # print "NOREBOOT = $noreboot ; SOFT = $soft ; HARD = $hard ; DEPLOY = $deploy\n";
-
+    my $base = libkadeploy2::deploy_iolib::connect();
     if( (!$cmd{$host}{$reboot}) && (!$noreboot)){
 	print "WARNING : no $reboot command found for $host !\n";
     } else {
 	# debug print
 	# print "to be executed : $host -> $cmd{$host}{$reboot}\n";
 	
-	my $base = libkadeploy2::deploy_iolib::connect();
-
-	## added for the optimisation methods
-	## new deployment creation
-	if ($env)
-	{
-	    $deployment = libkadeploy2::deploy_iolib::prepare_deployment($base);
-	    if (!$deployment)
-	    {
-		libkadeploy2::deploy_iolib::disconnect($base);
-		  print "ERROR : can't create a new deployment\n";
-		  exit 1;
-	      }
-	}
-
-
+	
 	if($deploy) {
 	  if(!$cmd{$host}{$query}){
 	    print "WARNING : no $query command found for $host !\n";
@@ -172,7 +184,7 @@ foreach my $host (@host_list){
 	    # gets device and part number of the first partition by default for the moment
 	    $dev  = libkadeploy2::deploy_iolib::disk_id_to_dev($base,$res[0][0]);
 	    $part = libkadeploy2::deploy_iolib::part_id_to_nb($base,$res[0][1]);
-
+		
 	    # debug print
 	    # print "DEV = $dev ; PART = $part ; That's it !\n";
 
@@ -180,11 +192,7 @@ foreach my $host (@host_list){
 	    if(!$deploy_id) {
 	      print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
 	    } else {
-	 	       ## added for the optimisation methods
-	      $env=$env_info[0];	      
-	      #print "$env";
-	      # until here
-	     @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
+	      @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
 	    }
 	  }
 
@@ -199,23 +207,12 @@ foreach my $host (@host_list){
 	  if (!$deploy_id) {
 	    print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
 	  } else {
-	     ## added for the optimisation methods
-	    $env=$env_info[0];
-            #print "$env";
-	    #until here
-
 	    @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
 	  }
 
 	} else { # no environnement or device to boot on specified
 	    print ("[VERBOSE] No environement or device specified for $host added to nodes to reboot\n") if $debug;
 	    push (@hosts_to_reboot, $host);
-	     ## added for the optimisation methods
-	    $env=libkadeploy2::deploy_iolib::node_last_dep_env($base,$host);
-	    $part=libkadeploy2::deploy_iolib::node_last_dep($base,$host);
-	    $dev=libkadeploy2::deploy_iolib::node_last_dep_dev($base,$host);
-	    #until here
-
 	}
 
 	if ($dev && $part && scalar(@env_info)) {
@@ -225,23 +222,7 @@ foreach my $host (@host_list){
 	  libkadeploy2::bootlib::manage_grub_pxe(\%node_info,\@env_info);
 	  push (@hosts_to_reboot, $host);
 	}
-
-
-	#added for the optimisation methods
-	## begins deployment (updates deployed table)	
-	if ($env)
-	{
-	    my $tmp_node;
-	    # for the moment, nodes' name and IP are the same
-	    foreach my $host (@hosts_to_reboot){
-		$tmp_node = libkadeploy2::node_bd->new($host, $deployment, $env, $dev, $part);
-	    }
-	    ## runs the deployment (changes state to run)
-	    libkadeploy2::deploy_iolib::run_deployment($base,$deployment);	                                 
-	    libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
-	    ###until here	    
-	    libkadeploy2::deploy_iolib::disconnect($base);
-	}
+	libkadeploy2::deploy_iolib::disconnect($base);
       }
   }
 
