@@ -330,7 +330,7 @@ tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd
 <p>
 <em>kadeploy</em> have to be install somewhere on your system.
 <itemize>
- <item>This can be done by a simple <tt>./configure --prefix=/usr/local/kadeploy && make && make install
+ <item>This can be done by a simple <tt>./configure --prefix=/usr/local/kadeploy --mandir=/usr/share/man && make && make install
  <item>The bin content need to be accessible from the path (symlink or correct your prefix).
 A command <tt>kasetup -sudowrapping</tt> can do the job for you.
  <item>A line like this one must be in your <tt>/etc/kadeploy/deploy.conf</tt>

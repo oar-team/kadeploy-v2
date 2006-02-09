@@ -1,5 +1,15 @@
-version 2.1.1:
---------------
+2.1.2:
+------
+* fdisk scripting (kasetup)
+* kaenvironments (environment name by user)
+* kaenvironments (by node)
+* new partitioning format (/etc/kadeploy/clusterpartition.conf &&
+/etc/kadeploy/clustenodes.conf)
+* new parallel command launcher (internal)
+
+
+2.1.1:
+-------
 * sudowrapper
 * kaenvironment and karecordenv improved
 * katftp ( fast installation )
@@ -9,12 +19,12 @@ version 2.1.1:
 * Added kenel and initrd for 64 bit opteron
 	* Sata support
 	
-version 2.1:
-------------
+2.1:
+----
 * autoconf
 * dd deploy method
 
 
-version 2:
-----------
+2:
+--
 * initial release.
