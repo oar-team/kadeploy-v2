@@ -326,7 +326,7 @@ sub checkNmap {
     while($line=<PINGSCAN>) 
     {
 	if (	    
-	    $line =~ /(\d+\.\d+\.\d+\.\d+)/
+	    $line =~ /(\d+\.\d+\.\d+\.\d+)/ ||
 	    $line =~ /\((\d+\.\d+\.\d+\.\d+)\)/
 	    )
 	    {
@@ -334,7 +334,6 @@ sub checkNmap {
 	    }
     }
     close(PINGSCAN);    
-    print "number : ".scalar(@{$self->{nodesPinged}})."\n";
     return scalar(@{$self->{nodesPinged}});
 }
 
