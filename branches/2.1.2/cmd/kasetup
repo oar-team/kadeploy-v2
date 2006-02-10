@@ -9,7 +9,6 @@ my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
 my @listfiletowrapuser=(
 			"kaconsole",
-			"kacreateenv",
 			"kadeploy",
 			"kaenvironments",
 			"kareboot",
@@ -26,7 +25,6 @@ my @listfiletowraproot=(
 			"kadelnode",
 			"kadeluser",
 			"kasetup",
-			"katftp",
 			);
 
 my $checkdeployconf;
