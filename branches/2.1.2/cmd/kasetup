@@ -17,7 +17,6 @@ my @listfiletowrapuser=(
 			"mcat_rsh.pl",
 			"mcat_ssh.pl",
 			"sentinelle.pl",
-			"setup_pxe.pl",
 			);			
 
 my @listfiletowraproot=(
@@ -725,6 +724,7 @@ Cmnd_Alias DEPLOYCMDUSER = ";
 	print "$kadeploydir/bin/$listfiletowrapuser[$i]";
 	if ($i!=$#listfiletowrapuser) { print ", "; }
     }    
+    print ",$kadeploydir/sbin/setup_pxe.pl";
     print "\n";
 
 
