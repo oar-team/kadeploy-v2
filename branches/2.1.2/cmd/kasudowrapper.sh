@@ -15,5 +15,5 @@ export DEPLOYDIR
 if [ $(basename $0) == "kadeploy" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ;  fi
 if [ $(basename $0) == "kaenvironments" ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ; fi
 if [ $(basename $0) == "karecordenv" ]   ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` -l $USER "$@" ; $OK=1 ; fi
-if [ $(basename $0) == "setup_pxe.pl" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` -l $USER "$@" ; $OK=1 ;  fi
+if [ $(basename $0) == "setup_pxe.pl" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
 if [ $OK==0 ]; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; fi

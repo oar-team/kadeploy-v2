@@ -17,6 +17,7 @@ my @listfiletowrapuser=(
 			"mcat_rsh.pl",
 			"mcat_ssh.pl",
 			"sentinelle.pl",
+			"setup_pxe.pl",
 			);			
 
 my @listfiletowraproot=(
@@ -813,8 +814,10 @@ sub sudowrapping()
 	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
 	print "Exec : $command\n";
 	system($command);
-
     }
+    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/setup_pxe.pl";    
+    print "Exec : $command\n";
+    system($command);
 }
 
 
