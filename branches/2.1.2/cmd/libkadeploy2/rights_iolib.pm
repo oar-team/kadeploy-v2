@@ -7,7 +7,7 @@ use strict;
 sub add_user($$$$);
 sub del_user($$$$);
 sub check_rights_kadeploy($$$$);
-
+sub check_lazy_rights_kadeploy($$$);
 # Unfinished
 sub clean_db($);        # will clean db in order to suppress redondancy
 
@@ -132,7 +132,7 @@ sub clean_db($){
 
 # check_rights_kadeploy
 # checks if the given user has appropriate rights for requested deployment
-# parameters : base, user name, node, target part, target part number
+# parameters : base, user name, node, target part number
 # return value : 1 if he has, 0 if not
 sub check_rights_kadeploy($$$$){
     my $dbh = shift;
@@ -162,6 +162,38 @@ sub check_rights_kadeploy($$$$){
 
     return 1;
 }
+
+# check_lazy_rights_kadeploy
+# checks if the given user has appropriate rights for requested deployment
+# parameters : base, user name, node
+# return value : 1 if he has, 0 if not
+sub check_lazy_rights_kadeploy($$$){
+    my $dbh = shift;
+    my $user = shift;
+    my $ref_host = shift;
+
+    my @granted_host = ();
+
+    # debug print
+    # print "LOG = $user ; PART = $device ; ";
+
+    my @host_list = @{$ref_host};
+    foreach my $host (@host_list){
+	my $sth = $dbh->do("SELECT * FROM rights
+                            WHERE (user = \"$user\" OR user = '*')
+                            AND (node = '*' OR node = \"$host\")");
+
+	if($sth >= 1){
+	    push(@granted_host, $host);
+	}else{
+	    print("WARNING : \"$user\" does not have rights on $host\n");
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
 
 # END OF THE MODULE
 return 1;

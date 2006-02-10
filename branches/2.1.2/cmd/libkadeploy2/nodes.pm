@@ -785,7 +785,8 @@ sub runCommandMcat {
     my $nodes="";
     my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
-    my $internal_parallel_command=libkadeploy2::conflib::get_conf("use_internal_parallel_command");
+    my $internal_parallel_command = libkadeploy2::conflib::get_conf("use_internal_parallel_command");
+    if (!$internal_parallel_command) { $internal_parallel_command = "no"; }
     my $pid;
     my $timeout=400;
     my $firstnode="";
@@ -889,7 +890,8 @@ sub runRemoteCommand($$)
     my $connector = "rsh -l root";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-    my $internal_parallel_command=libkadeploy2::conflib::get_conf("use_internal_parallel_command");
+    my $internal_parallel_command = libkadeploy2::conflib::get_conf("use_internal_parallel_command");
+    if (!$internal_parallel_command) { $internal_parallel_command = "no"; }
 
     if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
         return 1;

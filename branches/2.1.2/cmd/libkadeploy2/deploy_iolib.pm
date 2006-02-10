@@ -147,6 +147,29 @@ sub disconnect($) {
 ### database connectors end ###
 ###############################
 
+# clean_previous_deployments
+# remove the previously crashed deployments according to a timeout in the deploy.conf file
+# by default, bigger than 2 * first_check_timeout + 2 * last_check_timeout
+# since deployment time should be less than last_check_timeout
+sub clean_previous_deployments ($) {
+    my $dbh = shift;
+    my $deployment_validity_timeout = libkadeploy2::conflib::get_conf("deployment_validity_timeout");
+    if ((!$deployment_validity_timeout) || ($deployment_validity_timeout < 400)) {
+    	# set default value
+    	$deployment_validity_timeout = 1000;
+    }
+print "invalidating deployments older than $deployment_validity_timeout\n";
+
+    my $rows_affected = $dbh->do("UPDATE deployment
+                                  SET deployment.state = 'error', deployment.enddate=deployment.startdate
+                                  WHERE (deployment.state!='terminated' and deployment.state!='error') and DATE_SUB(now(),INTERVAL $deployment_validity_timeout SECOND) > deployment.startdate;");
+    if($rows_affected = 0){ return 1; }
+
+     print "Warning $rows_affected deployment have been corrected automatically\n";
+     return 0;
+}
+
+
 # prepare_deployment
 # checks if there is already a waiting deployment
 # if not, creates a new one (waiting,startdate,enddate)
@@ -156,6 +179,9 @@ sub disconnect($) {
 #  -      0        if not i.e. if there is already a waiting deployment
 sub prepare_deployment($){
     my $dbh = shift;
+    
+    # invalidate previously problematic deployments
+    clean_previous_deployments ($dbh);
 
     $dbh->do("LOCK TABLES deployment WRITE");
 
@@ -223,12 +249,13 @@ sub run_deployment($$){
 # - end state in depoyed table
 # prerequisite : begin_deployment call
 # parameters : base, deploy_id
-# return value : /
+# return value : 1 if all nodes are deployed, else 0
 sub end_deployment($$){
     my $dbh = shift;
     my $deploy_id = shift;
     my $failure = 0;
     my @node = ();
+    my $result = 1;
 
     $dbh->do("UPDATE deployed SET deployed.state = 'deployed'
               WHERE deployed.deployid = $deploy_id
@@ -244,14 +271,14 @@ sub end_deployment($$){
 
     if($undeployed){
 	print "The deployment failed on some (maybe not all) nodes\n";
-	$sth = $dbh->do("UPDATE deployment
-                         SET deployment.state = 'error', deployment.enddate = NOW()
-                         WHERE deployment.id = $deploy_id");
-    }else{
-	$sth = $dbh->do("UPDATE deployment
-                         SET deployment.state = 'terminated', deployment.enddate = NOW()
-                         WHERE deployment.id = $deploy_id");
+	$result = 0;
     }
+    # deployment is terminated
+    $sth = $dbh->do("UPDATE deployment
+                     SET deployment.state = 'terminated', deployment.enddate = NOW()
+                     WHERE deployment.id = $deploy_id");
+
+    return $result;
 }
 
 # cancel_deployment

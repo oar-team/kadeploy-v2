@@ -75,9 +75,10 @@ sub check_conf {
 		  "remote_sentinelle_rsh" => 3,
 		  "remote_sentinelle_rsh_default_args" => 1,
 		  "remote_mcat" => 3,
-		  "use_internal_parallel_command" => 7,
-		  "do_fdisk_on_deploy" => 7,
-
+		  # ce ne sont pas des variables critiques
+		  #"use_internal_parallel_command" => 7,
+		  #"do_fdisk_on_deploy" => 7,
+		  
 		  "kadeploy2_directory" => 6,
 		  "first_check_timeout" => 1,
 		  "last_check_timeout" => 1,

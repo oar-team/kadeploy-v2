@@ -165,11 +165,17 @@ sub generate_nogrub_files($$$$$){
     my $env_id = shift;
     my $dest_folder = shift;
 
-    if (-e $dest_folder ) { # already created
-        return 1;
-    }
-    # $dest_folder does not exist
-    # deploying environment for the first time    
+    if (-e $dest_folder ) { # already created, check archive modification
+	my $date_archive = -M $env_archive;
+	my $date_folder = -M $dest_folder;
+	if ( $date_archive > $date_folder) { # folder extracted after the archive update
+		return 1;
+	}
+	# discard last folder content
+	system ("rm -fr $dest_folder");
+    } 
+    # create $dest_folder
+    print "Archive updated... Upgrading boot directory \n";
     mkdir $dest_folder;
     my $files;
     my $file1 = $kernel_path;
