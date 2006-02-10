@@ -325,13 +325,10 @@ sub checkNmap {
     open(PINGSCAN, $command.$commandArgs." |") or die ("[checkNmap] can't reach nmap output");
     while($line=<PINGSCAN>) 
     {
-	if (	    
-	    $line =~ /(\d+\.\d+\.\d+\.\d+)/ ||
-	    $line =~ /\((\d+\.\d+\.\d+\.\d+)\)/
-	    )
-	    {
-		push(@{$self->{nodesPinged}}, $1);
-	    }
+	if ($line =~ /(\d+\.\d+\.\d+\.\d+)/)
+	{
+	    push(@{$self->{nodesPinged}}, $1);
+	}
     }
     close(PINGSCAN);    
     return scalar(@{$self->{nodesPinged}});
