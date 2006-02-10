@@ -319,13 +319,22 @@ sub checkNmap {
     my $command = $nmapCmd . " -sP ";
     my $commandArgs = join(" ",@{$self->{nodesToPing}});
     my $pingedIP;
+    my $line;
     $self->{nodesPinged} = []; # should be reset when using nmap or multiple node's occurrences appear
  
     open(PINGSCAN, $command.$commandArgs." |") or die ("[checkNmap] can't reach nmap output");
-    while(<PINGSCAN>) {
-	$_ =~ /\((\d+\.\d+\.\d+\.\d+)\)/ and push(@{$self->{nodesPinged}}, $1);
+    while($line=<PINGSCAN>) 
+    {
+	if (	    
+	    $line =~ /(\d+\.\d+\.\d+\.\d+)/
+	    $line =~ /\((\d+\.\d+\.\d+\.\d+)\)/
+	    )
+	    {
+		push(@{$self->{nodesPinged}}, $1);
+	    }
     }
-    close(PINGSCAN);
+    close(PINGSCAN);    
+    print "number : ".scalar(@{$self->{nodesPinged}})."\n";
     return scalar(@{$self->{nodesPinged}});
 }
 
@@ -361,6 +370,7 @@ sub checkPortswithNmap {
 
     if (!defined($nmapArgs)) { $nmapArgs=" "; } 
     my $nmapCommand = $nmapCmd . " -n -p " .  $nmapPortsList. " " . $nmapArgs. " " . join(" ", @{$self->{nodesPinged}});
+
     my $pid = open3(\*WRITER, \*READER, \*ERROR, $nmapCommand );
     my $testedPorts; # tested ports number for node
     while(<READER>){
@@ -445,6 +455,7 @@ sub check {
 
     if($self->{useNmap}) { # let's perform a first check
 	$nodesNumber = $self->checkNmap();
+	print "node number check : $nodesNumber\n";
 	if($nodesNumber == 0) { # nothing to do after nmap, so why get any further?
 	    # set the state of the disappeared nodes
 	    foreach $nodeIP (@{$self->{nodesToPing}}) {
