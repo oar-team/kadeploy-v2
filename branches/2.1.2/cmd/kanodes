@@ -169,7 +169,7 @@ sub loadnodesfile($)
 	{
 	    #check line 
 	    #node1 11:22:33:44:55:66 192.168.0.1
-	    if($line =~ /^([a-z0-9]+) (..:..:..:..:..:..) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*$/)
+	    if($line =~ /^([a-z0-9\-]+)[\t\s]+(..:..:..:..:..:..)[\t\s]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)[\t\s]+$/)
 	       {
 		   # nodes description
 		   my ($name,$ether,$ip)=($1,$2,$3);
@@ -211,7 +211,7 @@ sub loadpartitionfile($)
 	{
 	    #check line
 	    #hda size=8000
-	    if($line =~ /^(hd[a-z]) size=([0-9]+)$/)
+	    if($line =~ /^([sh]d[a-z]) size=([0-9]+)$/)
 	    {		
 		# disk description
 		my ($harddisk,$sizeMB);

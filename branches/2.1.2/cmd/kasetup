@@ -9,6 +9,7 @@ my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
 my @listfiletowrapuser=(
 			"kaconsole",
+			"kacreateenv",
 			"kadeploy",
 			"kaenvironments",
 			"kareboot",
@@ -25,6 +26,7 @@ my @listfiletowraproot=(
 			"kadelnode",
 			"kadeluser",
 			"kasetup",
+			"katftp",
 			);
 
 my $checkdeployconf;
@@ -318,7 +320,7 @@ sub loadpartitionfile($)
 	    if ($numberofprimary > 4   ) { print STDERR "ERROR you can only have four primary part\n"; exit 1; }
 	    if ($numberofprimary + $numberofextended > 4   ) { print STDERR "ERROR you can only have four part (primary + extended)\n"; exit 1; }
 
-	    if($line =~ /^(hd[a-z]) size=([0-9]+)$/)
+	    if($line =~ /^([hs]d[a-z]) size=([0-9]+)$/)
 	    {
 		$disk{name}=$1;
 		$disk{size}=$2;
@@ -1080,7 +1082,7 @@ sub help()
 \t-printvalidsudoers             generate a sudoers from deploy.conf
 \t-printvalidfstab               generate a fstab for linux with rootfs parameters
 \t-printpreinstallconf           print preinstall configuration file
-\t-rootfs                        printvalidfstab parameters to know the boot device /dev/hda1        
+\t-rootfs                        printvalidfstab parameters to know the boot device ( ex: /dev/hda1 )
 \t-sudowrapping                  wrap files with kasudowrapper.sh
 \t-copybinfiles                  copy required files in /usr/local/bin
 \t-createtftp                    copy all the files required for tftp boot
