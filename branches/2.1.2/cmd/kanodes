@@ -169,7 +169,7 @@ sub loadnodesfile($)
 	{
 	    #check line 
 	    #node1 11:22:33:44:55:66 192.168.0.1
-	    if($line =~ /^([a-z0-9\-]+)[\t\s]+(..:..:..:..:..:..)[\t\s]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)[\t\s]+$/)
+	    if($line =~ /^([a-z0-9\-]+)[\t\s]+(..:..:..:..:..:..)[\t\s]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)[\t\s]*$/)
 	       {
 		   # nodes description
 		   my ($name,$ether,$ip)=($1,$2,$3);
@@ -211,7 +211,7 @@ sub loadpartitionfile($)
 	{
 	    #check line
 	    #hda size=8000
-	    if($line =~ /^([sh]d[a-z]) size=([0-9]+)$/)
+	    if($line =~ /^([sh]d[a-z])[\t\s]+size=([0-9]+)[\t\s]*$/)
 	    {		
 		# disk description
 		my ($harddisk,$sizeMB);
@@ -222,7 +222,7 @@ sub loadpartitionfile($)
 	    }
 	    #check line
 	    #hda part=1 size=500  fdisktype=82 label=swap type=logical
-	    if ($line =~ /^part=([0-9]+)\ +size=([0-9]+)\ +fdisktype=[0-9a-zA-Z]+\ +label=([a-zA-Z]+)\ +type=[a-zA-Z]+$/)
+	    if ($line =~ /^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+fdisktype=[0-9a-zA-Z]+[\t\s]+label=([a-zA-Z]+)[\t\s]+type=[a-zA-Z]+[\t\s]*$/)
 	    {
 		my ($id,$sizeMB,$label);		
 		($id,$sizeMB,$label)=($1,$2,$3);

@@ -320,14 +320,14 @@ sub loadpartitionfile($)
 	    if ($numberofprimary > 4   ) { print STDERR "ERROR you can only have four primary part\n"; exit 1; }
 	    if ($numberofprimary + $numberofextended > 4   ) { print STDERR "ERROR you can only have four part (primary + extended)\n"; exit 1; }
 
-	    if($line =~ /^([hs]d[a-z]) size=([0-9]+)$/)
+	    if($line =~ /^([hs]d[a-z])[\s\t]+size=([0-9]+)[\t\s]*$/)
 	    {
 		$disk{name}=$1;
 		$disk{size}=$2;
 		$linecorrect=1;
 	    }
 
-	    if ($line =~ /^part=([0-9]+)\ +size=([0-9]+)\ +fdisktype=([0-9a-zA-Z]+)\ +label=([a-zA-Z]+)\ +type=([a-zA-Z]+)$/)
+	    if ($line =~ /^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+fdisktype=([0-9a-zA-Z]+)[\t\s]+label=([a-zA-Z]+)[\t\s]+type=([a-zA-Z]+)[\t\s]*$/)
 	    {
 		($number,$size,$fdisktype,$label,$type)=($1,$2,$3,$4,$5);
 		if ($type eq "logical" && $number < 4) { print STDERR "ERROR logical part begin at 5\n"; $linecorrect=0;}
@@ -342,7 +342,7 @@ sub loadpartitionfile($)
 		$linecorrect=1;
 	    }
 		
-	    if ($line =~/^part=([0-9]+)\ +size=([0-9]+)\ +label=([a-zA-Z]+)\ +type=(extended)$/)
+	    if ($line =~/^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+label=([a-zA-Z]+)[\t\s]+type=(extended)[\t\s]*$/)
 	    {
 		($number,$size,$label,$type)=($1,$2,$3,$4);
 		if ($number > 4) { print STDERR "ERROR extended partition must be in [1..4]\n"; $linecorrect=0; }
