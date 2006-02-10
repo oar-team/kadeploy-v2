@@ -451,7 +451,6 @@ sub check {
 
     if($self->{useNmap}) { # let's perform a first check
 	$nodesNumber = $self->checkNmap();
-	print "node number check : $nodesNumber\n";
 	if($nodesNumber == 0) { # nothing to do after nmap, so why get any further?
 	    # set the state of the disappeared nodes
 	    foreach $nodeIP (@{$self->{nodesToPing}}) {
