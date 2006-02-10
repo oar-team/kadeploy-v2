@@ -95,6 +95,7 @@ if (@hostlist)
     my $envid;
     my $envname;
     my $host;
+    my $nodeid;
     $base = libkadeploy2::deploy_iolib::connect();
     if (@hostlist) 
     {
@@ -103,18 +104,26 @@ if (@hostlist)
     }
     foreach $host (@hostlist)
     {
-	$envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
-	if ($envid)
+	$nodeid=libkadeploy2::deploy_iolib::node_name_to_id($base,$host);
+	if ($nodeid)
 	{
-	    $envname=libkadeploy2::deploy_iolib::env_id_to_name($base,$envid);
-	    if ($envname)
+	    $envid=libkadeploy2::deploy_iolib::node_last_envid($base,$host);
+	    if ($envid)
 	    {
-	    print "$host : $envname\n";
-	}
-	    else
-	    {
-		print STDERR "No environment found for node $host\n";
+		$envname=libkadeploy2::deploy_iolib::env_id_to_name($base,$envid);
+		if ($envname)
+		{
+		    print "$host : $envname\n";
+		}
+		else
+		{
+		    print STDERR "No environment found for node $host\n";
+		}
 	    }
+	}
+	else
+	{
+	    print STDERR "WARNING : The host $host doesn't exist in the DB\n";
 	}
     }
     libkadeploy2::deploy_iolib::disconnect($base);
@@ -289,8 +298,8 @@ sub print_usage() {
     print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
     print "            -l | --login  login         - list environment from user 'login'\n";
     print "            --listlogin                 - list all 'login' recorded\n";
-    print "            -m            host          - give last environment deployed on the host";
-    print "            -f            nodesfile     - give last environment deployed on the nodesfile";
+    print "            -m            host          - give last environment deployed on the host\n";
+    print "            -f            nodesfile     - give last environment deployed on the nodesfile\n";
     print "            -h | --help                 - this help\n";
 }
 
