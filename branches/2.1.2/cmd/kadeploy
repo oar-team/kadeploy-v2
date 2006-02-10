@@ -87,6 +87,7 @@ my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 my $do_fdisk_on_deploy="no"; # default behaviour
 $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
 my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
 my $help;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
@@ -831,7 +832,7 @@ sub check_options(){
 	open(NODEFILE,$node_file);
 	while ($line = <NODEFILE>)
 	{
-	    if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+	    if ($line =~ /([a-zA-Z0-9\.\-]+)/) { $line = $1; }
 	    chomp($line);
 	    push(@host_list, $line);
 	}
@@ -846,7 +847,7 @@ sub check_options(){
 sub check_consistency()
 {
     my $dopostinstall=1;
-    my $envid;
+    my $envid=0;
     ## check partitioning schema
     if (system("$kadeploydir/bin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
@@ -864,12 +865,18 @@ sub check_consistency()
     }
 
      ## checks if specified environment exists
-    if(!check_env($base,$env,$user))
+    $envid=check_env($base,$env,$user);
+    if($envid==0)
     {
-	halt("specified env does not exist");
+	print "specified env $env does not exist for user $user\n";
+	print "searching for env $env with user $deployuser\n";
+	$envid=check_env($base,$env,$deployuser);
+	if($envid==0)
+	{
+	    halt("No environment $env found with user $deployuser\n");
+	}
     }
 
-    $envid=check_env($base,$env,$user);
 
     # gets filebase path
     $filebase =  libkadeploy2::deploy_iolib::env_id_to_filebase($base,$envid);

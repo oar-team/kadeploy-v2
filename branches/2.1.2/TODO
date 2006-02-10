@@ -1,3 +1,13 @@
+		-BUGS
+	1)j'ai le droit aux tabs dans "clusternodes.conf" => nan
+
+	2)kasetup -printvalidfdisk
+	"Error size of disk < size of partition"
+	faut faire kanodes -add
+
+	3)Changer la regex de kanodes, pour supporter les noms de type grillon-1 et
+	accepter les tabs parce que c mieux
+
 -Documentation...
 -Finishing the man pages
 -Roadmap
