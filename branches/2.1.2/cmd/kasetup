@@ -788,13 +788,33 @@ sub copybinfiles()
     my $kadeploy2_directory;
     my $file;
     my $command;
+    my $line;
+    my $arch;
     $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-
+    
     my @filetocopy=("DKsentinelle",
 		    "mcatseg");
+    
+    open(FH,"uname -a |") or die "Can't exec uname -a";
+    $line=<FH>;
+    if ($line=~/i686/) { $arch="i686"; }
+    if ($line=~/x86_64/) { $arch="x86_64"; }
     foreach $file (@filetocopy)
     {
-	$command="cp $kadeploy2_directory/bin/$file /usr/local/bin";
+	#Priorite au fichier compiler sur en local
+	if (-f $kadeploy2_directory/bin/$file)	
+	{
+	    $command="cp $kadeploy2_directory/bin/$file /usr/local/bin/$file";
+	}
+	else
+	{
+	    $command="cp $kadeploy2_directory/bin/$file-$arch /usr/local/bin/$file";
+	}
+	else
+	{
+	    print "ERROR : can't copy file : $kadeploy2_directory/bin/$file\n";
+	    exit 1;
+	}
 	print "Exec : $command\n";
 	system($command);
     }
