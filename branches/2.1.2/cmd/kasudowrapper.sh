@@ -1,12 +1,21 @@
 #!/bin/bash
 
-OK=0
-if [ ! -d /etc/kadeploy/ ] ; then echo "You don't have /etc/kadeploy/"; exit 1; fi
-DEPLOYDIR=$( cat /etc/kadeploy/deploy.conf  | grep kadeploy2_directory | awk -F = '{print $2}' )
-DEPLOYUSER=$( cat /etc/kadeploy/deploy.conf  | grep deploy_user | awk -F = '{print $2}' )
+DEPLOYETCDIR="/etc/kadeploy/"
+EXPORTENV="exported.conf";
+EXPORTENVFILE="$DEPLOYETCDIR/$EXPORTENV"
 
-if [ -z $DEPLOYDIR ] ; then echo "kadeploy2_directory not found in your configuration files" ; exit 1 ; fi
-if [ -z $DEPLOYUSER ] ; then echo "deploy_user not found in your configuration files" ; exit 1 ; fi
+OK=0
+if [ ! -d $DEPLOYETCDIR ] ; then echo "You don't have $DEPLOYETCDIR"; exit 1; fi
+
+if [ -f $EXPORTENVFILE ] ; then 
+    source $EXPORTENVFILE ; 
+else 
+    echo "$EXPORTENVFILE not found... you have to build it with kasetup";
+    exit 1;
+fi
+
+if [ -z $DEPLOYDIR ] ; then echo "DEPLOYDIR not found in $EXPORTENVFILE" ; exit 1 ; fi
+if [ -z $DEPLOYUSER ] ; then echo "DEPLOYUSER not found in $EXPORTENVFILE" ; exit 1 ; fi
 
 
 export PERL5LIB=${DEPLOYDIR}/:$PERL5LIB

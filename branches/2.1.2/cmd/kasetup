@@ -7,6 +7,9 @@ my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
 my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
+my $exportenvfile=$kadeployconfdir."/exported.conf";
+my $nodesfile=$kadeployconfdir."/clusternodes.conf";
+
 my @listfiletowrapuser=(
 			"kaconsole",
 			"kacreateenv",
@@ -43,6 +46,8 @@ my $rootdev;
 my $rootpartnumber;
 my $swappartnumber;
 my $printpreinstallconf;
+my $exportenv;
+my $chmodconf;
 
 sub help();
 sub check_etc_deploy();
@@ -64,6 +69,8 @@ sub printpreinstallconf($);
 sub checkcorrectness($);
 sub printvalidfstablinux($$);
 sub getlinuxswapdevicenumber($);
+sub exportenv();
+sub chmodconf();
 
 GetOptions('checkdeployconf!'         => \$checkdeployconf,
            'checksudoers!'            => \$checksudoers,
@@ -80,6 +87,8 @@ GetOptions('checkdeployconf!'         => \$checkdeployconf,
 	   'printpreinstallconf!'     => \$printpreinstallconf,
 	   'sudowrapping'             => \$sudowrapping,
 	   'createtftp'               => \$createtftp,
+	   'exportenv'                => \$exportenv,
+	   'chmodconf'                => \$chmodconf,
 	   'h!'                       => \$help,
 	   );
 
@@ -99,8 +108,9 @@ if ($checkdeployconf      ||
     $printvalidfdisk      ||
     $printvalidfstablinux ||
     $sudowrapping         ||
-    $printpreinstallconf 
-    
+    $printpreinstallconf  ||
+    $exportenv            ||
+    $chmodconf
     )
 {
 
@@ -119,6 +129,8 @@ if ($checkdeployconf      ||
     if ($createtftp)           { createtftp(); }
     if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
     if ($printpreinstallconf)  { printpreinstallconf($partitionfile); }
+    if ($exportenv)            { exportenv(); }
+    if ($chmodconf)            { chmodconf(); }
     exit 0;
 }
 else
@@ -131,6 +143,30 @@ else
 ################################################################################
 sub sort_par_num { return $a <=> $b }
 
+sub chmodconf()
+{
+    my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+    system("chmod 600 $deployconf");
+    system("chmod 600 $deploycmdconf");
+    system("chmod 644 $partitionfile");
+    system("chmod 644 $nodesfile");
+    system("chmod 644 $exportenvfile");
+    system("chown $kadeployuser $exportenvfile");
+    print STDERR "chmod configuration file done\n";
+}
+
+sub exportenv()
+{
+    my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+
+    open(FH,">$exportenvfile") or die "Can't open $exportenvfile write mode";
+    print FH "DEPLOYDIR=$kadeploydir
+DEPLOYUSER=$kadeployuser
+";
+    close(FH);
+    print STDERR "export completed\n";    
+}
 
 sub printvalidfstablinux($$)
 {
@@ -318,6 +354,8 @@ sub loadpartitionfile($)
 	    if ($numberofextended > 1) { print STDERR "ERROR you can only have one extended part\n"; exit 1; }
 	    if ($numberofprimary > 4   ) { print STDERR "ERROR you can only have four primary part\n"; exit 1; }
 	    if ($numberofprimary + $numberofextended > 4   ) { print STDERR "ERROR you can only have four part (primary + extended)\n"; exit 1; }
+	    if ($numberofextended == 0 && $numberoflogical > 0 ) 
+	    { print STDERR "ERROR extended partition must be defined before logical\n"; exit 1; }
 
 	    if($line =~ /^([hs]d[a-z])[\s\t]+size=([0-9]+)[\t\s]*$/)
 	    {
@@ -352,6 +390,15 @@ sub loadpartitionfile($)
 		}
 		@listnumber=(@listnumber,$number);
 		$linecorrect=1;
+	    }
+	    if ($line =~ /^$/ ||
+		$line =~ /^\#/)
+	    { $linecorrect=1; }
+
+	    if ($linecorrect==0)
+	    {
+		print STDERR "ERROR in line :\n$line";
+		exit 1;
 	    }
 
 
@@ -396,7 +443,7 @@ sub loadpartitionfile($)
 	$numberofextended > 0 &&
 	$numberoflogical  > 0	
 	) 
-    { print STDERR "ERROR size of extended part >= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }
+    { print STDERR "ERROR size of extended part <= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }
     return %disk;
 }
 
@@ -561,11 +608,16 @@ sub printfdiskformat($)
     my $tmphash1;
     my $tmphash2;
     my $tmphash3;
-
+    
     my $type;
     my $partnumber;
     my $size;
     my $fdisktype;
+        
+    my $fdiskversion="2.12";
+    
+    print STDERR "WARNING this script work only with fdisk 2.12\n";
+
     foreach $key1 (sort keys %disk)
     {
 	$tmphash1 = $disk{$key1};
@@ -616,13 +668,25 @@ sub printfdiskformat($)
 		    if ($type eq "p" ||
 			$type eq "e")
 		    {
-			print "n
+			if ($partnumber!=4)
+			{
+			    
+			    print "n
 $type
 $partnumber
 
 $size
 ";
-		    }
+			}
+			else
+			{			    
+			    print "n
+$type
+
+$size
+";		    
+			}		    
+		    }		
 		    if ($type eq "l")
 		    {
 			print "n
@@ -633,10 +697,19 @@ $size
 		    }
 		    if (!($type eq "e"))
 		    {
-			print "t
+			if ($partnumber==1)
+			{
+			    print "t
+$fdisktype
+";
+			}
+			else
+			{
+			    print "t
 $partnumber
 $fdisktype
 ";
+			}
 		    }
 		}
 	    }
@@ -828,13 +901,35 @@ sub sudowrapping()
     my $file;
     my $command;
     $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    
+
+    
     foreach $file (@listfiletowrapuser)
     {
-	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
+	if ( ! -e "/usr/local/bin/$file")
+	{
+	    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
+	    print STDERR "Exec : $command\n";
+	    system($command);
+	}
+	else
+	{
+	    print STDERR "/usr/local/bin/$file exist\n";
+	}
+    }
+
+    if ( ! -e "/usr/local/bin/setup_pxe.pl")
+    {
+	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/setup_pxe.pl";    
 	print "Exec : $command\n";
 	system($command);
     }
-    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/setup_pxe.pl";    
+    else
+    {
+	print STDERR "/usr/local/bin/setup_pxe.pl exist\n";
+    }
+
+    $command="$kadeploy2_directory/bin/kasetup -exportenv";
     print "Exec : $command\n";
     system($command);
 }
@@ -1060,8 +1155,9 @@ sub checkdeployconf()
 	return $ok;
     }
 
-    return $ok;
-         
+    print "\n";
+
+    return $ok;       
 }
 
 
@@ -1100,7 +1196,8 @@ sub help()
 \t-sudowrapping                  wrap files with kasudowrapper.sh
 \t-printvalidsudoers             generate a sudoers from deploy.conf
 \t-createtftp                    copy all the files required for tftp boot
-
+\t-exportenv                     export environment variable file for sudowrapping (this is done after sudowrapping)
+\t-chmodconf                     put correct write on configuration files
 
 \t-printpreinstallconf           print preinstall configuration file
 \t-printvalidfdisk               print a fdisk file from 
