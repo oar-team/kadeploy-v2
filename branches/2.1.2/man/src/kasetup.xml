@@ -53,6 +53,14 @@
       <command>-sudowrapping</command> Wrap kadeploy script into sudo mechanism and put the links in "/usr/local/bin/"
     </para>
 
+    <para>
+      <command>-exportenv</command>export environment variable file for sudowrapping (this is done after sudowrapping)
+    </para>
+
+    <para>
+      <command>-chmodconf</command>put correct write on configuration files
+    </para>
+
     <para>      
       <command>-copybinfiles</command> Copy some required files in "/usr/local/bin/". It will be fix sooner.
     </para>
