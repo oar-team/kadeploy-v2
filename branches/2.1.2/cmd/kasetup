@@ -12,7 +12,6 @@ my $nodesfile=$kadeployconfdir."/clusternodes.conf";
 
 my @listfiletowrapuser=(
 			"kaconsole",
-			"kacreateenv",
 			"kadeploy",
 			"kaenvironments",
 			"kareboot",
@@ -25,8 +24,7 @@ my @listfiletowrapuser=(
 my @listfiletowraproot=(
 			"kaadduser",
 			"kadeluser",
-			"kaaddnode",
-			"kadelnode",
+			"kanodes",
 			"kadatabase",
 			"kasetup",
 			);
