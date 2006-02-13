@@ -365,7 +365,12 @@ Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. 
 The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
 Kadeploy 2 support sudo wrapper system.
-You can set it up with <tt>kasetup -sudowrapping</tt>
+You can set it up with 
+<tt>kasetup -sudowrapping</tt>
+<tt>kasetup -exportenv</tt>
+<p>
+Then you need to put correct write to your configuration files
+<tt>kasetup -chmodconf
 
 <!-- =========================== -->
 <sect>Using kadeploy 2
@@ -447,12 +452,18 @@ Register partition done.
 </verb>
 
 <p>
+If you want to check if the db is correct, you can do:
+#kanodes -listnode
+#kanodes -listpartition
+
+<p>
 Once these operations completed, the system is almost ready for deployments.
 You have to put some right to your user with the command kaaduser.
 <verb>#kaadduser -l root -m cls2 -p hda2</verb>
 
 <p>
 Warning, when you change on of this two file you have to recall <tt>kanodes -add</tt>.
+
 
 
 <!-- =========================== -->
