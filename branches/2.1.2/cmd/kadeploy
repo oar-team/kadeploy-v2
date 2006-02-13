@@ -717,10 +717,10 @@ sub usages()
 
 #print "\t[-d 0 | 1] Optimisation support\n"
 
-    if ($do_fdisk_on_deploy eq "yes")
-    {
-	print "\t[-lpf | --loadpartitionfile partitionfile]\n";
-    }
+#    if ($do_fdisk_on_deploy eq "yes")
+#    {
+#	print "\t[-lpf | --loadpartitionfile partitionfile]\n";
+#    }
 }
 
 
