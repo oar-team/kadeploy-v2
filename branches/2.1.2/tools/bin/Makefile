@@ -75,7 +75,7 @@ PERL = perl
 VERSION = 2.1.2
 XSLTPROC = xsltproc
 
-bin_SCRIPTS = DKsentinelle
+bin_SCRIPTS = DKsentinelle-i686 DKsentinelle-x86_64
 EXTRA_DIST = $(bin_SCRIPTS) README
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
