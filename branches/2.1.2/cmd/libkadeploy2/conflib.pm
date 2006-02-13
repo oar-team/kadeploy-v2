@@ -129,7 +129,7 @@ sub check_conf {
     }
 
     print STDERR "Checking variable definition...\n";
-    open(DEPLOYCONF,$deployconf);
+    open(DEPLOYCONF,$deployconf) or die "Can't open $deployconf, maybe you are not allowed to open this file\n";
     %params = ();
 
     foreach my $line (<DEPLOYCONF>){
