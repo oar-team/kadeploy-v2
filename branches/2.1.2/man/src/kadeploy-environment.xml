@@ -48,7 +48,7 @@
       you have to reboot your node to a different OS (the deployment system for example with kareboot),
       then <command> cat /dev/hda1 > /pathto/environment.dd</command>.
       If you want to gzip it (better network performance in deployment, and in size),
-      with </command> cat /dev/hda1 | gzip -c > /pathto/environment.dd.gz</command>.
+      with <command> cat /dev/hda1 | gzip -c > /pathto/environment.dd.gz</command>.
     </para>
   </refsect1>
   
