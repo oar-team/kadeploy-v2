@@ -181,10 +181,11 @@ sub prepare_deployment($){
     my $dbh = shift;
     my $i = 0;
     my $nb=0;
+    my $maxretry=20;
     # invalidate previously problematic deployments
     clean_previous_deployments ($dbh);
     
-    while ($i<20 &&
+    while ($i<$maxretry &&
 	   $nb==0
 	   )
     {
@@ -197,7 +198,7 @@ sub prepare_deployment($){
 	$nb = $sth->fetchrow_hashref(); $nb = $nb->{'id'};
 	$sth->finish();
 	$i++;
-	print "Waiting... Another deployment is already running\n";
+	print "retry $i/$maxretry : Waiting... Another deployment is already running\n";
 	sleep($i);
     }
 
