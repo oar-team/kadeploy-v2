@@ -49,41 +49,33 @@
   <refsect1>
     <title>CONFIGURATION FILES</title>	  	    
     <para>
-      <command>/etc/kadeploy/deploy.conf</command> Contains variables that should be defined prior to the command execution. These variables are grouped into several sections. A very short description is available for each variable and sometimes example values are given in commentary. The file is read once at the beginning of the execution and prior to any other action. If values are missing, it should be told as precisely as possible. The syntax is the following :
+      <command>/etc/kadeploy/deploy.conf</command> Contains variables that MUST be defined prior to the command execution. 
+These variables are grouped into several sections. 
+A very short description is available for each variable and sometimes example values are given in commentary. 
+The file is read once at the beginning of the execution and prior to any other action. 
+If values are missing, it should be told as precisely as possible. 
     </para>
 
-# section_name #
-# ------------ #
-
-# short description
-var_name1 = var_value1
-
-# short description
-var_name2 = var_value2	# example_value
-
-...
-
     <para>
-      Also, an example of this file can be found at in the <emphasis>tools/cookbook/</emphasis> folder.	    
+      You can man it and an example of this file can be found at in the <emphasis>tools/cookbook/</emphasis> folder of the installation directory.      
     </para>
     <para>
-      <command>/etc/kadeploy/deploy_cmd.conf</command> Contains entries describing reboot command needed for deployment. Please see kareboot man page for further details.    
+      <command>/etc/kadeploy/deploy_cmd.conf</command> Contains entries describing reboot command needed for deployment. Please see man page for further details.    
       </para>
   </refsect1>
 	
   <refsect1>
     <title>FILES</title>
     
-    kadeploy needs read and write access to several folder and files to acheive a deployment. These rights should be granted to the deploy user. Here are the files and folder list :
-    
     <para>
-      <emphasis>$KADEPLOYDIR/boot/</emphasis> contains utilities (binaries etc.) for grub/pxe/reboot stories
+    kadeploy needs read and write access to several folder and files to acheive a deployment. These rights should be granted to the deploy user. Here are the files and folder list :
     </para>
 
-
-      the <emphasis>tftp</emphasis> folder where grub and pxe files will be wriemphasisen and that should be defined in the <emphasis>/etc/kadeploy/deploy.conf</emphasis> configuration file	
-      and <emphasis>/tmp/</emphasis> for a few temporary files
-
+    <para>      
+      the <emphasis>tftp</emphasis> folder where grub and pxe files will be put is configured in : 
+    <emphasis>/etc/kadeploy/deploy.conf</emphasis> configuration file	
+      and <emphasis>/tmp/</emphasis> for a few temporary files.
+    </para>
 
   </refsect1>
 
