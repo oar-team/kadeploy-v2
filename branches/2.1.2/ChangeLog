@@ -1,11 +1,15 @@
 2.1.2:
 ------
-* fdisk scripting (kasetup)
 * kaenvironments (environment name by user)
 * kaenvironments (by node)
 * new partitioning format (/etc/kadeploy/clusterpartition.conf &&
 /etc/kadeploy/clustenodes.conf)
 * new parallel command launcher (internal)
+* kasetup to help installing and configuring kadeploy
+* fdisk scripting (kasetup)
+* katftp remove (replaced by kasetup)
+* kadelnode kaadnode remove (replaced by kasetup)
+* kasudowrapper security enancement
 
 
 2.1.1:

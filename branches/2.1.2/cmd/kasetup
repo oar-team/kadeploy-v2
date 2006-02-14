@@ -144,12 +144,15 @@ sub sort_par_num { return $a <=> $b }
 sub chmodconf()
 {
     my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+
     system("chmod 600 $deployconf");
     system("chmod 600 $deploycmdconf");
     system("chmod 644 $partitionfile");
     system("chmod 644 $nodesfile");
     system("chmod 644 $exportenvfile");
-    system("chown $kadeployuser $exportenvfile");
+    system("chmod 755 $kadeployconfdir");
+
+    system("chown $kadeployuser $exportenvfile");    
     print STDERR "chmod configuration file done\n";
 }
 
