@@ -179,18 +179,27 @@ print "invalidating deployments older than $deployment_validity_timeout\n";
 #  -      0        if not i.e. if there is already a waiting deployment
 sub prepare_deployment($){
     my $dbh = shift;
-    
+    my $i = 0;
+    my $nb=0;
     # invalidate previously problematic deployments
     clean_previous_deployments ($dbh);
-
-    $dbh->do("LOCK TABLES deployment WRITE");
-
-    my $sth = $dbh->prepare("SELECT IFNULL(COUNT(deployment.id),0) as id
+    
+    while ($i<20 &&
+	   $nb==0
+	   )
+    {
+	$dbh->do("LOCK TABLES deployment WRITE");
+	
+	my $sth = $dbh->prepare("SELECT IFNULL(COUNT(deployment.id),0) as id
                              FROM deployment
                              WHERE deployment.state = 'waiting'");
-    $sth->execute();
-    my $nb = $sth->fetchrow_hashref(); $nb = $nb->{'id'};
-    $sth->finish();
+	$sth->execute();
+	$nb = $sth->fetchrow_hashref(); $nb = $nb->{'id'};
+	$sth->finish();
+	$i++;
+	print "Waiting... Another deployment is already running\n";
+	sleep($i);
+    }
 
     # $nb should be 0 or 1
     if($nb == 0)
