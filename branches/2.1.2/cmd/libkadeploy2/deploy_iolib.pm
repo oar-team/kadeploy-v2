@@ -180,26 +180,31 @@ print "invalidating deployments older than $deployment_validity_timeout\n";
 sub prepare_deployment($){
     my $dbh = shift;
     my $i = 0;
-    my $nb=0;
-    my $maxretry=20;
+    my $nb=1;
+    my $maxretry=50;
+    my $sth;
     # invalidate previously problematic deployments
     clean_previous_deployments ($dbh);
     
     while ($i<$maxretry &&
-	   $nb==0
+	   $nb==1
 	   )
     {
 	$dbh->do("LOCK TABLES deployment WRITE");
 	
-	my $sth = $dbh->prepare("SELECT IFNULL(COUNT(deployment.id),0) as id
+	$sth = $dbh->prepare("SELECT IFNULL(COUNT(deployment.id),0) as id
                              FROM deployment
                              WHERE deployment.state = 'waiting'");
 	$sth->execute();
 	$nb = $sth->fetchrow_hashref(); $nb = $nb->{'id'};
 	$sth->finish();
-	$i++;
-	print "retry $i/$maxretry : Waiting... Another deployment is already running\n";
-	sleep($i);
+	if ($nb==1)
+	{
+	    $i++;
+	    print "retry $i/$maxretry : Waiting... Another deployment is running ; retry in $i s\n";
+	    $dbh->do("UNLOCK TABLES");
+	    sleep($i);
+	}
     }
 
     # $nb should be 0 or 1
