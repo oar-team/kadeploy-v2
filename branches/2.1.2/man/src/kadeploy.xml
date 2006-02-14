@@ -25,6 +25,10 @@
       kadeploy deploys the specified environment on the requested nodes. When successfully over, the nodes are available under the new and freshly installed environment.
       It needs critic variables to be defined in the /etc/kadeploy/deploy.conf configuration file ; see configuration file section for further details.
     </para>
+
+    <para>
+      If you want to know how to deploy real environment see kadeploy-environment (1).
+    </para>
   </refsect1>
   
   <refsect1>
