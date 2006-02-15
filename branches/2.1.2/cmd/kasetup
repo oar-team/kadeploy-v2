@@ -876,21 +876,28 @@ sub copybinfiles()
     foreach $file (@filetocopy)
     {
 	#Priorite au fichier compiler sur en local
-	if (-f "$kadeploy2_directory/bin/$file")	
+	if (! -f "/usr/local/bin/$file")
 	{
-	    $command="cp $kadeploy2_directory/bin/$file /usr/local/bin/$file";
-	}
-	elsif (-f "$kadeploy2_directory/bin/$file-$arch")
-	{
-	    $command="cp $kadeploy2_directory/bin/$file-$arch /usr/local/bin/$file";
+	    if (-f "$kadeploy2_directory/bin/$file")	
+	    {
+		$command="cp $kadeploy2_directory/bin/$file /usr/local/bin/$file";
+	    }
+	    elsif (-f "$kadeploy2_directory/bin/$file-$arch")
+	    {
+		$command="cp $kadeploy2_directory/bin/$file-$arch /usr/local/bin/$file";
+	    }
+	    else
+	    {
+		print "ERROR : Your distribution is not supported... try to build $file\n";
+		exit 1;
+	    }
+	    print "Exec : $command\n";
+	    system($command);
 	}
 	else
 	{
-	    print "ERROR : Your distribution is not supported... try to build $file\n";
-	    exit 1;
+	    print "/usr/local/bin/$file already exist\n";
 	}
-	print "Exec : $command\n";
-	system($command);
     }
 }
 
