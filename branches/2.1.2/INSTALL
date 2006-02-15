@@ -76,7 +76,8 @@ copy template configuration file from tools/cookbook/conf/ to /etc/kadeploy/
 edit it, read the manual, then check with : 
 #kasetup -checkdeployconf
 
-and set correct write : 
+and set correct read/write access (your kadeploy directory must be in 755 mode) :
+#kasetup -exportenv
 #kasetup -chmodconf
 
 if you don't already have DKsentinelle and mcatseg in /usr/local/bin/ then
@@ -101,6 +102,7 @@ edit /etc/kadeploy/clusternodes.conf /etc/kadeploy/clusterpartition.conf then
 create the tftp folder for pxe
 #kasetup -createtftp
 
+
 It's done !!
 
 
@@ -115,6 +117,10 @@ configure make make install
 
 check your conf
 #kasetup -checkdeployconf
+
+and set correct read/write access (your kadeploy directory must be in 755 mode): 
+#kasetup -exportenv
+#kasetup -chmodconf
 
 wrap your script with new sudowrapper (you have to remove old file yourself, it's a bad job, but somebody has to do it)
 #kasetup -printvalidsudoers (put it in /etc/sudoers)
