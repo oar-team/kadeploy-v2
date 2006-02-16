@@ -4,10 +4,11 @@
 
 use Getopt::Long;
 use libkadeploy2::conflib;
-
 use strict;
+use libkadeploy2::rights_iolib;
 
 my @host_list = ();
+my $username = getpwuid($ENV{SUDO_UID}); # real user
 
 if (!@ARGV){
     print "Usage : kaconsole -m|--machine hostname\n";
@@ -37,12 +38,14 @@ if (!@host_list){
 my %cmd = libkadeploy2::conflib::check_cmd;
 
 #Check rights on DB
-foreach $host (@host_list)
+my $base = libkadeploy2::deploy_iolib::connect();
+foreach my $host (@host_list)
 {
     my @hl=($host);
     if (libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl)==0)
     {
 	print "ERROR : you have no rights on node $host\n";	    
+	libkadeploy2::deploy_iolib::disconnect($base);
 	exit 1;                                                                                    
     }                                                                                              
 }
@@ -58,3 +61,4 @@ foreach my $host (@host_list){
 	system("$cmd{$host}{\"console\"}");
     }
 }
+libkadeploy2::deploy_iolib::disconnect($base);
