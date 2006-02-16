@@ -36,6 +36,18 @@ if (!@host_list){
 
 my %cmd = libkadeploy2::conflib::check_cmd;
 
+#Check rights on DB
+foreach $host (@host_list)
+{
+    my @hl=($host);
+    if (libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl)==0)
+    {
+	print "ERROR : you have no rights on node $host\n";	    
+	exit 1;                                                                                    
+    }                                                                                              
+}
+
+
 foreach my $host (@host_list){
     
     if(!$cmd{$host}{"console"}){
