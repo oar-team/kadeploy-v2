@@ -1,7 +1,5 @@
-all: $(DESTMAN1)
-
+all: 
 clean:
-
 distclean:
 distdir:
 install:
