@@ -813,6 +813,7 @@ Cmnd_Alias DEPLOYCMDROOT = ";
     print "
 $kadeployuser  ALL=(ALL) NOPASSWD: DEPLOYCMDUSER
 ALL ALL=($kadeployuser) NOPASSWD: DEPLOYCMDUSER
+root ALL = (ALL) ALL
 \n";
 
 }

@@ -46,7 +46,8 @@ my $tmpuser;
 # db handler
 my $base;
 my @users; # -l user1 -l user2 ....
-my $user; # -l user1
+my $user; # -l user
+my $username = getpwuid($ENV{SUDO_UID}); # real user                                                                                                     
 my $spoofuser;
 my $host;
 my @hostlist;
@@ -65,9 +66,11 @@ GetOptions('e=s'               => \@env_list,
 	   'help!'             => \$display_help,
 	   );
 
-$user=$users[0];
+$user=$username;
 $spoofuser=$users[$#users]; #get last -l
 
+if ($spoofuser) { $user=$spoofuser; }
+else { $spoofuser=$username; }
 
 
 			 
@@ -131,30 +134,21 @@ if (@hostlist)
 }
 
 
-if ($user)
+my @listuser;
+my $i;
+$tmpuser="";
+$base = libkadeploy2::deploy_iolib::connect();
+@listuser=get_userdb($base);
+foreach $i (@listuser)
 {
-    my @listuser;
-    my $i;
-    $tmpuser="";
-    $base = libkadeploy2::deploy_iolib::connect();
-    @listuser=get_userdb($base);
-    foreach $i (@listuser)
+    if ($i eq $user)
     {
-	if ($i eq $user)
-	{
-	    $tmpuser=$i;
-	}
+	$tmpuser=$i;
     }
-    print STDERR "user selected : $spoofuser\n\n";
-    print_user();
-    
-    libkadeploy2::deploy_iolib::disconnect($base);
 }
-else
-{
-    print "ERROR : you need to specify a user (-l)\n";
-    exit 1;
-}
+print STDERR "user selected : $spoofuser\n\n";
+print_user();   
+libkadeploy2::deploy_iolib::disconnect($base);
 
 
 if (@envToDelete)
@@ -163,16 +157,16 @@ if (@envToDelete)
     my $env_name;
     foreach $env_name (@envToDelete) 
     {
-	my %environments = get_environments_by_name_and_user($base, $env_name,$spoofuser);
+	my %environments = get_environments_by_name_and_user($base, $env_name,$username);
 	if (scalar(keys(%environments)) != 0) 
 	{
-	    if (delete_environments_by_name_and_user($base,$env_name,$spoofuser)==1)
+	    if (delete_environments_by_name_and_user($base,$env_name,$username)==1)
 	    { 
 		print "environment $env_name deleted succefully\n"; 
 	    }
 	    else
 	    {
-		print "Error removing $env_name, \n";
+		print "ERROR :  removing $env_name\n";
 	    }
 	}
 	else
@@ -517,7 +511,7 @@ environment.user=?
     }
     else
     {
-	print "You are not allowed to remove $envname\n";
+	print "WARNING : You are not allowed to remove $envname with user $user... you are $username\n";
 	$result=0;
     }
     return $result;

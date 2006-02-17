@@ -1,4 +1,6 @@
-bin_SCRIPTS = kadeploy kaadduser kaconsole kadeluser kadeploy kaenvironments kaenvironments kareboot karecordenv libkadeploy2 kadatabase kasetup kasudowrapper.sh kanodes
-EXTRA_DIST = $(bin_SCRIPTS)
+bin_SCRIPTS = kadeploy kaconsole kadeploy kareboot karecordenv kaenvironments kasudowrapper.sh  
+sbin_SCRIPTS=kasetup kadatabase kanodes kaadduser kadeluser
+EXTRA_DIST = $(sbin_SCRIPTS) $(bin_SCRIPTS)
+
 SUBDIRS=libkadeploy2
 
