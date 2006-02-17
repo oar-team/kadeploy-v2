@@ -10,7 +10,5 @@ export DEPLOYDIR
 
 if [ -x $DEPLOYDIR/bin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; $OK=1 ;  fi
 if [ -x $DEPLOYDIR/sbin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
+if [ ! $OK ] ; then echo "$0 badly configured, use kasetup -exportenv" ; fi
 
-
-#if [ $(basename $0) == "setup_pxe.pl" ] ; then  exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
-#if [ $OK==0 ]; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; fi

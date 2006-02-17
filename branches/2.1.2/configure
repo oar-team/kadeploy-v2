@@ -2783,7 +2783,7 @@ done
 if test  -z $LATEX2HTML ; then echo "latex2html not found..." ; exit 1 ; fi
 
 
-                                                                                                                                                                                                                                      ac_config_files="$ac_config_files Makefile cmd/Makefile cmd/libkadeploy2/Makefile man/Makefile man/man1/Makefile tools/Makefile tools/Mcat/Makefile tools/sentinelle/Makefile tools/bin/Makefile tools/boot/Makefile tools/cookbook/Makefile tools/cookbook/conf/Makefile tools/cookbook/scripts/Makefile tools/libboot/Makefile tools/libboot/pxelinux/Makefile tools/libboot/deployment_kernel/Makefile tools/libboot/deployment_kernel/x86/Makefile tools/libboot/deployment_kernel/x86_64/Makefile tools/libboot/grub/Makefile tools/pre_post_script/Makefile Documentation/Makefile share/Makefile share/mysql/Makefile"
+                                                                                                                                                                                                                                                ac_config_files="$ac_config_files Makefile cmd/Makefile cmd/libkadeploy2/Makefile man/Makefile man/man1/Makefile tools/Makefile tools/Mcat/Makefile tools/sentinelle/Makefile tools/bin/Makefile tools/boot/Makefile tools/cookbook/Makefile tools/cookbook/conf/Makefile tools/cookbook/scripts/Makefile tools/kasudowrapper/Makefile tools/libboot/Makefile tools/libboot/pxelinux/Makefile tools/libboot/deployment_kernel/Makefile tools/libboot/deployment_kernel/x86/Makefile tools/libboot/deployment_kernel/x86_64/Makefile tools/libboot/grub/Makefile tools/pre_post_script/Makefile Documentation/Makefile share/Makefile share/mysql/Makefile"
 
 
 #AC_CONFIG_FILES([Makefile doc/Makefile])
@@ -3351,6 +3351,7 @@ do
   "tools/cookbook/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/cookbook/Makefile" ;;
   "tools/cookbook/conf/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/cookbook/conf/Makefile" ;;
   "tools/cookbook/scripts/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/cookbook/scripts/Makefile" ;;
+  "tools/kasudowrapper/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/kasudowrapper/Makefile" ;;
   "tools/libboot/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/libboot/Makefile" ;;
   "tools/libboot/pxelinux/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/libboot/pxelinux/Makefile" ;;
   "tools/libboot/deployment_kernel/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/libboot/deployment_kernel/Makefile" ;;

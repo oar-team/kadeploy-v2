@@ -160,13 +160,38 @@ sub exportenv()
 {
     my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
-
-    open(FH,">$exportenvfile") or die "Can't open $exportenvfile write mode";
-    print FH "DEPLOYDIR=$kadeploydir
-DEPLOYUSER=$kadeployuser
-";
-    close(FH);
-    print STDERR "export completed\n";    
+    my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
+    my $line;
+    my $tmpfile="";
+    if (-e "$kasudowrapperfile") 
+    {
+	open(FH,"<$kasudowrapperfile") or die "can't open $kasudowrapperfile\n";
+	while ($line=<FH>)
+	{
+	    if ($line=~/^DEPLOYDIR=.*$/)
+	    {
+		$line="DEPLOYDIR=$kadeploydir\n";
+	    }
+	    if ($line=~/^DEPLOYUSER=.*$/)
+	    {
+		$line="DEPLOYUSER=$kadeployuser\n";
+	    }
+	    $tmpfile.=$line;
+	}
+	close(FH);
+	if (length($tmpfile)>0)
+	{
+	    open(FH,">$kasudowrapperfile") or die "can't open $kasudowrapperfile\n";
+	    print FH $tmpfile;
+	    close(FH);	    
+	    print STDERR "export completed\n";    
+	}
+    }
+    else
+    {
+	print STDERR "can't find $kasudowrapperfile\n";
+	exit 1;
+    }
 }
 
 sub printvalidfstablinux($$)
@@ -343,6 +368,8 @@ sub loadpartitionfile($)
     my $numberofprimary=0;
     my $numberofextended=0;
     my $numberoflogical=0;
+
+    my $tmpnumber;
     $type="";
 
     if (open(FH,$partitionfile))
@@ -372,7 +399,7 @@ sub loadpartitionfile($)
 		if ($type eq "primary" && $number > 4) { print STDERR "ERROR primary part must be [1..4]\n"; $linecorrect=0;}
 		if ($type eq "primary") { $numberofprimary++; $sizeofprimary+=$size; }
 		if ($type eq "logical") { $sizeoflogical+=$size; $numberoflogical++; }
-		foreach my $tmpnumber (@listnumber)
+		foreach $tmpnumber (@listnumber)
 		{
 		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
 		}
@@ -385,7 +412,7 @@ sub loadpartitionfile($)
 		($number,$size,$label,$type)=($1,$2,$3,$4);
 		if ($number > 4) { print STDERR "ERROR extended partition must be in [1..4]\n"; $linecorrect=0; }
 		if ($type eq "extended") { $numberofextended++; $sizeofextended=$size; }
-		foreach my $tmpnumber (@listnumber)
+		foreach $tmpnumber (@listnumber)
 		{
 		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
 		}
