@@ -19,6 +19,7 @@ my @listfiletowrapuser=(
 			"mcat_rsh.pl",
 			"mcat_ssh.pl",
 			"sentinelle.pl",
+			"setup_pxe.pl",
 			);			
 
 my @listfiletowraproot=(
@@ -936,36 +937,43 @@ sub sudowrapping()
     my $kadeploy2_directory;
     my $file;
     my $command;
+    my $pathfile;
     $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     
 
     
     foreach $file (@listfiletowrapuser)
     {
-	if ( ! -e "/usr/local/bin/$file")
+	$pathfile="/usr/local/bin/$file";
+	if ( ! -e $pathfile)
 	{
-	    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/$file";
+	    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh $pathfile";
 	    print STDERR "Exec : $command\n";
 	    system($command);
 	}
 	else
 	{
-	    print STDERR "/usr/local/bin/$file exist\n";
+	    print STDERR "$pathfile exist\n";
 	}
     }
 
-    if ( ! -e "/usr/local/bin/setup_pxe.pl")
+    foreach $file (@listfiletowraproot)
     {
-	$command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh /usr/local/bin/setup_pxe.pl";    
-	print "Exec : $command\n";
-	system($command);
-    }
-    else
-    {
-	print STDERR "/usr/local/bin/setup_pxe.pl exist\n";
+	$pathfile="/usr/local/sbin/$file";
+	if ( ! -e $pathfile)
+	{
+	    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh $pathfile";
+	    print STDERR "Exec : $command\n";
+	    system($command);
+	}
+	else
+	{
+	    print STDERR "$pathfile exist\n";
+	}
     }
 
-    $command="$kadeploy2_directory/bin/kasetup -exportenv";
+
+    $command="$kadeploy2_directory/sbin/kasetup -exportenv";
     print "Exec : $command\n";
     system($command);
 }
