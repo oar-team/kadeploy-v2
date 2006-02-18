@@ -47,12 +47,18 @@ my $tmpuser;
 my $base;
 my @users; # -l user1 -l user2 ....
 my $user; # -l user
-my $username = getpwuid($ENV{SUDO_UID}); # real user                                                                                                     
+my $username;
 my $spoofuser;
 my $host;
 my @hostlist;
 my $hostfile;
 my $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
+
+if ($ENV{SUDO_USER})
+{  $username=$ENV{SUDO_USER}; }
+else                     
+{ $username=$ENV{USER}; }
+
 		      
 # get the command-line options
 GetOptions('e=s'               => \@env_list,

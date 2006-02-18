@@ -35,9 +35,19 @@ my $file_environment;
 my $optsupport=0;
 my $help;
 my $successful = 0;
-my $username = getpwuid($ENV{SUDO_UID}); # real user
+my $username;
 my $user;
 
+
+if ($ENV{SUDO_USER})
+{  $username=$ENV{SUDO_USER}; }
+else                     
+{ $username=$ENV{USER}; }
+
+if (!@ARGV){
+    help();
+    exit 0;
+}
 
 # gets the options
 GetOptions('n=s' => \$name,
