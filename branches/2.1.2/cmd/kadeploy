@@ -369,11 +369,11 @@ $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_
 if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
     $mcat_first_port++;
-    $nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
+    $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
 }
 
 $mcat_first_port++;
-$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
+$nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
 print "Executing preinstall...";
 $nodes_set->runRemoteCommand("\" $rambinpath/$pre_install_script \"");
 print "Done\n";
@@ -784,11 +784,7 @@ sub check_options(){
     #FIX partitionfile to default
     if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
 
-    if (!$user)
-    {
-	print "ERROR : user needed (-l)\n";
-	exit 1;
-    }
+    if (!$user) { $user=$username;  }
 
     ## checks if needed options are defined
     if (!$env){
@@ -849,7 +845,7 @@ sub check_consistency()
     my $dopostinstall=1;
     my $envid=0;
     ## check partitioning schema
-    if (system("$kadeploydir/bin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
+    if (system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
 	halt("ERROR : partition check failed\n");
     }

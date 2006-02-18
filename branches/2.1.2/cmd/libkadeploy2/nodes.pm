@@ -796,6 +796,7 @@ sub runCommandMcat {
     my $pid;
     my $timeout=400;
     my $firstnode="";
+    my $timetosleep=1.0;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
     if ($internal_parallel_command eq "yes")
@@ -805,6 +806,7 @@ sub runCommandMcat {
 	{
 	    if ( $firstnode eq "") { $firstnode=$key; }
 	    $nodes .= " $key";
+	    $timetosleep+=0.08;
 	}
 	
 	$pid=fork();
@@ -816,7 +818,7 @@ sub runCommandMcat {
 	else
 	{
 	    my $command="$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$firstnode;
-	    sleep(2);
+	    sleep($timetosleep);
 	    print "mcat local: $command\n";
 	    system($command);
 	    print "mcat local done\n";

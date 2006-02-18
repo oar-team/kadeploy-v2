@@ -25,7 +25,6 @@ my $verbose = 0;
 my $debug = 1;
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
-
 my $kareboot_usage = "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] [-m|--machine hostname] -f nodefile [-e|--environment name] [-p|--partition partition]\n";
 
 if (!@ARGV){
@@ -127,30 +126,40 @@ if ($deploy) {
 ## - $device - device and partition number
 
 my %cmd = libkadeploy2::conflib::check_cmd;
+my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
 my $base = libkadeploy2::deploy_iolib::connect();
 
 
-#Check rights on DB
-foreach $host (@host_list)
+#Check rights on DB if user ! deploy or root
+if ($username eq "root" ||
+    $username eq $deployuser )
 {
-    my @hl=($host);
-    if ($device)
-    {
-	if (libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@hl,$device)==0)
-	{
-	    print "ERROR : you are not allowed to reboot on partition $device on node $host\n";
-	    exit 1;
-	}
-    }
-    else
-    {
-	if (libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl)==0)
-	{
-	    print "ERROR : you have no rights to reboot on node $host\n";	    
-            exit 1;                                                                                    
-        }                                                                                              
-    }                                                                                                  
+    print "Reboot command launch by admin\n";
 }
+else
+{
+    foreach $host (@host_list)
+    {
+	my @hl=($host);
+	if ($device)
+	{
+	    if (libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@hl,$device)==0)
+	    {
+		print "ERROR : you are not allowed to reboot on partition $device on node $host\n";
+		exit 1;
+	    }
+	}
+	else
+	{
+	    if (libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl)==0)
+	    {
+		print "ERROR : you are not allowed to reboot node $host\n";
+		exit 1;                                                                                    
+	    }                                                                                              
+	}                                                                                                  
+    }
+}
+
 
 
 
