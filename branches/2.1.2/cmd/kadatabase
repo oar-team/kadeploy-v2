@@ -95,8 +95,7 @@ if ($ok==0 ||
 
 sub usage()
 {
-    print "
-$0 
+    print "$0 
 \t-addmysqlrights             # create the \"deploy\" user for the db
 \t-delmysqlrights             # delete this user from the db
 

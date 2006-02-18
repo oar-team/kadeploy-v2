@@ -7,7 +7,6 @@ my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
 my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
-my $exportenvfile=$kadeployconfdir."/exported.conf";
 my $nodesfile=$kadeployconfdir."/clusternodes.conf";
 
 my @listfiletowrapuser=(
@@ -145,15 +144,16 @@ sub sort_par_num { return $a <=> $b }
 sub chmodconf()
 {
     my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+    my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+    my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
 
     system("chmod 600 $deployconf");
     system("chmod 600 $deploycmdconf");
     system("chmod 644 $partitionfile");
     system("chmod 644 $nodesfile");
-    system("chmod 644 $exportenvfile");
     system("chmod 755 $kadeployconfdir");
-
-    system("chown $kadeployuser $exportenvfile");    
+    system("chmod 755 $kasudowrapperfile"); # le wrapper doit pouvoir etre ecris par deploy
+    system("chown $kadeployuser $kasudowrapperfile"); # le wrapper doit pouvoir etre ecris par deploy				
     print STDERR "chmod configuration file done\n";
 }
 
@@ -166,7 +166,7 @@ sub exportenv()
     my $tmpfile="";
     if (-e "$kasudowrapperfile") 
     {
-	open(FH,"<$kasudowrapperfile") or die "can't open $kasudowrapperfile\n";
+	open(FH,"<$kasudowrapperfile") or die "can't read $kasudowrapperfile\n";
 	while ($line=<FH>)
 	{
 	    if ($line=~/^DEPLOYDIR=.*$/)
@@ -182,7 +182,7 @@ sub exportenv()
 	close(FH);
 	if (length($tmpfile)>0)
 	{
-	    open(FH,">$kasudowrapperfile") or die "can't open $kasudowrapperfile\n";
+	    open(FH,">$kasudowrapperfile") or die "can't write  $kasudowrapperfile\n";
 	    print FH $tmpfile;
 	    close(FH);	    
 	    print STDERR "export completed\n";    
