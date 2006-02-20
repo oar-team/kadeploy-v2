@@ -369,7 +369,7 @@ print "<PreInstall>\n";
 #$nodes_set->runCommand(" cat $pre_install_archive  |", "\"tar $pre_install_option /rambin \"");
 print "Retrieving preinstall\n";
 #$nodes_set->runCommandMput("$pre_install_archive /pre_pipe");
-my $mcat_first_port = ($deployment%100)*3+12000;
+my $mcat_first_port = ($deployment%400)*6+12000;
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
 
