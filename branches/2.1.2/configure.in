@@ -50,6 +50,7 @@ AC_CONFIG_FILES([Makefile
 		tools/libboot/deployment_kernel/x86/Makefile
 		tools/libboot/deployment_kernel/x86_64/Makefile
 		tools/libboot/grub/Makefile
+		tools/migration/Makefile
 		tools/pre_post_script/Makefile
 		Documentation/Makefile
 		share/Makefile
