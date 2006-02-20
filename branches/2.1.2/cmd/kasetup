@@ -15,6 +15,7 @@ my @listfiletowrapuser=(
 			"kaenvironments",
 			"kareboot",
 			"karecordenv",
+			"migratenv",
 #			"mcat_rsh.pl",
 #			"mcat_ssh.pl",
 #			"sentinelle.pl",
