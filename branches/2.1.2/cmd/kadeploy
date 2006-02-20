@@ -856,7 +856,7 @@ sub check_consistency()
     my $dopostinstall=1;
     my $envid=0;
     ## check partitioning schema
-    if (system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
+    if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
 	halt("ERROR : partition check failed\n");
     }
