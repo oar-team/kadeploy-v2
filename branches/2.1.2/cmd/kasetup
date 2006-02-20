@@ -1248,8 +1248,8 @@ sub help()
 \t-loadpartitionfile             load a custom partition file
 
 \t-printvalidfstab               generate a fstab for linux with rootfs parameters
-\t\t-rootdev               boot device ( ex: /dev/hda )
-\t\t-rootpartnumber        boot device partnumber ( ex : 2)
+\tt-rootdev               boot device (ex: /dev/hda)
+\t\t-rootpartnumber        boot device partnumber (ex : 2)
 ";
 }
 
