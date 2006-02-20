@@ -15,10 +15,10 @@ my @listfiletowrapuser=(
 			"kaenvironments",
 			"kareboot",
 			"karecordenv",
-			"mcat_rsh.pl",
-			"mcat_ssh.pl",
-			"sentinelle.pl",
-			"setup_pxe.pl",
+#			"mcat_rsh.pl",
+#			"mcat_ssh.pl",
+#			"sentinelle.pl",
+#			"setup_pxe.pl",
 			);			
 
 my @listfiletowraproot=(
