@@ -190,18 +190,37 @@ foreach $host (@host_list){
 	  # searches for partition with requested environment
 	  my @res = libkadeploy2::deploy_iolib::search_deployed_env($base,$env,$host);
 	  if(scalar(@res)) {
+	    my $first_authorized_partition = 0;
+	    for (my $i=0; $i<scalar(@res); $i++) {
+	    	$dev  = libkadeploy2::deploy_iolib::disk_id_to_dev($base,$res[$i][0]);
+		$part = libkadeploy2::deploy_iolib::part_id_to_nb($base,$res[$i][1]);
+		my @hl=($host);
+		$device = $dev . $part;
+            	if (libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@hl,$device)==0) {
+			if ($i == (scalar(@res)-1)) {
+				# no partition with the right to deploy on found...
+				print "ERROR : you are not allowed to reboot on partition $device on node $host\n";
+				last;
+			}
+			# try the next available partition
+			next;
+		}
+							           
 	    # gets device and part number of the first partition by default for the moment
-	    $dev  = libkadeploy2::deploy_iolib::disk_id_to_dev($base,$res[0][0]);
-	    $part = libkadeploy2::deploy_iolib::part_id_to_nb($base,$res[0][1]);
+	    #$dev  = libkadeploy2::deploy_iolib::disk_id_to_dev($base,$res[0][0]);
+	    #$part = libkadeploy2::deploy_iolib::part_id_to_nb($base,$res[0][1]);
 		
 	    # debug print
-	    # print "DEV = $dev ; PART = $part ; That's it !\n";
+	    #print "DEV = $dev ; PART = $part ; That's it !\n";
 
-	    my $deploy_id = libkadeploy2::deploy_iolib::get_deploy_id($base,$host,$dev,$part);
-	    if(!$deploy_id) {
-	      print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
-	    } else {
-	      @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
+	      	my $deploy_id = libkadeploy2::deploy_iolib::get_deploy_id($base,$host,$dev,$part);
+	    	if(!$deploy_id && $i == (scalar(@res)-1)) {
+			# it was the last chance to find a working partition
+	      		print "WARNING : target node/device/partition does not exist or partition is not currently correctly deployed\n";
+	    	} else {
+	      		@env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($base,$deploy_id);
+			last; # found the first deployed partition exits of the loop
+	    	}
 	    }
 	  }
 
