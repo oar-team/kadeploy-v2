@@ -225,7 +225,6 @@ Usage : karecordenv\n
 \t-fs | --filesystem       file system          (default is ext2)
 \t-o  | --optsupport       optimisation support (default is 0)
 \t-fe | --file_environment
-\t-l                       user
 \t-h                       get this help message\n
 Name, kernel path, environment image path and post-installation file path must be defined\n";
 }
