@@ -1,0 +1,88 @@
+<refentry id="kaconsole">
+
+<refmeta>
+    <refentrytitle>kasetup</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>kasetup</refname>
+    <refpurpose>Manage installation of kadeploy</refpurpose>
+  </refnamediv>
+
+  
+  <refsect1>
+    <title>SYNOPSIS</title>
+    
+    <command>kasetup </command>  
+    <command>[-checkdeployconf]</command> 
+    <command>[-checksudoers]</command> 
+    <command>[-printvalidfdisk]</command> 
+    <command>[-printvalidsudoers]</command> 
+    <command>[-sudowrapping]</command> 
+    <command>[-copybinfiles]</command> 
+    <command>[-createtftp]</command> 
+  </refsect1>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kasetup is a "all in one toolbox" to ease the installation.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+    <para>      
+      <command>-checkdeployconf</command> Check parameters of kadeploy configuration files.
+    </para>
+
+    <para>      
+      <command>-checksudoers</command> Checks sudoers.
+    </para>
+
+    <para>      
+      <command>-printvalidfdisk</command> Generate a fdisk script from the configuration file, for the preinstall archive.
+    </para>
+
+    <para>      
+      <command>-printvalidsudoers</command> Generate a sudoers files.
+    </para>
+
+
+    <para>      
+      <command>-sudowrapping</command> Wrap kadeploy script into sudo mechanism and put the links in "/usr/local/bin/"
+    </para>
+
+    <para>
+      <command>-exportenv</command>export environment variable file for sudowrapping (this is done after sudowrapping)
+    </para>
+
+    <para>
+      <command>-chmodconf</command>put correct write on configuration files
+    </para>
+
+    <para>      
+      <command>-copybinfiles</command> Copy some required files in "/usr/local/bin/". It will be fix sooner.
+    </para>
+
+    <para>
+      <command>-createtftp</command> Copy some required files in the tftp repository. (pxelinux, memdisk...).
+    </para>
+
+
+
+  </refsect1>
+  <refsect1>
+    <title>CONFIGURATION FILE</title>
+    <emphasis>/etc/kadeploy/deploy.conf</emphasis> must be correctly written.
+    <emphasis>/etc/kadeploy/clusterpartition.conf</emphasis> must be correctly written.    
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright  2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+     
+  </refentry>
