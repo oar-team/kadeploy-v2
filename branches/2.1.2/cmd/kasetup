@@ -147,15 +147,27 @@ sub chmodconf()
     my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
     my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
-
-    system("chmod 600 $deployconf");
-    system("chmod 600 $deploycmdconf");
-    system("chmod 644 $partitionfile");
-    system("chmod 644 $nodesfile");
-    system("chmod 755 $kadeployconfdir");
-    system("chmod 755 $kasudowrapperfile"); # le wrapper doit pouvoir etre ecris par deploy
-    system("chown $kadeployuser $kasudowrapperfile"); # le wrapper doit pouvoir etre ecris par deploy				
-    print STDERR "chmod configuration file done\n";
+    
+    if ($ENV{USER} eq "root")
+    {
+	system("chmod 400 $deployconf");
+	system("chmod 400 $deploycmdconf");
+	system("chmod 400 $partitionfile");
+	system("chmod 400 $nodesfile");
+	
+	system("chmod 700 $kadeployconfdir");
+	system("chown $kadeployuser $kadeployconfdir");   # la conf appartient a deploy
+	
+	system("chmod 755 $kasudowrapperfile");           # le wrapper doit pouvoir etre ecris par deploy
+	system("chown $kadeployuser $kasudowrapperfile"); 
+	
+	print STDERR "chmod configuration file done\n";
+    }
+    else
+    {
+	print STDERR "You must be root ( user : $ENV{USER} )\n";
+	exit 1;
+    }
 }
 
 sub exportenv()
@@ -1248,7 +1260,7 @@ sub help()
 \t-loadpartitionfile             load a custom partition file
 
 \t-printvalidfstab               generate a fstab for linux with rootfs parameters
-\tt-rootdev               boot device (ex: /dev/hda)
+\t\t-rootdev               boot device (ex: /dev/hda)
 \t\t-rootpartnumber        boot device partnumber (ex : 2)
 ";
 }
