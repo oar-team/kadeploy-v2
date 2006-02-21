@@ -1,0 +1,2 @@
+SUBDIRS=pxelinux deployment_kernel grub
+EXTRA_DIST=pxelinux deployment_kernel grub

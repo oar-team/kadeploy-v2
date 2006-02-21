@@ -1,0 +1,64 @@
+  <refentry id="kaaddnode">
+    
+    <refmeta>
+      <refentrytitle>kanodes</refentrytitle>
+      <manvolnum>1</manvolnum>
+    </refmeta>
+    
+    <refnamediv>
+      <refname>kanodes</refname>
+      <refpurpose>registers and remove nodes, disk, partition</refpurpose>
+    </refnamediv>
+
+
+
+<refsect1>
+    <title>SYNOPSIS</title>
+    <para>
+      <command>kanodes</command>
+      <command>[-add]</command>
+      <command>[-del hostname]</command>
+      <command>[-listnode]</command>
+      <command>[-listpartition]</command>
+      <command>[-h]</command>
+    </para>
+  </refsect1>
+  
+
+  <refsect1>DESCRIPTION
+    <para>
+      kanodes registers nodes and their disk and partition features for them to be available to the deployment system.
+      It is used at the very beginning to describe a whole cluster (after having completed the installation for instance) 
+      or later when new nodes are added to a cluster already managed by the deployment system.
+      </para>
+      <para>
+      It use two files named <emphasis>/etc/kadeploy/clusternodes.conf</emphasis> 
+      <emphasis>/etc/kadeploy/clusterpartition.conf</emphasis>.
+    </para>
+    </refsect1>
+    <refsect1>
+      <title>OPTIONS</title>
+      <para>      
+	<command>-add</command> Load the configuration files.
+      </para>
+      <para>
+	<command>-del</command> Delete a specified node or a list.
+      </para>
+      <para>
+	<command>-listnode</command> List the registred nodes.
+      </para>
+      <para>
+	<command>-listpartition</command> List the registred partition.
+      </para>
+      <para>
+	<command>-h</command> Print help screen.
+      </para>	
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright  2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+</refentry>

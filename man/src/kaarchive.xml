@@ -1,0 +1,45 @@
+  <refentry id="kaarchive">
+  
+  <refmeta>
+    <refentrytitle>kaarchive</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>kaarchive</refname>
+    <refpurpose>creates an environment image</refpurpose>
+  </refnamediv>
+
+
+  <refsect1>kaarchive
+    <title>SYNOPSIS</title>
+
+<command>
+kaarchive [-X | --exclude-from file] [-z | --gzip] [--output-directory output_directory] [-i | --image image_name] --root-directory root_directory
+</command>
+  </refsect1>
+
+
+<refsect1>
+    <title>DESCRIPTION</title>
+<para>
+kaarchive creates a environment image from a running system one.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+<command>-X, --exclude-from file</command>excludes files named into file from the generated environment
+<command>-z, --gzip</command>filters the archive through gzip
+<command>--output-directory output_directory</command>sets the output directory for the generated environment ; default is current directory
+<command>-i, --image image_name</command>sets the output image name ; default is output_image
+<command>--root-directory root_directory</command>sets the root directory for the environment creation
+
+  </refsect1>
+
+
+  <refsect1>
+    <title>EXAMPLE</title>
+	<command>kaarchive -z -X /path/to/files_to_exclude_list.txt -i debian --root-directory /mnt/debian/</command>creates the debian.tgz image file from /mnt/debian excluding the files listed into /path/to/files_to_exclude_list.txt
+  </refsect1>
+</refentry>
