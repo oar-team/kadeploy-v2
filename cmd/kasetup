@@ -846,7 +846,7 @@ Cmnd_Alias DEPLOYCMDUSER = ";
 Cmnd_Alias DEPLOYCMDROOT = ";
     for ($i=0; $i<=$#listfiletowraproot; $i++)
     {
-	print "$kadeploydir/bin/$listfiletowraproot[$i]";
+	print "$kadeploydir/sbin/$listfiletowraproot[$i]";
 	if ($i!=$#listfiletowraproot) { print ", "; }
     }    
     print "\n";
