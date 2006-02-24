@@ -898,25 +898,16 @@ sub runRemoteCommand($$)
     my $connector = "rsh -l root";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-    my $internal_parallel_command = libkadeploy2::conflib::get_conf("use_internal_parallel_command");
-    if (!$internal_parallel_command) { $internal_parallel_command = "no"; }
 
     if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
         return 1;
     }
 
-    if ($internal_parallel_command eq "yes")
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) 
     {
-	foreach my $nodeIP (sort keys %{$self->{nodesReady}}) 
-	{
-	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
-	}
-	return $self->runThose(\%executedCommands, 20, 50, "failed on node");		    
+    	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
-    else
-    {
-	return $self->runRemoteCommandExtern($remoteCommand);
-    }
+    return $self->runThose(\%executedCommands, 20, 50, "failed on node");		    
 }
 
 sub runRemoteCommandTimeout($$$)
