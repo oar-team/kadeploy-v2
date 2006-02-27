@@ -974,7 +974,7 @@ sub sudowrapping()
 	$pathfile="/usr/local/sbin/$file";
 	if ( ! -e $pathfile)
 	{
-	    $command="ln -s $kadeploy2_directory/sbin/kasudowrapper.sh $pathfile";
+	    $command="ln -s $kadeploy2_directory/bin/kasudowrapper.sh $pathfile";
 	    print STDERR "Exec : $command\n";
 	    system($command);
 	}
