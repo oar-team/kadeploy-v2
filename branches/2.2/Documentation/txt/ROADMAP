@@ -1,0 +1,15 @@
+Légende : 1/4 => idée + schéma
+          2/4 => début d'implémentation
+          3/4 => teste de la solution
+          4/4 => solution intégrable
+
+ -2.2   : 
+         -Utilisation de différent parallélisateur de commande (DKsentienelle, internal, dsh)           => 4/4 OK
+         -Chaque noeuds à ses disques et son partitionnement + indépendance du disque face à l'OS       => 3/4 
+         -noyau de déploiement généré par script (debootstrap + make bzImage)                           => 3/4
+         -réecriture du schéma de base de donnée (disque, partition, environment)                       => 2/4 
+         -service de check indépendant du code de kadeploy (kachecknode)                                => 1/4
+         -metaenvironment + dépendance entre les environments                                           => 1/4
+         -gestion du PXE par kadns & kapxe => 1 dhcp, 1 dns + X tftp                                    => 1/4
+         -optimisation de premier reboot utilisé par défaut                                             => 1/4
+         -unification des commandes sur les environments (kaenvironments, karecordenv, kaupdatenv)      => 1/4
