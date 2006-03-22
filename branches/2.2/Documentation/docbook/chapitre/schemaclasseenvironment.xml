@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+    <sect1>
+      <title>classes d'environment
+      </title>
+      <itemizedlist>
+	<listitem>kadeploy/lib/environment : Repertoire des classes d'environments	  
+	</listitem>
+	<listitem>kadeploy/lib/environment/linux : Repertoire de la classe d'environments "linux"
+	</listitem>
+	<listitem>kadeploy/lib/environment/linuxpxe : Repertoire de la classe d'environment "linuxpxe"
+	</listitem>
+      </itemizedlist>
+    </sect1>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+  <sect1> 
+  <title>Global
+  </title>
+  <para>
+    Les données relatif à l'application sont stoqués sous différentes forme.
+    <itemizedlist>
+      <listitem>fichiers de configurations
+      </listitem>
+      <listitem>base de donnée
+      </listitem>
+    </itemizedlist>
+  </para>
+
+  <sect2>
+    <title>/etc/kadeploy
+    </title>
+    <para>
+      Ce repertoire contient la configuration global de l'application
+    </para>
+  </sect2>
+  </sect1>

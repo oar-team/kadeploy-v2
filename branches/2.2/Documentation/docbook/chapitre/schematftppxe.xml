@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <sect1>
+  <title>TFTP/PXE
+  </title>
+  
+  
+  <itemizedlist>
+    <listitem>/racinetftp/nodes/name/pxeloader : pxe loader du noeud "name", 
+      nom fixé arbitrairement
+    </listitem>
+    <listitem>/raxcinetftp/nodes/name/* : ensemble de fichier necessaire au boot pxe
+    </listitem>
+  </itemizedlist>
+    </sect1>

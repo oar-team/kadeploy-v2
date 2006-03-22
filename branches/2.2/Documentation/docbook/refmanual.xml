@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding="LATIN1" ?> 
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "/usr/share/sgml/docbook/dtd/4.3/docbookx.dtd" 
+[
+<!--Header-->
+<!ENTITY intro SYSTEM "chapitre/intro.xml">
+
+<!ENTITY casutilisation SYSTEM "chapitre/casutilisation.xml">
+
+<!ENTITY commandeadministrateur SYSTEM "chapitre/commandeadministrateur.xml">
+<!ENTITY commandeutilisateur SYSTEM "chapitre/commandeutilisateur.xml">
+
+<!ENTITY modelisationdonnee SYSTEM "chapitre/modelisationdonnee.xml">
+
+<!ENTITY classeenvironment SYSTEM "chapitre/classeenvironment.xml">
+
+<!ENTITY schemasql SYSTEM "chapitre/schemasql.xml">
+<!ENTITY schemarepertoire SYSTEM "chapitre/schemarepertoire.xml">
+<!ENTITY schematftppxe SYSTEM "chapitre/schematftppxe.xml">
+<!ENTITY schemafichierconfiguration SYSTEM "chapitre/schemafichierconfiguration.xml">
+<!ENTITY schemaclasseenvironment SYSTEM "chapitre/schemaclasseenvironment.xml">
+<!ENTITY schemaglobal SYSTEM "chapitre/schemaglobal.xml">
+
+]>
+
+<book lang="fr">
+  <!--Info-->
+  <bookinfo>
+    <title> Manuel de reference de kadeploy 2.2
+    </title>
+    <author>
+      <firstname> Peyrard </firstname>
+      <lastname> Johann </lastname>
+    </author>
+    <date> lun mar 20 10:51:54 CET 2006 </date>
+    <!--Versioning-->
+    <revhistory>
+      <revision>
+	<revnumber>1</revnumber>
+	<date> lun mar 20 10:51:54 CET 2006 </date>
+	<authorinitials>J.Peyrard</authorinitials>
+	<revremark>Création de la structure du document</revremark> 
+      </revision>
+    </revhistory>
+  </bookinfo>
+<!--Chapter-->
+&intro;
+&casutilisation;
+&commandeutilisateur;
+&commandeadministrateur;
+&classeenvironment;
+&modelisationdonnee;
+</book>

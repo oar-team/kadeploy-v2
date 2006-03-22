@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<chapter id="intro">
+  <title>Introduction</title>
+  <sect1> 
+    <title>Réécriture de kadeploy</title> 
+    <para>
+      L'outil kadeploy doit être redevellopé.
+    </para>
+  </sect1>
+</chapter>

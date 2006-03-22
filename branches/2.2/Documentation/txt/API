@@ -140,7 +140,7 @@ nodes/name/disk1        => fichier de description du partitionement du disque 1 
 nodes/name/cmd          => Repertoire de commande associé au noeud "name"
 nodes/name/cmd/softboot => script de reboot soft 
 nodes/name/cmd/hardboot => script de reboot hard 
-nodes/name/cmd/console  => accés console du noeud
+nodes/name/cmd/console  => accés console du noeud 
 nodes/name/cmd/XXX      => commande XXX 
 
 

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<chapter id="commandeadministrateur">
+  <title>Commande administrateur</title>
+  <sect1> 
+    <title>kanodes (Ajout et suppression de noeud)</title> 
+    <para>
+      Commande relative aux noeuds
+    </para>
+    <itemizedlist>
+      <listitem>--machine node
+      </listitem>
+      <listitem>--nodefile nodefile
+      </listitem>      
+    </itemizedlist>
+
+    <sect2>
+      <title>affichage des noeuds
+      </title>
+      <itemizedlist>
+	<listitem>--list-nodes
+	</listitem>
+      </itemizedlist>
+    </sect2>
+
+
+    <sect2>
+      <title>affichage du partitionnement
+      </title>
+      <itemizedlist>
+	<listitem>--list-partition
+	</listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>karights (ajout ou suppression de droit utilisateur)
+    </title>
+    <para>
+      Commande de gestion des droits de kadeploy
+    </para>
+
+    <sect2>
+      <title>Affichage
+      </title>
+      <itemizedlist>
+	<listitem>--machine node
+	</listitem>
+	<listitem>--nodefile nodefile
+	</listitem>	
+	<listitem>--login login
+	</listitem>	
+      </itemizedlist>
+    </sect2>
+
+    <sect2>
+      <title>Ajout
+      </title>
+      <para>
+	Ajout du droit "right"
+      </para>
+      <itemizedlist>
+	<listitem>--machine node
+	</listitem>
+	<listitem>--nodefile nodefile
+	</listitem>	
+	<listitem>--login login
+	</listitem>
+	<listitem>--right right
+	</listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2>
+      <title>Suppression
+      </title>
+      <para>
+	Suppression du droit "right"
+      </para>
+      <itemizedlist>
+	<listitem>--machine node
+	</listitem>
+	<listitem>--nodefile nodefile
+	</listitem>	
+	<listitem>--login login
+	</listitem>
+	<listitem>--right right
+	</listitem>
+      </itemizedlist>
+    </sect2>
+
+
+  </sect1>
+
+  <sect1>
+    <title>kapxe (gestion du boot pxe)
+    </title>
+    <para>
+      Cette commande permet de gerer finement la configuration du boot 
+      des noeuds par pxe
+    </para>
+    <itemizedlist>
+      <listitem>--machine node
+      </listitem>
+      <listitem>--nodefile nodefile
+      </listitem>
+      <listitem>--type memdiskgrub|pxelinux|pxefreebsd
+      </listitem>
+    </itemizedlist>
+
+    <sect2>
+      <title>memdiskgrub
+      </title>
+      <itemizedlist>
+	<listitem>--timeout
+	</listitem>
+	<listitem>--root
+	</listitem>
+	<listitem>--kernel
+	</listitem>
+	<listitem>--initrd
+	</listitem>
+	<listitem>--kernel-params
+	</listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2>
+      <title>pxelinux
+      </title>
+      <itemizedlist>
+	<listitem>--timeout
+	</listitem>
+	<listitem>--serialport
+	</listitem>
+	<listitem>--serialspeed
+	</listitem>
+	<listitem>--kernel
+	</listitem>
+	<listitem>--initrd
+	</listitem>
+	<listitem>--kernel-params
+	</listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2>
+      <title>pxefreebsd
+      </title>
+      A COMPLETER
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>kasetup (installation de kadeploy)
+    </title>
+
+    <sect2>
+      <title>sudowrap
+      </title>
+    </sect2>
+
+    <sect2>
+      <title>createtftp
+      </title>
+    </sect2>
+
+    <sect2>
+      <title>checkconf
+      </title>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>kadatabase (installation de kadeploy)
+    </title>
+
+    <sect2>
+      <title>createdatabase
+      </title>
+    </sect2>
+
+    <sect2>
+      <title>dropdatabase
+      </title>
+    </sect2>
+
+    <sect2>
+      <title>patch
+      </title>
+    </sect2>
+  </sect1>
+
+
+
+
+    
+
+</chapter>
+

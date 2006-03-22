@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<chapter id="classeenvironment">
+  <title>Classe d'environment</title>
+  <para>
+     Les classes d'environments sont prévu pour : 
+    <itemizedlist>
+      <listitem>isoler la mise en place d'un environment vis à vis du code de kadeploy
+      </listitem>
+
+      <listitem>chainage avant + chainage arriére de la mise en place d'environments
+      </listitem>
+    </itemizedlist>
+    <para>
+      Exemple : le déploiement réseau d'un environment linux sur plateforme PC 
+      se passe généralement comme ça : 
+      <itemizedlist>
+	<listitem>
+	  configuration d'un noyau de boot pxe
+	</listitem>
+	<listitem>
+	  reboot du noeud
+	  </listitem>
+	<listitem>
+	  envoie de la preinstall + environment + postinstall
+	</listitem>
+	<listitem>
+	  configuration d'un noyau de boot pxe
+	</listitem>
+	<listitem>
+	  reboot
+	</listitem>
+	<listitem>
+	  check du noeud
+	</listitem>
+      </itemizedlist>
+      Cette ensemble d'étape est spécifique au déploiement d'un environment linux.
+      Cependant deux environments ont été déployé durant ces étapes, un environment
+      PXE et un environment linux.
+      Il existe différent type de déploiement d'environment : 
+      <itemizedlist>
+	<listitem> environment PXE
+	</listitem>
+	<listitem> environment DD
+	</listitem>
+	<listitem> environment LINUX
+	</listitem>
+      </itemizedlist>           
+    </para>
+  </para>
+
+  <sect1>
+    <title> Etape et séquence de déploiement
+    </title>
+    <para>
+      Il existe un grand nombre d'application de déploiement d'os.
+      Chacune de ces applications à sa propre méchanisme de déploiement.
+      kadeploy tente d'offrir une méchanique de base simple et robuste
+      sur lequel il est facile de greffer tout type de système de déploiement.
+    </para>
+
+    <para>
+      Les classes d'environments et le chainage d'environments permettent
+      de découper l'application en deux partie.
+      <itemizedlist>
+	<listitem>Le code de la méchanique des classes d'environments (interne à kadeploy)
+	</listitem>
+	<listitem>Le code d'une implémentation  d'environment (plugin d'environment)
+	</listitem>
+      </itemizedlist>
+    </para>
+
+    <para>
+      L'API d'une classe d'environment est simple.
+      Pour crée une classe d'environment il suffit de :
+      <itemizedlist>
+	<listitem>crée un répertoire du nom de la classe d'environment.
+	</listitem>
+	<listitem>crée des scripts d'étapes.      
+	</listitem>
+	<listitem>placer un système de chainage (NEXT, PREVIOUS)
+	</listitem>
+	<listitem>d'associer un environment de la base de donnée à cette classe.
+	  Exemple : debian4all => linux
+	</listitem>
+      </itemizedlist>
+    </para>
+
+    <sect2>
+      <title> scripts d'étapes
+      </title>
+      <para>
+	Un scripts d'étapes, est un fichier executables dont le nom débute
+	par un numéro de deux digits. Exemple : "01-check", "02-reboot"
+      </para>      
+      <para>
+	Ces scripts prennent en paramétres les noeuds qui sont impliqué 
+	dans cette étape.
+	Un nombre de reprise sur echec "-failnumber".
+	Ainsi que deux fichier de noeuds :
+	<itemizedlist>
+	  <listitem>Un fichier contenant les noeuds défaillant : -failnodefile
+	  </listitem>
+	  <listitem>Un fichier contenant les noeuds qui ont réussie : -goodnode
+	  </listitem>
+	</itemizedlist>
+	Le code de retour du script doit être : 
+	<itemizedlist>
+	  <listitem>0 si l'étape à fonctionner correctement
+	    </listitem>
+	  <listitem>1 si l'étape a échoué pour au moins un noeud
+	  </listitem>
+	</itemizedlist>	
+	Exemple :
+	<programlisting>	 
+	  01-check -failnumber 5 -failnodefile /tmp/failnode -goodnode /tmp/goodnode -m noeud-1.cluster.net -m noeud-2.cluster.net
+	</programlisting>
+      </para>
+      <para>	
+      </para>
+    </sect2>
+    
+    <sect2>
+      <title> séquencement d'étapes
+      </title>
+      <para>
+	L'execution d'une séquence d'étape consiste à executé l'ensemble
+	des scripts qui la constitue.
+      </para>
+    </sect2>
+
+    <sect2>
+      <title> politique d'execution des séquences.
+      </title>
+      <para>
+	La politique implémenté pour l'execution des scripts d'étape consiste à
+	<itemizedlist>
+	  <listitem>executé le premier scripts d'une séquence.
+	  </listitem>
+	  <listitem>testé son code de retour
+	  </listitem>
+	  <listitem>Si le script ne renvoie pas d'erreur, 
+	    on passe au script suivant avec l'ensemble des noeuds.
+	  </listitem>
+	  <listitem>Sinon, on consulte les fichiers de noeuds résultants.
+	    Les noeuds considéré bon, passe au scripts suivant.
+	    Les autres executent la séquence d'étape "BACK" en décrémentant 
+	    leurs compteur -failnumber.
+	    Une fois la séquence "BACK" terminé, il reviennent à la séquence courante.
+	    Cette dissociation noeuds bon, noeud mauvais permet une execution
+	    paralléle du déploiement.
+	  </listitem>
+	  <listitem>Une fois que la totalité des scripts d'étapes ont été
+	    executé, le séquenceur d'étape verifie la présence d'un fichier "NEXT".
+	    S'il existe, les noeuds ayant réussie les étapes précedentes
+	    passe à cette séquence, sinon, ils sont considéré comme déployé.
+	  </listitem>
+	</itemizedlist>
+      </para>
+    </sect2>
+
+  </sect1>
+
+  <sect1>
+    <title>Implémentations des classes
+    </title>
+
+    <sect2>
+      <title> LINUXPXE
+      </title>
+      <para>
+	Type de déploiement PXE.      
+      </para>
+      <itemizedlist>
+	<listitem>LINUXPXE : Classe d'environment "LINUXPXE" ( PXE )
+	</listitem>
+	<listitem>LINUXPXE/01-pxe : mise en place du pxe 
+	</listitem>
+	<listitem>LINUXPXE/02-reboot-node : reboot pour être dans l'environment linuxdeploy
+	</listitem>
+      </itemizedlist>    
+    </sect2>
+      
+    <sect2>
+      <title> DD
+      </title>
+      <para> 
+	type de déploiement DD.
+      </para>
+      <itemizedlist>
+	<listitem>DD : Classe d'environment "dd"
+	</listitem>
+	<listitem>DD/00-check : check de verification de l'état des noeuds
+	</listitem>
+	<listitem>DD/01-preinstall : envoie de la preinstall et execution
+	</listitem>
+	<listitem>DD/02-dd-mcat : envoie de l'environment
+	</listitem>
+	<listitem>DD/03-pxe : setup du pxe
+	</listitem>
+	<listitem>DD/04-reboot : reboot des noeuds
+	</listitem>
+	<listitem>DD/PREVIOUS : Classe d'environment à executé si le check 
+	  n'a pas fonctionné en l'occurence "LINUXPXE"
+	</listitem>
+
+	
+      </itemizedlist>
+    </sect2>
+
+    <sect2>
+      <title> LINUX
+      </title>
+      <para>
+	Type de déploiement Linux.
+      </para>
+      <itemizedlist>
+	<listitem>LINUX : Classe d'environment "linux"
+	</listitem>
+	<listitem>LINUX/00-check : verification de l'état désiré
+	</listitem>
+	<listitem>LINUX/01-setupnode : création des repertoires necessaire + montage du système de fichier cible
+	</listitem>
+	<listitem>LINUX/02-preinstall : envoie de la preinstall + execution
+	</listitem>
+	<listitem>LINUX/03-environment : envoie de l'environment
+	</listitem>
+	<listitem>LINUX/04-postinstall : envoie de la postinstall + execution
+	</listitem>
+	<listitem>LINUX/05-setupfinished : démontage du système de fichier
+	</listitem>
+	<listitem>LINUX/06-pxe : mise en place du pxe
+	</listitem>
+	<listitem>LINUX/07-reboot : reboot des noeuds
+	</listitem>
+	<listitem>LINUX/PREVIOUS : Classe d'environment à executé si le 
+	  une étape ne fonctionne pas.
+	</listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+    
+</chapter>
