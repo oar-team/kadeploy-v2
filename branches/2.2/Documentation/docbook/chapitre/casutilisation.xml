@@ -6,24 +6,22 @@
     <title>Déploiement d'un environment (utilisateur)</title> 
     <para>
       L'utilisateur déploie un environment sur un ou plusieurs noeuds.
-      Les paramétres explicites de cette opération sont
     </para>
     Paramétre :
     <itemizedlist>
       <listitem> l'ensemble des noeuds
       </listitem>
-      <listitem> l'environment
-      </listitem>
-      <listitem> l'utilisateur
+      <listitem> l'environment (nom environment + nom utilisateur)
       </listitem>
     </itemizedlist>
   </sect1>
+
+
 
   <sect1>
     <title>Enregistrement d'un environment (utilisateur)</title>
     <para>
       L'utilisateur enregistre un environment.
-      Les paramétres de cette enregistrement sont 
       </para>
     Paramétre :
     <itemizedlist>
@@ -64,7 +62,7 @@
       </listitem>
       <listitem>Le nom de l'utilisateur
       </listitem>
-      <listitem>Le nom du noeud
+      <listitem>Le nom du noeud dont il est propriétaire
       </listitem>
     </itemizedlist>
   </sect1>

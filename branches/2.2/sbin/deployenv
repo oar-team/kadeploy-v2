@@ -1,0 +1,365 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Long;
+use libkadeploy2::message;
+use libkadeploy2::environment;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::deployconf;
+use libkadeploy2::nodelist;
+use libkadeploy2::command;
+
+sub partitionlinuxnodes();
+sub deploylinux();
+sub deploypxelinux();
+sub deploydd();
+sub deploywindows();
+#sub restartnodes();
+sub setuppxelinux();
+sub setupgrubchainload();
+
+
+my $message=libkadeploy2::message::new();
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->loadcheck()) { exit 1; }
+my $kadeploydir=$conf->get("kadeploy2_directory");
+my $db=libkadeploy2::deploy_iolib::new();
+
+my $ddpath="$kadeploydir/lib/environment/dd/dd";
+my $linuxpath  ="$kadeploydir/lib/environment/linux/linux";
+my $windowspath="$kadeploydir/lib/environment/windows/windows";
+my $kachecknodes="$kadeploydir/sbin/kachecknodes";
+
+my $kareboot=$conf->getpath_kareboot();
+my $kapxe=$conf->getpath_kapxe();
+my $kapart=$conf->getpath_kapart();
+
+my @node_list;
+my $disknumber=1;
+my $partnumber=1;
+my $login;
+my $help;
+my $verbose=0;
+my $envname;
+my $environment;
+my $nodelist;
+my $basefile;
+my $partitionfile;
+my $node;
+my $refnodelist;
+my $cmd;
+my $ok=1;
+my $noreboot=0;
+GetOptions(
+	   'm=s'                  => \@node_list,
+	   'machine=s'            => \@node_list,
+	   
+	   'disknumber=s'         => \$disknumber,
+	   'd=s'                  => \$disknumber,
+	   'partnumber=s'         => \$partnumber,
+	   'p=s'                  => \$partnumber,
+	   
+	   'login=s'              => \$login,
+	   'l=s'                  => \$login,
+	   
+	   'environment=s'        => \$envname,
+	   'e=s'                  => \$envname,
+	   
+	   'h!'                   => \$help,
+	   'help!'                => \$help,
+	   'v!'                   => \$verbose,
+	   'verbose!'             => \$verbose,
+
+	   'noreboot!'            => \$noreboot,
+	   'n!'                   => \$noreboot,
+	   );
+
+if (@node_list)
+{
+    $nodelist=libkadeploy2::nodelist::new();
+    $nodelist->loadlist(\@node_list);
+}
+else
+{
+    $message->missing_node_cmdline(2);
+    exit 1;
+}
+
+
+if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
+if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
+if (! ($disknumber =~ /^\d$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! ($partnumber =~ /^\d$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
+if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
+
+
+
+if ($envname && $login)
+{
+    $environment=libkadeploy2::environment::new();
+    $environment->set_name($envname);
+    $environment->set_user($login);    
+
+    if ($environment->get_descriptionfile_fromdb())
+    {		
+	if (! $environment->load()) 
+	{ 
+	    $message->erroropeningfile(2,
+				       $environment->get_descriptionfile()
+				       );
+	    exit 1;
+	}
+	
+	if (! $environment->get_info("deploytype"))
+	{
+	    $message->message(2,"Your configuration file doesn't contain deploytype");
+	    exit 1;
+	}
+
+
+	#Check nodes if deploytype != PXE
+	if (! ($environment->get_info("deploytype") eq "pxelinux"))
+	{
+	    system("$kachecknodes --check ".$nodelist->get_cmdline());
+	    $db->connect();
+	    
+	    $refnodelist=$nodelist->get_nodes();
+	    @node_list=@$refnodelist;	
+	    foreach $node (@node_list)
+	    {
+		if (! ($db->get_nodestate($node->get_name(),"MCAT") eq "UP"))
+		{
+		    $message->message(1,"mcat service for node ".$node->get_name()." is not up");
+		    $nodelist->del($node->get_ip());
+		}
+	    }
+	    $db->disconnect();
+	}
+
+
+
+
+	if 
+	    (	   	      
+			      ( $environment->get_info("deploytype") eq "linux" )  &&
+			      ! ( $environment->info_exist("postinstall"))
+				  )
+       {
+	    $message->message(2,"Your configuration file doesn't contain postinstall archive");
+	    exit 1;	    
+	}
+
+
+
+	if ($environment->get_info("deploytype") eq "pxelinux")
+	{
+	    $ok=deploypxelinux();
+	    if ($ok) { exit 0; } else { exit 1; }
+	}
+
+	$partitionfile=$environment->get_info("partitionfile");
+	if ($partitionfile)
+	{
+	    $message->message(0,"Partitioning nodes ".$nodelist->get_str()." whith file $partitionfile");
+	    $ok=partitionlinuxnodes();    
+	    if (! $ok) 
+	    { 
+		$message->message(2,"fail to partition some nodes....");
+		exit 1; 
+	    }
+
+	}
+
+	if ($environment->get_info("deploytype") eq "linux")
+	{
+	    $message->message(0,"Begin deployment linux with ".$nodelist->get_str());
+	    $ok=deploylinux();
+	    if ($ok) { $ok=setuppxelinux(); }
+	}
+	elsif ($environment->get_info("deploytype") eq "dd")
+	{
+	    $message->message(0,"Begin deployment dd with ".$nodelist->get_str());
+	    $ok=deploydd();
+	    if ($ok) 
+	    { 
+		$message->message(0,"Setup pxe with ".$nodelist->get_str());
+		$ok=setupgrubchainload(); 
+	    }
+	}
+	elsif ($environment->get_info("deploytype") eq "windows")
+	{
+	    $message->message(0,"Begin deployment windows with ".$nodelist->get_str());
+	    $ok=deploywindows();
+	}
+	
+
+	if ($ok)
+	{
+	    $message->message(0,"Deployment success with ".$nodelist->get_str());
+	    exit 0;
+	}
+	else
+	{
+	    $message->message(2,"Deployment failed with ".$nodelist->get_str());
+	    exit 1;
+	}
+    }
+    else
+    {
+	$message->message(2,"Environment not found...");
+	exit 1;
+    }
+}
+
+$message->deployenv_help();
+
+################################################################################
+
+sub partitionlinuxnodes()
+{
+    my $cmd;
+    my $command;
+    $cmd=$kapart." ".
+	$nodelist->get_cmdline()." ".
+	" --disknumber ".$disknumber.
+	" --disktype ide ".
+	" --ostype linux ".
+	" --partitionfile ".$partitionfile
+	;
+    
+    $command=libkadeploy2::command::new($cmd,
+					20,
+					$verbose
+					);
+    $command->exec();
+    return $command->get_status();
+}
+
+
+#kapxe -type pxelinux -kernel linuxdeploy/myvmlinuz -initrd linuxdeploy/sid.img  -m cls1.mycluster.net --kernel-params ramdisk_size=150000
+sub deploypxelinux()
+{
+    my $cmd;
+    my $command;
+    $cmd=$kapxe." ".
+	$nodelist->get_cmdline()." ".
+	" --type pxelinux ".
+	" --kernel ".$environment->get_info("kernel").
+	" --initrd ".$environment->get_info("initrd").
+	" --kernelparams ".$environment->get_info("kernelparams");
+    
+    
+    $command=libkadeploy2::command::new($cmd,
+					20,
+					$verbose
+					);
+    $command->exec();
+    return $command->get_status();
+}
+
+
+
+sub deploydd()
+{
+#	$environment->print_descriptionfile();
+    $basefile=$environment->get_info("basefile");
+
+    $cmd="$ddpath ".$nodelist->get_cmdline().
+	" --disknumber ".$disknumber.
+	" --partnumber ".$partnumber.
+	" --basefile ".$basefile;
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   600,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+
+sub deploylinux()
+{
+#	$environment->print_descriptionfile();
+    $basefile=$environment->get_info("basefile");
+    my $postinstall=$environment->get_info("postinstall");
+    #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
+    $cmd="$linuxpath ".$nodelist->get_cmdline().
+	" --disknumber ".$disknumber.
+	" --partnumber ".$partnumber.
+	" --basefile ".$basefile.
+	" --postinstall ".$postinstall;
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   600,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+
+sub deploywindows()
+{
+#	$environment->print_descriptionfile();
+    $basefile=$environment->get_info("basefile");
+    #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
+    $cmd="$windowspath ".$nodelist->get_cmdline().
+	" --disknumber ".$disknumber.
+	" --partnumber ".$partnumber.
+	" --basefile ".$basefile;
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   600,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+
+
+#sub restartnodes()
+#{
+#    $cmd="$kareboot -s ".$nodelist->get_cmdline();
+#    my $command=libkadeploy2::command::new($cmd,
+#					   600,
+#					   $verbose);
+#    $command->exec();
+#    return $command->get_status();
+#}
+
+sub setuppxelinux()
+{
+    $cmd="$kapxe ".$nodelist->get_cmdline().
+	" --type pxelinux --partnumber $partnumber";
+
+    if ($environment->get_info("kernel"))
+    { $cmd.=" --kernel ".$environment->get_info("kernel"); }
+      
+    if ($environment->get_info("initrd"))
+    { $cmd.=" --initrd ".$environment->get_info("initrd"); }
+
+    if ($environment->get_info("kernelparams"))
+    { $cmd.=" --kernelparams ".$environment->get_info("kernelparams"); }
+
+
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   50,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+
+sub setupgrubchainload()
+{
+    $cmd="$kapxe ".$nodelist->get_cmdline().
+	" --type grub --kernel chainload ";
+      
+    
+    if ($environment->get_info("kernelparams"))
+    { $cmd.=" --partnumber $partnumber"; }
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   50,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+

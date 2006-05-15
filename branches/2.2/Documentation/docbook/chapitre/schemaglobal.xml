@@ -7,6 +7,9 @@
     <itemizedlist>
       <listitem>fichiers de configurations
       </listitem>
+      <listitem>librairies externe (pxe)
+      </listitem>
+
       <listitem>base de donnée
       </listitem>
     </itemizedlist>
@@ -19,4 +22,70 @@
       Ce repertoire contient la configuration global de l'application
     </para>
   </sect2>
+
+  <sect2>
+    <title>kadeploy/lib/environment
+    </title>
+    <para>
+      Ce repertoire contient les classes d'environments
+    </para>
+  </sect2>
+
+
+  <sect2>
+    <title>kadeploy/lib/deployment_kernel/
+    </title>
+    <para>
+      Ce repertoire contient les différents noyau de déploiement
+    </para>
+  </sect2>
+
+
+
+  <sect2>
+    <title>kadeploy/lib/grub/
+    </title>
+    <para>
+      Ce repertoire contient la disquette grub de reference
+    </para>
+  </sect2>
+  
+ <sect2>
+    <title>kadeploy/lib/pxelinux/
+    </title>
+    <para>
+      Ce repertoire contient une compilation des outils pxelinux de ( syslinux.zytor.com )
+    </para>
+  </sect2>
+
+
+
+  <sect2>
+    <title>kadeploy/lib/pre_post_script/
+    </title>
+    <para>
+      Ce repertoire contient la preinstall et la postinstall de la distribution kadeploy.
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>kadeploy/share/perl/
+    </title>
+    <para>
+      Ce repertoire contient les librairies perl de kadeploy
+    </para>
+  </sect2>
+
+
+
+  <sect2>
+    <title>kadeploy/share/mysql/
+    </title>
+    <para>
+      Ce repertoire contient les schéma de la base de donnée mysql.      
+    </para>
+  </sect2>
+
+
+
   </sect1>

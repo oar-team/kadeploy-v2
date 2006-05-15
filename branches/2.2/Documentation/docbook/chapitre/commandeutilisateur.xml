@@ -1,32 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <chapter id="commandeutilisateur">
   <title>Commande utilisateur</title>
-  <para>
-    Les commandes utilisateurs doivent répondre à une érgonomie définie.
-  </para>
-
-  <itemizedlist>
-    <listitem> -m | --machine : nom du noeud
-    </listitem>
-    <listitem> -f | --nodefile : nom du fichier contenant les noeuds.      
-    </listitem>
-    <listitem> -l | --login : nom d'utilisateur      
-    </listitem>
-    <listitem> -e | --environment : nom de l'environment      
-    </listitem>
-    <listitem> -d | --disk-number : numéro de disque      
-    </listitem>
-    <listitem> -p | --part-number : numéro de partition      
-    </listitem>
-    <listitem> -a | --add : demande d'ajout
-    </listitem>
-    <listitem> -d | --del : demande de suppression      
-    </listitem>
-    <listitem> -h | --help : demande d'aide      
-    </listitem>
-    <listitem> -v | --verbose : verbeux      
-    </listitem>
-  </itemizedlist>
 
   <sect1> 
     <title>kadeploy (outil de déploiement d'environment)</title>
@@ -34,23 +8,21 @@
       La commande kadeploy déploie un environment sur un ensemble de noeud.
     </para>
     <itemizedlist>
-      <listitem> -m noeud
+      <listitem> --machine noeud
       </listitem>
-      <listitem> -f fichiernoeud
+      <listitem> --environment environment
       </listitem>
-      <listitem> -e environment
+      <listitem> --partnumber numéro de partition (optionelle => utilisation de partition volatile)
       </listitem>
-      <listitem> -p numéro de partition (optionelle => utilisation de partition volatile)
+      <listitem> --disknumber numéro de disque (optionelle)
       </listitem>
-      <listitem> -d numéro de disque (optionelle)
-      </listitem>
-      <listitem> -v (flag verbeux)
+      <listitem> --verbose (flag verbeux)
       </listitem>
     </itemizedlist>
   </sect1>
 
   <sect1> 
-    <title>kaenvironments (manipulation des environments)</title>
+    <title>kaenv (manipulation des environments)</title>
     <para>
       La commande kaenv manipule les environments.
       Il y a quatre types de manipulation différentes.
@@ -59,44 +31,13 @@
     <sect2>
       <title>Ajout</title>
       <itemizedlist>
-	<listitem> --environment environment
+	<listitem> --environmentname nom_environment
 	</listitem>
 	<listitem> --login utilisateur
 	</listitem>
-	<listitem> --environment-url url | -ep url 
-	</listitem>
-	<listitem> --type type
-	</listitem>
-	<listitem> --size size
+	<listitem> --descriptionfile chemin_vers_fichier_description
 	</listitem>
       </itemizedlist>
-
-      <para>
-	Le paramétre type permet de spécifier la classe d'environment.
-      </para>
-
-      <para>
-	Le type linux prend pour paramétre :
-      </para>
-      <itemizedlist>
-	<listitem> --kernel-path chemin_vers_kernel
-	</listitem>
-	<listitem> --ramdisk-path chemin_vers_ramdisk (optionelle)
-	</listitem>
-	<listitem> -kernel-option kernel_option (optionelle)
-	</listitem>
-	<listitem> --postinstall url (optionelle)
-	</listitem>
-      </itemizedlist>
-
-      <para>
-	Le type dd prend pour paramétre :
-      </para>
-      <itemizedlist>
-	<listitem> --fdisktype fdisktype
-	</listitem>
-      </itemizedlist>
-      
     </sect2>
 
 
@@ -111,6 +52,8 @@
       </itemizedlist>
     </sect2>
 
+
+
     <sect2>
       <title>Affichage</title>
       <itemizedlist>
@@ -120,18 +63,6 @@
 	</listitem>
 	<listitem> --machine node
 	</listitem> 
-      </itemizedlist>
-    </sect2>
-    
-    <sect2>
-      <title>Mise à jour</title>
-      <itemizedlist>
-	<listitem> --environment environment
-	</listitem>
-	<listitem> --login utilisateur
-	</listitem>
-	<listitem> --machine node
-	</listitem>
       </itemizedlist>
     </sect2>
   </sect1>
@@ -166,14 +97,6 @@
       </itemizedlist>
     </sect2>
 
-    <sect2>
-      <title>reboot deploy
-      </title>
-      <itemizedlist>
-	<listitem> --machine noeud
-	</listitem>
-      </itemizedlist>
-    </sect2>
   </sect1>
 
 </chapter>

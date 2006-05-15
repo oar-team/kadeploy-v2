@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use libkadeploy2::conflib;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::hexlib;
+use libkadeploy2::message;
+use libkadeploy2::environment;
+use libkadeploy2::environments;
+
+sub listenv();
+
+my $add;
+my $del;
+my $help;
+my $list;
+my $envfile;
+my $login;
+my $envname;
+my $retcode;
+my $message=libkadeploy2::message::new();
+my $ok=1;
+
+GetOptions(
+	   'a!'             => \$add,
+	   'add!'           => \$add,
+
+	   'd!'             => \$del,
+	   'del!'           => \$del,
+
+	   'list!'          => \$list,
+	   'h!'             => \$help,
+	   
+	   'f=s'            => \$envfile,
+	   'envfile=s'      => \$envfile,	  
+
+	   'login=s'        => \$login,
+	   'l=s'            => \$login,
+
+	   'environment=s'  => \$envname,
+	   'e=s'            => \$envname,
+	   );
+
+if ($help) { $message->kaenv_help(); exit 0; }
+
+if ($add)
+{
+    if ($envfile && $login && $envname)
+    {
+	my $env=libkadeploy2::environment::new();
+	$env->set_name($envname);
+	$env->set_user($login);
+	$env->set_descriptionfile($envfile);
+	if ($envfile =~ /^\//)
+	{
+	    if (! $env->addtodb()) { $ok=0; }
+	    if ($ok)   { $message->message(0,"add environment $envname to db"); }
+	    if (! $ok) { $message->message(2,"Fail to add environment $envname to db"); exit 1; }
+	    if ($ok) { exit 0; } else { exit 1; }
+	}
+	else
+	{
+	    $message->message(2,"you must specify an absolute path");
+	    exit 1;
+	}
+    }
+}
+
+if ($del)
+{
+    if ($envfile && $login && $envname)
+    {
+	my $env=libkadeploy2::environment::new();
+	$env->set_name($envname);
+	$env->set_user($login);
+	$env->set_descriptionfile($envfile);
+	if (! $env->delfromdb()) { $ok=0; }
+	if ($ok)   { $message->message(0,"del environment $envname from db"); }
+	if (! $ok) { $message->message(2,"Fail to del environment $envname from db"); exit 1; }
+	exit 0;
+    }
+}
+
+if ($list)
+{
+    $retcode=0;
+    listenv();
+    exit $retcode;
+
+}
+
+$message->kaenv_help();
+exit 0;
+
+################################################################################
+
+
+sub listenv()
+{
+    my @nodelist;
+    my $node;
+    my $environments = libkadeploy2::environments::new();
+    $environments->get();
+    $environments->print();
+
+}

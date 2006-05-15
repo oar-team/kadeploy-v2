@@ -1,4 +1,40 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
   <sect1> 
   <title>Schéma sql</title> 
+  <mediaobject>
+    <imageobject>
+      <imagedata fileref="database.jpg"/>
+    </imageobject>
+  </mediaobject>
+
+  
+  <sect2>
+    <title>disk</title>
+    <mediaobject>
+      <imageobject>
+	<imagedata fileref="DB-disk.jpg"/> 
+      </imageobject>
+    </mediaobject>
+  </sect2>
+
+  <sect2>
+    <title>partition</title>
+    <mediaobject>
+      <imageobject>
+	<imagedata fileref="DB-partition.jpg"/> 
+      </imageobject>
+    </mediaobject>
+  </sect2>
+
+
+  <sect2>
+    <title>node</title>
+    <mediaobject>
+      <imageobject>
+	<imagedata fileref="DB-node.jpg"/> 
+      </imageobject>
+    </mediaobject>
+  </sect2>
+
+  
   </sect1>

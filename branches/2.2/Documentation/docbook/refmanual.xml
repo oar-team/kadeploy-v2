@@ -19,6 +19,11 @@
 <!ENTITY schemafichierconfiguration SYSTEM "chapitre/schemafichierconfiguration.xml">
 <!ENTITY schemaclasseenvironment SYSTEM "chapitre/schemaclasseenvironment.xml">
 <!ENTITY schemaglobal SYSTEM "chapitre/schemaglobal.xml">
+<!ENTITY commandesyntaxe SYSTEM "chapitre/commandesyntaxe.xml">
+
+<!ENTITY howto SYSTEM "chapitre/howto.xml">
+
+<!ENTITY copyright SYSTEM "chapitre/copyright.xml">
 
 ]>
 
@@ -45,8 +50,10 @@
 <!--Chapter-->
 &intro;
 &casutilisation;
+&commandesyntaxe;
 &commandeutilisateur;
 &commandeadministrateur;
 &classeenvironment;
 &modelisationdonnee;
+&howto;
 </book>

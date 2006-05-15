@@ -1,0 +1,491 @@
+#!/usr/bin/perl
+
+use File::Copy;
+use Getopt::Long;
+use libkadeploy2::deployconf;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::rights_iolib;
+use libkadeploy2::cmdline;
+use libkadeploy2::message;
+use libkadeploy2::device;
+use libkadeploy2::hexlib;
+use libkadeploy2::pxelinux;
+use strict;
+use warnings;
+
+sub generate_pxelinuxcfg_file($$$$$$$);
+sub writepxelinuxcfg($);
+sub generate_grub_menu_linux($$$$$$$$$);
+sub writegrubdisk($$);
+
+sub clean_tftpnodes($);
+sub copy_kernel_tftpnodes($);
+sub copy_initrd_tftpnodes($);
+sub setup_pxelinuxnodes($);
+sub generate_bootini_file();
+sub writewindowsdisk($$);
+
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->loadcheck()) { exit 1; }
+
+my @hostlist;
+my $hostfile;
+my $environment;
+my $timeout=10;
+my $partnumber;
+my $verbose;
+my $type;
+
+my $serialport;
+my $serialspeed;
+my $kernel;
+my $initrd;
+my $kernelparams;
+my $conffiledata;
+my $nodelist;
+my $help;
+my $menulst;
+
+my $disknumber=1;
+my $disktype="ide";
+
+
+my $kadeploydir=$conf->get("kadeploy2_directory");
+my $kadeploylibpxe=$kadeploydir."/lib/pxe/";
+my $tftproot=$conf->get("tftp_repository");
+my $message=libkadeploy2::message::new();
+my $pxelinuxpath="$kadeploylibpxe/pxelinux/pxelinux.0";
+my $memdiskpath="$kadeploylibpxe/pxelinux/memdisk";
+my $grubfloppyname="grub.img";
+my $sourcewindowsfloppy="$kadeploydir/lib/pxe/windows/ntldr.img";
+my $sourcegrubfloppy="$kadeploydir/lib/pxe/grub/grub.img";
+my $grubfactory="$kadeploydir/lib/pxe/grub/grub-factory.pl";
+my $ntldrfactory="$kadeploydir/lib/pxe/windows/ntldr-factory.pl";
+my $bootiniref="$kadeploydir/lib/pxe/windows/boot.ini";
+
+
+GetOptions('m=s'           => \@hostlist,
+	   'machine=s'     => \@hostlist,
+           'f=s'           => \$hostfile,
+	   'e=s'           => \$environment,
+
+	   'verbose'       => \$verbose,
+	   'v'             => \$verbose,
+
+	   'type=s'        => \$type,
+	   'kernel=s'      => \$kernel,
+	   'initrd=s'      => \$initrd,
+	   'kernelparams=s'=> \$kernelparams,
+	   'serialport'    => \$serialport,
+	   'serialspeed'   => \$serialspeed,
+	   'environment=s' => \$environment,
+	   'timeout=s'     => \$timeout,
+
+	   'disknumber=s'  => \$disknumber,
+	   'partnumber=s'  => \$partnumber,
+	   'disktype=s'    => \$disktype,
+
+	   'h!'            => \$help,
+	   'help!'         => \$help,
+	   );
+
+if ($help) { $message->kapxe_help(); exit 0; }
+if (! $disknumber)    { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
+if (! $type)          { $message->missing_cmdline(2,"type needed");       exit 1; }
+if (! ($type eq "pxelinux"))
+{
+    if (! $partnumber)    { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
+}
+
+if ($help) { $message->kapxe_help(); exit 0; }
+
+if ($hostfile) 
+{ 
+    $nodelist=libkadeploy2::cmdline::loadhostfileifexist($hostfile); 
+}
+if (@hostlist) 
+{ 
+    $nodelist=libkadeploy2::cmdline::loadhostcmdlineifexist(\@hostlist); 
+}
+
+
+if ($type && $nodelist)
+{
+    if ($type eq "pxelinux" &&
+	$kernel
+	) 
+    {	
+	clean_tftpnodes($nodelist);
+	writepxelinuxcfg($nodelist);
+	copy_kernel_tftpnodes($nodelist);
+	if ($initrd)
+	{
+	    copy_initrd_tftpnodes($nodelist);
+	}
+	setup_pxelinuxnodes($nodelist);
+	exit 0;
+    }
+    elsif ($type eq "grub")
+    {
+	$menulst=generate_grub_menu_linux($timeout,
+					  $serialport,
+					  $serialspeed,
+					  $kernel,
+					  $initrd,
+					  $kernelparams,
+					  $disktype,
+					  $disknumber,
+					  $partnumber
+					  );
+	$kernel=$memdiskpath;
+	$initrd=$grubfloppyname;
+	copy_kernel_tftpnodes($nodelist);
+	writegrubdisk($nodelist,$menulst); #initrd;		
+	writepxelinuxcfg($nodelist);
+	exit 0;
+    }
+    elsif ($type eq "windows")
+    {
+	$kernel=$memdiskpath;
+	$initrd=$grubfloppyname;
+	copy_kernel_tftpnodes($nodelist);
+	writewindowsdisk($nodelist,$menulst);
+	writepxelinuxcfg($nodelist);
+	exit 0;
+    }
+}
+
+$message->kapxe_help();
+exit 0;
+
+################################################################################
+
+sub setup_pxelinuxnodes($)
+{
+    my $nodelist=shift;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	system("cp $pxelinuxpath $tftproot/pxeloader-$node_name");
+    }
+}
+
+sub clean_tftpnodes($)
+{
+    my $nodelist=shift;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	system("rm -f $tftproot/$node_name/*");
+    }
+}
+
+
+sub copy_kernel_tftpnodes($)
+{
+    my $nodelist=shift;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	system("mkdir -p $tftproot/$node_name");	
+	system("cp $kernel $tftproot/$node_name/");    
+    }
+}
+
+sub copy_initrd_tftpnodes($)
+{
+    my $nodelist=shift;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node;
+    my $ok=1;
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	system("mkdir -p $tftproot/$node_name");	
+	if ( -f $initrd)
+	{
+	    system("cp $initrd $tftproot/$node_name/");    
+	}
+	else
+	{
+	    $ok=0;
+	}
+    }
+    return $ok;
+}
+
+sub writepxelinuxcfg($)
+{
+    my $nodelist=shift;
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node_hexip;
+    my $kerneltftp;
+    my @pathtokernel;
+    my $initrdtftp;
+    my @pathtoinitrd;
+
+    @pathtokernel=split(/\//,$kernel);
+    $kerneltftp=$pathtokernel[$#pathtokernel];
+    if ($initrd)
+    {
+	if ($initrd=~/\//)
+	{
+	    @pathtoinitrd=split(/\//,$initrd);
+	    $initrdtftp=$pathtoinitrd[$#pathtoinitrd];
+	}
+	else
+	{
+	    $initrdtftp=$initrd;
+	}
+    }
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	$conffiledata=generate_pxelinuxcfg_file(
+						$timeout,			 
+						$serialport,
+						$serialspeed,
+						$kerneltftp,
+						$initrdtftp,
+						$kernelparams,
+						$node_name,
+						);
+
+
+	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
+	$message->message(0,"Setting up pxe for $node_name");
+	system("mkdir -p $tftproot/pxelinux.cfg");
+	open(PXELINUXCFG,"> $tftproot/pxelinux.cfg/$node_hexip") or die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
+	print PXELINUXCFG $conffiledata;
+	close(PXELINUXCFG);
+    }
+}
+
+sub copy_tftpnode($$)
+{
+    my $source=shift;
+    my $node_name=shift;
+    system("cp $source $tftproot/$node_name/");
+}
+
+sub generate_pxelinuxcfg_file($$$$$$$)
+{
+    my $timeout=shift;
+    my $serialport=shift;
+    my $serialspeed=shift;
+    my $kernel=shift;
+    my $initrd=shift;
+    my $kernelparams=shift;
+    my $node_name=shift;
+    my $device;
+    my $linuxdevice;
+    my $conffile;
+
+    if (! $kernelparams) { $kernelparams=""; }
+
+    if ($partnumber)
+    {
+	$device=libkadeploy2::device::new($disktype,$disknumber,$partnumber);
+	$linuxdevice=$device->get("linux");
+    }
+    else
+    {
+	$linuxdevice="ram0";
+    }
+
+    my $pxelinuxconf=libkadeploy2::pxelinux::new();
+
+    $kernelparams=" root=/dev/$linuxdevice ".$kernelparams
+;
+
+    if ($initrd)
+    {
+	$pxelinuxconf->add("$type","$node_name/$kernel","$node_name/$initrd","$kernelparams");
+    }
+    else
+    {
+	$pxelinuxconf->add("$type","$node_name/$kernel","","$kernelparams");
+    }
+    $pxelinuxconf->set_default("$type");
+    $conffile=$pxelinuxconf->get();
+
+    return $conffile;
+}
+
+
+
+
+
+
+## simplified and corrected by Jul'
+## generate_grub_files
+## generate_grub_files generates grub image and menu
+## parameters : image_output_name, menu_name, title, root, kernel, param
+## return value : 1 if successful
+sub generate_grub_menu_linux($$$$$$$$$)
+{
+    my $timeout  = shift;
+    my $serialport  = shift;
+    my $serialspeed = shift;
+    my $kernel = shift;
+    my $initrd = shift;
+    my $kernelparams  = shift;
+    my $disktype = shift;
+    my $disknumber = shift;
+    my $partnumber = shift;
+
+    my $title="grub boot $disktype disk=$disknumber partition=$partnumber";
+
+    my $menulst;
+    # debug print
+    #print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
+
+    ## "hard-coded" options
+    my $grub_dir = $conf->get("kadeploy2_directory") . "/lib/grub/";    
+    my $floppy_blks = 720;
+    my $default = 0;
+    my $fallback = 1;    
+    my $hexfdisktype;
+    my $linuxdevice;
+    my $linuxdisktype;
+    my $linuxdisknumber;
+    my $device;
+
+    if (! $disktype)   { $message->missing_cmdline(2,"--disktype error"); exit 1; }
+    if (! $disknumber) { $message->missing_cmdline(2,"--disknumber error"); exit 1; }
+    if (! $partnumber) { $message->missing_cmdline(2,"--partnumber error"); exit 1; }
+
+    $device=libkadeploy2::device::new($disktype,$disknumber,$partnumber);
+    $linuxdevice=$device->get("linux");
+
+    $disknumber--; #grub begin with hd0 not hd1
+    $partnumber--; #grub begin with hd0,0 not hd0,1
+    if ($kernel eq "chainload")
+    {
+$menulst="
+default         0
+timeout 3
+color cyan/blue white/blue
+title $title
+rootnoverify (hd$disknumber,$partnumber)
+makeactive
+chainloader +1
+boot
+";
+    }
+    else
+    {
+	$menulst="
+default         0
+timeout 3
+color cyan/blue white/blue
+title $title
+root (hd$disknumber,$partnumber)
+makeactive
+kernel $kernel root=/dev/$linuxdevice $kernelparams
+";
+	if ($initrd) 
+	{ 
+	    $menulst.="initrd $initrd"; 
+	}
+	$menulst.="
+boot
+";
+
+    }
+    return $menulst;
+
+}
+
+
+sub writegrubdisk($$)
+{
+    my $nodelist=shift;
+    my $menulst=shift;
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $dest;
+    my $node_name;
+    my $line;
+    my $menudest;
+    my $destfloppy;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	$destfloppy="$tftproot/$node_name/$grubfloppyname";
+	$menudest="$tftproot/$node_name/menu.lst";
+
+	$message->message(0,"tftp boot modified for $node_name");
+	system("echo \"$menulst\" > $menudest");
+	system("$grubfactory -s $sourcegrubfloppy -d $destfloppy -m $menudest");
+    }
+}
+
+
+sub writewindowsdisk($$)
+{
+    my $nodelist=shift;
+    my $menulst=shift;
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $dest;
+    my $node_name;
+    my $line;
+    my $menudest;
+    my $destfloppy;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	$destfloppy="$tftproot/$node_name/$grubfloppyname";
+	$menudest="$tftproot/$node_name/menu.lst";
+
+	$message->message("tftp boot modified for $node_name");
+	system("cp $bootiniref  $menudest");
+	system("sed -i -e 's/partition(0)/partition($partnumber)/g' $menudest");
+	system("$ntldrfactory -s $sourcewindowsfloppy -d $destfloppy -m $menudest");
+    }
+}

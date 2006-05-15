@@ -5,10 +5,9 @@
   
   
   <itemizedlist>
-    <listitem>/racinetftp/nodes/name/pxeloader : pxe loader du noeud "name", 
-      nom fixé arbitrairement
+    <listitem>/racinetftp/pxeloader-nodedname : Fichier de "bootpxe" du noeud "nodename".
     </listitem>
-    <listitem>/raxcinetftp/nodes/name/* : ensemble de fichier necessaire au boot pxe
+    <listitem>/raxcinetftp/nodename/* : ensemble de fichier necessaire au boot pxe, plus les fichiers de log
     </listitem>
   </itemizedlist>
     </sect1>

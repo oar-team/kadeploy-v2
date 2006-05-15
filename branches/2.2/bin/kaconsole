@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+use File::Copy;
+use Getopt::Long;
+use libkadeploy2::deployconf;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::rights_iolib;
+use libkadeploy2::command;
+use libkadeploy2::message;
+use strict;
+
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->loadcheck()) { exit 1; }
+
+my $message=libkadeploy2::message::new();
+
+sub check_options();
+
+my $node;
+my $command;
+my $cmd;
+my $kadeploydir=$conf->get("kadeploy2_directory");
+
+check_options();
+
+$cmd=$conf->getpath_kaexec()." --confcommand -m $node -c console";
+
+$command=libkadeploy2::command::new($cmd,20,0);
+$command->exec();
+if ($command->get_status())
+{
+    exit 0;
+}
+else
+{
+    $message->commandnodenamefailed(2,"console",$node);
+    exit 1;
+}
+
+################################################################################
+
+
+sub check_options()
+{
+    
+    GetOptions('m=s'           => \$node,
+	       'machine=s'     => \$node,
+	       );	
+
+    if (!$node)
+    {
+	$message->kaconsole_help();
+	exit 0;
+    }
+}
+
