@@ -11,17 +11,70 @@ package libkadeploy2::deploy_iolib;
 
 use DBI;
 #use libkadeploy2::conflib;
-use libkadeploy2::conflib qw(init_conf get_conf is_conf);
+use libkadeploy2::deployconf;
 use Time::Local;
+use warnings;
 use strict;
 
 ##############
 # PROTOTYPES #
 ##############
 
+sub new();                          #create object 
+
 # database connectors #
-sub connect();
-sub disconnect($);
+sub connect();                      #connect to db
+sub disconnect();                   #disconnect from db
+
+#BEGIN NEW API###############################################################################
+sub node_name_exist($);             #(name)
+sub node_name_to_id($);             #(name) fqdn or not
+sub node_name_to_ip($);             #(name) fqdn or not
+
+sub node_id_to_name($);             #(nodeid)
+sub node_id_to_ip($);               #(nodeid)
+sub node_id_to_mac($);              #(nodeid)
+
+sub node_ip_to_name($);             #(ip)
+
+sub nodename_disknumber_to_diskid($$); #(nodename,disknumber)
+
+sub add_node($);                    #(hostname)
+sub del_node($);                    #(hostname)
+
+sub add_disk($);                    #(\(disknumber,interface,size,nodeid))
+sub del_disk_from_id($);                   #(diskid)
+
+sub add_partition($); #(\(pnumber,size,parttype,disk_id))
+
+sub get_diskid_from_nodeid_disknumber($$); #(nodeid,disknumber)
+sub get_diskinfo_from_diskid($);           #(diskid)
+sub get_partitioninfo_from_partitionid($); #(partitionid)
+sub get_listpartitionid_from_diskid($);    #(partitionid)
+sub del_partition_from_diskid($);          #(diskid)
+
+sub list_node($);
+sub get_node_nameip();                     #
+
+sub part_id_to_nb($);                      #(partid)
+sub part_id_to_size($);
+
+sub add_rights_user_nodename_rights($$$);  #(username,nodename,rights)
+sub del_rights_user_nodename_rights($$$);  #(username,nodename,rights)
+sub check_rights($$$);
+sub get_rights();
+
+sub add_env($$$);
+sub del_env($$$);
+
+sub get_environments();                             #() get all environemnts
+sub get_environment_descriptionfile($$);
+
+sub update_nodestate($$$);
+sub get_nodestate($$);
+#sub get_diskid_from_nodeid($);            #(dbh,nodename)
+
+#END NEW API#####################################
 
 # deployment action tools #
 sub prepare_deployment($);
@@ -50,40 +103,44 @@ sub env_id_to_filebase($$);
 sub env_id_to_filesite($$);
 sub env_id_to_filesystem($$);
 
-
-sub env_name_to_filesystem($$);
-sub env_name_to_kernel($$);
-sub env_name_to_filebase($$);
-sub env_name_to_filesite($$);
-sub env_name_to_size($$);
-
 sub env_undefined_to_id($);
 
+
+
 sub disk_id_to_dev($$);
-sub disk_dev_to_id($$);
+#sub disk_dev_to_id($$$);
 
-sub part_nb_to_id($$$);
-sub part_id_to_nb($$);
-sub part_id_to_size($$);
+#sub part_nb_to_id($$$);
 
-sub node_name_to_id($$);
-sub node_id_to_name($$);
-sub node_name_to_ip($$);
-sub node_ip_to_name($$);
-sub node_name_to_name($$);
+
+
+
+
+
+
+
 
 sub deploy_id_to_env_info($$);
 sub deploy_id_to_node_info($$);
 
 # kanode tools #
-sub add_node($$);
+
+
+
 sub add_deploy($$$$);
-sub add_disk($$);
-sub add_partition($$$);
-sub del_partition_table($);
+
+
+
+
+
+
+
+
 sub add_environment($$$$$$$$$$$$$$$$);
-sub del_node($$);
-sub list_partition($);
+
+
+sub list_partition_from_nodename($$);     #(dbh,nodename)
+
 # deployment tools #
 sub report_state($$$$$);
 sub is_node_free($$$);
@@ -91,7 +148,7 @@ sub add_node_to_deployment($$$$$$);
 sub set_deployment_features($$$$$$);
 
 # print and debug
-sub list_node($);
+
 sub debug_print($$);
 
 # deployment time
@@ -106,6 +163,31 @@ sub erase_partition($%);
 #####################
 # END OF PROTOTYPES #
 #####################
+my $message=libkadeploy2::message::new();
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->loadcheck()) { exit 1; }
+
+
+sub new()
+{
+
+
+    my $host = $conf->get("deploy_db_host");
+    my $name = $conf->get("deploy_db_name");
+    my $user = $conf->get("deploy_db_login");
+    my $pwd  = $conf->get("deploy_db_psswd");
+
+    my $self=
+    {
+	"deploy_db_host"  =>  $host,
+	"deploy_db_name"  =>  $name,
+	"deploy_db_login" =>  $user,
+	"deploy_db_psswd" =>  $pwd,
+	"dbh"             =>  0,
+    };
+    bless $self;
+    return $self;
+}
 
 ###########################
 ### database connectors ###
@@ -114,38 +196,665 @@ sub erase_partition($%);
 # connects to database and returns the base identifier
 # parameters : /
 # return value : base
-sub connect() {
-    my $status = 1;
+sub connect() 
+{
+    my $self=shift;
 
-    my $host = libkadeploy2::conflib::get_conf("deploy_db_host");
-    my $name = libkadeploy2::conflib::get_conf("deploy_db_name");
-    my $user = libkadeploy2::conflib::get_conf("deploy_db_login");
-    my $pwd  = libkadeploy2::conflib::get_conf("deploy_db_psswd");
+    my $status = 1;
+    
+    my $host = $self->{deploy_db_host};
+    my $name = $self->{deploy_db_name};
+    my $user = $self->{deploy_db_login};
+    my $pwd  = $self->{deploy_db_psswd};
 
     my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0,'InactiveDestroy'=>1}) or $status = 0;
     
-    if($status == 0){
+    if($status == 0)
+    {
 	print "ERROR : connection to database $name failed\n";
 	print "ERROR : please check your configuration file\n";
-	exit 0;
     }
-
-    return $dbh;
+    else
+    {
+	$self->{dbh}=$dbh;
+    }
+    return $status;
 }
 
 # disconnect
 # disconnect from database
 # parameters : base
 # return value : /
-sub disconnect($) {
-    my $dbh = shift;
-
+sub disconnect() 
+{
+    my $self = shift;
+    my $dbh = $self->{dbh};
+    my $ok=0;
     # Disconnect from the database.
-    $dbh->disconnect();
+    if ($dbh->disconnect())
+    {
+	$ok=1;
+    }
+    else
+    {
+	$ok=0;
+    }
+    return $ok;
 }
+
+## check_db_access
+## tries to connect to databases 
+## parameters : /
+## return value : 1 if ok
+sub check_db_access()
+{
+    my $self = shift;
+    $message->checkingdb();
+
+    if ($self->connect())
+    {
+	$self->disconnect();
+    }
+    return 1;
+}
+
+
 
 ### database connectors end ###
 ###############################
+
+
+# node_name_to_id
+# gets the id of the node
+# parameters : name (FQDN or simple name)
+# return value : nodeid or 0 if it dose not exist in the database
+sub node_name_to_id($)
+{
+    my $self = shift;
+    my $name = shift;
+
+    my $dbh=$self->{dbh};
+
+    my $sth;
+    my $ref;
+    my $nbresult=0;
+    my $id;
+
+    if ($name=~/\./)
+    {
+	$sth = $dbh->prepare("
+SELECT node.id 
+FROM 
+node 
+WHERE 
+node.name = \"$name\"
+"); 
+    }
+    else #find the fqdn name
+    {
+	$sth = $dbh->prepare("
+SELECT node.id 
+FROM 
+node 
+WHERE 
+node.name like \"$name%\"
+"); 
+    }
+    $sth->execute(); 
+    while ($ref = $sth->fetchrow_hashref())
+    {
+	$id = $ref->{'id'};
+	$nbresult++;
+    }
+    $sth->finish();
+
+    if(!$id || $nbresult!=1)
+    {
+	return 0;
+    }
+    return $id;
+}
+
+# node_name_to_id
+# gets the id of the node
+# parameters : name (FQDN or simple name)
+# return value : nodeid or 0 if it dose not exist in the database
+sub node_name_to_ip($)
+{
+    my $self = shift;
+    my $name = shift;
+
+    my $dbh=$self->{dbh};
+
+    my $sth;
+    my $ref;
+    my $nbresult=0;
+    my $ip;
+
+    if ($name=~/\./)
+    {
+	$sth = $dbh->prepare("
+SELECT node.ipaddr
+FROM 
+node 
+WHERE 
+node.name = \"$name\"
+"); 
+    }
+    else #find the fqdn name
+    {
+	$sth = $dbh->prepare("
+SELECT node.ipaddr
+FROM 
+node 
+WHERE 
+node.name like \"$name%\"
+"); 
+    }
+    $sth->execute(); 
+    while ($ref = $sth->fetchrow_hashref())
+    {
+	$ip = $ref->{'ipaddr'};
+	$nbresult++;
+    }
+    $sth->finish();
+
+    if(!$ip || $nbresult!=1)
+    {
+	return 0;
+    }
+    return $ip;
+}
+
+
+# node_ip_to_name
+# gets the name of the node whose ip address is given in parameter
+# parameters : ip
+# return value : name or 0 if it does not exist in the database
+sub node_ip_to_name($)
+{
+    my $self=shift;
+    my $ip = shift;
+    
+    my $dbh = $self->{dbh};
+
+    my $sth = $dbh->prepare("
+SELECT node.name 
+FROM 
+node 
+WHERE 
+node.ipaddr = \"$ip\"
+"); 
+    $sth->execute(); 
+    my $ref = $sth->fetchrow_hashref(); 
+    my $name = $ref->{'name'}; 
+    $sth->finish();
+
+    if(!$name){
+	return 0;
+    }
+    return $name;
+}
+
+
+
+
+# node_id_to_name
+# gets the name of the node
+# parameters : id
+# return value : node name or 0 if it dose not exist in the database
+sub node_id_to_name($)
+{
+    my $self=shift;
+    my $id = shift;
+
+    my $dbh = $self->{dbh};
+
+    my $sth = $dbh->prepare("
+SELECT node.name 
+FROM 
+node 
+WHERE node.id = $id
+"); 
+    $sth->execute(); 
+    my $ref = $sth->fetchrow_hashref(); 
+    my $name = $ref->{'name'}; 
+    $sth->finish();
+
+    if(!$name){
+	return 0;
+    }
+    return $name;
+}
+
+
+# node_id_to_ip
+# gets the ip of the node
+# parameters : id
+# return value : ip or 0 if it dose not exist in the database
+sub node_id_to_ip($)
+{
+    my $self=shift;
+    my $id = shift;
+
+    my $dbh = $self->{dbh};
+
+    my $sth = $dbh->prepare("
+SELECT node.ipaddr
+FROM 
+node 
+WHERE node.id = $id
+"); 
+    $sth->execute(); 
+    my $ref = $sth->fetchrow_hashref(); 
+    my $ip = $ref->{'ipaddr'}; 
+    $sth->finish();
+
+    if(!$ip){
+	return 0;
+    }
+    return $ip;
+}
+
+# node_id_to_mac
+# gets the mac of the node
+# parameters : id
+# return value : mac or 0 if it dose not exist in the database
+sub node_id_to_mac($)
+{
+    my $self=shift;
+    my $id = shift;
+
+    my $dbh = $self->{dbh};
+
+    my $sth = $dbh->prepare("
+SELECT node.macaddr
+FROM 
+node 
+WHERE node.id = $id
+"); 
+    $sth->execute(); 
+    my $ref = $sth->fetchrow_hashref(); 
+    my $mac = $ref->{'macaddr'}; 
+    $sth->finish();
+
+    if(!$mac){
+	return 0;
+    }
+    return $mac;
+}
+
+
+
+sub add_env($$$)
+{
+    my $self=shift;
+    my $name=shift;
+    my $user=shift;
+    my $descriptionfile=shift;
+    my $dbh = $self->{dbh};
+    my $sth;
+    my $row;
+    my $id;
+    my $ok=0;
+    my $sqldel="DELETE FROM environment 
+WHERE
+environment.name = \"$name\" AND
+environment.user = \"$user\"
+";
+    my $sqltest="
+SELECT environment.id
+FROM environment
+WHERE 
+environment.name = \"$name\" AND
+environment.user = \"$user\"
+";
+    my $sqlput="
+INSERT INTO environment 
+(name,user,descriptionfile) 
+VALUES 
+(\"$name\",\"$user\",\"$descriptionfile\")";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row =$sth->fetchrow_hashref();
+    $id=$row->{id};
+    if ($id)
+    {
+       $sth = $dbh->prepare($sqldel);
+       $sth->execute();
+       $sth = $dbh->prepare($sqlput);
+       $sth->execute();
+       $ok=1;
+    }
+    else
+    {
+       $sth = $dbh->prepare($sqlput);
+       if ($sth->execute()) { $ok=1; }
+    }
+    return $ok;
+}
+
+sub del_env($$$)
+{
+    my $self=shift;
+    my $name=shift;
+    my $user=shift;
+    my $descriptionfile=shift;
+    my $dbh = $self->{dbh};
+    my $sth;
+    my $row;
+    my $id;
+    my $ok=0;
+    my $sqltest="
+SELECT environment.id
+FROM environment
+WHERE 
+environment.name = \"$name\" AND
+environment.user = \"$user\" AND
+environment.descriptionfile=\"$descriptionfile\"
+";
+    my $sqlput="
+DELETE FROM environment 
+WHERE
+environment.name = \"$name\" AND
+environment.user = \"$user\" AND
+environment.descriptionfile=\"$descriptionfile\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row =$sth->fetchrow_hashref();
+    $id=$row->{id};
+    if (! $id)
+    {
+	$ok=1;
+    }
+    else
+    {
+       $sth = $dbh->prepare($sqlput);
+       if ($sth->execute()) { $ok=1; }
+    }
+    return $ok;
+}
+
+
+sub get_environments()
+{
+    my $self=shift;
+
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $ref_array_env;
+    my @array_env;
+    my $user;
+    my $envname;
+    my $descriptionfile;
+    my $h;
+    my $ok=0;
+    my $rights;
+    my $sqlquery="
+SELECT *
+FROM 
+environment
+";
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    while ($h=$sth->fetchrow_hashref())
+    {
+	$envname=$h->{'name'};
+	$user=$h->{'user'};
+	$descriptionfile=$h->{'descriptionfile'};
+	my @line=($envname,$user,$descriptionfile);
+	
+	@array_env=(@array_env,\@line);
+	$ok=1;
+    }
+    $ref_array_env=\@array_env;
+    if (! $ok) { $ref_array_env=0; }
+    return $ref_array_env;
+}
+
+
+sub get_environment_descriptionfile($$)
+{
+    my $self=shift;
+
+    my $name=shift;
+    my $user=shift;
+
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $ref_array_env;
+    my @array_env;
+    my $envname;
+    my $descriptionfile;
+    my $h;
+    my $ok=0;
+    my $rights;
+    my $id=0;
+    my $sqltest="
+SELECT *
+FROM 
+environment
+WHERE
+environment.name = \"$name\" AND
+environment.user = \"$user\"
+";
+
+    my $sqlquery = "
+SELECT environment.descriptionfile
+FROM
+environment
+WHERE
+environment.name = \"$name\" AND
+environment.user = \"$user\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $h=$sth->fetchrow_hashref();
+    $id=$h->{id};
+    if ($id)
+    {
+	$sth=$dbh->prepare($sqlquery);
+	$sth->execute();
+	$h=$sth->fetchrow_hashref();
+	$descriptionfile=$h->{descriptionfile};
+    }
+    if ($descriptionfile)
+    {
+	return $descriptionfile;
+    }
+    else
+    {
+	return 0;
+    }
+}
+
+
+
+
+sub update_nodestate($$$)
+{
+    my $self=shift;
+
+    my $nodename=shift;
+    my $service=shift;
+    my $state=shift;
+
+    my $nodeid;
+    my $dbh = $self->{dbh};
+    my $sth;
+    my $row;
+    my $id;
+    my $ok=0;
+    
+    $nodeid=$self->node_name_to_id($nodename);
+    if (! $nodeid) { exit 255; }
+
+    my $sqltest="
+SELECT nodestate.nodeid
+FROM nodestate,node
+WHERE 
+node.name=\"$nodename\" AND
+node.id=nodestate.nodeid AND
+nodestate.service=\"$service\"
+";
+    my $sqlput="
+INSERT INTO nodestate
+(nodeid,service,state) 
+VALUES 
+(\"$nodeid\",\"$service\",\"$state\")";
+
+    my $sqlupdate="
+update nodestate
+set state=\"$state\"
+where
+nodeid=\"$nodeid\" AND
+service=\"$service\"
+    ";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row =$sth->fetchrow_hashref();
+    $id=$row->{nodeid};
+    if ($id)
+    {
+       $sth = $dbh->prepare($sqlupdate);
+       $sth->execute();
+       $ok=1;
+    }
+    else
+    {
+       $sth = $dbh->prepare($sqlput);
+       if ($sth->execute()) { $ok=1; }
+    }
+    return $ok;
+}
+
+sub get_nodestate($$)
+{
+    my $self=shift;
+
+    my $nodename=shift;
+    my $service=shift;
+
+    my $nodeid;
+    my $dbh = $self->{dbh};
+    my $sth;
+    my $row;
+    my $id;
+    my $ret;
+    my $ok=0;
+    
+    $nodeid=$self->node_name_to_id($nodename);
+    if (! $nodeid) { exit 255; }
+
+    my $sqltest="
+SELECT nodestate.nodeid,nodestate.state
+FROM nodestate,node
+WHERE 
+node.name=\"$nodename\" AND
+node.id=nodestate.nodeid AND
+nodestate.service=\"$service\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row =$sth->fetchrow_hashref();
+    $id=$row->{nodeid};
+    if ($id)
+    {
+	$ret=$row->{state};
+    }
+    else
+    {
+	$ret="UNKNOW";
+    }
+    return $ret;
+}
+
+
+######################################
+### kaaddnode/kadelnode tools ###
+
+# add_node
+# registers a new node into the database
+# parameters : node_description=(name, macaddr, ipaddr)
+# return value : nodeid
+sub add_node($)
+{
+    my $self=shift;
+    my $ref_node = shift;
+
+    my $dbh = $self->{dbh};
+    my $node_id;
+    my $sth;
+    
+    # TODO : faire des vérifications !
+    
+    # debug print
+    # print "VALUES = $$ref_node[0] ; $$ref_node[1] ; $$ref_node[2]\n";
+    
+    # checks if node already exists
+    $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$$ref_node[0]\"");
+    $sth->execute();
+    $node_id = $sth->fetchrow_hashref(); 
+    $node_id = $node_id->{'id'}; 
+    $sth->finish();
+    
+    if(!$node_id){
+	# enregistrer le nouveau noeud
+	$sth = $dbh->do("INSERT node (name, macaddr, ipaddr)
+                         VALUES (\"$$ref_node[0]\",\"$$ref_node[1]\",\"$$ref_node[2]\")");
+	
+	$sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$$ref_node[0]\"");
+	$sth->execute();
+	$node_id = $sth->fetchrow_hashref(); 
+	$node_id = $node_id->{'id'}; 
+	$sth->finish();
+
+    }
+    return $node_id;    
+}
+
+
+# del_node
+# delete a node from the database
+# parameters : node
+# return value : 
+sub del_node($)
+{
+    my $self= shift;
+    my $hostname = shift;
+
+    my $dbh = $self->{dbh};
+
+    my $sth;
+    
+    $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$hostname\"");
+    $sth->execute();
+    my $node_id = $sth->fetchrow_hashref(); 
+    $node_id = $node_id->{'id'}; 
+    $sth->finish();
+    
+    if(!$node_id){
+	print "WARNING : node $hostname to delete is not registered\n";
+    }else{
+	$sth = $dbh->do("DELETE FROM deployed WHERE deployed.nodeid = $node_id");
+	$sth = $dbh->do("DELETE FROM node WHERE node.id = $node_id");
+    }
+}
+
+### kaaddnode/kadelnode operations end ###
+##########################################
+
+
+
+
+
+
+
+
+
+
+
 
 # clean_previous_deployments
 # remove the previously crashed deployments according to a timeout in the deploy.conf file
@@ -163,7 +872,7 @@ print "invalidating deployments older than $deployment_validity_timeout\n";
     my $rows_affected = $dbh->do("UPDATE deployment
                                   SET deployment.state = 'error', deployment.enddate=deployment.startdate
                                   WHERE (deployment.state!='terminated' and deployment.state!='error') and DATE_SUB(now(),INTERVAL $deployment_validity_timeout SECOND) > deployment.startdate;");
-    if($rows_affected = 0){ return 1; }
+    if($rows_affected == 0){ return 1; }
 
      print "Warning $rows_affected deployment have been corrected automatically\n";
      return 0;
@@ -371,52 +1080,53 @@ sub get_partition_status($$@) {
 # returns the deploy_id for the specified partition if in an appropriate state
 # parameters : base, node name, device, partition
 # return value : deploy_id if state = 'deployed' else 0
-sub get_deploy_id($$$$){
-    my $dbh  = shift;
-    my $node = shift;
-    my $dev  = shift;
-    my $part = shift;
-    my $max_id;
-    my $state;
-
-    my $nodeid = node_name_to_id($dbh,$node);
-    my $diskid = disk_dev_to_id($dbh,$dev);
-    my $partid = part_nb_to_id($dbh,$part,$nodeid);
-
-    # recuperation du deployid max
-    my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
-                             FROM deployed
-                             WHERE deployed.nodeid = \"$nodeid\" 
-                             AND deployed.diskid = \"$diskid\"
-                             AND deployed.partid = \"$partid\"");
-
-    $sth->execute();
-    my $ref = $sth->fetchrow_hashref();
-    $max_id = $ref->{'maxid'};
-    $sth->finish();
-
-    # recuperation de l etat associe
-    my $sth = $dbh->prepare("SELECT deployed.state
-                             FROM deployed
-                             WHERE deployed.nodeid = \"$nodeid\" 
-                             AND deployed.diskid = \"$diskid\"
-                             AND deployed.partid = \"$partid\"
-                             AND deployed.deployid = \"$max_id\"");
-    $sth->execute();
-    $ref = $sth->fetchrow_hashref();
-    $state = ($ref->{'state'});
-    $sth->finish();
+#sub get_deploy_id($$$$)
+#{
+#    my $dbh  = shift;
+#    my $node = shift;
+#    my $dev  = shift;
+#    my $part = shift;
+#    my $max_id;
+#    my $state;
+#
+#    my $nodeid = node_name_to_id($dbh,$node);
+#    my $diskid = disk_dev_to_id($dbh,$dev);
+#    my $partid = part_nb_to_id($dbh,$part,$nodeid);
+#
+#    # recuperation du deployid max
+#    my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+#                             FROM deployed
+#                             WHERE deployed.nodeid = \"$nodeid\" 
+#                             AND deployed.diskid = \"$diskid\"
+#                             AND deployed.partid = \"$partid\"");
+#
+#    $sth->execute();
+#    my $ref = $sth->fetchrow_hashref();
+#    $max_id = $ref->{'maxid'};
+#    $sth->finish();
+#
+#    # recuperation de l etat associe
+#    $sth = $dbh->prepare("SELECT deployed.state
+#                             FROM deployed
+#                             WHERE deployed.nodeid = \"$nodeid\" 
+#                             AND deployed.diskid = \"$diskid\"
+#                             AND deployed.partid = \"$partid\"
+#                             AND deployed.deployid = \"$max_id\"");
+#    $sth->execute();
+#    $ref = $sth->fetchrow_hashref();
+#    $state = ($ref->{'state'});
+#    $sth->finish();
 
     # debug print
     # print "NODEID = $nodeid ; DISKID = $diskid ; PARTID = $partid ; MAX = $max_id ; STATE = $state\n";
 
-    if($state eq "deployed"){
-	return $max_id;
-    }else{
-	print "ERROR: last deployment on $node $dev$part failed\n";
-	return 0;
-    }
-}
+#    if($state eq "deployed"){
+#	return $max_id;
+#    }else{
+#	print "ERROR: last deployment on $node $dev$part failed\n";
+#	return 0;
+#    }
+#}
 
 # search_deployed_env
 # looks for partitions with a given deployed environment on the given node
@@ -534,67 +1244,7 @@ sub autochoose_partition($%){
 ### deployment partition selection tools end ###
 ################################################
 
-##########################
-### database accessors ###
 
-# env_name_ver_to_id
-# gets the environment id matching the given name and version
-# parameters : base, environment name, environment version
-# return value : environment id
-sub env_name_ver_to_id($$$){
-    my $dbh = shift;
-    my $name = shift;
-    my $version = shift;
-
-    my $sth = $dbh->prepare("SELECT environment.id
-                             FROM environment 
-                             WHERE environment.name = \"$name\" 
-                             AND environment.version = \"$version\"");
-    $sth->execute();
-    my $id = $sth->fetchrow_hashref();
-    $id = $id->{'id'};
-    $sth->finish();
-    
-    if(!$id){
-	print "WARNING : there is no environment matching $name $version\n";
-	return 0;
-    }else{
-	return $id;
-    }
-
-}
-
-# env_name_to_last_ver_id
-# gets the id of the last version matching the given environment name
-# parameters : base, environment name
-# return value : environment id
-sub env_name_to_last_ver_id($$){
-    my $dbh = shift;
-    my $name = shift;
-
-    my $sth = $dbh->prepare("SELECT MAX(environment.version) as max_version
-                             FROM environment 
-                             WHERE environment.name = \"$name\"");
-    $sth->execute();
-    my $version = $sth->fetchrow_hashref();
-    $version = $version->{'max_version'};
-    $sth->finish();
-
-    if(!$version){
-	print "WARNING : there is no environment named $name\n";
-	return 0;
-    }else{
-	my $sth = $dbh->prepare("SELECT environment.id
-                                 FROM environment 
-                                 WHERE environment.name = \"$name\" 
-                                 AND environment.version = \"$version\"");
-	$sth->execute();
-	my $id = $sth->fetchrow_hashref();
-	$id = $id->{'id'};
-	$sth->finish();
-	return $id;
-    }
-}
 
 sub env_name_user_to_last_ver_id($$$)
 {
@@ -658,32 +1308,6 @@ sub env_undefined_to_id($){
     }
 }
 
-# env_name_to_versions
-# gets the existing versions of a given environment
-# parameters : base, environment name
-# return value : array of environment versions
-sub env_name_to_versions($$){
-    my $dbh = shift;
-    my $name = shift;
-
-    my $sth = $dbh->prepare("SELECT environment.version
-                             FROM environment 
-                             WHERE environment.name=\"$name\"");
-    $sth->execute();
-    my @version = ();
-
-    while (my $ref = $sth->fetchrow_hashref()) {
-        push(@version, $ref->{'version'});
-    }
-    $sth->finish();
-    
-    if (!scalar(@version)){
-	print "WARNING : there is no environment named $name\n";
-	return 0;
-    }
-
-    return @version;
-}
 
 # env_id_to_name
 # gets the name matching the id environment
@@ -1074,25 +1698,25 @@ sub disk_dev_to_id($$){
 # gets the device matching the id
 # parameters : base, disk id
 # return value : device
-sub disk_id_to_dev($$){
-    my $dbh = shift;
-    my $id = shift;
-
-    my $sth = $dbh->prepare("SELECT disk.device
-                             FROM disk
-                             WHERE disk.id = \"$id\"");
-    $sth->execute();
-    my $ref = $sth->fetchrow_hashref();
-    my $dev = $ref->{'device'};
-    $sth->finish();
-    
-    if (!$dev){
-	print "WARNING : there is no disk of id $id\n";
-	return 0;
-    }
-
-    return $dev;
-}
+#sub disk_id_to_dev($$){
+#    my $dbh = shift;
+#    my $id = shift;
+#
+#    my $sth = $dbh->prepare("SELECT disk.device
+#                             FROM disk
+#                             WHERE disk.id = \"$id\"");
+#    $sth->execute();
+#    my $ref = $sth->fetchrow_hashref();
+#    my $dev = $ref->{'device'};
+#    $sth->finish();
+#    
+#    if (!$dev){
+#	print "WARNING : there is no disk of id $id\n";
+#	return 0;
+#    }
+#
+#    return $dev;
+#}
 
 # part_nb_to_id
 # gets the id of the partition nb
@@ -1166,9 +1790,11 @@ sub part_nb_to_size($$){
 # gets the partition size of partition id id
 # parameters : base, partition id
 # return value : partition size
-sub part_id_to_size($$){
-    my $dbh = shift;
+sub part_id_to_size($)
+{
+    my $self=shift;
     my $id = shift;
+    my $dbh = $self->{dbh};
 
     my $sth = $dbh->prepare("SELECT partition.size FROM partition WHERE partition.id = $id");
     $sth->execute();
@@ -1188,9 +1814,11 @@ sub part_id_to_size($$){
 # gets the partition nb of partition id id
 # parameters : base, partition id
 # return value : partition nb
-sub part_id_to_nb($$){
-    my $dbh = shift;
+sub part_id_to_nb($) #(partid)
+{
+    my $self=shift;
     my $id = shift;
+    my $dbh = $self->{dbh};
 
     my $sth = $dbh->prepare("SELECT partition.pnumber FROM partition WHERE partition.id = \"$id\"");
     $sth->execute();
@@ -1225,7 +1853,7 @@ sub node_last_dep($$){
         $max_id = $max_id->{'maxid'};
         $sth->finish();
 
-	my $sth = $dbh->prepare("SELECT partition.pnumber
+	$sth = $dbh->prepare("SELECT partition.pnumber
                                  FROM partition, deployed, node 
                                  WHERE partition.id = deployed.partid 
                                  AND deployed.nodeid = node.id
@@ -1243,30 +1871,33 @@ sub node_last_dep($$){
 #parameters: base, hostname
 #return : optimisation support nb 
 
-sub node_last_dep_env_optsupport($$){
-   my $dbh = shift;
-   my $hostname = shift;
-
-   my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+sub node_last_dep_env_optsupport($$)
+{
+    my $dbh = shift;
+    my $hostname = shift;
+    
+    my $sth = $dbh->prepare("
+SELECT MAX(deployed.deployid) as maxid
                             FROM deployed, node
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
- 												           $sth->execute();
-       my $max_id = $sth->fetchrow_hashref();
-       $max_id = $max_id->{'maxid'};
-       $sth->finish();
-       my $sth = $dbh->prepare("SELECT environment.optsupport
+    $sth->execute();
+    my $max_id = $sth->fetchrow_hashref();
+    $max_id = $max_id->{'maxid'};
+    $sth->finish();
+    $sth = $dbh->prepare("
+SELECT environment.optsupport
                                 FROM environment, deployed, node 
                                 WHERE environment.id = deployed.envid 
                                 AND deployed.nodeid = node.id
                                 AND deployed.deployid = \"$max_id\"");
-  
-       $sth->execute();
-       my $ref = $sth->fetchrow_hashref();
-       my $pn = $ref->{'optsupport'};
-       $sth->finish();
-
-   return $pn;
+    
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $pn = $ref->{'optsupport'};
+    $sth->finish();
+    
+    return $pn;
 }
 
 #node_last_dep_env
@@ -1277,24 +1908,26 @@ sub node_last_dep_env_optsupport($$){
 sub node_last_dep_env($$){
    my $dbh = shift;
    my $hostname = shift;
-   my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+   my $sth = $dbh->prepare("
+SELECT MAX(deployed.deployid) as maxid
                             FROM deployed, node
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
-
-	$sth->execute();
-        my $max_id = $sth->fetchrow_hashref();
-        $max_id = $max_id->{'maxid'};
-        $sth->finish();
-        my $sth = $dbh->prepare("SELECT environment.name
+   
+   $sth->execute();
+   my $max_id = $sth->fetchrow_hashref();
+   $max_id = $max_id->{'maxid'};
+   $sth->finish();
+   $sth = $dbh->prepare("
+SELECT environment.name
                                  FROM environment, deployed, node 
                                  WHERE environment.id = deployed.envid 
                                  AND deployed.nodeid = node.id
                                  AND deployed.deployid = \"$max_id\"");
-                                                                                                                    $sth->execute();
-         my $ref = $sth->fetchrow_hashref();
-         my $pn = $ref->{'name'};
-         $sth->finish();
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'name'};
+   $sth->finish();
    return $pn;
 }                                                       
 
@@ -1306,27 +1939,27 @@ sub node_last_dep_env($$){
 sub node_last_dep_dev($$){
    my $dbh = shift;
    my $hostname = shift;
-   my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+   my $sth = $dbh->prepare("
+SELECT MAX(deployed.deployid) as maxid
                             FROM deployed, node
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
-
-	$sth->execute();
-	my $max_id = $sth->fetchrow_hashref();
-	$max_id = $max_id->{'maxid'};
-	$sth->finish();
-	
-	my $sth = $dbh->prepare("SELECT disk.device
+   
+   $sth->execute();
+   my $max_id = $sth->fetchrow_hashref();
+   $max_id = $max_id->{'maxid'};
+   $sth->finish();
+   
+   $sth = $dbh->prepare("SELECT disk.device
 	                         FROM disk, deployed, node 
 	                         WHERE disk.id = deployed.diskid 
 	                         AND deployed.nodeid = node.id
 	                         AND deployed.deployid = \"$max_id\"");
-	                                                                                                            $sth->execute();
-	 my $ref = $sth->fetchrow_hashref();
-	 my $pn = $ref->{'device'};
-	 $sth->finish();
-   return $pn;
-   
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'device'};
+   $sth->finish();
+   return $pn;   
 }                    
 
 #node_last_envid
@@ -1337,17 +1970,18 @@ sub node_last_dep_dev($$){
 sub node_last_envid($$){
    my $dbh = shift;
    my $hostname = shift;
-   my $sth = $dbh->prepare("SELECT MAX(deployed.deployid) as maxid
+   my $sth = $dbh->prepare("
+SELECT MAX(deployed.deployid) as maxid
                             FROM deployed, node
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
    
    $sth->execute();
-	my $max_id = $sth->fetchrow_hashref();
+   my $max_id = $sth->fetchrow_hashref();
    $max_id = $max_id->{'maxid'};
    $sth->finish();
    
-   my $sth = $dbh->prepare("
+   $sth = $dbh->prepare("
 SELECT MAX(envid) as envid 
 FROM deployed 
 WHERE deployid=\"$max_id\"
@@ -1356,112 +1990,49 @@ WHERE deployid=\"$max_id\"
    my $ref = $sth->fetchrow_hashref();
    my $pn = $ref->{'envid'};
    $sth->finish();
-   return $pn;
-   
+   return $pn;   
 }                    
 
 
 
 
-# node_id_to_name
-# gets the name of the node
-# parameters : base, id
-# return value : node name or 0 if it dose not exist in the database
-sub node_id_to_name($$){
-    my $dbh = shift;
-    my $id = shift;
 
-    my $sth = $dbh->prepare("SELECT node.name FROM node WHERE node.id = $id"); 
-    $sth->execute(); 
-    my $ref = $sth->fetchrow_hashref(); 
-    my $name = $ref->{'name'}; 
-    $sth->finish();
 
-    if(!$name){
-	return 0;
-    }
-    return $name;
-}
 
-# node_name_to_id
-# gets the identifier of the node
-# parameters : base, name
-# return value : node id or 0 if it dose not exist in the database
-sub node_name_to_id($$){
-    my $dbh = shift;
-    my $name = shift;
-
-    my $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$name\""); 
-    $sth->execute(); 
-    my $ref = $sth->fetchrow_hashref(); 
-    my $id = $ref->{'id'}; 
-    $sth->finish();
-
-    if(!$id){
-	return 0;
-    }
-    return $id;
-}
-
-# node_name_to_ip
-# gets the ip address of the node name
-# parameters : base, name
-# return value : ip address or 0 if it does not exist in the database
-sub node_name_to_ip($$){
-    my $dbh = shift;
-    my $name = shift;
-
-    my $sth = $dbh->prepare("SELECT node.ipaddr FROM node WHERE node.name = \"$name\""); 
-    $sth->execute(); 
-    my $ref = $sth->fetchrow_hashref(); 
-    my $addr = $ref->{'ipaddr'}; 
-    $sth->finish();
-
-    if(!$addr){
-	return 0;
-    }
-    return $addr;
-}
-
-# node_ip_to_name
-# gets the name of the node whose ip address is given in parameter
-# parameters : base, ip address
-# return value : name or 0 if it does not exist in the database
-sub node_ip_to_name($$){
-    my $dbh = shift;
-    my $ip = shift;
-    
-    my $sth = $dbh->prepare("SELECT node.name FROM node WHERE node.ipaddr = \"$ip\""); 
-    $sth->execute(); 
-    my $ref = $sth->fetchrow_hashref(); 
-    my $name = $ref->{'name'}; 
-    $sth->finish();
-
-    if(!$name){
-	return 0;
-    }
-    return $name;
-}
 
 # node_name_to_name
 # checks if the node exists
 # parameters : base, node name
 # return value : node name or 0 if it does not exist in the database
-sub node_name_to_name($$){
-    my $dbh = shift;
+sub node_name_exist($)
+{
+    my $self=shift;
     my $name = shift;
-
-    my $sth = $dbh->prepare("SELECT node.name FROM node WHERE node.name = \"$name\""); 
-    $sth->execute(); 
-    my $ref = $sth->fetchrow_hashref(); 
-    my $exist = $ref->{'name'}; 
-    $sth->finish();
-
-    if(!$exist){
-	return 0;
-    }
-    return $exist;
+    return $self->node_name_to_id($name);
 }
+
+sub nodename_disknumber_to_diskid($$) #(nodename,disknumber)
+{
+    my $self=shift;
+    my $name = shift;
+    my $disknumber = shift;
+    my $dbh = $self->{dbh};
+    my $sqlquery=
+"
+SELECT disk.id 
+FROM disk,node 
+WHERE node.name = \"$name\"
+AND   node.id = disk.nodeid
+AND   disk.dnumber=\"$disknumber\"
+";
+   my $sth = $dbh->prepare($sqlquery);
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref(); 
+   my $id = $ref->{'id'}; 
+   $sth->finish();
+   return $id;
+}
+
 
 # deploy_id_to_env_info
 # returns 
@@ -1475,7 +2046,13 @@ sub deploy_id_to_env_info($$){
                              WHERE deployed.envid = environment.id AND deployed.deployid = \"$deploy_id\"");
     $sth->execute();
     my $ref = $sth->fetchrow_hashref();
-    my @env_info = ($ref->{'name'},$ref->{'kernelpath'}, $ref->{'kernelparam'}, $ref->{'initrdpath'}, $ref->{'id'}, $ref->{'filebase'}, $ref->{'fdisktype'}); 
+    my @env_info = ($ref->{'name'},
+		    $ref->{'kernelpath'}, 
+		    $ref->{'kernelparam'}, 
+		    $ref->{'initrdpath'}, 
+		    $ref->{'id'}, 
+		    $ref->{'filebase'}, 
+		    $ref->{'fdisktype'}); 
     $sth->finish();
 
     return @env_info;
@@ -1504,46 +2081,6 @@ sub deploy_id_to_node_info($$){
 ### database accessors end ###
 ##############################
 
-######################################
-### kaaddnode/kadelnode tools ###
-
-# add_node
-# registers a new node into the database
-# parameters : base, node_description=(name, macaddr, ipaddr)
-# return value : node id
-sub add_node($$){
-    my $dbh = shift;
-    my $ref_node = shift;
-    my $node_id;
-    my $sth;
-    
-    # TODO : faire des vérifications !
-    
-    # debug print
-    # print "VALUES = $$ref_node[0] ; $$ref_node[1] ; $$ref_node[2]\n";
-    
-    # checks if node already exists
-    $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$$ref_node[0]\"");
-    $sth->execute();
-    $node_id = $sth->fetchrow_hashref(); 
-    $node_id = $node_id->{'id'}; 
-    $sth->finish();
-    
-    if(!$node_id){
-	# enregistrer le nouveau noeud
-	$sth = $dbh->do("INSERT node (name, macaddr, ipaddr)
-                         VALUES (\"$$ref_node[0]\",\"$$ref_node[1]\",\"$$ref_node[2]\")");
-	
-	$sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$$ref_node[0]\"");
-	$sth->execute();
-	$node_id = $sth->fetchrow_hashref(); 
-	$node_id = $node_id->{'id'}; 
-	$sth->finish();
-
-    }
-    return $node_id;
-    
-}
 
 # add_deploy
 # used by kaaddnode
@@ -1567,62 +2104,93 @@ sub add_deploy($$$$){
 # registers partition
 # parameters : base, partition_info, disk id
 # return value : partition id
-sub add_partition($$$){
-    my $dbh = shift;
+sub add_partition($) #(\(pnumber,size,parttype,disk_id))
+{
+    my $self=shift;
     my $ref_part = shift;
-    my $disk_id = shift;
+    my $dbh = $self->{dbh};
+    
+    my $pnumber=$$ref_part[0];
+    my $size=$$ref_part[1];
+    my $parttype=$$ref_part[2];
+    my $disk_id=$$ref_part[3];
     my $part_id;
-
+    my $sqlupdate;
     # TODO : faire des vérifications !
 
     # debug print
-    #print "VALUES = $$ref_part[0] ; $$ref_part[1] ; $$ref_part[2] ; DID $disk_id\n";
+    #print "VALUES = $$ref_part[0] ; $$ref_part[1] ; $$ref_part[2] ; $$ref_part[3]";
 
     # checks if partition type already exists
-    my $sth = $dbh->prepare("SELECT partition.id FROM partition
-                             WHERE partition.pnumber = \"$$ref_part[0]\"
-                             AND partition.size = \"$$ref_part[1]\"");
+    my $sqltest="SELECT partition.id FROM partition,disk
+                             WHERE partition.pnumber = \"$pnumber\"
+                             AND partition.diskid = \"$disk_id\"";
+
+    my $sth = $dbh->prepare($sqltest);
     $sth->execute();
+
     $part_id = $sth->fetchrow_hashref(); 
     $part_id = $part_id->{'id'}; 
-    $sth->finish();
+    $sth->finish();   
 
     if(!$part_id){
-	$sth = $dbh->do("INSERT partition (pnumber, size)
-                         VALUES (\"$$ref_part[0]\",\"$$ref_part[1]\")");
-        $sth = $dbh->prepare("SELECT partition.id FROM partition
-                              WHERE partition.pnumber = \"$$ref_part[0]\"
-                              AND partition.size = \"$$ref_part[1]\"");
+	$sth = $dbh->do("INSERT partition (pnumber, size,diskid,parttype)
+                         VALUES (\"$pnumber\",\"$size\",\"$disk_id\",\"$parttype\")");
+
+        $sth = $dbh->prepare($sqltest);
 	$sth->execute();
 	$part_id = $sth->fetchrow_hashref(); 
 	$part_id = $part_id->{'id'}; 
 	$sth->finish();
     }
+    else
+    {
+	$sqlupdate="
+UPDATE partition 
+SET 
+size = \"$size\",
+parttype = \"$parttype\",
+pnumber  = \"$pnumber\"
+WHERE
+id=\"$part_id\"";
+
+	$sth = $dbh->do($sqlupdate);       
+    }
     return $part_id;
 }
 
-# del_partition_table
-# delete all entry in partition table
-# parameters : base, 
-# return value : mysql 
-sub del_partition_table($)
-{
-    my $dbh = shift;
-    # TODO : faire des vérifications !
-    my $sth = $dbh->prepare("DELETE FROM partition");
-    return $sth->execute();
-}
 
-sub list_partition($)
+
+
+
+sub get_partition_from_nodename($$)
 {
     my $dbh = shift;
+    my $nodename = shift;
     my @partitionsize;
     # TODO : faire des vérifications !
-    my $sth = $dbh->prepare("select partition.size from partition");
+    my $sth = $dbh->prepare("
+select 
+disk.dnumber,
+partition.pnumber,
+partition.size,
+partition.parttype
+from partition,disk,node
+where
+node.name = \"$nodename\" AND
+node.id   = disk.nodeid   AND
+disk.id   = partition.diskid
+");
     $sth->execute();
     while (my $row = $sth->fetchrow_hashref()) 
     {
-        push(@partitionsize, $row->{'size'});
+#        push(@partitionsize, $row->{'size'});
+	
+	print "$nodename : ".
+	    $row->{'dnumber'}." ".
+	    $row->{'pnumber'}." ".
+	    $row->{'size'}." ".
+	    $row->{'parttype'}."\n";
     }
     $sth->finish();
     return @partitionsize;
@@ -1630,12 +2198,20 @@ sub list_partition($)
 
 # add_disk
 # registers disk
-# parameters : base, disk_info
+# parameters : base, disk_info(disknumber,interface,size,nodeid)
 # return value : disk id
-sub add_disk($$){
-    my $dbh = shift;
+sub add_disk($)
+{
+    my $self=shift;
     my $ref_disk = shift;
+    my $dbh = $self->{dbh};
+
     my $id;
+
+    my $disknumber=$$ref_disk[0];
+    my $interface=$$ref_disk[1];
+    my $size=$$ref_disk[2];
+    my $nodeid=$$ref_disk[3];
 
     # TODO : faire des vérifications !
 
@@ -1643,28 +2219,266 @@ sub add_disk($$){
     #print "VALUES = $$ref_disk[0] ; $$ref_disk[1]\n";
 
     # checks if disk type already exists
-    my $sth = $dbh->prepare("SELECT disk.id FROM disk
-                             WHERE disk.size = \"$$ref_disk[1]\" 
-                             AND disk.device = \"$$ref_disk[0]\"");
+
+    my $sqltest="SELECT 
+disk.id FROM disk,node
+WHERE 
+nodeid = \"$nodeid\" 
+AND 
+dnumber = \"$disknumber\"
+";
+    my $sqlupdate="
+UPDATE  disk
+SET 
+size=\"$size\",
+interface=\"$interface\"
+WHERE
+nodeid= \"$nodeid\" AND
+dnumber = \"$disknumber\"
+";
+    my $sth = $dbh->prepare($sqltest);
     $sth->execute();
     $id = $sth->fetchrow_hashref(); 
     $id = $id->{'id'}; 
     $sth->finish();
 
-    if(!$id){
-	$sth = $dbh->do("INSERT disk (size, device)
-                         VALUES (\"$$ref_disk[1]\",\"$$ref_disk[0]\")");
-	$sth = $dbh->prepare("SELECT disk.id FROM disk
-                              WHERE disk.size = \"$$ref_disk[1]\" 
-                              AND disk.device = \"$$ref_disk[0]\"");
+    if ($id)
+    {
+	$sth = $dbh->do($sqlupdate);
+    }
+
+    if(!$id)
+    {
+	
+	$sth = $dbh->do("INSERT disk (interface,size,nodeid,dnumber)
+                         VALUES (\"$interface\",\"$size\",\"$nodeid\",\"$disknumber\" )");
+	$sth = $dbh->prepare($sqltest);
 	$sth->execute();
 	$id = $sth->fetchrow_hashref(); 
 	$id = $id->{'id'}; 
 	$sth->finish();
-    }
-    
+    }    
     return $id;
 }
+
+sub del_disk_from_id($)
+{
+    my $self=shift;
+    my $disk_id = shift;
+
+    my $dbh = $self->{dbh};
+
+    my $id;
+    my $sth;
+    my $sqltest="
+SELECT 
+disk.id FROM disk
+WHERE 
+disk.id = \"$disk_id\"  
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $id = $sth->fetchrow_hashref(); 
+    $id = $id->{'id'};     
+    $sth->finish();
+    if ($id)
+    {
+	my $sqldel="
+DELETE FROM disk 
+WHERE
+disk.id=\"$id\"
+";
+	$sth = $dbh->prepare($sqldel);
+	$sth->execute();
+	$sth->finish();
+    }
+    return $id;    
+}
+
+sub del_partition_from_diskid($)
+{
+    my $self=shift;
+    my $disk_id = shift;
+    my $dbh = $self->{dbh};
+    my $id;
+    my $sth;
+    my $sqltest="
+SELECT 
+partition.id FROM disk,partition
+WHERE 
+disk.id          = \"$disk_id\" AND
+partition.diskid = \"$disk_id\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $id = $sth->fetchrow_hashref(); 
+    $id = $id->{'id'};     
+    $sth->finish();
+    if ($id)
+    {
+	my $sqldel="
+DELETE FROM partition
+WHERE
+partition.diskid=\"$disk_id\"
+";
+	$sth = $dbh->prepare($sqldel);
+	$sth->execute();
+	$sth->finish();
+    }
+    return $id;    
+
+}
+
+#sub get_diskid_from_nodeid($)
+#{
+#    my $self=shift;
+#    my $nodeid = shift;
+#    my $dbh = $self->{dbh};
+#    my $id;
+#    my @listid;
+#    my $reflistid;
+#    my $sth;
+#    my $sqltest="
+#SELECT disk.id 
+#FROM 
+#node,disk 
+#WHERE 
+#node.id=\"$nodeid\" AND 
+#disk.nodeid=node.id
+#";
+#    
+#    $sth = $dbh->prepare($sqltest);
+#    $sth->execute();
+#    while ($id = $sth->fetchrow_hashref())
+#    {
+#	@listid = (@listid, $id->{'id'});
+#    }
+#    $sth->finish();
+#    $reflistid=\@listid;
+#    return $reflistid;
+#}
+
+
+sub get_diskid_from_nodeid_disknumber($$)
+{
+    my $self=shift;
+    my $nodeid = shift;
+    my $disknumber = shift;
+    my $dbh = $self->{dbh};
+    my $id;
+    my $ref;
+    my @listid;
+    my $reflistid;
+    my $sth;
+    my $sqltest="
+SELECT disk.id 
+FROM 
+node,disk 
+WHERE 
+node.id=\"$nodeid\" AND 
+disk.nodeid=node.id AND
+disk.dnumber=\"$disknumber\"
+";
+    
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $ref = $sth->fetchrow_hashref();
+    $id=$ref->{'id'};
+    $sth->finish();
+    return $id;
+}
+
+
+sub get_diskinfo_from_diskid($)         #(diskid)
+{
+    my $self=shift;
+    my $diskid=shift;
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $id;
+    my $ref;
+    my $info;
+    my $refinfo;
+    my $sqlquery="
+SELECT 
+disk.size,disk.interface 
+FROM 
+node,disk 
+WHERE 
+disk.id=\"$diskid\"
+";
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    $ref = $sth->fetchrow_hashref();
+    $info=
+    {
+	interface => $ref->{interface},
+	size      => $ref->{size},
+    };
+    return $info;
+}
+
+sub get_partitioninfo_from_partitionid($)         #(partitionid)
+{
+    my $self=shift;
+    my $partitionid=shift;
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $id;
+    my $ref;
+    my $info;
+    my $refinfo;
+    my $sqlquery="
+SELECT partition.pnumber, partition.size, partition.parttype 
+FROM 
+disk,partition 
+WHERE 
+partition.id=\"$partitionid\"     
+";
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    $ref = $sth->fetchrow_hashref();
+    $info=
+    {
+	pnumber   => $ref->{pnumber},
+	size      => $ref->{size},
+	parttype  => $ref->{parttype},
+    };
+    return $info;
+}
+
+sub get_listpartitionid_from_diskid($)         #(partitionid)
+{
+    my $self=shift;
+    my $diskid=shift;
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $id;
+    my @listid;
+    my $reflistid;
+    my $ref;
+    my $info;
+    my $refinfo;
+    my $sqlquery="
+SELECT partition.id
+FROM 
+disk,partition 
+WHERE 
+partition.diskid=disk.id AND
+disk.id=\"$diskid\"      
+";
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    while ($ref = $sth->fetchrow_hashref())
+    {
+	@listid=(@listid,$ref->{id});
+    }
+    $reflistid=\@listid;
+    return $reflistid;
+}
+
+
+
 
 # add_environment
 # registers a new environment into the database
@@ -1716,31 +2530,6 @@ VALUES
 
 }
 
-# del_node
-# delete a node from the database
-# parameters : base, node
-# return value : /
-sub del_node($$){
-    my $dbh = shift;
-    my $host = shift;
-    my $sth;
-    
-    $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$host\"");
-    $sth->execute();
-    my $node_id = $sth->fetchrow_hashref(); 
-    $node_id = $node_id->{'id'}; 
-    $sth->finish();
-    
-    if(!$node_id){
-	print "WARNING : node $host to delete is not registered\n";
-    }else{
-	$sth = $dbh->do("DELETE FROM deployed WHERE deployed.nodeid = $node_id");
-	$sth = $dbh->do("DELETE FROM node WHERE node.id = $node_id");
-    }
-}
-
-### kaaddnode/kadelnode operations end ###
-##########################################
 
 #######################
 ### print and debug ###
@@ -1750,8 +2539,10 @@ sub del_node($$){
 # parameters : base
 # return value : list of hostnames
 # side effects : /
-sub list_node($) {
-    my $dbh = shift;
+sub list_node($) 
+{
+    my $self=shift;
+    my $dbh = $self->{dbh};
     my $sth = $dbh->prepare("SELECT * FROM node");
     $sth->execute();
     my @res = ();
@@ -1763,22 +2554,239 @@ sub list_node($) {
     return @res;
 }
 
+# get_node
+# get the nodename->ip of all node.
+# return value : hash of hostnames->ip
+sub get_node($) 
+{
+    my $self=shift;    
+    my $refhash;
+    my $name;
+    my $ipaddr;
+    my $dbh = $self->{dbh};
+    my $sth = $dbh->prepare("SELECT * FROM node");    
+    $sth->execute();
+    my %res;
+
+    while (my $ref = $sth->fetchrow_hashref()) 
+    {
+	$name=$ref->{name};
+	$ipaddr=$ref->{ipaddr};	
+	$res{$name}=$ipaddr;	
+#	$res{a}=1;
+    }
+    $sth->finish();
+    $refhash=\%res;
+    return $refhash;
+}
+
+
+
+sub get_disk_from_nodeid($$)     #(dbh,nodename)
+{
+    my $dbh    = shift;
+    my $nodeid = shift;
+
+
+
+    my $sth = $dbh->prepare("
+SELECT disk.dnumber,disk.size,disk.interface,partition.pnumber, partition.size, partition.parttype
+FROM node,disk,partition
+WHERE
+node.id=\"$nodeid\" AND
+disk.nodeid=node.id AND
+partition.diskid=disk.id
+");
+    $sth->execute();
+    while (my $ref = $sth->fetchrow_hashref()) 
+    {
+    	
+    }
+    $sth->finish();
+}
+
+
+sub add_rights_user_nodename_rights($$$) #(username,nodename,rights)
+{
+    my $self=shift;
+
+    my $username=shift;
+    my $nodename=shift;
+    my $rights=shift;
+
+    my $row;
+    my $sth;
+    my $tofetch;
+    my $dbh=$self->{dbh};
+    my $ok=0;
+    my $sqlput="
+INSERT rights
+(user,node,rights) 
+VALUES 
+(\"$username\",\"$nodename\",\"$rights\")
+";
+    my $sqltest="
+SELECT 
+rights.rights FROM rights
+WHERE 
+rights.user = \"$username\"
+AND
+rights.node = \"$nodename\"
+AND
+rights.rights = \"$rights\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row = $sth->fetchrow_hashref(); 
+    $tofetch = $row->{'rights'};     
+    $sth->finish();
+    if (! $tofetch)
+    {      
+       $sth = $dbh->prepare($sqlput);
+       if ($sth->execute()) { $ok=1; }
+       $sth->finish();
+    }
+    else
+    {
+       $ok=1;
+    }
+    return $ok; 
+}
+
+
+sub del_rights_user_nodename_rights($$$) #(username,nodename,rights)
+{
+    my $self=shift;
+
+    my $username=shift;
+    my $nodename=shift;
+    my $rights=shift;
+
+    my $row;
+    my $sth;
+    my $tofetch;
+    my $dbh=$self->{dbh};
+    my $ok=0;
+    my $sqlput="
+DELETE FROM rights 
+WHERE 
+user=\"$username\"  AND
+node=\"$nodename\" AND 
+rights=\"$rights\"
+";
+    my $sqltest="
+SELECT 
+rights.rights FROM rights
+WHERE 
+rights.user = \"$username\"
+AND
+rights.node = \"$nodename\"
+AND
+rights.rights = \"$rights\"
+";
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $row = $sth->fetchrow_hashref(); 
+    $tofetch = $row->{'rights'};     
+    $sth->finish();
+    if ($tofetch)
+    {      
+       $sth = $dbh->prepare($sqlput);
+       if ($sth->execute()) { $ok=1; }
+       $sth->finish();
+    }
+    else
+    {
+       $ok=1;
+    }
+    return $ok; 
+}
+
+sub check_rights($$$)
+{
+    my $self=shift;
+
+    my $user = shift;
+    my $node = shift;
+    my $rights = shift;
+
+    my $dbh = $self->{dbh};
+    my $ok=0;
+    my $sth;
+    my $tmp;
+    my $sqltest="
+SELECT rights.user FROM rights
+WHERE 
+user = \"$user\"  AND 
+node = \"$node\"  AND 
+rights = \"$rights\"
+";
+    print $sqltest;
+    $sth = $dbh->prepare($sqltest);
+    $sth->execute();
+    $tmp = $sth->fetchrow_hashref();
+    $tmp = $tmp->{'user'};
+    $sth->finish();
+    if($tmp)    { 	$ok=1;     }
+    else        { 	$ok=0;     }   
+    return $ok;
+}
+
+
+sub get_rights()
+{
+    my $self=shift;
+
+    my $dbh=$self->{dbh};
+    my $sth;
+    my $ref_array_rights;
+    my @array_rights;
+    my $user;
+    my $node;
+    my $h;
+    my $ok=0;
+    my $rights;
+    my $sqlquery="
+SELECT *
+FROM 
+rights
+";
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    while ($h=$sth->fetchrow_hashref())
+    {
+	$user=$h->{'user'};
+	$node=$h->{'node'};
+	$rights=$h->{'rights'};
+	my @line=($user,$node,$rights);
+	
+	@array_rights=(@array_rights,\@line);
+	$ok=1;
+    }
+    $ref_array_rights=\@array_rights;
+    if (! $ok) { $ref_array_rights=0; }
+    return $ref_array_rights;
+}
+
+
+
 # debug_print
 # prints database state 
 # parameters : base, deploy_id
 # return value : /
-sub debug_print($$){
+sub debug_print($$)
+{
     my $dbh = shift;
     my $deploy_id = shift;
     my %res;
-
+    my $ref;
     # gets interesting information
 
     # from deployed table
     my $sth = $dbh->prepare("SELECT node.name, deployed.state, deployed.error_description
     FROM deployed,node WHERE deployed.deployid = \"$deploy_id\" and node.id=deployed.nodeid");
     $sth->execute();
-    while (my $ref = $sth->fetchrow_hashref()) {
+    while ( $ref = $sth->fetchrow_hashref()) {
     	$res{$ref->{'name'}} = [$ref->{'state'},$ref->{'error_description'}];
     }
     $sth->finish();
@@ -1788,7 +2796,7 @@ sub debug_print($$){
                           FROM deployment 
                           WHERE deployment.id = \"$deploy_id\"");
     $sth->execute();
-    my $ref = $sth->fetchrow_hashref();
+    $ref = $sth->fetchrow_hashref();
     my @depl = ($ref->{'id'},$ref->{'state'});
     $sth->finish();
 
@@ -1876,86 +2884,87 @@ sub report_state($$$$$){
 # checks if the node is free for deployment
 # parameters : base, node id, deployment id
 # return value : 1 if node is free, otherwise 0 
-sub is_node_free($$$){
-    my $dbh = shift;
-    my $node_id = shift;
-    my $deploy_id = shift;
-    my $sth;
+#sub is_node_free($$$){
+#    my $dbh = shift;
+#    my $node_id = shift;
+#    my $deploy_id = shift;
+#    my $sth;
 
     # debug print
     # print "NODEID = $node_id ; DEPLOYID = $deploy_id\n";
 
     # checks if node is already involved in another running deployment
-    $sth = $dbh->prepare("SELECT IFNULL(COUNT(deployed.nodeid),0) as id
-	                  FROM deployed, deployment
-	                  WHERE deployed.nodeid = $node_id
-                          AND deployment.id = deployed.deployid
-		          AND deployment.state = 'running'");
-    $sth->execute();
-    my $nb = $sth->fetchrow_hashref(); 
-    $nb = $nb->{'id'};
-    $sth->finish();
-    if($nb == 0){
-	# node is free
-	return 1;
-    }elsif($nb == 1){
-	my $node = libkadeploy2::deploy_iolib::node_id_to_name($dbh,$node_id);
-	print "WARNING : node $node is already involved in another deployment\n";
-	return 0;
-    }else{
-	print "ERROR : unexpected number of partition involved in deployment for node ($nb)\n";
-	return 0;
-    }
-}
+#    $sth = $dbh->prepare("SELECT IFNULL(COUNT(deployed.nodeid),0) as id
+#	                  FROM deployed, deployment
+#	                  WHERE deployed.nodeid = $node_id
+#                          AND deployment.id = deployed.deployid
+#		          AND deployment.state = 'running'");
+#    $sth->execute();
+#    my $nb = $sth->fetchrow_hashref(); 
+#    $nb = $nb->{'id'};
+#    $sth->finish();
+#    if($nb == 0){
+#	# node is free
+#	return 1;
+#    }elsif($nb == 1){
+#	my $node = libkadeploy2::deploy_iolib::node_id_to_name($dbh,$node_id);
+#	print "WARNING : node $node is already involved in another deployment\n";
+#	return 0;
+#    }else{
+#	print "ERROR : unexpected number of partition involved in deployment for node ($nb)\n";
+#	return 0;
+#    }
+#}
 
 # add_node_to_deployment
 # performs several checks and do db appropriate modifications
 # parameters : base, hostname, deploy id, env name, disk dev, part nb
 # return value : 1 if successful, 0 if failed
-sub add_node_to_deployment($$$$$$){
-    my $dbh = shift;
-    my $hostname = shift;
-    my $deploy_id = shift;
-    my $env_name = shift;
-    my $disk_dev = shift;
-    my $part_nb = shift;
-
-    my $node_id = libkadeploy2::deploy_iolib::node_name_to_id($dbh,$hostname);
-    my $disk_id = libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$disk_dev);
-    my $part_id = libkadeploy2::deploy_iolib::part_nb_to_id($dbh,$part_nb,$node_id);
-    my $env_id  = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($dbh,$env_name);
+#sub add_node_to_deployment($$$$$$){
+#    my $dbh = shift;
+#    my $hostname = shift;
+#    my $deploy_id = shift;
+#    my $env_name = shift;
+#    my $disk_dev = shift;
+#    my $part_nb = shift;
+#
+#    my $node_id = libkadeploy2::deploy_iolib::node_name_to_id($dbh,$hostname);
+#    my $disk_id = libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$disk_dev);
+#    my $part_id = libkadeploy2::deploy_iolib::part_nb_to_id($dbh,$part_nb,$node_id);
+#    my $env_id  = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($dbh,$env_name);
     
     # performs cheks
-    if((!$node_id) || (!$disk_id) || (!$part_id) || (!$env_id)){
-	return 0;
-    }
+#    if((!$node_id) || (!$disk_id) || (!$part_id) || (!$env_id)){
+#	return 0;
+#    }
 
     # ! debug print !
     # print "DEBUG : NODE = $node_id ; DISK = $disk_id ; PART = $partition_id ; ENV = $env_id\n";
     
-    my $is_free = libkadeploy2::deploy_iolib::is_node_free($dbh,$node_id,$deploy_id);
-    if($is_free){
-	my $env_size  = libkadeploy2::deploy_iolib::env_id_to_size($dbh,$env_id);
-	my $part_size = libkadeploy2::deploy_iolib::part_id_to_size($dbh,$part_id);
-	if($env_size < $part_size){
-	    libkadeploy2::deploy_iolib::set_deployment_features($dbh,$node_id,$deploy_id,$env_id,$disk_id,$part_id);
-	}else{
-	    print "Environment too large for the partition\n";
-	    return 0;
-	}
-    }else{
-	print "Node isn't free\n";
-	return 0;
-    }
-    return 1;
-
-}
+#    my $is_free = libkadeploy2::deploy_iolib::is_node_free($dbh,$node_id,$deploy_id);
+#    if($is_free){
+#	my $env_size  = libkadeploy2::deploy_iolib::env_id_to_size($dbh,$env_id);
+#	my $part_size = libkadeploy2::deploy_iolib::part_id_to_size($dbh,$part_id);
+#	if($env_size < $part_size){
+#	    libkadeploy2::deploy_iolib::set_deployment_features($dbh,$node_id,$deploy_id,$env_id,$disk_id,$part_id);
+#	}else{
+#	    print "Environment too large for the partition\n";
+#	    return 0;
+#	}
+#    }else{
+#	print "Node isn't free\n";
+#	return 0;
+#    }
+#    return 1;
+#
+#}
 
 # set_deployment_features
 # sets deployment id in deployed table
 # parameters : base, node id, deploy id, env id, disk id, part id
 # return value : 1 if successful
-sub set_deployment_features($$$$$$){
+sub set_deployment_features($$$$$$)
+{
     my $dbh = shift;
     my $node_id = shift;
     my $deploy_id = shift;
@@ -1983,7 +2992,8 @@ sub set_deployment_features($$$$$$){
 # return value : /
 # NB : first version very basic ; to be improved... ?
 #      mustn't be used concurrently to deployment pocedures
-sub correct_db_consistence($){
+sub correct_db_consistence($)
+{
     my $dbh = shift;
     
     my $sth = $dbh->do("UPDATE deployed 
