@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.52)
-AC_INIT(kadeploy,2.1.2)
-AM_INIT_AUTOMAKE(kadeploy, 2.1.2)
+AC_INIT(kadeploy,2.2)
+AM_INIT_AUTOMAKE(kadeploy, 2.2)
 
 
 AC_PROG_CC
@@ -19,16 +19,6 @@ if test [ -z $DD ]; then echo "dd not found..." ; exit 1 ; fi
 
 AC_CHECK_PROGS(NMAP,nmap)
 if test [ -z $NMAP ]; then echo "nmap not found..." ; exit 1 ; fi
-
-AC_CHECK_PROGS(LINUXDOC,linuxdoc)
-if test [ -z $LINUXDOC ]; then echo "linuxdoc not found..." ; exit 1 ; fi
-
-AC_CHECK_PROGS(XSLTPROC,xsltproc)
-if test [ -z $XSLTPROC ]; then echo "xsltproc not found..." ; exit 1 ; fi
-
-AC_CHECK_PROGS(LATEX2HTML,latex2html)
-if test [ -z $LATEX2HTML ]; then echo "latex2html not found..." ; exit 1 ; fi
-
 
 AC_CONFIG_FILES([Makefile 
 		bin/Makefile 

@@ -1,1 +1,1 @@
-SUBDIRS=x86_64 x86
+SUBDIRS=linux
