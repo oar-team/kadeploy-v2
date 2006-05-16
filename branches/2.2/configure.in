@@ -31,8 +31,9 @@ if test [ -z $LATEX2HTML ]; then echo "latex2html not found..." ; exit 1 ; fi
 
 
 AC_CONFIG_FILES([Makefile 
-		cmd/Makefile 
-		cmd/libkadeploy2/Makefile 
+		bin/Makefile 
+		sbin/Makefile 
+		libkadeploy2/Makefile 
 		man/Makefile 
 		man/man1/Makefile 
 		tools/Makefile 

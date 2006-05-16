@@ -1,1 +1,1 @@
-SUBDIRS=cmd man tools Documentation share
+SUBDIRS= bin sbin libkadeploy2 man tools Documentation share
