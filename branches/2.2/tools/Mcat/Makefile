@@ -62,9 +62,7 @@ host_triplet = @host@
 CC = gcc
 DD = dd
 HAVE_LIB = @HAVE_LIB@
-LATEX2HTML = latex2html
 LIB = @LIB@
-LINUXDOC = linuxdoc
 LN_S = ln -s
 LTLIB = @LTLIB@
 MAKEINFO = makeinfo
@@ -72,8 +70,7 @@ MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
-VERSION = 2.1.2
-XSLTPROC = xsltproc
+VERSION = 2.2
 
 bin_PROGRAMS = mcatseg
 mcatseg_SOURCES = AcceptTCPConnection.c CreateTCPServerSocket.c DieWithError.c Makefile.am Makefile.old mcat.pl mcat_rsh.pl mcatseg.c mcat_ssh.pl mcat_test.pl TCPCatServer.h
@@ -86,7 +83,7 @@ CONFIG_CLEAN_FILES =
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS = -DPACKAGE_NAME=\"kadeploy\" -DPACKAGE_TARNAME=\"kadeploy\" -DPACKAGE_VERSION=\"2.1.2\" -DPACKAGE_STRING=\"kadeploy\ 2.1.2\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"kadeploy\" -DVERSION=\"2.1.2\"  -I. -I$(srcdir) 
+DEFS = -DPACKAGE_NAME=\"kadeploy\" -DPACKAGE_TARNAME=\"kadeploy\" -DPACKAGE_VERSION=\"2.2\" -DPACKAGE_STRING=\"kadeploy\ 2.2\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"kadeploy\" -DVERSION=\"2.2\"  -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 LIBS = 

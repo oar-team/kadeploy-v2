@@ -24,22 +24,17 @@ AC_CONFIG_FILES([Makefile
 		bin/Makefile 
 		sbin/Makefile 
 		libkadeploy2/Makefile 
+		libkadeploy2/environment/Makefile
 		man/Makefile 
 		man/man1/Makefile 
 		tools/Makefile 
-		tools/Mcat/Makefile 
-		tools/sentinelle/Makefile 
-		tools/bin/Makefile
-		tools/boot/Makefile
+		tools/Mcat/Makefile 	
 		tools/cookbook/Makefile
 		tools/cookbook/conf/Makefile
-		tools/cookbook/scripts/Makefile
 		tools/kasudowrapper/Makefile
 		tools/libboot/Makefile
 		tools/libboot/pxelinux/Makefile
 		tools/libboot/deployment_kernel/Makefile
-		tools/libboot/deployment_kernel/x86/Makefile
-		tools/libboot/deployment_kernel/x86_64/Makefile
 		tools/libboot/grub/Makefile
 		tools/migration/Makefile
 		tools/pre_post_script/Makefile

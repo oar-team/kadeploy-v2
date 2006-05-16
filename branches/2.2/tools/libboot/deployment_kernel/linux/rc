@@ -1,0 +1,24 @@
+#!/bin/sh
+source etc/rc.conf
+OK=0;
+echo "linuconfig    : $LINUXCONFIG"
+echo "busyboxconfig : $BUSYBOXCONFIG" 
+
+echo "CREATEDIR"
+./rc.createdir
+echo "DEBOOTSTRAP"
+./rc.debootstrap
+echo "MAKEDEV"
+./rc.makedev
+echo "LINUX"
+./rc.linux
+echo "COPYROOTFS"
+./rc.copyrootfs
+echo "INITRD"
+./rc.initrd
+if [ -f $VMLINUZ ]; then echo "kernel dest   : $VMLINUZ" ; fi
+if [ -f $INITRD  ]; then echo "image  dest   : $INITRD"  ; fi
+
+if [ $OK ]; then echo "Done..." ; exit 0; 
+else echo "Failed..."; exit 1;
+fi

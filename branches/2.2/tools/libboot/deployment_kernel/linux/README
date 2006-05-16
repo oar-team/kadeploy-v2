@@ -1,0 +1,26 @@
+script for creating a deployment kernel with busybox
+
+################################################################################
+#                                    config                                    #
+################################################################################
+
+See the etc/ directory
+
+################################################################################
+#                                     Build                                    #
+################################################################################
+
+The main script is ./rc
+
+################################################################################
+#                                       API                                    #
+################################################################################
+
+
+The kernel is build with :
+-all network drivers
+-ide, scsi, sata drivers
+-serial drivers
+
+The kernel and initrd are launch on the box.
+It load the initrd and launch the script from it.

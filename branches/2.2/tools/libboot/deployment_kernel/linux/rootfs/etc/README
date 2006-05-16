@@ -1,0 +1,1 @@
+modules : contains a list of modules, one per line, /etc/init.d/rc.1-modules load it

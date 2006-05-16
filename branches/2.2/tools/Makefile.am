@@ -1,2 +1,2 @@
-SUBDIRS=Mcat boot libboot cookbook bin pre_post_script kasudowrapper migration
-EXTRA_DIST = Mcat sentinelle cookbook bin kasudowrapper migration
+SUBDIRS=Mcat libboot libboot cookbook  pre_post_script kasudowrapper migration
+EXTRA_DIST = Mcat sentinelle cookbook  kasudowrapper migration
