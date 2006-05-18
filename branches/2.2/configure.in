@@ -22,12 +22,17 @@ if test [ -z $NMAP ]; then echo "nmap not found..." ; exit 1 ; fi
 
 AC_CONFIG_FILES([Makefile 
 		bin/Makefile 
+
 		sbin/Makefile 
-		libkadeploy2/Makefile 
-		libkadeploy2/environment/Makefile
-		libkadeploy2/pm/Makefile
+
+		lib/Makefile 
+		lib/environment/Makefile
+		lib/pm/Makefile
+		lib/floppy/Makefile
+
 		man/Makefile 
 		man/man1/Makefile 
+
 		tools/Makefile 
 		tools/Mcat/Makefile 	
 		tools/cookbook/Makefile
@@ -37,7 +42,9 @@ AC_CONFIG_FILES([Makefile
 		tools/libboot/grub/Makefile
 		tools/migration/Makefile
 		tools/pre_post_script/Makefile
+
 		Documentation/Makefile
+
 		share/Makefile
 		share/mysql/Makefile
 		])
