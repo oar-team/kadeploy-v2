@@ -4,9 +4,9 @@
                    51 avenue Jean KUNTZMANN
              38330 Montbonnot Saint-Martin FRANCE
 
-Julien  Leduc   (v2)
-Johann  Peyrard (v2.1)
-Olivier Richard (mcat)
-Gaetan  Peaquin 
-Cyrille Martin  (taktuk)
-Pierre  Neyron  (grub pxe)
+Julien  Leduc   (v2 - core)
+Johann  Peyrard (v2.1 - core + packaging)
+Olivier Richard (v2 - mcat)
+Gaetan  Peaquin (v2 - core
+Cyrille Martin  (v2 - taktuk)
+Pierre  Neyron  (v2 - grub pxe)
