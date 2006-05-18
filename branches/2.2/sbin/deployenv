@@ -25,9 +25,9 @@ if (! $conf->loadcheck()) { exit 1; }
 my $kadeploydir=$conf->get("kadeploy2_directory");
 my $db=libkadeploy2::deploy_iolib::new();
 
-my $ddpath="$kadeploydir/lib/environment/dd/dd";
-my $linuxpath  ="$kadeploydir/lib/environment/linux/linux";
-my $windowspath="$kadeploydir/lib/environment/windows/windows";
+my $ddpath="$kadeploydir/lib/environment/dd";
+my $linuxpath  ="$kadeploydir/lib/environment/linux";
+my $windowspath="$kadeploydir/lib/environment/windows";
 my $kachecknodes="$kadeploydir/sbin/kachecknodes";
 
 my $kareboot=$conf->getpath_kareboot();
