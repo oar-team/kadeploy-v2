@@ -7,5 +7,5 @@ deployconf.pm environments.pm grub.pm nmap.pm nodesfile.pm pxelinux.pm	\
 right.pm tftppxe.pm commandlist.pm deploy_iolib.pm envlib.pm hexlib.pm	\
 node_bd.pm nodes.pm remotecommand.pm rights_iolib.pm tools.pm		\
 command.pm device.pm errormessage.pm hostlist.pm node_cmd.pm		\
-parallelcommand.pm remotecopy.pm rights.pm
+parallelcommand.pm remotecopy.pm rights.pm karights.pm
 EXTRA_DIST=$(kadeploypm_DATA)
