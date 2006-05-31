@@ -16,6 +16,7 @@ sub new()
     $self=
     {
 	ACL => 0,
+	index => 0,
     };
     bless $self;
     return $self;
@@ -30,6 +31,33 @@ sub get()
     $db->disconnect();    
 }
 
+
+sub get_next()
+{
+    my $self=shift;
+    my $ref_array;
+    my $right=libkadeploy2::right::new();
+    my $refline;
+
+    $ref_array=$self->{ACL};
+    $refline=$$ref_array[$self->{index}];
+    $self->{index}=$self->{index}+1;
+
+    if ($refline)
+    {
+	$user=$$refline[0];
+	$node=$$refline[1];
+	$rights=$$refline[2];    
+	$right->set_user($user);
+	$right->set_node($node);
+	$right->set_right($rights);
+	return $right;
+    }
+    else
+    {
+	return 0;
+    }
+}
 
 
 
@@ -88,7 +116,7 @@ sub print_user($)
 	$right=libkadeploy2::right::new();
 	$right->set_user($user);
 	$right->set_node($node);
-	$right->set_user($rights);
+	$right->set_right($rights);
 
 	if ($i==0)
 	{
@@ -139,7 +167,6 @@ sub print_node($)
         }
      }    
     $right->print_footer();
-
 }
 
 sub print_rights($)
@@ -153,25 +180,29 @@ sub print_rights($)
     my $user;
     my $node;
     my $rights;
+    my $right;
     my $i=0;
     $ref_array=$self->{ACL};
     foreach $refline (@$ref_array)
     {
+	$right=libkadeploy2::right::new();
 	$user=$$refline[0];
 	$node=$$refline[1];
 	$rights=$$refline[2];
 	if ($i==0)
 	{
-	    $self->print_header();
+	    $right->print_header();
 	    $i++;
 	}
+	$right->set_user($user);
+	$right->set_node($node);
+	$right->set_right($rights);
         if ($$refline[2] eq $righttotest)
         {  
-	    $self->print_line($user,$node,$rights);
+	    $right->print_line();
         }
      }    
-    $self->print_footer();
-
+    $right->print_footer();
 }
 
 

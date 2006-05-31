@@ -40,7 +40,7 @@ sub exec()
     {
 	local $SIG{ALRM} = sub { die "alarm\n" };       # NB \n required
 	alarm($self->{timeout});
-	if ($self->{verbose}==1) { print("cmd_launch: $cmd...\n"); }
+	if ($self->{verbose}==1) { print("cmd_launch: $cmd ...\n"); }
 	if ($self->{verbose}>=2)
 	{
 	    exec($cmd);

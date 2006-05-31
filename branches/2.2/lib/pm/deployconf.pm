@@ -18,6 +18,7 @@ my $kaexec_path="/sbin/kaexec";
 my $kamcat_path="/sbin/kamcat";
 my $kasetup_path="/sbin/kasetup";
 my $deployenv_path="/sbin/deployenv";
+my $karights_path="/sbin/karights";
 
 
 my %critic = 
@@ -371,5 +372,12 @@ sub getpath_deployenv()
     return $scriptpath;
 }
 
+sub getpath_karights()
+{
+    my $self=shift;
+    my $kadeploydir=$self->get("kadeploy2_directory");
+    my $scriptpath=$kadeploydir.$karights_path;
+    return $scriptpath;
+}
 
 1;

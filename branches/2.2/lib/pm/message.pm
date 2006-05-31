@@ -20,11 +20,11 @@ sub severity($)
     
     if (!$severity)
     {
-	$str="NOTICE : ";
+	$str="NOTICE  : ";
     }
     elsif ($severity<=0)
     {
-	$str="NOTICE : ";
+	$str="NOTICE  : ";
     }
     elsif($severity==1)
     {
@@ -32,11 +32,11 @@ sub severity($)
     }
     elsif($severity==2)
     {
-	$str="ERROR  : ";
+	$str="ERROR   : ";
     }
     elsif($severity>2)
     {
-	$str="ERROR  : ";
+	$str="ERROR   : ";
     }
 
     return $str;

@@ -2721,7 +2721,7 @@ user = \"$user\"  AND
 node = \"$node\"  AND 
 rights = \"$rights\"
 ";
-    print $sqltest;
+#    print $sqltest;
     $sth = $dbh->prepare($sqltest);
     $sth->execute();
     $tmp = $sth->fetchrow_hashref();

@@ -3,6 +3,19 @@ use strict;
 use warnings;
 use libkadeploy2::deploy_iolib;
 
+
+
+     #
+     #CORRECT RIGHTS
+     #
+     #PXE
+     #REBOOT
+     #CONSOLE
+     #DISKN
+     #DISKNPARTN
+
+
+
 sub new()
 {
     my $self;
@@ -23,12 +36,54 @@ sub set_user($)
     $self->{user}=$user;
 }
 
+sub get_user()
+{
+    my $self=shift;
+    if ($self->{user} eq "[NOTSET]")
+    {
+	return 0;
+    }
+    else
+    {
+	return $self->{user};
+    }
+}
+
+sub get_node()
+{
+    my $self=shift;
+    if ($self->{node} eq "[NOTSET]")
+    {
+	return 0;
+    }
+    else
+    {
+	return $self->{node};
+    }
+}
+
+sub get_right()
+{
+    my $self=shift;
+    if ($self->{right} eq "[NOTSET]")
+    {
+	return 0;
+    }
+    else
+    {
+	return $self->{right};
+    }
+}
+
+
 sub set_node($)
 {
     my $self=shift;
     my $node=shift;
     $self->{node}=$node;
 }
+
+
 
 sub set_right($)
 {
