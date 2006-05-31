@@ -162,7 +162,13 @@ if ($envname && $login)
 	if ($partitionfile)
 	{
 	    $message->message(0,"Partitioning nodes ".$nodelist->get_str()." whith file $partitionfile");
-	    $ok=partitionlinuxnodes();    
+	    $ok=partitionlinuxnodes();
+	    if (! $ok) 
+	    {   #Bugs on setting mcatseg
+		$message->message(1,"Retrying command on ".$nodelist->get_str());
+		$ok=partitionlinuxnodes(); 
+	    } 
+
 	    if (! $ok) 
 	    { 
 		$message->message(2,"fail to partition some nodes....");

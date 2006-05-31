@@ -160,6 +160,9 @@ exit 0;
 
 ################################################################################
 
+
+
+
 sub setup_pxelinuxnodes($)
 {
     my $nodelist=shift;
@@ -213,6 +216,7 @@ sub copy_kernel_tftpnodes($)
 	$node_name=$node->get_name();
 	system("mkdir -p $tftproot/$node_name");	
 	system("cp $kernel $tftproot/$node_name/");    
+	system("chmod 444 $tftproot/$node_name/*");    
     }
 }
 
@@ -234,6 +238,7 @@ sub copy_initrd_tftpnodes($)
 	if ( -f $initrd)
 	{
 	    system("cp $initrd $tftproot/$node_name/");    
+	    system("chmod 444 $tftproot/$node_name/*");
 	}
 	else
 	{

@@ -7,6 +7,7 @@ use libkadeploy2::message;
 use libkadeploy2::right;
 use libkadeploy2::rights;
 use libkadeploy2::cmdline;
+use libkadeploy2::karights;
 use strict;
 use warnings;
 
@@ -26,12 +27,14 @@ my @rights;
 my $right;
 my $rights;
 my $list;
+my $check;
 my $message=libkadeploy2::message::new();
 
 GetOptions(
 	   'add!'           => \$add,
 	   'del!'           => \$del,
 	   'list!'          => \$list,
+	   'check!'         => \$check,
 
 	   'listrights!'    => \$listrights,
 
@@ -58,7 +61,8 @@ if ($help)
 }
 if ( (! $add) &&
      (! $del) &&
-     (! $list)
+     (! $list) &&
+     (! $check)
      )
 {
     $message->missing_flags_cmdline(2);
@@ -85,8 +89,7 @@ if ($list)
 	{
 	    $rights=libkadeploy2::rights::new();	   
 	    $rights->get();
-	    $rights->print_node($node->get_name());
-				
+	    $rights->print_node($node->get_name());				
 	}
 	exit 0;
     }
@@ -201,6 +204,29 @@ if ($del)
     exit $retcode;
 }
 
+if ($check)
+{
+    my $ok=1;
+    my $i;
+    my $db=libkadeploy2::deploy_iolib::new();
+    $db->connect();
+
+    $rights=libkadeploy2::rights::new();
+
+    $rights->get();
+
+    foreach $right (@rights)
+    {
+	my $reflist=$nodelist->get_nodes();
+	foreach $node (@$reflist)
+	{
+	    if (! libkadeploy2::karights::check($login,$node,$right)) { $ok=0; }
+	}
+    }
+    $db->disconnect();
+    if ($ok) { exit 0; }
+    else     { exit 1; }
+}
 
 ################################################################################
 

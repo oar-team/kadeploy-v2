@@ -8,16 +8,21 @@ use libkadeploy2::command;
 use libkadeploy2::message;
 use libkadeploy2::nodelist;
 use libkadeploy2::cmdline;
+use libkadeploy2::karights;
+use libkadeploy2::sudo;
 use strict;
 use warnings;
 
 sub execcmd($$$);
 sub check_options;
-
+sub check_rights();
 
 
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
+
+my $sudo_user=libkadeploy2::sudo::get_sudo_user();
+if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
 
 my @node_list;
 my $node_file;
@@ -34,18 +39,21 @@ my $command;
 my $cmd;
 my $nodeshell;
 my $nodelist;
+my $help;
 my $message=libkadeploy2::message::new();
 my $kadeploydir=$conf->get("kadeploy2_directory");
 
 
 check_options();
+if ($help) { $message->kareboot_help(); exit 0; }
+if (! check_rights()) { $message->message(2,"$sudo_user not allowed to kareboot ".$nodelist->get_str()); exit 1; }
 
 if ($soft)
 {
     if (execcmd($nodelist,"softboot",$verbose))
     { $message->message(0,"soft boot ok with ".$nodelist->get_str()); }
     else
-    { $message->commandnodenamefailed(0,"soft boot failed with ",$nodelist->get_str());  exit 1; }
+    { $message->commandnodenamefailed(0,"$sudo_user soft boot ",$nodelist->get_str());  exit 1; }
 }
 
 if ($hard)
@@ -58,6 +66,13 @@ if ($hard)
 
 
 ################################################################################
+
+sub check_rights()
+{
+    return libkadeploy2::karights::check_rights($nodelist,"REBOOT");
+}
+
+
 
 sub execcmd($$$)
 {
@@ -111,7 +126,10 @@ sub check_options()
 	       'partition=s'   => \$device,
 
 	       'verbose'       => \$verbose,
-	       'v'             => \$verbose
+	       'v'             => \$verbose,
+
+	       'help!'         => \$help,
+	       'h!'            => \$help,
 	       );
 
 
