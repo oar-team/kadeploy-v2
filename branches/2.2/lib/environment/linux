@@ -11,7 +11,7 @@ use libkadeploy2::device;
 use libkadeploy2::remoteparallelcommand;
 use libkadeploy2::disk;
 
-sub execcmd($);
+sub execcmd($$);
 
 my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
@@ -117,23 +117,24 @@ $linuxdev=$device->get_linux();
 
 
 
-print("Deploying linux on disk=$disknumber partition=$partnumber interface=$disktype\n");
+$message->message(0,"Deploying linux on disk:$disknumber partition:$partnumber interface:$disktype");
 
 
 $cmd="umount /dev/$linuxdev";
-execcmd($cmd);
+execcmd($cmd,30);
 
+$message->message(0,"Mounting /dev/$linuxdev on /mnt/dest");
 $cmd="mkdir -p /mnt/dest";
-if (! execcmd($cmd)) { exit 1; }
+if (! execcmd($cmd,10)) { $message->message(2,"Failed on $cmd"); exit 1; }
 
 $cmd="mkfs /dev/$linuxdev";
-if (! execcmd($cmd)) { exit 1; }
+if (! execcmd($cmd,30)) { $message->message(2,"Failed on $cmd"); exit 1; }
 
 $cmd="mount /dev/$linuxdev /mnt/dest";
-if (! execcmd($cmd)) { exit 1; }
+if (! execcmd($cmd,10)) { $message->message(2,"Failed on $cmd"); exit 1; }
 
 
-print("Transfering image\n");
+$message->message(0,"Transfering image");
 if     ($basefile =~ /tgz$/)      { $taropts = "xzf"; }
 elsif  ($basefile =~ /tar$/)      { $taropts = "xf"; }
 elsif  ($basefile =~ /tar\.gz$/)  { $taropts = "xzf"; }
@@ -146,9 +147,9 @@ $command=libkadeploy2::command::new($cmd,
 				    600,
 				    $verbose
 				    );
-if (! $command->exec()) { exit 1; }
+if (! $command->exec()) { $message->message(2,"Failed on $cmd"); exit 1; }
 
-print("Transfering postinstall\n");
+$message->message(0,"Transfering postinstall");
 if     ($postinstall =~ /tgz$/)      { $taropts = "xzf"; }
 elsif  ($postinstall =~ /tar$/)      { $taropts = "xf"; }
 elsif  ($postinstall =~ /tar\.gz$/)  { $taropts = "xzf"; }
@@ -157,25 +158,26 @@ else   { exit 1; }
 
 $cmd="$kamcat -v -l root --servercommand \"cat $postinstall\" --clientcommand \"cd /tmp ; tar $taropts -\" ".$nodelist->get_cmdline;
 $command=libkadeploy2::command::new($cmd,
-				    600,
+				    100,
 				    $verbose
 				    );
-if (! $command->exec()) { exit 1; }
+if (! $command->exec()) { $message->message(2,"Failed on $cmd");  exit 1; }
 
-print("launching postinstall\n");
+$message->message(0,"launching postinstall");
 $cmd="/tmp/postinstall.sh ";
-if (! execcmd($cmd)) { exit 1; }
+if (! execcmd($cmd,10)) { $message->message(2,"Failed on $cmd"); exit 1; }
 
-
+$message->message(0,"Unmounting /dev/$linuxdev on /mnt/dest");
 $cmd="umount /dev/$linuxdev";
-if (! execcmd($cmd)) { exit 1; }
-print "Finished\n";
+if (! execcmd($cmd,200)) { $message->message(2,"Failed on $cmd"); exit 1; }
+$message->message(0,"Finished");
 
 ################################################################################
 								
-sub execcmd($)
+sub execcmd($$)
 {
     my $cmd=shift;
+    my $timeout=shift;
     $remoteparallelcommand=libkadeploy2::remoteparallelcommand::new(
 								    $connector,
 								    $parallellauncher,
