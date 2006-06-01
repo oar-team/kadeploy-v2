@@ -1,4 +1,4 @@
-script for creating a deployment kernel with busybox
+script for creating a deployment kernel with debootstrap
 
 ################################################################################
 #                                    config                                    #
@@ -22,5 +22,7 @@ The kernel is build with :
 -ide, scsi, sata drivers
 -serial drivers
 
-The kernel and initrd are launch on the box.
-It load the initrd and launch the script from it.
+rootfs:
+-------
+
+This directory contain files that must be on the ramdrive
