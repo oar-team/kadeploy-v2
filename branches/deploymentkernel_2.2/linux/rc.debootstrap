@@ -4,25 +4,30 @@ SCRIPTNAME=rc.$NAME
 . etc/rc.conf
 . etc/$SCRIPTNAME.conf
 
-if [ -d  $PREFS/bin ] ; then
+if [  -d  $PREFS ] ; then
     echo "debootstrap was already build"
     echo "Remove $PREFS you want to launch it again"
+    exit 0;
     else
-    cd $PREFS/..
-    debootstrap $DEBIANVERSION $PREFS $DEBIANMIRROR
+    ./rc.createdir
+fi
 
-    for PACKAGE in $INSTALL_PACKAGE ; do 
-	yes Y | chroot $PREFS apt-get install $PACKAGE
-    done
 
-    for PACKAGE in $REMOVE_PACKAGE ; do 	
-	yes Y | chroot $PREFS apt-get remove --purge $PACKAGE
-    done
+cd $PREFS/..
+debootstrap $DEBIANVERSION $PREFS $DEBIANMIRROR
 
-    chroot $PREFS apt-get clean
-    chroot $PREFS mount /proc
+for PACKAGE in $INSTALL_PACKAGE ; do 
+    yes Y | chroot $PREFS apt-get install $PACKAGE
+done
+
+for PACKAGE in $REMOVE_PACKAGE ; do 	
+    yes Y | chroot $PREFS apt-get remove --purge $PACKAGE
+done
+
+chroot $PREFS apt-get clean
+chroot $PREFS mount /proc
 #cd $FSDEST/dev/
 #./MAKEDEV generic
 #cd -
-    umount $PREFS/proc
-fi
+umount $PREFS/proc
+
