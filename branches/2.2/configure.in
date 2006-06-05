@@ -28,6 +28,7 @@ AC_CONFIG_FILES([Makefile
 		lib/Makefile 
 		lib/environment/Makefile
 		lib/pm/Makefile
+
 		lib/floppy/Makefile
 		lib/floppy/windows/Makefile
 		lib/floppy/grub/Makefile

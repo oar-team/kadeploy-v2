@@ -59,9 +59,9 @@ my $memdiskpath="$kadeploylibpxe/pxelinux/memdisk";
 my $grubfloppyname="grub.img";
 my $sourcewindowsfloppy="$kadeploydir/lib/pxe/windows/ntldr.img";
 my $sourcegrubfloppy="$kadeploydir/lib/pxe/grub/grub.img";
-my $grubfactory="$kadeploydir/lib/pxe/grub/grub-factory.pl";
-my $ntldrfactory="$kadeploydir/lib/pxe/windows/ntldr-factory.pl";
-my $bootiniref="$kadeploydir/lib/pxe/windows/boot.ini";
+my $grubfactory="$kadeploydir/lib/floppy/grub/grub-factory.pl";
+my $ntldrfactory="$kadeploydir/lib/floppy/windows/ntldr-factory.pl";
+my $bootiniref="$kadeploydir/lib/floppy/windows/boot.ini";
 
 
 GetOptions('m=s'           => \@hostlist,
