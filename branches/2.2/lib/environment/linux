@@ -22,7 +22,7 @@ my $kamcat=$conf->getpath_kamcat();
 my $kapart=$conf->getpath_kapart();
 my $kapxe=$conf->getpath_kapxe();
 my $kareboot=$conf->getpath_kareboot();
-
+my $postinstallscript=$conf->get("post_install_script");
 
 
 my $device;

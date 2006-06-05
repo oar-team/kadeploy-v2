@@ -109,6 +109,21 @@ sub new()
     return $self;
 }
 
+sub setserialspeed($$)
+{
+    my $self=shift;
+    my $serialport=shift;
+    my $serialportspeed=shift;
+
+    if ($serialport==1)
+    {
+	$self->{firstserialportspeed}=$serialportspeed;
+    }
+    if ($serialport==2)
+    {
+	$self->{secondserialportspeed}=$serialportspeed;
+    }
+}
 
 sub add($$$$)
 {
