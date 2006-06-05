@@ -1,2 +1,0 @@
-SUBDIRS=linux
-EXTRA_DIST=linux
