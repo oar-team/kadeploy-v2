@@ -10,6 +10,7 @@ use libkadeploy2::message;
 use libkadeploy2::device;
 use libkadeploy2::hexlib;
 use libkadeploy2::pxelinux;
+use libkadeploy2::tftppxe;
 use strict;
 use warnings;
 
@@ -51,16 +52,19 @@ my $disktype="ide";
 
 
 my $kadeploydir=$conf->get("kadeploy2_directory");
-my $kadeploylibpxe=$kadeploydir."/lib/pxe/";
+my $kadeploylibpxelinux=$kadeploydir."/lib/pxelinux/";
 my $tftproot=$conf->get("tftp_repository");
 my $message=libkadeploy2::message::new();
-my $pxelinuxpath="$kadeploylibpxe/pxelinux/pxelinux.0";
-my $memdiskpath="$kadeploylibpxe/pxelinux/memdisk";
+my $pxelinuxpath="$kadeploylibpxelinux/pxelinux.0";
+my $memdiskpath ="$kadeploylibpxelinux/memdisk";
 my $grubfloppyname="grub.img";
-my $sourcewindowsfloppy="$kadeploydir/lib/pxe/windows/ntldr.img";
-my $sourcegrubfloppy="$kadeploydir/lib/pxe/grub/grub.img";
+
+my $sourcewindowsfloppy="$kadeploydir/lib/floppy/windows/ntldr.img";
+my $sourcegrubfloppy="$kadeploydir/lib/floppy/grub/grub.img";
+
 my $grubfactory="$kadeploydir/lib/floppy/grub/grub-factory.pl";
 my $ntldrfactory="$kadeploydir/lib/floppy/windows/ntldr-factory.pl";
+
 my $bootiniref="$kadeploydir/lib/floppy/windows/boot.ini";
 
 
@@ -108,6 +112,19 @@ if (@hostlist)
     $nodelist=libkadeploy2::cmdline::loadhostcmdlineifexist(\@hostlist); 
 }
 
+if (! -d $tftproot)  { libkadeploy2::tftppxe::createtftp($conf); }
+
+if ($type eq "pxelinux" ||
+    $type eq "grub"     ||
+    $type eq "windows")
+{
+    if (! setup_pxelinuxnodes($nodelist)) 
+    {
+	$message->message(2,"Can't put pxelinux in tftp for nodes => ".$nodelist->get_str());
+	exit 1;
+    }
+}
+
 
 if ($type && $nodelist)
 {
@@ -122,7 +139,6 @@ if ($type && $nodelist)
 	{
 	    copy_initrd_tftpnodes($nodelist);
 	}
-	setup_pxelinuxnodes($nodelist);
 	exit 0;
     }
     elsif ($type eq "grub")
@@ -170,6 +186,7 @@ sub setup_pxelinuxnodes($)
     my @node_list;
     my $node_name;
     my $node;
+    my $ok=1;
 
     $ref_node_list=$nodelist->get_nodes();
     @node_list=@$ref_node_list;
@@ -177,8 +194,10 @@ sub setup_pxelinuxnodes($)
     foreach $node (@node_list)
     {
 	$node_name=$node->get_name();
-	system("cp $pxelinuxpath $tftproot/pxeloader-$node_name");
+#	system("cp $pxelinuxpath $tftproot/pxeloader-$node_name");
+	copy("$pxelinuxpath","$tftproot/pxeloader-$node_name") or $ok=0;
     }
+    return $ok;
 }
 
 sub clean_tftpnodes($)
@@ -214,9 +233,9 @@ sub copy_kernel_tftpnodes($)
     foreach $node (@node_list)
     {
 	$node_name=$node->get_name();
-	system("mkdir -p $tftproot/$node_name");	
-	system("cp $kernel $tftproot/$node_name/");    
-	system("chmod 444 $tftproot/$node_name/*");    
+	mkdir("$tftproot/$node_name",0755);	
+	copy("$kernel","$tftproot/$node_name/");    
+	chmod(0444,"$tftproot/$node_name/*");    
     }
 }
 
@@ -234,11 +253,11 @@ sub copy_initrd_tftpnodes($)
     foreach $node (@node_list)
     {
 	$node_name=$node->get_name();
-	system("mkdir -p $tftproot/$node_name");	
+	mkdir("$tftproot/$node_name",0755);	
 	if ( -f $initrd)
 	{
-	    system("cp $initrd $tftproot/$node_name/");    
-	    system("chmod 444 $tftproot/$node_name/*");
+	    copy("$initrd","$tftproot/$node_name/");    
+	    chmod(444,"$tftproot/$node_name/");
 	}
 	else
 	{
@@ -295,7 +314,7 @@ sub writepxelinuxcfg($)
 
 	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
 	$message->message(0,"Setting up pxe for $node_name");
-	system("mkdir -p $tftproot/pxelinux.cfg");
+	mkdir("$tftproot/pxelinux.cfg",0755);
 	open(PXELINUXCFG,"> $tftproot/pxelinux.cfg/$node_hexip") or die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
 	print PXELINUXCFG $conffiledata;
 	close(PXELINUXCFG);
@@ -306,7 +325,7 @@ sub copy_tftpnode($$)
 {
     my $source=shift;
     my $node_name=shift;
-    system("cp $source $tftproot/$node_name/");
+    copy("$source","$tftproot/$node_name/");
 }
 
 sub generate_pxelinuxcfg_file($$$$$$$)
@@ -462,6 +481,7 @@ sub writegrubdisk($$)
 
 	$message->message(0,"tftp boot modified for $node_name");
 	system("echo \"$menulst\" > $menudest");
+	chmod(755,"$grubfactory");
 	system("$grubfactory -s $sourcegrubfloppy -d $destfloppy -m $menudest");
     }
 }
@@ -489,7 +509,7 @@ sub writewindowsdisk($$)
 	$menudest="$tftproot/$node_name/menu.lst";
 
 	$message->message("tftp boot modified for $node_name");
-	system("cp $bootiniref  $menudest");
+	copy("$bootiniref","$menudest");
 	system("sed -i -e 's/partition(0)/partition($partnumber)/g' $menudest");
 	system("$ntldrfactory -s $sourcewindowsfloppy -d $destfloppy -m $menudest");
     }

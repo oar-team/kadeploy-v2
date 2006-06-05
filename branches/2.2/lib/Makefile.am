@@ -1,2 +1,2 @@
-SUBDIRS = environment pm floppy
-EXTRA_DIST = environment pm floppy
+SUBDIRS    = environment pm floppy pxelinux
+EXTRA_DIST = environment pm floppy pxelinux

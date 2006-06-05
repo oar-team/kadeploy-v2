@@ -7,6 +7,7 @@ use libkadeploy2::disk;
 use libkadeploy2::fdiskscript;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::tools;
+use libkadeploy2::tftppxe;
 
 my $db=libkadeploy2::deploy_iolib::new();
 my $conf=libkadeploy2::deployconf::new();
@@ -117,7 +118,7 @@ if ($checkdeployconf      ||
     if ($copybinfiles)         { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
     if ($sudowrapping)         { if (checkdeployconf())  { sudowrapping(); } }
     if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
-    if ($createtftp)           { createtftp(); }
+    if ($createtftp)           { libkadeploy2::tftppxe::createtftp($conf); }
     if ($printvalidhost)       { printvalidhost(); }
     if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
     if ($printpreinstallconf)  { printpreinstallconf($partitionfile); }
@@ -127,6 +128,7 @@ if ($checkdeployconf      ||
 }
 else
 {
+    
     help();
     exit 1;
     
@@ -299,7 +301,7 @@ sub printpreinstallconf($)
     my $tmphash1;
     my $tmphash2;
     my $tmphash3;
-    my $do_fdisk_on_deploy=libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");
+    my $do_fdisk_on_deploy=$conf->get("do_fdisk_on_deploy");
     my $HARDDRIVE;
     my $SWAP_DEV;
     my $TMP_DEV;

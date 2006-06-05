@@ -29,6 +29,8 @@ AC_CONFIG_FILES([Makefile
 		lib/environment/Makefile
 		lib/pm/Makefile
 
+		lib/pxelinux/Makefile
+
 		lib/floppy/Makefile
 		lib/floppy/windows/Makefile
 		lib/floppy/grub/Makefile
@@ -40,9 +42,6 @@ AC_CONFIG_FILES([Makefile
 		tools/Mcat/Makefile 	
 		tools/cookbook/Makefile
 		tools/cookbook/conf/Makefile
-		tools/libboot/Makefile
-		tools/libboot/pxelinux/Makefile
-		tools/libboot/grub/Makefile
 		tools/migration/Makefile
 		tools/pre_post_script/Makefile
 

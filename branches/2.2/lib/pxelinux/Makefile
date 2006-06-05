@@ -14,7 +14,7 @@
 SHELL = /bin/sh
 
 srcdir = .
-top_srcdir = ../../..
+top_srcdir = ../..
 
 prefix = /usr/local
 exec_prefix = ${prefix}
@@ -38,7 +38,7 @@ pkgdatadir = $(datadir)/kadeploy
 pkglibdir = $(libdir)/kadeploy
 pkgincludedir = $(includedir)/kadeploy
 
-top_builddir = ../../..
+top_builddir = ../..
 
 ACLOCAL = aclocal-1.4
 AUTOCONF = autoconf
@@ -89,7 +89,7 @@ GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu tools/libboot/pxelinux/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu lib/pxelinux/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
@@ -120,14 +120,14 @@ TAGS:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = tools/libboot/pxelinux
+subdir = lib/pxelinux
 
 distdir: $(DISTFILES)
 	here=`cd $(top_builddir) && pwd`; \
 	top_distdir=`cd $(top_distdir) && pwd`; \
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu tools/libboot/pxelinux/Makefile
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu lib/pxelinux/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
