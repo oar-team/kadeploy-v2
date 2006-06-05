@@ -164,7 +164,7 @@ $command=libkadeploy2::command::new($cmd,
 if (! $command->exec()) { $message->message(2,"Failed on $cmd");  exit 1; }
 
 $message->message(0,"launching postinstall");
-$cmd="$postinstallscript ";
+$cmd="/tmp/$postinstallscript ";
 if (! execcmd($cmd,10)) { $message->message(2,"Failed on $cmd"); exit 1; }
 
 $message->message(0,"Unmounting /dev/$linuxdev on /mnt/dest");
