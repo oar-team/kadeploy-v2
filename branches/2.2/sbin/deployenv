@@ -71,7 +71,9 @@ if (! $environment->get_info("deploytype"))       { $message->message(2,"Your co
 #Check nodes if deploytype != PXE
 if (! ($environment->get_info("deploytype") eq "pxelinux"))
 {
-    system("$kachecknodes --check ".$nodelist->get_cmdline());
+    system("$kachecknodes --check --type ICMP --retry 20 ".$nodelist->get_cmdline());
+    system("$kachecknodes --check --type SSH  ".$nodelist->get_cmdline());
+    system("$kachecknodes --check --type MCAT ".$nodelist->get_cmdline());
     $db->connect();
     
     $refnodelist=$nodelist->get_nodes();

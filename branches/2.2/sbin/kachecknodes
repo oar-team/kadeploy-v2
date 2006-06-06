@@ -12,6 +12,8 @@ use libkadeploy2::nmap;
 use libkadeploy2::checknodes;
 
 sub check_options();
+sub check_nodes_services();
+sub check_result();
 
 my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
@@ -22,6 +24,7 @@ my $kareboot=$conf->getpath_cmd("kareboot");
 my $kapxe=$conf->getpath_cmd("kapxe");
 my $kapart=$conf->getpath_cmd("kapart");
 my $nmap=libkadeploy2::nmap::new();
+my @service_list=("ICMP","SSH","MCAT");
 my @node_list;
 my $refnodelist;
 my $disknumber=1;
@@ -41,8 +44,13 @@ my $noreboot=0;
 my $db;
 my $check;
 my $list;
+my @type_list;
+my $type;
+my $blockcheckingtime=0;
 
 check_options();
+
+if ($help) { $message->kachecknodes_help(); exit 0; }
 
 if (@node_list)
 {
@@ -57,35 +65,44 @@ else
     exit 1;
 }
 
-
-
 if ($check)
 {
+    $ok=0;
     $db=libkadeploy2::deploy_iolib::new();
     $db->connect();
-    foreach $node (@node_list)
+    if ($blockcheckingtime)
     {
-	my $check=libkadeploy2::checknodes::new($node,$db);
-	$check->exec();
-    }  
+	while ($blockcheckingtime>0)
+	{
+	    check_nodes_services();
+	    if (check_result()) { $blockcheckingtime=0; $ok=1; }
+	    if (! $ok) { sleep(10); }
+	    $blockcheckingtime--;
+	}
+    }
+    else
+    {
+	check_nodes_services();
+    }
+	
     $db->disconnect();
+    if (! $ok) { exit 1; }
+    exit 0;
 }
 
 if ($list)
 {
+    $ok=0;
     $db=libkadeploy2::deploy_iolib::new();
     $db->connect();
-    my @service_list=("SSH","ICMP","MCAT");
-    my $service;
-    foreach $node (@node_list)
-    {
-	foreach $service (@service_list)
-	{
-	    $message->message(0,$node->get_name()." ".$service." ".$db->get_nodestate($node->get_name(),$service));
-	}
-    }
+    if (check_result()) { $ok=1; }
     $db->disconnect();
+    if (! $ok)  { exit 1; }
+    exit 0;
 }
+
+$message->kachecknodes_help();
+exit 0;
 ################################################################################
 
 
@@ -95,13 +112,69 @@ sub check_options()
 	       'check!'               => \$check,
 	       'list!'                => \$list,
 	       
+	       't=s'                  => \@type_list,
+	       'type=s'               => \@type_list,
+	       
+	       'retry=s'              => \$blockcheckingtime,
+	       
 	       'm=s'                  => \@node_list,
 	       'machine=s'            => \@node_list,
-	       	       
+	       
 	       'h!'                   => \$help,
 	       'help!'                => \$help,
 	       
 	       'v!'                   => \$verbose,
 	       'verbose!'             => \$verbose,
 	       );
+}
+
+sub check_nodes_services()
+{
+    foreach $node (@node_list)
+    {
+	if (@type_list)
+	{
+	    foreach $type (@type_list)
+	    {
+		$message->message(-1,"checking $type on node ".$node->get_name());
+		my $check=libkadeploy2::checknodes::new($node,$db);
+		$check->exec($type);
+	    }
+	}
+	else
+	{
+	    foreach $type (@service_list)
+	    {
+		$message->message(-1,"checking $type on node ".$node->get_name());
+		my $check=libkadeploy2::checknodes::new($node,$db);
+		$check->exec($type);		
+	    }
+	}
+    }    
+}
+
+sub check_result()
+{
+    my $service;
+    my $ok=1;
+    foreach $node (@node_list)
+    {
+	if (@type_list)
+	{
+	    foreach $service (@type_list)
+	    {
+		$message->message(-1,$node->get_name()." ".$service." ".$db->get_nodestate($node->get_name(),$service));
+		if (! ( $db->get_nodestate($node->get_name(),$service) eq "UP")) { $ok=0; }
+	    }
+	}
+	else
+	{
+	    foreach $service (@service_list)
+	    {
+		$message->message(-1,$node->get_name()." ".$service." ".$db->get_nodestate($node->get_name(),$service));
+		if (! ( $db->get_nodestate($node->get_name(),$service) eq "UP")) { $ok=0; }
+	    }
+	}
+    }
+    return $ok;
 }

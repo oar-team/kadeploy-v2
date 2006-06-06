@@ -23,15 +23,27 @@ sub new($$)
 }
 
 
-sub exec()
+sub exec($)
 {
     my $self=shift;
+    my $checktype=shift;
     my $node=$self->{node};
     my $db=$self->{db};
-    $message->message(0,"Checking ".$node->get_name()." ip and services");
-    $self->check_node_icmp();
-    $self->check_node_ssh();
-    $self->check_node_mcat();
+    my $correctcheck=0;
+    my $ok=0;
+    if ($checktype eq "ICMP")     { $correctcheck=1; $self->check_node_icmp(); }
+    if ($checktype eq "SSH")      { $correctcheck=1; $self->check_node_ssh();  }
+    if ($checktype eq "MCAT")     { $correctcheck=1; $self->check_node_mcat(); }
+    if ($correctcheck)
+    {
+	$ok=1;
+    }
+    else
+    {
+	$message->message(2,"checktype : $checktype doesn't exist");
+	$ok=0;
+    }
+    return $ok;
 }
 
 sub check_node_icmp()
@@ -48,8 +60,7 @@ sub check_node_icmp()
     else
     {
 	$db->update_nodestate($node->get_name(),"ICMP","DOWN");
-    }
-    
+    }    
 }
 
 sub check_node_ssh()
@@ -76,7 +87,7 @@ sub check_node_mcat()
     my $self=shift;
     my $node=$self->{node};
     my $db=$self->{db};
-    my $ok;
+    my $ok=0;
     my $remotecommand=libkadeploy2::remotecommand::new("ssh",
 						       "root",
 						       $node,
@@ -97,13 +108,11 @@ sub check_node_mcat()
 							0
 							);
 	$remotecommand->exec();
-	if (! $remotecommand->get_status())
-	{ 	$ok=0;     }
-	return $ok;
     }
     else
     {
 	$db->update_nodestate($node->get_name(),"MCAT","DOWN");
     }
+    return $ok;
 }
     

@@ -18,11 +18,11 @@ sub severity($)
     my $severity=shift;
     my $str;
     
-    if (!$severity)
+    if ($severity<0)
     {
-	$str="NOTICE  : ";
+	$str="INFO    : ";
     }
-    elsif ($severity<=0)
+    elsif ($severity==0)
     {
 	$str="NOTICE  : ";
     }
@@ -100,6 +100,7 @@ sub unknowerror($$)
     my $specialmsg=shift;
     my $msg="Unknow error on ( $specialmsg )";
     print STDERR $self->severity($severity).$msg."\n";
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 
@@ -109,7 +110,7 @@ sub message($$)
     my $severity=shift;
     my $msg=shift;
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub missing_node_db($)
@@ -119,7 +120,8 @@ sub missing_node_db($)
     my $nodename=shift;
     my $msg="node $nodename doesn't exist in db";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub missing_env_db($)
@@ -129,7 +131,8 @@ sub missing_env_db($)
     my $nodename=shift;
     my $msg="there is no environments in db";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 
@@ -140,7 +143,8 @@ sub notenough_right($$)
     my $right=shift;
     my $msg="not enough rights => ".$right;
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub missing_rights_db($)
@@ -149,7 +153,8 @@ sub missing_rights_db($)
     my $severity=shift;
     my $msg="there is no rights in db";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 
@@ -160,7 +165,8 @@ sub missing_disk_db($)
     my $nodename=shift;
     my $msg="Disk not found for node $nodename in db";
     print STDERR $self->severity($severity).$msg."\n";    
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub osnotsupported($)
@@ -170,7 +176,8 @@ sub osnotsupported($)
     my $osname=shift;
     my $msg="$osname operating system is not supported yet";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 
 }
 
@@ -181,7 +188,8 @@ sub dirnotfound($$)
     my $dirname=shift;
     my $msg="the directory $dirname doesn't exist";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub filenotfound($$)
@@ -191,7 +199,8 @@ sub filenotfound($$)
     my $filename=shift;
     my $msg="the file $filename doesn't exist";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub erroropeningfile($$)
@@ -201,7 +210,8 @@ sub erroropeningfile($$)
     my $filename=shift;
     my $msg="can't open $filename";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub statfile($$)
@@ -211,7 +221,8 @@ sub statfile($$)
     my $filename=shift;
     my $msg="stating file $filename";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub loadingfile($$)
@@ -221,7 +232,8 @@ sub loadingfile($$)
     my $filename=shift;
     my $msg="loading $filename...";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub loadingfileDone($$)
@@ -231,7 +243,8 @@ sub loadingfileDone($$)
     my $filename=shift;
     my $msg="load file $filename finished.";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub loadingfilefailed($$)
@@ -241,7 +254,8 @@ sub loadingfilefailed($$)
     my $filename=shift;
     my $msg="loading $filename failed";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub loadingfileyoumust($)
@@ -250,7 +264,8 @@ sub loadingfileyoumust($)
     my $severity=shift;
     my $msg="you have to load a file first";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub commandnodenamefailed($$$)
@@ -261,7 +276,8 @@ sub commandnodenamefailed($$$)
     my $nodename=shift;
     my $msg="$commandname failed for node $nodename";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 sub checkingdb($)
@@ -270,7 +286,8 @@ sub checkingdb($)
     my $severity=shift;
     my $msg="Checking database access...";
     print STDERR $self->severity($severity).$msg."\n";
-    syslog('info', $msg);
+
+    if ($severity>=0) { syslog('info', $msg); }
 }
 
 
@@ -371,6 +388,26 @@ sub kaconsole_help()
 
     print $help;
 }
+
+sub kachecknodes_help()
+{
+    my $self=shift;
+    my $help="kachecknodes
+\t--check               whant to check some nodes
+\t--list                show result from a check
+
+\t--type                choose a check type [ICMP|SSH|MCAT]
+\t--retry               blocking time in 's'
+
+\t-m|--machine          nodename
+\t-v|--verbose          be verbose
+\t-h|--help             this help message
+";
+
+    print $help;
+}
+
+
 
 sub kareboot_help()
 {
