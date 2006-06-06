@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEPLOYDIR=/opt/kadeploy/
+DEPLOYDIR=/home/local/deploy/kadeploy2/
 DEPLOYUSER=deploy
 PERL5LIBDEPLOY=$DEPLOYDIR/share/perl/5.8
 

@@ -32,8 +32,8 @@ my $nodelist;
 my $nodeshell;
 my $verbose=0;
 my $kadeploydir=$conf->get("kadeploy2_directory");
-my $kamcat=$conf->getpath_kamcat();
-my $kasetup=$conf->getpath_kasetup();
+my $kamcat=$conf->getpath_cmd("kamcat");
+my $kasetup=$conf->getpath_cmd("kasetup");
 
 get_options();
 check_options();

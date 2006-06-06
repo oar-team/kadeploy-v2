@@ -17,6 +17,7 @@ sub check_options();
 sub check_rights();
 
 my $sudo_user;
+my $exitcode;
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
 
@@ -34,20 +35,12 @@ my $kadeploydir=$conf->get("kadeploy2_directory");
 check_options();
 if (! check_rights()) { $message->message(2,"$sudo_user not allowed to kaconsole  ".$nodelist->get_str()); exit 1; }
 
-$cmd=$conf->getpath_kaexec()." --confcommand -m $node -c console";
+$node=$nodelist->get_node(0);
+$cmd="/etc/kadeploy/nodes/".$node->get_name()."/command/console";
 
-$command=libkadeploy2::command::new($cmd,20,0);
-$command->exec();
-if ($command->get_status())
-{
-    exit 0;
-}
-else
-{
-    $message->commandnodenamefailed(2,"console",$node);
-    exit 1;
-}
-
+$exitcode=system($cmd);
+$exitcode=$exitcode/256;
+exit $exitcode;
 ################################################################################
 
 
@@ -62,8 +55,8 @@ sub check_rights()
     {
 	$ok=1;
     }
-    if (libkadeploy2::karights::check($sudo_user,
-				      $nodelist->get_node(0),
+    if (libkadeploy2::karights::check_rights(
+				      $nodelist,
 				      "CONSOLE"))
     {
 	$ok=1;

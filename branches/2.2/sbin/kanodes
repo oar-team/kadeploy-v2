@@ -1,7 +1,5 @@
 #!/usr/bin/perl
 
-# TODO add a function that checks file syntax
-
 use Getopt::Long;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::conflib;
@@ -24,7 +22,6 @@ sub nodetoadd($);
 sub nodetodel($);
 
 my $nodesdir="/etc/kadeploy/nodes";
-#my $nodesfile="/etc/kadeploy/clusternodes.conf";
 my @hostlist;	     
 my $help;
 my $listnode;

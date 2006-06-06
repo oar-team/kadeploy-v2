@@ -9,17 +9,13 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::message;
 use libkadeploy2::tools;
 use libkadeploy2::remotecopy;
-
 use warnings;
 use strict;
-#sub check_nodes();
-#sub setup_cmdnode();
-#sub setup_pipeline();
-#sub send_file();
+
 sub passive_check_nodes($);
 sub setup_nodes($);
 sub setup_cmdnode($);
-sub help();
+
 my $nodelist;
 my $cmdnode;
 my $fifo="/tmp/mcatfifo";

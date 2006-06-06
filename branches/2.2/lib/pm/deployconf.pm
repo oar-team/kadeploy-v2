@@ -19,6 +19,12 @@ my $kamcat_path="/sbin/kamcat";
 my $kasetup_path="/sbin/kasetup";
 my $deployenv_path="/sbin/deployenv";
 my $karights_path="/sbin/karights";
+my $kachecknodes="/sbin/kachecknodes";
+
+my $environment_dd_path="/lib/environment/dd";
+my $environment_linux_path  ="/lib/environment/linux";
+my $environment_windows_path="/lib/environment/windows";
+
 
 
 my %critic = 
@@ -316,68 +322,33 @@ sub check_etc_deploy()
     return($ok);
 }
 
-sub getpath_kapxe()
+sub getpath_cmd($)
 {
     my $self=shift;
+    my $cmd=shift;
+    
+    my $cmdpath;
+    my $scriptpath;
     my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kapxe_path;
-    return $scriptpath;    
-}
 
-sub getpath_kapart()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kapart_path;
-    return $scriptpath;    
-}
+    if    ($cmd eq "kareboot")   { $cmdpath=$kareboot_path; }
+    elsif ($cmd eq "kapart")     { $cmdpath=$kapart_path; }
+    elsif ($cmd eq "kapxe")      { $cmdpath=$kapxe_path; }
+    elsif ($cmd eq "kaexec")     { $cmdpath=$kaexec_path; }
+    elsif ($cmd eq "kamcat")     { $cmdpath=$kamcat_path; }
+    elsif ($cmd eq "kasetup")    { $cmdpath=$kasetup_path; }
+    elsif ($cmd eq "deployenv")  { $cmdpath=$deployenv_path; }
+    elsif ($cmd eq "karights")   { $cmdpath=$karights_path; }
 
-sub getpath_kareboot()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kareboot_path;
-    return $scriptpath;    
-}
+    elsif ($cmd eq "environment_dd")        { $cmdpath=$environment_dd_path; }
+    elsif ($cmd eq "environment_linux")     { $cmdpath=$environment_linux_path; }
+    elsif ($cmd eq "environment_windows")   { $cmdpath=$environment_windows_path; }
 
-sub getpath_kaexec()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kaexec_path;
-    return $scriptpath;    
-}
-
-sub getpath_kamcat()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kamcat_path;
-    return $scriptpath;    
-}
-
-sub getpath_kasetup()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$kasetup_path;
-    return $scriptpath;    
-}
-
-sub getpath_deployenv()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$deployenv_path;
+    if (! $cmdpath) { $message->message(2,"deployconf.pm error cmd=$cmd"); exit 255;  }
+    $scriptpath=$kadeploydir.$cmdpath;
     return $scriptpath;
 }
 
-sub getpath_karights()
-{
-    my $self=shift;
-    my $kadeploydir=$self->get("kadeploy2_directory");
-    my $scriptpath=$kadeploydir.$karights_path;
-    return $scriptpath;
-}
+
 
 1;
