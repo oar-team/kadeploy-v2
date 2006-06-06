@@ -1,7 +1,13 @@
 package libkadeploy2::remotecommand;
 
+use libkadeploy2::deployconf;
+use libkadeploy2::message;
 use strict;
 use warnings;
+
+my $message=libkadeploy2::message::new();
+my $conf=libkadeploy2::deployconf::new();
+$conf->load();
 
 sub new($$$$$$)
 {
@@ -67,7 +73,11 @@ sub exec_ssh()
     my $self=shift;
     my $cmd;
     my $command;
-    $cmd="ssh -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{cmd};
+    my $ssh_default_args;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+    $cmd="ssh ".$ssh_default_args." -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{cmd};
 
     $command=libkadeploy2::command::new($cmd,
 					$self->{timeout},

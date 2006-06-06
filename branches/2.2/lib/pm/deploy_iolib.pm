@@ -297,7 +297,7 @@ SELECT node.id
 FROM 
 node 
 WHERE 
-node.name like \"$name%\"
+node.name like \"$name.%\"
 "); 
     }
     $sth->execute(); 

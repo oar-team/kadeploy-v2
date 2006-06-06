@@ -8,6 +8,8 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::deployconf;
 use libkadeploy2::nodelist;
 use libkadeploy2::command;
+use libkadeploy2::sudo;
+use libkadeploy2::karights;
 
 sub check_options();
 sub partitionlinuxnodes();
@@ -17,7 +19,7 @@ sub deploydd();
 sub deploywindows();
 sub setuppxelinux();
 sub setupgrubchainload();
-
+sub check_necessary_right_or_exit($);
 
 my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
@@ -48,133 +50,139 @@ my $partitionfile;
 my $node;
 my $refnodelist;
 my $cmd;
+my $sudo_user;
 my $ok=1;
 my $noreboot=0;
 
 check_options();
 
-if ($envname && $login)
+if (! $login)   { $message->missing_login_cmdline(2); exit 1; }
+if (! $envname) { $message->missing_envname_cmdline(2); exit 1; }
+
+$environment=libkadeploy2::environment::new();
+$environment->set_name($envname);
+$environment->set_user($login);    
+
+if (! $environment->get_descriptionfile_fromdb()) { $message->message(2,"Environment not registred in db...");    exit 1; }
+if (! $environment->load())                       { $message->erroropeningfile(2,$environment->get_descriptionfile()); exit 1; 	}
+if (! $environment->get_info("deploytype"))       { $message->message(2,"Your configuration file doesn't contain deploytype"); exit 1; 	}
+
+
+#Check nodes if deploytype != PXE
+if (! ($environment->get_info("deploytype") eq "pxelinux"))
 {
-    $environment=libkadeploy2::environment::new();
-    $environment->set_name($envname);
-    $environment->set_user($login);    
-
-    if ($environment->get_descriptionfile_fromdb())
-    {		
-	if (! $environment->load()) 
-	{ 
-	    $message->erroropeningfile(2,
-				       $environment->get_descriptionfile()
-				       );
-	    exit 1;
-	}
-	
-	if (! $environment->get_info("deploytype"))
+    system("$kachecknodes --check ".$nodelist->get_cmdline());
+    $db->connect();
+    
+    $refnodelist=$nodelist->get_nodes();
+    @node_list=@$refnodelist;	
+    foreach $node (@node_list)
+    {
+	if (! ($db->get_nodestate($node->get_name(),"MCAT") eq "UP"))
 	{
-	    $message->message(2,"Your configuration file doesn't contain deploytype");
-	    exit 1;
-	}
-
-
-	#Check nodes if deploytype != PXE
-	if (! ($environment->get_info("deploytype") eq "pxelinux"))
-	{
-	    system("$kachecknodes --check ".$nodelist->get_cmdline());
-	    $db->connect();
-	    
-	    $refnodelist=$nodelist->get_nodes();
-	    @node_list=@$refnodelist;	
-	    foreach $node (@node_list)
-	    {
-		if (! ($db->get_nodestate($node->get_name(),"MCAT") eq "UP"))
-		{
-		    $message->message(1,"mcat service for node ".$node->get_name()." is not up");
-		    $nodelist->del($node->get_ip());
-		}
-	    }
-	    $db->disconnect();
-	}
-
-
-
-
-	if 
-	    (	   	      
-			      ( $environment->get_info("deploytype") eq "linux" )  &&
-			      ! ( $environment->info_exist("postinstall"))
-				  )
-       {
-	    $message->message(2,"Your configuration file doesn't contain postinstall archive");
-	    exit 1;	    
-	}
-
-
-
-	if ($environment->get_info("deploytype") eq "pxelinux")
-	{
-	    $ok=deploypxelinux();
-	    if ($ok) { exit 0; } else { exit 1; }
-	}
-
-	$partitionfile=$environment->get_info("partitionfile");
-	if ($partitionfile)
-	{
-	    $message->message(0,"Partitioning nodes ".$nodelist->get_str()." whith file $partitionfile");
-	    $ok=partitionlinuxnodes();
-	    if (! $ok) 
-	    {   #Bugs on setting mcatseg
-		$message->message(1,"Retrying command on ".$nodelist->get_str());
-		$ok=partitionlinuxnodes(); 
-	    } 
-
-	    if (! $ok) 
-	    { 
-		$message->message(2,"fail to partition some nodes....");
-		exit 1; 
-	    }
-
-	}
-
-	if ($environment->get_info("deploytype") eq "linux")
-	{
-	    $message->message(0,"Begin deployment linux with ".$nodelist->get_str());
-	    $ok=deploylinux();
-	    if ($ok) { $ok=setuppxelinux(); }
-	}
-	elsif ($environment->get_info("deploytype") eq "dd")
-	{
-	    $message->message(0,"Begin deployment dd with ".$nodelist->get_str());
-	    $ok=deploydd();
-	    if ($ok) 
-	    { 
-		$message->message(0,"Setup pxe with ".$nodelist->get_str());
-		$ok=setupgrubchainload(); 
-	    }
-	}
-	elsif ($environment->get_info("deploytype") eq "windows")
-	{
-	    $message->message(0,"Begin deployment windows with ".$nodelist->get_str());
-	    $ok=deploywindows();
-	}
-	
-
-	if ($ok)
-	{
-	    $message->message(0,"Deployment success with ".$nodelist->get_str());
-	    exit 0;
-	}
-	else
-	{
-	    $message->message(2,"Deployment failed with ".$nodelist->get_str());
-	    exit 1;
+	    $message->message(1,"mcat service for node ".$node->get_name()." is not up");
+	    $nodelist->del($node->get_ip());
 	}
     }
-    else
+    $db->disconnect();
+    if ($nodelist->get_numberofnode() == -1)
     {
-	$message->message(2,"Environment not found...");
+	$message->message(2,"There isn't any node...");
 	exit 1;
     }
 }
+
+
+
+
+if 
+    (	   	      
+		      ( $environment->get_info("deploytype") eq "linux" )  &&
+		      ! ( $environment->info_exist("postinstall"))
+		      )
+{
+    $message->message(2,"Your configuration file doesn't contain postinstall archive");
+    exit 1;	    
+}
+
+
+
+if ($environment->get_info("deploytype") eq "pxelinux")
+{
+    check_necessary_right_or_exit("PXE");   
+    $ok=deploypxelinux();
+    if ($ok) { exit 0; } else { exit 1; }
+}
+
+$partitionfile=$environment->get_info("partitionfile");
+if ($partitionfile)
+{
+    check_necessary_right_or_exit("DISK$disknumber");   
+    $message->message(0,"Partitioning nodes ".$nodelist->get_str()." whith file $partitionfile");
+    $ok=partitionlinuxnodes();
+    if (! $ok) 
+    {   #Bugs on setting mcatseg
+	$message->message(1,"Retrying command on ".$nodelist->get_str());
+	$ok=partitionlinuxnodes(); 
+    } 
+    
+    if (! $ok) 
+    { 
+	$message->message(2,"fail to partition some nodes....");
+	exit 1; 
+    }
+    
+}
+else
+{
+    $message->message(0,"Trying without parititioning nodes ".$nodelist->get_str());
+}
+
+if (
+    $environment->get_info("deploytype") eq "linux" || 
+    $environment->get_info("deploytype") eq "windows" || 
+    $environment->get_info("deploytype") eq "dd" 
+    )
+{
+    check_necessary_right_or_exit("DISK".$disknumber."_PART".$partnumber);   
+    check_necessary_right_or_exit("PXE");   
+}
+
+
+if ($environment->get_info("deploytype") eq "linux")
+{
+    $message->message(0,"Begin deployment linux with ".$nodelist->get_str());
+    $ok=deploylinux();
+    if ($ok) { $ok=setuppxelinux(); }
+}
+elsif ($environment->get_info("deploytype") eq "dd")
+{
+    $message->message(0,"Begin deployment dd with ".$nodelist->get_str());
+    $ok=deploydd();
+    if ($ok) 
+    { 
+	$message->message(0,"Setup pxe with ".$nodelist->get_str());
+	$ok=setupgrubchainload(); 
+    }
+}
+elsif ($environment->get_info("deploytype") eq "windows")
+{
+    $message->message(0,"Begin deployment windows with ".$nodelist->get_str());
+    $ok=deploywindows();
+}
+
+
+if ($ok)
+{
+    $message->message(0,"Deployment success with ".$nodelist->get_str());
+    exit 0;
+}
+else
+{
+    $message->message(2,"Deployment failed with ".$nodelist->get_str());
+    exit 1;
+}
+
 
 $message->deployenv_help();
 
@@ -225,6 +233,38 @@ if (! ($partnumber =~ /^\d$/))  { $message->missing_cmdline(2,"partnumber is a n
 if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
 if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
 }
+
+sub check_necessary_right_or_exit($)
+{
+    my $righttocheck=shift;
+    if (!check_rights($righttocheck)) { $message->notenough_right(2,"user:".$sudo_user." right:".$righttocheck." node:".$nodelist->get_str()); exit 1; }
+    return 1;
+}
+
+sub check_rights($)
+{
+    my $righttocheck=shift;
+    $sudo_user=libkadeploy2::sudo::get_sudo_user();
+    if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
+    my $ok=0;
+    if ( $sudo_user eq "root" ||
+	 $sudo_user eq $conf->get("deploy_user")
+	 )
+    {
+	$ok=1;
+    }
+    if (libkadeploy2::karights::check_rights(
+				      $nodelist,
+				      "$righttocheck"))
+    {
+	$ok=1;
+    }	
+    return $ok;
+}
+
+
+
+
 
 sub partitionlinuxnodes()
 {

@@ -46,7 +46,7 @@ my $kadeploydir=$conf->get("kadeploy2_directory");
 
 check_options();
 if ($help) { $message->kareboot_help(); exit 0; }
-if (! check_rights()) { $message->message(2,"$sudo_user not allowed to kareboot ".$nodelist->get_str()); exit 1; }
+if (! check_rights()) { $message->message(2,"$sudo_user not allowed to REBOOT ".$nodelist->get_str()); exit 1; }
 
 if ($soft)
 {
@@ -54,6 +54,7 @@ if ($soft)
     { $message->message(0,"soft boot ok with ".$nodelist->get_str()); }
     else
     { $message->commandnodenamefailed(0,"$sudo_user soft boot ",$nodelist->get_str());  exit 1; }
+    exit 0;
 }
 
 if ($hard)
@@ -62,8 +63,27 @@ if ($hard)
     { $message->message(0,"hard boot ok with ".$nodelist->get_str()); }
     else
     { $message->commandnodenamefailed(2,"hard boot failed with ",$nodelist->get_str()); exit 1; }
+    exit 0;
 }
 
+if (!execcmd($nodelist,"softboot",$verbose))
+{
+    if (!execcmd($nodelist,"hardboot",$verbose))
+    {
+	$message->message(2,"Error rebooting one or many nodes in ".$nodelist->get_str());
+	exit 1;
+    }
+    else
+    {
+	$message->message(0,"hard boot ok with ".$nodelist->get_str()); 
+	exit 0;
+    }
+}
+else
+{
+    $message->message(0,"soft boot ok with ".$nodelist->get_str());
+    exit 0;
+}
 
 ################################################################################
 
@@ -89,7 +109,7 @@ sub execcmd($$$)
     {
 	$nodeshell.=" -m ".$node->get_name();
     }
-    $cmd=$conf->getpath_kaexec()." --confcommand ".$nodeshell." -c $cmdnode";
+    $cmd=$conf->getpath_cmd("kaexec")." --confcommand ".$nodeshell." -c $cmdnode";
     $command=libkadeploy2::command::new($cmd,5,$verbose);
     $command->exec();
 
@@ -147,7 +167,6 @@ sub check_options()
     }
     
 
-    if ( (! $soft) && (! $hard) ) { $soft=1; }
 
     if ($soft && $hard)
     {

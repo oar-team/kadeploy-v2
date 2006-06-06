@@ -19,7 +19,7 @@ my $kamcat_path="/sbin/kamcat";
 my $kasetup_path="/sbin/kasetup";
 my $deployenv_path="/sbin/deployenv";
 my $karights_path="/sbin/karights";
-my $kachecknodes="/sbin/kachecknodes";
+my $kachecknodes_path="/sbin/kachecknodes";
 
 my $environment_dd_path="/lib/environment/dd";
 my $environment_linux_path  ="/lib/environment/linux";
@@ -339,6 +339,7 @@ sub getpath_cmd($)
     elsif ($cmd eq "kasetup")    { $cmdpath=$kasetup_path; }
     elsif ($cmd eq "deployenv")  { $cmdpath=$deployenv_path; }
     elsif ($cmd eq "karights")   { $cmdpath=$karights_path; }
+    elsif ($cmd eq "kachecknodes")   { $cmdpath=$kachecknodes_path; }
 
     elsif ($cmd eq "environment_dd")        { $cmdpath=$environment_dd_path; }
     elsif ($cmd eq "environment_linux")     { $cmdpath=$environment_linux_path; }

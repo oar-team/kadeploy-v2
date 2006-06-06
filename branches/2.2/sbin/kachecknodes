@@ -81,7 +81,7 @@ if ($list)
     {
 	foreach $service (@service_list)
 	{
-	    print $node->get_name()." ".$service." ".$db->get_nodestate($node->get_name(),$service)."\n";
+	    $message->message(0,$node->get_name()." ".$service." ".$db->get_nodestate($node->get_name(),$service));
 	}
     }
     $db->disconnect();

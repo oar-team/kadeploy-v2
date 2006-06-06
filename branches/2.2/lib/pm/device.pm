@@ -9,7 +9,7 @@ sub new($$$)
     my $partnumber=shift;
     my $self;
     if (! ($type && $disknumber && $partnumber))
-    { $message->unknowerror(2,"device.pm new()"); exit 1; }
+    { $message->unknowerror(2,"device.pm new() type:$type disknumber:$disknumber partnumber:$partnumber"); exit 1; }
 
     $self=
     {

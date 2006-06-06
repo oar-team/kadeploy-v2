@@ -268,7 +268,7 @@ sub listpartition($)
     for ($i=1;$i<5;$i++)
     {
 	print "disk=$i\n";
-	$disk->getdiskfromdb($nodename,$i);
+	$disk->get_fromdb($nodename,$i);
 	$disk->print();
 	print "\n\n";
 	$disk=libkadeploy2::disk::new();

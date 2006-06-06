@@ -138,7 +138,8 @@ sub get_str()
 
     foreach $node (@node_list)
     {
-	$nodesstr.=" ".$node->get_name();
+	if (! $nodesstr) { $nodesstr=$node->get_name(); }
+	else { 	$nodesstr.=" ".$node->get_name(); }
     }
     return $nodesstr;
 }

@@ -58,6 +58,15 @@ sub missing_login_cmdline($)
     print STDERR $self->severity($severity).$msg."\n";
 }
 
+sub missing_envname_cmdline($)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $msg="missing envname";
+    print STDERR $self->severity($severity).$msg."\n";
+}
+
+
 sub missing_rights_cmdline($)
 {
     my $self=shift;
@@ -123,6 +132,16 @@ sub missing_env_db($)
     syslog('info', $msg);
 }
 
+
+sub notenough_right($$)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $right=shift;
+    my $msg="not enough rights => ".$right;
+    print STDERR $self->severity($severity).$msg."\n";
+    syslog('info', $msg);
+}
 
 sub missing_rights_db($)
 {
