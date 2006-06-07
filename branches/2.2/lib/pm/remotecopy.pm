@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 my $message=libkadeploy2::message::new();
+my $conf=libkadeploy2::deployconf::new();
+$conf->load();
 
 sub new($$$$$$$)
 {
@@ -53,12 +55,17 @@ sub exec_scp()
     my $cmd;
     my $ok=0;
     my $parallelcommand;
+    my $ssh_default_args;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+
     $ref_node_list=$nodelist->get_nodes();
     @node_list=@$ref_node_list;
     foreach $node (@node_list)
     {	
 	$nodeip=$node->get_ip();
-	$cmd="scp ".$self->{source}." ".$self->{login}."@".$nodeip.":".$self->{dest};
+	$cmd="scp $ssh_default_args ".$self->{source}." ".$self->{login}."@".$nodeip.":".$self->{dest};
 	@cmdlist=(@cmdlist,$cmd);
     }
     $refcmdlist=\@cmdlist;

@@ -9,11 +9,14 @@ use libkadeploy2::deployconf;
 use libkadeploy2::nodelist;
 use libkadeploy2::command;
 
+sub execcmd($);
+
 my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
 my $kadeploydir=$conf->get("kadeploy2_directory");
 my $deployenv=$conf->getpath_cmd("deployenv");
+my $kareboot=$conf->getpath_cmd("kareboot");
 
 my @node_list;
 my $disknumber=1;
@@ -29,6 +32,8 @@ my $partitionfile;
 my $cmd;
 my $ok=1;
 my $noreboot=0;
+my $command;
+my $timetosleep=60;
 
 GetOptions(
 	   'm=s'                  => \@node_list,
@@ -101,3 +106,31 @@ else
     exit 1;
 }
 
+
+$cmd=$deployenv." ".$nodelist->get_cmdline()." -e linuxdeploy -l deploy";
+if (! execcmd($cmd)) { $message->message(2,"Fail with pxe"); exit 1; }
+
+$cmd=$kareboot." ".$nodelist->get_cmdline();
+if (! execcmd($cmd)) { $message->message(2,"Fail with reboot"); exit 1; }
+
+$message->message(-1,"Sleeping $timetosleep");
+sleep($timetosleep);
+
+$cmd=$deployenv." ".$nodelist->get_cmdline()." -e ".$envname." -l ".$login." -p ".$partnumber." -d ".$disknumber;
+if (! execcmd($cmd)) { $message->message(2,"Fail to deploy"); exit 1; }
+
+$cmd=$kareboot." ".$nodelist->get_cmdline();
+if (! execcmd($cmd)) { $message->message(2,"Fail whith reboot"); exit 1; }
+
+################################################################################
+
+sub execcmd($)
+{
+    my $cmd=shift;
+    $command=libkadeploy2::command::new($cmd,
+					1000,
+					0
+					);
+    $command->exec();
+    return $command->get_status();
+}

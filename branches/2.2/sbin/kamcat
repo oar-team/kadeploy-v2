@@ -16,6 +16,9 @@ sub passive_check_nodes($);
 sub setup_nodes($);
 sub setup_cmdnode($);
 
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->load()) { exit 1; }
+
 my $nodelist;
 my $cmdnode;
 my $fifo="/tmp/mcatfifo";
@@ -118,6 +121,7 @@ sub setup_nodes($)
     my $ref_node_list;
     my $cmd;
     my $parallelcommand;
+    my $ssh_default_args;
     my $hostfileinstr=libkadeploy2::tools::returnvalidhostsfile();
     my $remotecopy=libkadeploy2::remotecopy::new(
 						 "ssh",
@@ -134,9 +138,14 @@ sub setup_nodes($)
 
     $ref_node_list=$nodelist->get_nodes();
     @node_list=@$ref_node_list;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+
+
     foreach $node (@node_list)
     {
-	$cmd="ssh root"."@".$node->get_ip()." hostname ".$node->get_name();
+	$cmd="ssh ".$ssh_default_args." root"."@".$node->get_ip()." hostname ".$node->get_name();
 	@cmdlist=(@cmdlist,$cmd);	
     }
     $refcmdlist=\@cmdlist;
@@ -160,9 +169,15 @@ sub setup_cmdnode($)
     my $sleeptime=20;
     my $timeout=600;
     my $command;
+    my $ssh_default_args;
 
     $ref_node_list=$nodelist->get_ip_list();
     @node_list=@$ref_node_list;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+    if ($connector eq "ssh") { $connector.=" ".$ssh_default_args; }
+
     for ($i=0; $i< $#node_list+1;$i++)
     {
 	$cmd="$connector $user\@$node_list[$i] \"mcatseg 1 $port \'$srvcmd\' \'$cltcmd\' @node_list\"";

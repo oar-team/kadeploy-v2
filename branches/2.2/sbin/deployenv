@@ -230,8 +230,8 @@ else
 
 if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
 if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
-if (! ($disknumber =~ /^\d$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
-if (! ($partnumber =~ /^\d$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! ($disknumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! ($partnumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
 if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
 if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
 }
