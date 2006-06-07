@@ -509,10 +509,12 @@ sub deployenv_help()
 }
 
 
+
+
 sub kapart_help()
 {
     my $self=shift;
-    my $help="kadeploy
+    my $help="kapart
 \t-m|--machine          nodename
 \t-f|--nodefile         nodefile
 

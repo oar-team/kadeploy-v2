@@ -51,39 +51,28 @@ if (! check_rights()) { $message->message(2,"$sudo_user not allowed to REBOOT ".
 if ($soft)
 {
     if (execcmd($nodelist,"softboot",$verbose))
-    { $message->message(0,"soft boot ok with ".$nodelist->get_str()); }
+    { exit 0; }
     else
-    { $message->commandnodenamefailed(0,"$sudo_user soft boot ",$nodelist->get_str());  exit 1; }
-    exit 0;
+    { exit 1; }
 }
 
 if ($hard)
 {
     if (execcmd($nodelist,"hardboot",$verbose))
-    { $message->message(0,"hard boot ok with ".$nodelist->get_str()); }
+    { exit 0; }
     else
-    { $message->commandnodenamefailed(2,"hard boot failed with ",$nodelist->get_str()); exit 1; }
-    exit 0;
+    { exit 1; }
 }
 
 if (!execcmd($nodelist,"softboot",$verbose))
 {
     if (!execcmd($nodelist,"hardboot",$verbose))
-    {
-	$message->message(2,"Error rebooting one or many nodes in ".$nodelist->get_str());
-	exit 1;
-    }
+    { 	exit 1;     }
     else
-    {
-	$message->message(0,"hard boot ok with ".$nodelist->get_str()); 
-	exit 0;
-    }
+    {	exit 0;     }
 }
 else
-{
-    $message->message(0,"soft boot ok with ".$nodelist->get_str());
-    exit 0;
-}
+{     exit 0; }
 
 ################################################################################
 
@@ -101,22 +90,27 @@ sub execcmd($$$)
     my $verbose=shift;
     my $refnodelist;
     my @node_list;
+    my $ok=1;
     
     $refnodelist=$nodelist->get_nodes();
     @node_list=@$refnodelist;
 
     foreach $node (@node_list)
     {
-	$nodeshell.=" -m ".$node->get_name();
+	$cmd=$conf->getpath_cmd("kaexec")." --confcommand -m ".$node->get_name()." -c $cmdnode";
+	$command=libkadeploy2::command::new($cmd,5,$verbose);
+	$command->exec();
+	if (! $command->get_status())
+	{ 
+	    $message->message(0,$sudo_user." ".$cmdnode." ".$node->get_name()." fail");
+	    $ok=0; 
+	}
+	else
+	{
+	    $message->message(0,$sudo_user." ".$cmdnode." ".$node->get_name()." success");
+	}
     }
-    $cmd=$conf->getpath_cmd("kaexec")." --confcommand ".$nodeshell." -c $cmdnode";
-    $command=libkadeploy2::command::new($cmd,5,$verbose);
-    $command->exec();
-
-    if ($command->get_status())
-    {	return 1;     }
-    else
-    { 	return 0;      }
+    return $ok;
 }
 
 sub check_options()
