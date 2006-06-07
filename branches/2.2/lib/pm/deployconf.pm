@@ -13,11 +13,11 @@ my $nodesfile=$kadeployconfdir."/clusternodes.conf";
 
 my $kareboot_path="/bin/kareboot";
 my $kapart_path="/sbin/kapart";
-my $kapxe_path="/sbin/kapxe";
-my $kaexec_path="/sbin/kaexec";
-my $kamcat_path="/sbin/kamcat";
+my $kapxe_path="/bin/kapxe";
+my $kaexec_path="/bin/kaexec";
+my $kamcat_path="/bin/kamcat";
 my $kasetup_path="/sbin/kasetup";
-my $deployenv_path="/sbin/deployenv";
+my $deployenv_path="/bin/deployenv";
 my $karights_path="/sbin/karights";
 my $kachecknodes_path="/sbin/kachecknodes";
 

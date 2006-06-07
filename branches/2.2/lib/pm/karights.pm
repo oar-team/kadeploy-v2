@@ -41,9 +41,9 @@ sub check_rights($$)
 
     $sudo_user=libkadeploy2::sudo::get_sudo_user();
     if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
-
     if ( $sudo_user eq "root" ||
-	 $sudo_user eq $conf->get("deploy_user")
+	 $sudo_user eq $conf->get("deploy_user") ||
+	 $sudo_user eq $conf->get("privileged_user")
 	 )
     {
 	$ok=1;

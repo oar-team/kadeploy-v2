@@ -15,7 +15,7 @@ use warnings;
 
 sub execcmd($$$);
 sub check_options;
-sub check_rights();
+sub check_right($);
 
 
 my $conf=libkadeploy2::deployconf::new();
@@ -42,11 +42,11 @@ my $nodelist;
 my $help;
 my $message=libkadeploy2::message::new();
 my $kadeploydir=$conf->get("kadeploy2_directory");
-
+my $righttocheck="REBOOT";
 
 check_options();
 if ($help) { $message->kareboot_help(); exit 0; }
-if (! check_rights()) { $message->message(2,"$sudo_user not allowed to REBOOT ".$nodelist->get_str()); exit 1; }
+if (! check_right($righttocheck)) { $message->message(2,"$sudo_user not allowed to $righttocheck ".$nodelist->get_str()); exit 1; }
 
 if ($soft)
 {
@@ -76,9 +76,10 @@ else
 
 ################################################################################
 
-sub check_rights()
+sub check_right($)
 {
-    return libkadeploy2::karights::check_rights($nodelist,"REBOOT");
+    my $righttocheck=shift;
+    return libkadeploy2::karights::check_rights($nodelist,$righttocheck);
 }
 
 

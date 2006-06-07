@@ -166,7 +166,7 @@ if ($add)
 	    $right->set_node($node->get_name());
 	    if ($right->addtodb())
 	    {
-		$message->message(0,"add $righttoadd to $login ".$node->get_name());
+		$message->message(0,"Add $righttoadd to $login@".$node->get_name());
 	    }
 	    else
 	    {
@@ -192,7 +192,7 @@ if ($del)
 	    $right->set_node($node->get_name());
 	    if ($right->delfromdb())
 	    {
-		$message->message(0,"del $righttodel to $login ".$node->get_name());
+		$message->message(0,"Remove $righttodel to user $login@".$node->get_name());
 	    }
 	    else
 	    {
