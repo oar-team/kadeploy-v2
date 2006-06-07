@@ -17,7 +17,9 @@ use warnings;
 sub generate_pxelinuxcfg_file($$$$$$$);
 sub writepxelinuxcfg($);
 sub generate_grub_menu_linux($$$$$$$$$);
+
 sub writegrubdisk($$);
+sub readpxelinuxcfg($);
 
 sub clean_tftpnodes($);
 sub copy_kernel_tftpnodes($);
@@ -139,6 +141,11 @@ if ($type && $nodelist)
 	{
 	    copy_initrd_tftpnodes($nodelist);
 	}
+	exit 0;
+    }
+    elsif ($type eq "pxelinux")
+    {
+	readpxelinuxcfg($nodelist);
 	exit 0;
     }
     elsif ($type eq "grub")
@@ -322,6 +329,32 @@ sub writepxelinuxcfg($)
 	close(PXELINUXCFG);
     }
 }
+
+sub readpxelinuxcfg($)
+{
+    my $nodelist=shift;
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node_hexip;
+    my $line;
+    
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
+	$message->message(-1,"show pxe for $node_name");
+	open(PXELINUXCFG,"$tftproot/pxelinux.cfg/$node_hexip") or die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
+	while ($line=<PXELINUXCFG>) { print $line; }
+	close(PXELINUXCFG);
+    }
+}
+
+
 
 sub copy_tftpnode($$)
 {

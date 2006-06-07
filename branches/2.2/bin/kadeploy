@@ -17,6 +17,7 @@ if (! $conf->loadcheck()) { exit 1; }
 my $kadeploydir=$conf->get("kadeploy2_directory");
 my $deployenv=$conf->getpath_cmd("deployenv");
 my $kareboot=$conf->getpath_cmd("kareboot");
+my $kachecknodes=$conf->getpath_cmd("kachecknodes");
 
 my @node_list;
 my $disknumber=1;
@@ -69,6 +70,7 @@ if (@node_list)
 else
 {
     $message->missing_node_cmdline(2);
+    $message->kadeploy_help(); 
     exit 1;
 }
 
@@ -107,20 +109,40 @@ else
 }
 
 
+$ok=1;
+
 $cmd=$deployenv." ".$nodelist->get_cmdline()." -e linuxdeploy -l deploy";
 if (! execcmd($cmd)) { $message->message(2,"Fail with pxe"); exit 1; }
 
-$cmd=$kareboot." ".$nodelist->get_cmdline();
-if (! execcmd($cmd)) { $message->message(2,"Fail with reboot"); exit 1; }
+if ($noreboot==0)
+{
+    $cmd=$kareboot." ".$nodelist->get_cmdline();
+    if (! execcmd($cmd)) { $message->message(2,"Fail with reboot"); exit 1; }
 
-$message->message(-1,"Sleeping $timetosleep");
-sleep($timetosleep);
+    $message->message(-1,"Sleeping $timetosleep");
+    sleep($timetosleep);
+}
 
 $cmd=$deployenv." ".$nodelist->get_cmdline()." -e ".$envname." -l ".$login." -p ".$partnumber." -d ".$disknumber;
 if (! execcmd($cmd)) { $message->message(2,"Fail to deploy"); exit 1; }
+else { $ok=0; }
 
-$cmd=$kareboot." ".$nodelist->get_cmdline();
-if (! execcmd($cmd)) { $message->message(2,"Fail whith reboot"); exit 1; }
+if ($noreboot==0)
+{
+    $cmd=$kareboot." ".$nodelist->get_cmdline();
+    if (! execcmd($cmd)) { $message->message(2,"Fail whith reboot"); exit 1; }
+    
+    $message->message(-1,"Sleeping $timetosleep");
+    sleep($timetosleep);
+
+    $cmd=$kachecknodes." --check --retry 40 --type ICMP ".$nodelist->get_cmdline();
+    if (! execcmd($cmd)) { $message->message(2,"Fail waiting for node"); $ok=0; }
+}
+
+if (! $ok) { exit 1; }
+else { $message->message(0,"Deployment success"); exit 0; }
+
+
 
 ################################################################################
 

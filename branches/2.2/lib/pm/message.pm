@@ -290,6 +290,7 @@ sub checkingdb($)
     if ($severity>=0) { syslog('info', $msg); }
 }
 
+########################################HELP########################################
 
 sub kanodes_help()
 {
@@ -439,6 +440,7 @@ sub karights_help()
 \t--add                 add a right 
 \t--del                 remove a right
 \t--list                list
+
 \t-m|--machine          nodename
 \t-f|--nodefile         nodefile
 
@@ -458,13 +460,16 @@ sub kapxe_help()
 
 \t--type [type]         pxe boot loader [pxelinux|grub|windows]
 
-\t-k|--kernel           path to kernel
-\t-i|--initrd           path to initrd
+\t--kernel              path to kernel
+\t--initrd              path to initrd
 \t--kernelparams        kernel parameters
+
+\t--disk-number         disk number
+\t--part-number         partition number
 
 \t--serialport          serialport number
 \t--serialspeed         serialport speed
-\t--timeout             pxe loader timeout
+\t--timeout             pxe loader timeout in second
 
 \t-h|--help             this help message
 ";

@@ -83,6 +83,7 @@ if ($check)
     else
     {
 	check_nodes_services();
+	check_result();
     }
 	
     $db->disconnect();

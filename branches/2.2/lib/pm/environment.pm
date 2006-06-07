@@ -131,6 +131,7 @@ sub delfromdb()
     return $ok;
 }
 
+
 sub load()
 {
     my $self=shift;

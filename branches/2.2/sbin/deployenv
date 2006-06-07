@@ -53,6 +53,7 @@ my $cmd;
 my $sudo_user;
 my $ok=1;
 my $noreboot=0;
+my $envfile;
 
 check_options();
 
@@ -66,6 +67,19 @@ $environment->set_user($login);
 if (! $environment->get_descriptionfile_fromdb()) { $message->message(2,"Environment not registred in db...");    exit 1; }
 if (! $environment->load())                       { $message->erroropeningfile(2,$environment->get_descriptionfile()); exit 1; 	}
 if (! $environment->get_info("deploytype"))       { $message->message(2,"Your configuration file doesn't contain deploytype"); exit 1; 	}
+$envfile=$environment->get_descriptionfile();
+
+if (
+    $environment->get_info("deploytype") eq "linux" || 
+    $environment->get_info("deploytype") eq "windows" || 
+    $environment->get_info("deploytype") eq "dd" 
+    )
+{
+    check_necessary_right_or_exit("DISK".$disknumber."_PART".$partnumber);   
+    check_necessary_right_or_exit("PXE");   
+}
+
+
 
 
 #Check nodes if deploytype != PXE
@@ -95,20 +109,6 @@ if (! ($environment->get_info("deploytype") eq "pxelinux"))
 }
 
 
-
-
-if 
-    (	   	      
-		      ( $environment->get_info("deploytype") eq "linux" )  &&
-		      ! ( $environment->info_exist("postinstall"))
-		      )
-{
-    $message->message(2,"Your configuration file doesn't contain postinstall archive");
-    exit 1;	    
-}
-
-
-
 if ($environment->get_info("deploytype") eq "pxelinux")
 {
     check_necessary_right_or_exit("PXE");   
@@ -117,7 +117,12 @@ if ($environment->get_info("deploytype") eq "pxelinux")
 }
 
 $partitionfile=$environment->get_info("partitionfile");
-if ($partitionfile)
+
+if (! $partitionfile)    
+{
+    $message->message(0,"Trying without parititioning nodes ".$nodelist->get_str());
+}
+else
 {
     check_necessary_right_or_exit("DISK$disknumber");   
     $message->message(0,"Partitioning nodes ".$nodelist->get_str()." whith file $partitionfile");
@@ -126,29 +131,14 @@ if ($partitionfile)
     {   #Bugs on setting mcatseg
 	$message->message(1,"Retrying command on ".$nodelist->get_str());
 	$ok=partitionlinuxnodes(); 
-    } 
-    
+    }
     if (! $ok) 
     { 
 	$message->message(2,"fail to partition some nodes....");
 	exit 1; 
     }
+} 
     
-}
-else
-{
-    $message->message(0,"Trying without parititioning nodes ".$nodelist->get_str());
-}
-
-if (
-    $environment->get_info("deploytype") eq "linux" || 
-    $environment->get_info("deploytype") eq "windows" || 
-    $environment->get_info("deploytype") eq "dd" 
-    )
-{
-    check_necessary_right_or_exit("DISK".$disknumber."_PART".$partnumber);   
-    check_necessary_right_or_exit("PXE");   
-}
 
 
 if ($environment->get_info("deploytype") eq "linux")
@@ -192,48 +182,48 @@ $message->deployenv_help();
 
 sub check_options()
 {
-GetOptions(
-	   'm=s'                  => \@node_list,
-	   'machine=s'            => \@node_list,
-	   
-	   'disknumber=s'         => \$disknumber,
-	   'd=s'                  => \$disknumber,
-	   'partnumber=s'         => \$partnumber,
-	   'p=s'                  => \$partnumber,
-	   
-	   'login=s'              => \$login,
-	   'l=s'                  => \$login,
-	   
-	   'environment=s'        => \$envname,
-	   'e=s'                  => \$envname,
-	   
-	   'h!'                   => \$help,
-	   'help!'                => \$help,
-	   'v!'                   => \$verbose,
-	   'verbose!'             => \$verbose,
+    GetOptions(
+	       'm=s'                  => \@node_list,
+	       'machine=s'            => \@node_list,
+	       
+	       'disknumber=s'         => \$disknumber,
+	       'd=s'                  => \$disknumber,
+	       'partnumber=s'         => \$partnumber,
+	       'p=s'                  => \$partnumber,
+	       
+	       'login=s'              => \$login,
+	       'l=s'                  => \$login,
+	       
+	       'environment=s'        => \$envname,
+	       'e=s'                  => \$envname,
+	       
+	       'h!'                   => \$help,
+	       'help!'                => \$help,
+	       'v!'                   => \$verbose,
+	       'verbose!'             => \$verbose,
 
-	   'noreboot!'            => \$noreboot,
-	   'n!'                   => \$noreboot,
-	   );
+	       'noreboot!'            => \$noreboot,
+	       'n!'                   => \$noreboot,
+	       );
+    
+    if (@node_list)
+    {
+	$nodelist=libkadeploy2::nodelist::new();
+	$nodelist->loadlist(\@node_list);
+    }
+    else
+    {
+	$message->missing_node_cmdline(2);
+	exit 1;
+    }
+    
 
-if (@node_list)
-{
-    $nodelist=libkadeploy2::nodelist::new();
-    $nodelist->loadlist(\@node_list);
-}
-else
-{
-    $message->missing_node_cmdline(2);
-    exit 1;
-}
-
-
-if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
-if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
-if (! ($disknumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
-if (! ($partnumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
-if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
-if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
+    if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
+    if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
+    if (! ($disknumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+    if (! ($partnumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+    if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
+    if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
 }
 
 sub check_necessary_right_or_exit($)
@@ -263,9 +253,6 @@ sub check_rights($)
     }	
     return $ok;
 }
-
-
-
 
 
 sub partitionlinuxnodes()
@@ -338,8 +325,7 @@ sub deploylinux()
     $cmd="$linuxpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
-	" --basefile ".$basefile.
-	" --postinstall ".$postinstall;
+	" --envfile    ".$envfile;
     if ($verbose) { $cmd.=" -v"; }
     my $command=libkadeploy2::command::new($cmd,
 					   600,
