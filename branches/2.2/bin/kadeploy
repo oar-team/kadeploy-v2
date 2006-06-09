@@ -8,6 +8,7 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::deployconf;
 use libkadeploy2::nodelist;
 use libkadeploy2::command;
+use libkadeploy2::sudo;
 
 sub execcmd($);
 
@@ -15,7 +16,7 @@ my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
 my $kadeploydir=$conf->get("kadeploy2_directory");
-my $deployenv=$conf->getpath_cmd("deployenv");
+my $kadeployenv=$conf->getpath_cmd("kadeployenv");
 my $kareboot=$conf->getpath_cmd("kareboot");
 my $kachecknodes=$conf->getpath_cmd("kachecknodes");
 
@@ -35,6 +36,7 @@ my $ok=1;
 my $noreboot=0;
 my $command;
 my $timetosleep=60;
+my $sudo_user=libkadeploy2::sudo::get_sudo_user();
 
 GetOptions(
 	   'm=s'                  => \@node_list,
@@ -60,8 +62,9 @@ GetOptions(
 	   'n!'                   => \$noreboot,
 	   );
 
-if ($help)            { $message->kadeploy_help(); exit 0; }
+foreach my $arg (@ARGV) { if ($arg =~ /([a-zA-Z0-9_]+)\@([a-zA-Z0-9\._]+)/) { $login=$1; $envname=$2; } }
 
+if ($help)            { $message->kadeploy_help(); exit 0; }
 if (@node_list)
 {
     $nodelist=libkadeploy2::nodelist::new();
@@ -91,13 +94,9 @@ if ($envname && $login)
 
     if ($environment->get_descriptionfile_fromdb())
     {		
-
-
 	if (! $environment->load()) 
 	{ 
-	    $message->erroropeningfile(2,
-				       $environment->get_descriptionfile()
-				       );
+	    $message->erroropeningfile(2,$environment->get_descriptionfile());
 	    exit 1;
 	}
     }
@@ -111,8 +110,17 @@ else
 
 $ok=1;
 
-$cmd=$deployenv." ".$nodelist->get_cmdline()." -e linuxdeploy -l deploy";
-if (! execcmd($cmd)) { $message->message(2,"Fail with pxe"); exit 1; }
+#IF PXE
+if ($environment->get_info("deploytype") eq "pxelinux")
+{ 
+    $cmd="$kadeployenv ".$nodelist->get_cmdline()." -e $envname -l $login";
+    if ($partnumber) { $cmd.=" -p $partnumber"; }
+    if (! execcmd($cmd)) { $message->message(2,"Fail with pxe for node ".$nodelist->get_str()); exit 1; }
+    else { $message->message(-1,"$sudo_user setting up pxe for node ".$nodelist->get_str()); exit 0; }
+}
+
+$cmd=$kadeployenv." ".$nodelist->get_cmdline()." -l deploy -e linuxdeploy";
+if (! execcmd($cmd)) { $message->message(2,"$sudo_user Fail with pxe for node ".$nodelist->get_str()); exit 1; }
 
 if ($noreboot==0)
 {
@@ -123,7 +131,7 @@ if ($noreboot==0)
     sleep($timetosleep);
 }
 
-$cmd=$deployenv." ".$nodelist->get_cmdline()." -e ".$envname." -l ".$login." -p ".$partnumber." -d ".$disknumber;
+$cmd=$kadeployenv." ".$nodelist->get_cmdline()." -e ".$envname." -l ".$login." -p ".$partnumber." -d ".$disknumber;
 if (! execcmd($cmd)) { $message->message(2,"Fail to deploy"); exit 1; }
 else { $ok=0; }
 

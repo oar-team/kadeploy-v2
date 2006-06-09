@@ -137,6 +137,8 @@ sub check_options()
 	       'e=s'            => \$envname,
 	       );
 
+    foreach my $arg (@ARGV) { if ($arg =~ /([a-zA-Z0-9]+)@([a-zA-Z0-9\.]+)/) { $login=$1; $envname=$2; } }
+
 }
 
 sub listenv()

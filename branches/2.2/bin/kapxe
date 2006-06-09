@@ -35,7 +35,9 @@ sub check_right($);
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
 
-my @hostlist;
+
+my @node_list;
+
 my $hostfile;
 my $environment;
 my $timeout=10;
@@ -44,7 +46,8 @@ my $verbose;
 my $type;
 
 my $serialport;
-my $serialspeed;
+my $first_serial_speed;
+my $second_serial_speed;
 my $kernel;
 my $initrd;
 my $kernelparams;
@@ -74,6 +77,8 @@ my $ntldrfactory="$kadeploydir/lib/floppy/windows/ntldr-factory.pl";
 my $bootiniref="$kadeploydir/lib/floppy/windows/boot.ini";
 my $righttocheck="PXE";
 
+if ($conf->is_conf("first_serial_speed"))  { $first_serial_speed=$conf->get("first_serial_speed"); } else { $first_serial_speed=9600; }
+if ($conf->is_conf("second_serial_speed")) { $second_serial_speed=$conf->get("second_serial_speed"); } else { $second_serial_speed=9600; }
 
 check_options();
 
@@ -126,7 +131,7 @@ if ($type && $nodelist)
     {
 	$menulst=generate_grub_menu_linux($timeout,
 					  $serialport,
-					  $serialspeed,
+					  $first_serial_speed,
 					  $kernel,
 					  $initrd,
 					  $kernelparams,
@@ -159,8 +164,10 @@ exit 0;
 
 sub check_options()
 {
-    GetOptions('m=s'           => \@hostlist,
-	       'machine=s'     => \@hostlist,
+    GetOptions(
+	       'm=s'           => \@node_list,
+	       'machine=s'     => \@node_list,
+
 	       'f=s'           => \$hostfile,
 	       'e=s'           => \$environment,
 	       
@@ -172,7 +179,7 @@ sub check_options()
 	       'initrd=s'      => \$initrd,
 	       'kernelparams=s'=> \$kernelparams,
 	       'serialport'    => \$serialport,
-	       'serialspeed'   => \$serialspeed,
+	       'serialspeed'   => \$first_serial_speed,
 	       'environment=s' => \$environment,
 	       'timeout=s'     => \$timeout,
 	       
@@ -187,14 +194,11 @@ sub check_options()
     if ($help) { $message->kapxe_help(); exit 0; }
     if (! $disknumber)    { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
     if (! $type)          { $message->missing_cmdline(2,"type needed");       exit 1; }
-    if ($hostfile) 
-    { 
-	$nodelist=libkadeploy2::cmdline::loadhostfileifexist($hostfile); 
-    }
-    if (@hostlist) 
-    { 
-	$nodelist=libkadeploy2::cmdline::loadhostcmdlineifexist(\@hostlist); 
-    }   
+
+    if (@node_list)     { $nodelist=libkadeploy2::nodelist::new(); $nodelist->loadlist(\@node_list);  }
+    else { $message->missing_node_cmdline(2); exit 1; }
+
+
 }
 
 
@@ -333,7 +337,7 @@ sub writepxelinuxcfg($)
 	$conffiledata=generate_pxelinuxcfg_file(
 						$timeout,			 
 						$serialport,
-						$serialspeed,
+						$first_serial_speed,
 						$kerneltftp,
 						$initrdtftp,
 						$kernelparams,
@@ -342,7 +346,7 @@ sub writepxelinuxcfg($)
 
 
 	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
-	$message->message(0,"$sudo_user Setting up pxe for $node_name");
+	$message->message(0,"$sudo_user setting up pxe for $node_name");
 	mkdir("$tftproot/pxelinux.cfg",0755);
 	open(PXELINUXCFG,"> $tftproot/pxelinux.cfg/$node_hexip") or die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
 	print PXELINUXCFG $conffiledata;
@@ -422,6 +426,8 @@ sub generate_pxelinuxcfg_file($$$$$$$)
 	$pxelinuxconf->add("$type","$node_name/$kernel","","$kernelparams");
     }
     $pxelinuxconf->set_default("$type");
+    $pxelinuxconf->set_serialspeed(1,$first_serial_speed);
+    $pxelinuxconf->set_serialspeed(2,$second_serial_speed);
     $conffile=$pxelinuxconf->get();
 
     return $conffile;

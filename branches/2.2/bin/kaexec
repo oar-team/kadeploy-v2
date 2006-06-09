@@ -107,7 +107,7 @@ sub kaexeccommand($$$$$$)
     my @node_list;
     my $remoteparallelcommand=libkadeploy2::remoteparallelcommand::new(
 								       $connector,
-								       "dsh",
+								       "internal",
 								       $login,
 								       $nodelist,
 								       $cmd,

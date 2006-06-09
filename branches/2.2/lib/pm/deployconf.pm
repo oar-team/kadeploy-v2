@@ -17,7 +17,7 @@ my $kapxe_path="/bin/kapxe";
 my $kaexec_path="/bin/kaexec";
 my $kamcat_path="/bin/kamcat";
 my $kasetup_path="/sbin/kasetup";
-my $deployenv_path="/bin/deployenv";
+my $kadeployenv_path="/bin/kadeployenv";
 my $karights_path="/sbin/karights";
 my $kachecknodes_path="/sbin/kachecknodes";
 
@@ -132,6 +132,22 @@ sub get($)
     }
     return $val;
 }
+
+
+sub is_conf($)
+{
+    my $self=shift;
+    my $key=shift;
+    my $conf;
+    my $val;    
+    if ($self->{loaded})
+    {
+	$conf=$self->{conf};
+	$val=$conf->is_conf($key);
+    }
+    return $val;
+}
+
 
 sub check()
 {
@@ -337,7 +353,7 @@ sub getpath_cmd($)
     elsif ($cmd eq "kaexec")     { $cmdpath=$kaexec_path; }
     elsif ($cmd eq "kamcat")     { $cmdpath=$kamcat_path; }
     elsif ($cmd eq "kasetup")    { $cmdpath=$kasetup_path; }
-    elsif ($cmd eq "deployenv")  { $cmdpath=$deployenv_path; }
+    elsif ($cmd eq "kadeployenv"){ $cmdpath=$kadeployenv_path; }
     elsif ($cmd eq "karights")   { $cmdpath=$karights_path; }
     elsif ($cmd eq "kachecknodes")   { $cmdpath=$kachecknodes_path; }
 

@@ -109,7 +109,7 @@ sub new()
     return $self;
 }
 
-sub setserialspeed($$)
+sub set_serialspeed($$)
 {
     my $self=shift;
     my $serialport=shift;

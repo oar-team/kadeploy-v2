@@ -20,6 +20,7 @@ sub deploywindows();
 sub setuppxelinux();
 sub setupgrubchainload();
 sub check_necessary_right_or_exit($);
+sub check_disk_partnumber();
 
 my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
@@ -32,13 +33,12 @@ my $linuxpath=$conf->getpath_cmd("environment_linux");
 my $windowspath=$conf->getpath_cmd("environment_windows");
 
 my $kachecknodes=$conf->getpath_cmd("kachecknodes");
-my $kareboot=$conf->getpath_cmd("kareboot");
 my $kapxe=$conf->getpath_cmd("kapxe");
 my $kapart=$conf->getpath_cmd("kapart");
 
 my @node_list;
 my $disknumber=1;
-my $partnumber=1;
+my $partnumber;
 my $login;
 my $help;
 my $verbose=0;
@@ -52,13 +52,9 @@ my $refnodelist;
 my $cmd;
 my $sudo_user;
 my $ok=1;
-my $noreboot=0;
 my $envfile;
 
 check_options();
-
-if (! $login)   { $message->missing_login_cmdline(2); exit 1; }
-if (! $envname) { $message->missing_envname_cmdline(2); exit 1; }
 
 $environment=libkadeploy2::environment::new();
 $environment->set_name($envname);
@@ -76,7 +72,8 @@ if (
     )
 {
     check_necessary_right_or_exit("DISK".$disknumber."_PART".$partnumber);   
-    check_necessary_right_or_exit("PXE");   
+    check_necessary_right_or_exit("PXE");
+    check_disk_partnumber();
 }
 
 
@@ -89,7 +86,7 @@ if (! ($environment->get_info("deploytype") eq "pxelinux"))
     system("$kachecknodes --check --type SSH  --retry 10 ".$nodelist->get_cmdline());
     system("$kachecknodes --check --type MCAT ".$nodelist->get_cmdline());
     $db->connect();
-    
+
     $refnodelist=$nodelist->get_nodes();
     @node_list=@$refnodelist;	
     foreach $node (@node_list)
@@ -202,28 +199,24 @@ sub check_options()
 	       'v!'                   => \$verbose,
 	       'verbose!'             => \$verbose,
 
-	       'noreboot!'            => \$noreboot,
-	       'n!'                   => \$noreboot,
 	       );
-    
-    if (@node_list)
-    {
-	$nodelist=libkadeploy2::nodelist::new();
-	$nodelist->loadlist(\@node_list);
-    }
-    else
-    {
-	$message->missing_node_cmdline(2);
-	exit 1;
-    }
-    
 
-    if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
-    if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
-    if (! ($disknumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
-    if (! ($partnumber =~ /^\d+$/))  { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+    foreach my $arg (@ARGV) { if ($arg =~ /([a-zA-Z0-9_]+)@([a-zA-Z0-9\._]+)/) { $login=$1; $envname=$2; } }
+
+    if (@node_list)     { $nodelist=libkadeploy2::nodelist::new(); $nodelist->loadlist(\@node_list);  }
+    else { $message->missing_node_cmdline(2); exit 1; }
+
     if (! $login)                   { $message->missing_cmdline(2,"user name needed"); exit 1; }
     if (! $envname)                 { $message->missing_cmdline(2,"environment name needed"); exit 1; }
+
+}
+
+sub check_disk_partnumber()
+{
+    if (! $disknumber)              { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
+    if (! $partnumber)              { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
+    if (! ($disknumber =~ /^\d+$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+    if (! ($partnumber =~ /^\d+$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }    
 }
 
 sub check_necessary_right_or_exit($)
@@ -285,9 +278,12 @@ sub deploypxelinux()
 	$nodelist->get_cmdline()." ".
 	" --type pxelinux ".
 	" --kernel ".$environment->get_info("kernel").
-	" --initrd ".$environment->get_info("initrd").
-	" --kernelparams ".$environment->get_info("kernelparams");
-    
+	" --initrd ".$environment->get_info("initrd");
+    if ($partnumber) { $cmd.=" --partnumber $partnumber"; }
+    if ($environment->get_info("kernelparams")) 
+    { 
+	$cmd.=" --kernelparams ".$environment->get_info("kernelparams");
+    }
     
     $command=libkadeploy2::command::new($cmd,
 					20,
@@ -304,7 +300,7 @@ sub deploydd()
 #	$environment->print_descriptionfile();
     $basefile=$environment->get_info("basefile");
 
-    $cmd="$ddpath ".$nodelist->get_cmdline().
+    $cmd="perl $ddpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
 	" --basefile ".$basefile;
@@ -322,7 +318,7 @@ sub deploylinux()
     $basefile=$environment->get_info("basefile");
     my $postinstall=$environment->get_info("postinstall");
     #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
-    $cmd="$linuxpath ".$nodelist->get_cmdline().
+    $cmd="perl $linuxpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
 	" --envfile    ".$envfile;
@@ -339,7 +335,7 @@ sub deploywindows()
 #	$environment->print_descriptionfile();
     $basefile=$environment->get_info("basefile");
     #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
-    $cmd="$windowspath ".$nodelist->get_cmdline().
+    $cmd="perl $windowspath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
 	" --basefile ".$basefile;
