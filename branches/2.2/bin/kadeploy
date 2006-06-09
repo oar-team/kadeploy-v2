@@ -42,10 +42,10 @@ GetOptions(
 	   'm=s'                  => \@node_list,
 	   'machine=s'            => \@node_list,
 	   
-	   'disknumber=s'         => \$disknumber,
-	   'd=s'                  => \$disknumber,
-	   'partnumber=s'         => \$partnumber,
-	   'p=s'                  => \$partnumber,
+	   'disknumber=i'         => \$disknumber,
+	   'd=i'                  => \$disknumber,
+	   'partnumber=i'         => \$partnumber,
+	   'p=i'                  => \$partnumber,
 	   
 	   'login=s'              => \$login,
 	   'l=s'                  => \$login,
@@ -80,8 +80,8 @@ else
 
 if (! $disknumber)    { $message->missing_cmdline(2,"disknumber needed"); exit 1; }
 if (! $partnumber)    { $message->missing_cmdline(2,"partnumber needed"); exit 1; }
-if (! ($disknumber =~ /^\d$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
-if (! ($partnumber =~ /^\d$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! ($disknumber =~ /^\d+$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
+if (! ($partnumber =~ /^\d+$/)) { $message->missing_cmdline(2,"partnumber is a number begining at 1"); exit 1; }
 if (! $login)         { $message->missing_cmdline(2,"user name needed"); exit 1; }
 if (! $envname)       { $message->missing_cmdline(2,"environment name needed"); exit 1; }
 
