@@ -3,6 +3,8 @@ package libkadeploy2::sudo;
 use strict;
 use warnings;
 
+my $message=libkadeploy2::message::new(); 
+
 
 sub get_user()
 {

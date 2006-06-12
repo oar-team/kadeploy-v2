@@ -8,10 +8,11 @@ use libkadeploy2::fdiskscript;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::tools;
 use libkadeploy2::tftppxe;
+use libkadeploy2::sudowrap;
 
-my $db=libkadeploy2::deploy_iolib::new();
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->loadcheck()) { exit 1; }
+my $message=libkadeploy2::message::new();
 
 my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
@@ -72,8 +73,6 @@ GetOptions('checkdeployconf!'         => \$checkdeployconf,
 	   'rootdev=s'                => \$rootdev,
 	   'rootpartnumber=i'         => \$rootpartnumber,
 	   'checkwriteaccess!'        => \$checkwriteaccess,
-	   'checkbinfiles!'           => \$checkbinfiles,
-	   'copybinfiles!'            => \$copybinfiles,
 	   'printpreinstallconf!'     => \$printpreinstallconf,
 	   'printvalidhost!'          => \$printvalidhost,
 	   'sudowrapping'             => \$sudowrapping,
@@ -93,8 +92,6 @@ if ($checkdeployconf      ||
     $checksudoers         || 
     $printvalidsudoers    ||
     $checkwriteaccess     ||
-    $checkbinfiles        ||
-    $copybinfiles         ||
     $createtftp           ||
     $printvalidfdisk      ||
     $printvalidfstablinux ||
@@ -111,19 +108,15 @@ if ($checkdeployconf      ||
 
 
     use libkadeploy2::conflib;
-    if ($printvalidfstablinux) {  printvalidfstablinux($rootdev,$rootpartnumber); } 
     if ($checkdeployconf)      { if (! $conf->checkdeployconf()) { print "Failed\n"; exit 1; } else { print "OK\n";} }
-    if ($checksudoers)         { if (!checksudoers())    {    print "Failed\n"; exit 1; } else { print "OK\n";}  }
-    if ($checkbinfiles)        { if (checkdeployconf())  { checkbinfiles(); } }
-    if ($copybinfiles)         { if (check_etc_deploy() && checkdeployconf())  { copybinfiles(); } }
-    if ($sudowrapping)         { if (checkdeployconf())  { sudowrapping(); } }
-    if ($printvalidsudoers)    { if (checkdeployconf()) { printvalidsudoers(); } }
+
+    if ($sudowrapping)         { libkadeploy2::sudowrap::checksudoers(); libkadeploy2::sudowrap::sudowrapping(); }
+    if ($printvalidsudoers)    { libkadeploy2::sudowrap::printvalidsudoers(); }
     if ($createtftp)           { libkadeploy2::tftppxe::createtftp($conf); }
     if ($printvalidhost)       { printvalidhost(); }
     if ($printvalidfdisk)      { printvalidfdisk($partitionfile); }    
-    if ($printpreinstallconf)  { printpreinstallconf($partitionfile); }
     if ($exportenv)            { exportenv(); }
-    if ($chmodconf)            { chmodconf(); }
+    if ($chmodconf)            { $conf->chmodconf(); }
     exit 0;
 }
 else
@@ -140,8 +133,8 @@ else
 
 sub exportenv()
 {
-    my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-    my $kadeployuser=libkadeploy2::conflib::get_conf("deploy_user");
+    my $kadeploydir=$conf->get("kadeploy2_directory");
+    my $kadeployuser=$conf->get("deploy_user");
     my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
     my $line;
     my $tmpfile="";
@@ -166,12 +159,12 @@ sub exportenv()
 	    open(FH,">$kasudowrapperfile") or die "can't write  $kasudowrapperfile\n";
 	    print FH $tmpfile;
 	    close(FH);	    
-	    print STDERR "export completed\n";    
+	    $message->message(0,"export completed");    
 	}
     }
     else
     {
-	print STDERR "can't find $kasudowrapperfile\n";
+	$message->filenotfound(2,"$kasudowrapperfile");
 	exit 1;
     }
 }
@@ -179,57 +172,6 @@ sub exportenv()
 sub printvalidhost()
 {
     print libkadeploy2::tools::returnvalidhostsfile();
-}
-
-sub printvalidfstablinux($$)
-{
-    my $rootdev=shift;
-    my $rootpartnumber=shift;
-    my $swapdevnumber=shift;
-    
-    my %disk;
-    %disk=loadpartitionfile($partitionfile);
-
-    $swapdevnumber=getlinuxswapdevicenumber(\%disk);
-
-    if (!$rootdev)
-    {
-	print STDERR "ERROR : rootdev not set\n";
-	exit 1;
-    }
-
-    if (!$rootpartnumber)
-    {
-	print STDERR "ERROR : rootpartnumber not set\n";
-	exit 1;
-    }
-
-
-    if ($rootdev=~ /^\/dev\/[hs]d[a-d]+$/ &&
-	$rootpartnumber > 0 && 
-	$rootpartnumber < 21)
-    {
-	print "
-# /etc/fstab: static file system information.
-#
-# <file system> <mount point>   <type>  <options>               <dump>  <pass>
-proc            /proc           proc    defaults                0       0
-/dev/fd0        /floppy         auto    user,noauto             0       0
-/dev/cdrom      /cdrom          iso9660 ro,user,noauto          0       0
-$rootdev$rootpartnumber       /               ext2    errors=remount-ro       0       0";
-	if ($swapdevnumber>0 &&
-	    $swapdevnumber<21)   
-	{
-	    print "
-$rootdev$swapdevnumber       none            swap    sw                      0       0";    
-	}
-    }
-    else
-    {
-	print "Error checking $rootdev\n";
-	exit 1;
-    }
-	print "\n";
 }
 
 
@@ -284,228 +226,134 @@ sub getlinuxswapdevicenumber($)
     }
 }
 
-
-
-
-
-
-sub printpreinstallconf($)
-{
-    my $partitionfile=shift;
-    my %disk;	
-    my $output="";
-    my $key1;
-    my $key2;
-    my $key3;
-    my $key4;
-    my $tmphash1;
-    my $tmphash2;
-    my $tmphash3;
-    my $do_fdisk_on_deploy=$conf->get("do_fdisk_on_deploy");
-    my $HARDDRIVE;
-    my $SWAP_DEV;
-    my $TMP_DEV;
-    my $SCRATCH_DEV;
-
-    %disk=loadpartitionfile($partitionfile);
-    checkcorrectness(\%disk);
-    foreach $key1 (sort keys %disk)
-    {
-	$tmphash1 = $disk{$key1};
-	if (ref($tmphash1) eq 'HASH')
-	{
-	    foreach $key2 (sort sort_par_num keys %$tmphash1)
-	    {	
-		$tmphash2 = $$tmphash1{$key2};
-		if (ref($tmphash2) eq 'HASH')
-		{
-		    foreach $key3 (sort keys %$tmphash2) 
-		    {
-			if ($key3 eq "label")
-			{
-			    if ($$tmphash2{$key3} eq "swap")
-			    {
-				$SWAP_DEV="$HARDDRIVE$key2";
-			    }
-			    if ($$tmphash2{$key3} eq "scratch")
-			    {
-				$SCRATCH_DEV="$HARDDRIVE$key2";
-			    }
-			    if ($$tmphash2{$key3} eq "tmp")
-			    {
-				$TMP_DEV="$HARDDRIVE$key2";
-			    }
-
-			}
-
-		    }
-		}
-	    }
-	}
-	else
-	{
-	    if ($key1 eq "name")
-	    {
-		$HARDDRIVE="/dev/$disk{$key1}";
-	    }
-	}
-    }
-    if ($HARDDRIVE)
-    {
-	$output.="HARDDRIVE=$HARDDRIVE\n";
-	if ($do_fdisk_on_deploy eq "yes") { $output.="DO_FDISK=1\n"; } else { $output.="DO_FDISK=0\n"; }
-	if ($SWAP_DEV)    { $output.="SWAP_FORMAT=1\nSWAP_DEV=$SWAP_DEV\n"; }
-	if ($SCRATCH_DEV) { $output.="SCRATCH_FORMAT=1\nSCRATCH_FS=ext2\nSCRATCH_DEV=$SCRATCH_DEV\n"; }
-	if ($TMP_DEV)     { $output.="TMP_FORMAT=1\nTMP_FS=ext2\nTMP_DEV=$TMP_DEV\n"; }
-    }
-    print "$output";
-}
-
-
-
-
-
-
-
-
-
-
-
-
-sub checkbinfiles()
-{
-     my $file;
-     my $command;
-     my $ret=1;
-     my @filetocheck=("DKsentinelle",
-		      "mcatseg");
-     foreach $file (@filetocheck)
-     {
-	 $command="ls /usr/local/bin/$file";
-	 if (system($command)!=0)
-	 {
-	     $ret=0;
-	 }
-     }
-     return $ret;
-}
-
-sub copybinfiles()
-{
-    my $kadeploy2_directory;
-    my $file;
-    my $command;
-    my $line;
-    my $arch;
-    $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-    
-    my @filetocopy=("DKsentinelle",
-		    "mcatseg");
-    
-    open(FH,"uname -a |") or die "Can't exec uname -a";
-    $line=<FH>;
-    if ($line=~/^Linux .+2\.6\..+ i686/)   { $arch="i686"; }
-    if ($line=~/^Linux .+2\.6\..+ x86_64/) { $arch="x86_64"; }
-    foreach $file (@filetocopy)
-    {
-	#Priorite au fichier compiler sur en local
-	if (! -f "/usr/local/bin/$file")
-	{
-	    if (-f "$kadeploy2_directory/bin/$file")	
-	    {
-		$command="cp $kadeploy2_directory/bin/$file /usr/local/bin/$file";
-	    }
-	    elsif (-f "$kadeploy2_directory/bin/$file-$arch")
-	    {
-		$command="cp $kadeploy2_directory/bin/$file-$arch /usr/local/bin/$file";
-	    }
-	    else
-	    {
-		print "ERROR : Your distribution is not supported... try to build $file\n";
-		exit 1;
-	    }
-	    print "Exec : $command\n";
-	    system($command);
-	}
-	else
-	{
-	    print "/usr/local/bin/$file already exist\n";
-	}
-    }
-}
-
-
-
-
-sub checkDKsentinelle()
-{
-    my $DK="/usr/local/bin/DKsentinelle";    
-    my $line;
-    my $ok;
-    #CHECK DKsentinelle 
-    if ( -x "$DK" &&
-	 ( ! -l "$DK") && 
-	 open(FH,"$DK -h 2>&1|") )
-    {
-	while ($line=<FH>) { }
-	close(FH);
-	print "* DKsentinelle was found\n";
-    }
-    else
-    {
-	print "* You have to copy DKsentinelle to $DK... And check if it works.\n";
-	$ok=0;
-    }
-    return $ok; 
-}
-
-
-
-sub checksudoers()
-{
-    my $sudoers="/etc/sudoers";
-    my $ok=1;
-
-    if ( -e $sudoers)
-    {
-	print "* sudoers exist\n";
-    }
-    else
-    {
-	print "* sudoers was not found : $sudoers\n";
-	$ok=0;
-    }
-
-    return $ok;
-}
-
-sub checkwriteaccess()
-{
-    my $tftp_repository;
-    my $pxe_rep;
-    $tftp_repository=libkadeploy2::conflib::get_conf("tftp_repository");
-    $pxe_rep=libkadeploy2::conflib::get_conf("pxe_rep");
-}
-
 sub help()
 {
-	print "$0
-\t-checkdeployconf               check $deployconf
-\t-checksudoers                  print a valid sudoers
-\t-copybinfiles                  copy required files in /usr/local/bin
-\t-sudowrapping                  wrap files with kasudowrapper.sh
-\t-printvalidsudoers             generate a sudoers from deploy.conf
-\t-createtftp                    copy all the files required for tftp boot
-\t-exportenv                     export environment variable file for sudowrapping (this is done after sudowrapping)
-\t-chmodconf                     put correct write on configuration files
-
-\t-printpreinstallconf           print preinstall configuration file
-\t-printvalidfdisk               print a fdisk file from 
-\t-loadpartitionfile             load a custom partition file
-
-\t-printvalidfstab               generate a fstab for linux with rootfs parameters
-\t\t-rootdev               boot device (ex: /dev/hda)
-\t\t-rootpartnumber        boot device partnumber (ex : 2)
-";
+    $message->kasetup_help();
 }
 
+
+#sub printvalidfstablinux($$)
+#{
+#    my $rootdev=shift;
+#    my $rootpartnumber=shift;
+#    my $swapdevnumber=shift;
+#    
+#    my %disk;
+#    %disk=loadpartitionfile($partitionfile);
+#
+#    $swapdevnumber=getlinuxswapdevicenumber(\%disk);
+#
+#    if (!$rootdev)
+#    {
+#	print STDERR "ERROR : rootdev not set\n";
+#	exit 1;
+#    }
+#
+#    if (!$rootpartnumber)
+#    {
+#	print STDERR "ERROR : rootpartnumber not set\n";
+#	exit 1;
+#    }
+#
+#   if ($rootdev=~ /^\/dev\/[hs]d[a-d]+$/ &&
+#	$rootpartnumber > 0 && 
+#	$rootpartnumber < 21)
+#    {
+#	print "
+## /etc/fstab: static file system information.
+##
+## <file system> <mount point>   <type>  <options>               <dump>  <pass>
+#proc            /proc           proc    defaults                0       0
+#/dev/fd0        /floppy         auto    user,noauto             0       0
+#/dev/cdrom      /cdrom          iso9660 ro,user,noauto          0       0
+#$rootdev$rootpartnumber       /               ext2    errors=remount-ro       0       0";
+#	if ($swapdevnumber>0 &&
+#	    $swapdevnumber<21)   
+#	{
+#	    print "
+#$rootdev$swapdevnumber       none            swap    sw                      0       0";    
+#	}
+#    }
+#    else
+#    {
+#	print "Error checking $rootdev\n";
+#	exit 1;
+#    }
+#	print "\n";
+#}
+
+
+
+
+#sub printpreinstallconf($)
+#{
+#    my $partitionfile=shift;
+#    my %disk;	
+#    my $output="";
+#    my $key1;
+#    my $key2;
+#    my $key3;
+#    my $key4;
+#    my $tmphash1;
+#    my $tmphash2;
+#    my $tmphash3;
+#    my $do_fdisk_on_deploy=$conf->get("do_fdisk_on_deploy");
+#    my $HARDDRIVE;
+#    my $SWAP_DEV;
+#    my $TMP_DEV;
+#    my $SCRATCH_DEV;
+#
+#    %disk=loadpartitionfile($partitionfile);
+#    checkcorrectness(\%disk);
+#    foreach $key1 (sort keys %disk)
+#    {
+#	$tmphash1 = $disk{$key1};
+#	if (ref($tmphash1) eq 'HASH')
+#	{
+#	    foreach $key2 (sort sort_par_num keys %$tmphash1)
+#	    {	
+#		$tmphash2 = $$tmphash1{$key2};
+#		if (ref($tmphash2) eq 'HASH')
+#		{
+#		    foreach $key3 (sort keys %$tmphash2) 
+#		    {
+#			if ($key3 eq "label")
+#			{
+#			    if ($$tmphash2{$key3} eq "swap")
+#			    {
+#				$SWAP_DEV="$HARDDRIVE$key2";
+#			    }
+#			    if ($$tmphash2{$key3} eq "scratch")
+#			    {
+#				$SCRATCH_DEV="$HARDDRIVE$key2";
+#			    }
+#			    if ($$tmphash2{$key3} eq "tmp")
+#			    {
+#				$TMP_DEV="$HARDDRIVE$key2";
+#			    }
+#
+#			}
+#		    }
+#		}
+#	    }
+#	}
+#	else
+#	{
+#	    if ($key1 eq "name")
+#	    {
+#		$HARDDRIVE="/dev/$disk{$key1}";
+#	    }
+#	}
+#    }
+#    if ($HARDDRIVE)
+#    {
+#	$output.="HARDDRIVE=$HARDDRIVE\n";
+#	if ($do_fdisk_on_deploy eq "yes") { $output.="DO_FDISK=1\n"; } else { $output.="DO_FDISK=0\n"; }
+#	if ($SWAP_DEV)    { $output.="SWAP_FORMAT=1\nSWAP_DEV=$SWAP_DEV\n"; }
+#	if ($SCRATCH_DEV) { $output.="SCRATCH_FORMAT=1\nSCRATCH_FS=ext2\nSCRATCH_DEV=$SCRATCH_DEV\n"; }
+#	if ($TMP_DEV)     { $output.="TMP_FORMAT=1\nTMP_FS=ext2\nTMP_DEV=$TMP_DEV\n"; }
+#    }
+#    print "$output";
+#}
+
+ 

@@ -17,6 +17,10 @@ if test [ -z $MYSQL ]; then echo "mysql client not found..." ; exit 1 ; fi
 AC_CHECK_PROGS(DD,dd)
 if test [ -z $DD ]; then echo "dd not found..." ; exit 1 ; fi
 
+AC_CHECK_PROGS(SUDO,sudo)
+if test [ -z $SUDO ]; then echo "sudo not found..." ; exit 1 ; fi
+
+
 AC_CHECK_PROGS(NMAP,nmap)
 if test [ -z $NMAP ]; then echo "nmap not found..." ; exit 1 ; fi
 

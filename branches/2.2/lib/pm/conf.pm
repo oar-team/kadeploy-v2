@@ -7,23 +7,18 @@ use libkadeploy2::message;
 my @listfiletowrapuser=(
 			"kaconsole",
 			"kadeploy",
-			"kaenvironments",
+			"kadeployenv",
 			"kareboot",
-			"karecordenv",
-			"migratenv",
-			"kastats",
-#			"mcat_rsh.pl",
-#			"mcat_ssh.pl",
-#			"sentinelle.pl",
-#			"setup_pxe.pl",
+			"kaenv",
 			);			
 
 my @listfiletowraproot=(
-			"kaadduser",
-			"kadeluser",
+			"karights",
 			"kanodes",
 			"kadatabase",
 			"kasetup",
+			"kachecknodes",
+			"kamigration",
 			);
 
 

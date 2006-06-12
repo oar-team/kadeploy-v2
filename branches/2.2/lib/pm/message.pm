@@ -18,6 +18,8 @@ sub severity($)
     my $severity=shift;
     my $str;
     
+    if (! $severity) { $severity=2; }
+
     if ($severity<0)
     {
 	$str="INFO    : ";
@@ -494,6 +496,27 @@ sub kadeploy_help()
 ";
     print $help;
 }
+
+sub kasetup_help()
+{
+    my $self=shift;
+    my $help="kasetup
+\t--checkdeployconf               check deployconf
+\t--checksudoers                  print a valid sudoers
+\t--copybinfiles                  copy required files in /usr/local/bin
+\t--sudowrapping                  wrap files with kasudowrapper.sh
+\t--printvalidsudoers             generate a sudoers from deploy.conf
+\t--createtftp                    copy all the files required for tftp boot
+\t--exportenv                     export environment variable file for sudowrapping (this is done after sudowrapping)
+\t--chmodconf                     put correct write on configuration files
+
+\t--printvalidfdisk               print a fdisk file from 
+\t--loadpartitionfile             load a custom partition file
+
+";
+    print $help;
+}
+
 
 sub deployenv_help()
 {

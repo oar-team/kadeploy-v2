@@ -121,6 +121,7 @@ $cmd="umount /dev/$linuxdev";
 execcmd($cmd,30);
 
 $message->message(-1,"Mounting /dev/$linuxdev on /mnt/dest");
+
 $cmd="mkdir -p /mnt/dest";
 if (! execcmd($cmd,10)) { $message->message(2,"Failed on $cmd"); exit 1; }
 

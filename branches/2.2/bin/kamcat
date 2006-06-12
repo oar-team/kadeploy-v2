@@ -18,6 +18,7 @@ sub setup_cmdnode($);
 
 my $conf=libkadeploy2::deployconf::new();
 if (! $conf->load()) { exit 1; }
+my $message=libkadeploy2::message::new(); 
 
 my $nodelist;
 my $cmdnode;
@@ -31,7 +32,6 @@ my @node_list;
 my $user;
 my $help;
 my $verbose=1;
-my $message=libkadeploy2::message::new();
 
 GetOptions(
 	   'm=s'                  => \@node_list,
@@ -70,8 +70,8 @@ else
 
 if ($nodelist)
 {
-    if (! passive_check_nodes($nodelist)) { $message->message(2,"check node... failed\n");  exit 1;}
-    if (! setup_nodes($nodelist)) { $message->message(2,"setup node... failed\n");  exit 1;}
+    if (! passive_check_nodes($nodelist)) { $message->message(2,"check node... failed\n"); exit 1;}
+    if (! setup_nodes($nodelist))         { $message->message(2,"setup node... failed\n"); exit 1;}
     if (setup_cmdnode($nodelist))
     {
 	exit 0;
@@ -152,7 +152,6 @@ sub setup_nodes($)
     $parallelcommand=libkadeploy2::parallelcommand::new(10,$verbose);
     if (! $parallelcommand->execparallel($refcmdlist)) { $ok=0; }
     return $ok;
-
 }
 
 sub setup_cmdnode($)
@@ -180,12 +179,16 @@ sub setup_cmdnode($)
 
     for ($i=0; $i< $#node_list+1;$i++)
     {
+	#Seeking mcatseg with $PATH on the node
+	# 1 is for receiver
 	$cmd="$connector $user\@$node_list[$i] \"mcatseg 1 $port \'$srvcmd\' \'$cltcmd\' @node_list\"";
 	@cmdlist=(@cmdlist,$cmd);
     }       
     if ($i>0)
     {
-	$cmd="mcatseg 4 $port \"$srvcmd | pv -N mcat \" \"$cltcmd\" $node_list[0]";
+	#mcatseg is in path
+	# 4 is for sender
+	$cmd=$conf->getpath_cmd("mcatseg")." 4 $port \"$srvcmd | pv -N mcat \" \"$cltcmd\" $node_list[0]";
 	@cmdlist=(@cmdlist,$cmd);
     }
 
@@ -204,8 +207,7 @@ sub setup_cmdnode($)
 	    }
 	    else
 	    {
-		exec($cmd." 2>&1 > /dev/null");
-		    
+		exec($cmd." 2>&1 > /dev/null");		    
 	    }
 	}
 	else

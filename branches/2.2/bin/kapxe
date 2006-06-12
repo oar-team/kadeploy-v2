@@ -115,10 +115,10 @@ if ($type && $nodelist)
     {	
 	clean_tftpnodes($nodelist);
 	writepxelinuxcfg($nodelist);
-	copy_kernel_tftpnodes($nodelist);
+	if (! copy_kernel_tftpnodes($nodelist))  { exit 1; }
 	if ($initrd)
 	{
-	    copy_initrd_tftpnodes($nodelist);
+	    if (! copy_initrd_tftpnodes($nodelist)) { exit 1; }
 	}
 	exit 0;
     }
@@ -150,7 +150,7 @@ if ($type && $nodelist)
     {
 	$kernel=$memdiskpath;
 	$initrd=$grubfloppyname;
-	copy_kernel_tftpnodes($nodelist);
+	if (! copy_kernel_tftpnodes($nodelist)) { exit 1; }
 	writewindowsdisk($nodelist,$menulst);
 	writepxelinuxcfg($nodelist);
 	exit 0;
@@ -257,18 +257,24 @@ sub copy_kernel_tftpnodes($)
     my @node_list;
     my $node_name;
     my $node;
+    my $ok=1;
 
     $ref_node_list=$nodelist->get_nodes();
     @node_list=@$ref_node_list;
 
-    foreach $node (@node_list)
+    if (! -f $kernel) { $message->filenotfound(2,$kernel); $ok=0; }
+    else
     {
-	$node_name=$node->get_name();
-	mkdir("$tftproot/$node_name",0755);	
-	copy("$kernel","$tftproot/$node_name/");    
-	chmod(0755,"$tftproot/$node_name/");    
-	chmod(0755,"$tftproot/$node_name/$kernel");    
+	foreach $node (@node_list)
+	{
+	    $node_name=$node->get_name();
+	    mkdir("$tftproot/$node_name",0755);	
+	    copy("$kernel","$tftproot/$node_name/");    
+	    chmod(0755,"$tftproot/$node_name/");    
+	    chmod(0755,"$tftproot/$node_name/$kernel");    
+	}
     }
+    return $ok;
 }
 
 sub copy_initrd_tftpnodes($)
@@ -282,19 +288,16 @@ sub copy_initrd_tftpnodes($)
     $ref_node_list=$nodelist->get_nodes();
     @node_list=@$ref_node_list;
 
-    foreach $node (@node_list)
+    if ( ! -f $initrd) { $message->filenotfound(2,$initrd); $ok=0; }
+    else
     {
-	$node_name=$node->get_name();
-	mkdir("$tftproot/$node_name",0755);	
-	if ( -f $initrd)
+	foreach $node (@node_list)
 	{
+	    $node_name=$node->get_name();
+	    mkdir("$tftproot/$node_name",0755);	
 	    copy("$initrd","$tftproot/$node_name/");    
 	    chmod(0755,"$tftproot/$node_name/");
 	    chmod(0755,"$tftproot/$node_name/$initrd");
-	}
-	else
-	{
-	    $ok=0;
 	}
     }
     return $ok;

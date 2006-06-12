@@ -73,7 +73,7 @@ sub load()
     $conf=$self->{conffile};
 
     #$message->loadingfile(0,$conf);
-    open(CONF,$conf) or $ok=0;
+    open(CONF,$conf) or die "Can't open $conf";
     if (! $ok) { $message->erroropeningfile(2,$conf); exit 1; }
 
     foreach my $line (<CONF>)
@@ -157,7 +157,7 @@ sub check()
     {	
 	if(!exists($params{$var}))
 	{
-	    $message->message("critic variable $var is missing\n");
+	    $message->message(2,"critic variable $var is missing");
 	    $missing++;
 	}
 	else

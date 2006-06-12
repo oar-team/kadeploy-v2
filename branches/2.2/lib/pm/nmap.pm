@@ -26,7 +26,7 @@ sub check_tcp($$)
     open(NMAPCMD, "nmap -p $port -oG - $hostip|");
     while ($line=<NMAPCMD>)
     {
-	if ($line=~ /^Host: $hostip \(.+\)[\s\t]+Ports: $port\/open\//)
+	if ($line=~ /^Host: $hostip \(.*\)[\s\t]+Ports: $port\/open\//)
 	{
 	    $ok=1;
 	}
@@ -43,11 +43,13 @@ sub check_icmp($)
 
     my $line;
     my $ok=0;
+    my $cmd;
 
-    open(NMAPCMD, "nmap -sP -oG - $hostip|");
+    $cmd="nmap -sP -oG - $hostip";
+    open(NMAPCMD, "$cmd|");
     while ($line=<NMAPCMD>)
     {
-	if ($line=~ /^Host: $hostip \(.+\)[\s\t]+Status:[\s]Up/)
+	if ($line=~ /^Host: $hostip \(.*\)[\s\t]+Status:[\s]Up/)
 	{
 	    $ok=1;
 	}

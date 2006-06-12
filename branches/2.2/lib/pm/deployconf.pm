@@ -5,12 +5,14 @@ use warnings;
 use libkadeploy2::message;
 use libkadeploy2::conflib;
 use libkadeploy2::command;
+use libkadeploy2::sudo;
 
 my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
 my $nodesfile=$kadeployconfdir."/clusternodes.conf";
 
+my $kasudowrapper_path="/bin/kasudowrapper.sh";
 my $kareboot_path="/bin/kareboot";
 my $kapart_path="/sbin/kapart";
 my $kapxe_path="/bin/kapxe";
@@ -20,10 +22,13 @@ my $kasetup_path="/sbin/kasetup";
 my $kadeployenv_path="/bin/kadeployenv";
 my $karights_path="/sbin/karights";
 my $kachecknodes_path="/sbin/kachecknodes";
+my $mcatseg_path="/bin/mcatseg";
 
 my $environment_dd_path="/lib/environment/dd";
 my $environment_linux_path  ="/lib/environment/linux";
 my $environment_windows_path="/lib/environment/windows";
+
+
 
 
 
@@ -42,14 +47,11 @@ my %critic =
 	     ##############################################################
 
 
-	     "remote_mcat" => 3,
-
              # ce ne sont pas des variables critiques	     
 	     #"use_internal_parallel_command" => 7,
 	     #"do_fdisk_on_deploy" => 7,
 	     
 	     "kadeploy2_directory" => 6,
-	     "nmap_cmd" => 3,
 	     
 	     "deploy_db_host" => 1,
 	     "deploy_db_name" => 1,
@@ -63,7 +65,7 @@ my %critic =
 	     #############################
 	     );
 
-my @criticbin=("pv","nmap","mcatseg");
+
 
 my $message=libkadeploy2::message::new();
 
@@ -202,13 +204,10 @@ sub checkdeployconf()
     $deploy_user=$self->get("deploy_user");
     $tftpdir=$self->get("tftp_repository");
     $pxe_rep=$self->get("pxe_rep");
-    $remotesentinelle=$self->get("remote_sentinelle_rsh");
-    $remotemcat=$self->get("remote_mcat");
     $deploy_sentinelle_cmd=$self->get("deploy_sentinelle_cmd");
-    $prod_sentinelle_cmd=$self->get("prod_sentinelle_cmd");
     $pre_install_archive=$self->get("pre_install_archive");
     $post_install_archive=$self->get("post_install_archive");
-    $user=$ENV{USER};
+    $user=libkadeploy2::sudo::get_sudo_user();
 
     #CHECK KADEPLOY DIR
     if (! -d $kadeploy2_directory)
@@ -241,20 +240,6 @@ sub checkdeployconf()
 	print "* $deploy_user user don't exist.\n";	
 	$ok=0;
 	return $ok;
-    }
-
-    foreach $bin (@criticbin)
-    {
-	$cmd="which $bin";
-	$command=libkadeploy2::command::new($cmd,
-					    $timeout,
-					    0
-					    );
-	$command->exec();
-	if (! $command->get_status())
-	{
-	    print "* $bin bin not found\n";
-	}
     }
 
     #CHECK TFTP
@@ -324,17 +309,8 @@ sub checkdeployconf()
 sub check_etc_deploy()
 {
     my $ok=1;
-
-    if (! -d $kadeployconfdir)
-    {
-	print "kadeploy configuration directory $kadeployconfdir is not created\n";
-	$ok=0;
-    }
-    if ( ! -e $deployconf)
-    {
-	print "$deployconf not found\n";
-	$ok=0;
-    }
+    if (! -d $kadeployconfdir) { $message->message(0,"kadeploy configuration directory $kadeployconfdir is not created"); $ok=0; }
+    if (! -e $deployconf)      { $message->filenotfound(2,"$deployconf"); $ok=0; }
     return($ok);
 }
 
@@ -347,15 +323,18 @@ sub getpath_cmd($)
     my $scriptpath;
     my $kadeploydir=$self->get("kadeploy2_directory");
 
-    if    ($cmd eq "kareboot")   { $cmdpath=$kareboot_path; }
-    elsif ($cmd eq "kapart")     { $cmdpath=$kapart_path; }
-    elsif ($cmd eq "kapxe")      { $cmdpath=$kapxe_path; }
-    elsif ($cmd eq "kaexec")     { $cmdpath=$kaexec_path; }
-    elsif ($cmd eq "kamcat")     { $cmdpath=$kamcat_path; }
-    elsif ($cmd eq "kasetup")    { $cmdpath=$kasetup_path; }
-    elsif ($cmd eq "kadeployenv"){ $cmdpath=$kadeployenv_path; }
-    elsif ($cmd eq "karights")   { $cmdpath=$karights_path; }
+    if    ($cmd eq "kareboot")       { $cmdpath=$kareboot_path; }
+    elsif ($cmd eq "kapart")         { $cmdpath=$kapart_path; }
+    elsif ($cmd eq "kapxe")          { $cmdpath=$kapxe_path; }
+    elsif ($cmd eq "kaexec")         { $cmdpath=$kaexec_path; }
+    elsif ($cmd eq "kamcat")         { $cmdpath=$kamcat_path; }
+    elsif ($cmd eq "kasetup")        { $cmdpath=$kasetup_path; }
+    elsif ($cmd eq "kadeployenv")    { $cmdpath=$kadeployenv_path; }
+    elsif ($cmd eq "karights")       { $cmdpath=$karights_path; }
     elsif ($cmd eq "kachecknodes")   { $cmdpath=$kachecknodes_path; }
+
+    elsif ($cmd eq "mcatseg")        { $cmdpath=$mcatseg_path; }
+    elsif ($cmd eq "kasudowrapper")  { $cmdpath=$kasudowrapper_path; }
 
     elsif ($cmd eq "environment_dd")        { $cmdpath=$environment_dd_path; }
     elsif ($cmd eq "environment_linux")     { $cmdpath=$environment_linux_path; }
@@ -366,6 +345,48 @@ sub getpath_cmd($)
     return $scriptpath;
 }
 
+sub chmodconf()
+{
+    my $self=shift;
+
+    my $kadeployuser=$self->get("deploy_user");
+    my $kadeploydir=$self->get("kadeploy2_directory");
+    my $sudouser=libkadeploy2::sudo::get_sudo_user();
+
+    if (! $sudouser) { $sudouser=libkadeploy2::sudo::get_user(); }
+
+    my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
+    if ($sudouser eq "root" ||
+	$sudouser eq $kadeployuser
+	)
+    {
+# la conf appartient a deploy	
+	$message->message(-1,"chmoding $kadeployconfdir");
+	chmod(0755,"$kadeployconfdir");
+	system("chown $kadeployuser:root $kadeployconfdir");
+	system("chown -R $kadeployuser:root $kadeployconfdir/*");
+	chmod(0440,"$deployconf");
+	chmod(0440,"$partitionfile");
+	chmod(0440,"$nodesfile");
+
+	$message->message(-1,"chmoding $kasudowrapperfile");
+# le wrapper doit pouvoir etre ecris par deploy	
+	system("chmod 755 $kasudowrapperfile");           
+	system("chown $kadeployuser:root $kasudowrapperfile"); 
+	
+	$message->message(-1,"chmoding plugin");
+	system("chmod 755 ".$self->getpath_cmd("environment_linux"));
+	system("chmod 755 ".$self->getpath_cmd("environment_dd"));
+	system("chmod 755 ".$self->getpath_cmd("environment_windows"));
+
+	$message->message(0,"chmod configuration file done");
+    }
+    else
+    {
+	$message->message(2,"You have not enough right : ".libkadeploy2::sudo::get_sudo_user());
+	exit 1;
+    }
+}
 
 
 1;
