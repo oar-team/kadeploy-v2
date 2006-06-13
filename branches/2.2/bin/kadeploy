@@ -120,10 +120,12 @@ if ($environment->get_info("deploytype") eq "pxelinux")
     else { $message->message(-1,"$sudo_user setting up pxe for node ".$nodelist->get_str()); exit 0; }
 }
 
+
 $cmd=$kadeployenv." ".$nodelist->get_cmdline()." -l $deployenv_login -e $deployenv_name";
 if (! execcmd($cmd)) { $message->message(2,"$sudo_user Fail with pxe for node ".$nodelist->get_str()); exit 1; }
 
-if ($noreboot==0)
+$cmd="$kachecknodes --check --type MCAT ".$nodelist->get_cmdline();
+if (! execcmd($cmd))
 {
     $cmd=$kareboot." ".$nodelist->get_cmdline();
     if (! execcmd($cmd)) { $message->message(2,"Fail with reboot"); exit 1; }

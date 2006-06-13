@@ -486,8 +486,8 @@ sub kadeploy_help()
 \t-m|--machine          nodename
 \t-f|--nodefile         nodefile
 
-\t-p|--part-number      partition number
-\t-d|--disk-number      disk number
+\t-p|--partnumber       partition number
+\t-d|--disknumber       disk number
 
 \t-e|--environment      environment name
 \t-l|--login            username
@@ -518,15 +518,15 @@ sub kasetup_help()
 }
 
 
-sub deployenv_help()
+sub kadeployenv_help()
 {
     my $self=shift;
     my $help="deployenv
 \t-m|--machine          nodename
 \t-f|--nodefile         nodefile
 
-\t-p|--part-number      partition number
-\t-d|--disk-number      disk number
+\t-p|--partnumber      partition number
+\t-d|--disknumber      disk number
 
 \t-e|--environment      environment name
 \t-l|--login            username
@@ -536,6 +536,16 @@ sub deployenv_help()
     print $help;
 }
 
+sub kareset_help()
+{
+    my $self=shift;
+    my $help="kareset
+\t-m|--machine          nodename
+
+\t-h|--help             this help message
+";
+    print $help;
+}
 
 
 
@@ -548,7 +558,7 @@ sub kapart_help()
 
 \t--partitionfile       partition description
 
-\t--disk-number         disk number
+\t--disknumber         disk number
 \t--disktype            disk type [ide|scsi|sata]
 
 \t--ostype              linux currently

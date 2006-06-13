@@ -172,8 +172,6 @@ if ($ok)
 else
 { $message->message(2,"Deployment failed with ".$nodelist->get_str());  exit 1; }
 
-$message->deployenv_help();
-
 ################################################################################
 
 sub check_options()
@@ -199,6 +197,8 @@ sub check_options()
 	       'verbose!'             => \$verbose,
 
 	       );
+
+    if ($help) { $message->kadeployenv_help(); exit 0; }
 
     foreach my $arg (@ARGV) { if ($arg =~ /([a-zA-Z0-9_]+)@([a-zA-Z0-9\._]+)/) { $login=$1; $envname=$2; } }
 
