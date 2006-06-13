@@ -66,8 +66,10 @@ my %critic =
 	     "post_install_script" => 5,
 	     "tftp_repository" => 2,
 
-	     "deployenvname" => 5,
-	     "deploylogin"   => 5,
+	     "deployenv_name" => 5,
+	     "deployenv_login"   => 5,
+	     
+	     "deploy_user"  => 5,
 	     #############################
 	     );
 

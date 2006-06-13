@@ -272,7 +272,10 @@ sub copy_kernel_tftpnodes($)
 	{
 	    $node_name=$node->get_name();
 	    mkdir("$tftproot/$node_name",0755);	
-	    copy("$kernel","$tftproot/$node_name/");    
+	    if ( -r "$kernel")
+	    { copy("$kernel","$tftproot/$node_name/") }
+	    else
+	    { $message->message(2,"Can't copy kernel : $kernel"); exit 1; }
 	    chmod(0755,"$tftproot/$node_name/");    
 	    chmod(0755,"$tftproot/$node_name/$kernel");    
 	}
@@ -298,7 +301,11 @@ sub copy_initrd_tftpnodes($)
 	{
 	    $node_name=$node->get_name();
 	    mkdir("$tftproot/$node_name",0755);	
-	    copy("$initrd","$tftproot/$node_name/");    
+	    if ( -r "$initrd")
+	    { copy("$initrd","$tftproot/$node_name/") }
+	    else
+	    { $message->message(2,"Can't copy initrd : $initrd"); exit 1; }
+	
 	    chmod(0755,"$tftproot/$node_name/");
 	    chmod(0755,"$tftproot/$node_name/$initrd");
 	}
@@ -390,7 +397,10 @@ sub copy_tftpnode($$)
 {
     my $source=shift;
     my $node_name=shift;
-    copy("$source","$tftproot/$node_name/");
+    if ( -r "$source")
+    { copy("$source","$tftproot/$node_name/") }
+    else
+    { $message->message(2,"Can't copy $source to $tftproot/$node_name"); exit 1; }       
 }
 
 sub generate_pxelinuxcfg_file($$$$$$$)
@@ -576,6 +586,7 @@ sub writewindowsdisk($$)
 	$menudest="$tftproot/$node_name/menu.lst";
 
 	$message->message(0,"tftp boot modified for $node_name");
+
 	copy("$bootiniref","$menudest");
 	system("sed -i -e 's/WINNT/$windowsbootdirectory/g' $menudest");
 	system("sed -i -e 's/partition(0)/partition($partnumber)/g' $menudest");

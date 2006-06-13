@@ -70,6 +70,7 @@ MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
+SED = sed
 SUDO = sudo
 VERSION = 2.2
 
