@@ -24,6 +24,10 @@ if test [ -z $SUDO ]; then echo "sudo not found..." ; exit 1 ; fi
 AC_CHECK_PROGS(NMAP,nmap)
 if test [ -z $NMAP ]; then echo "nmap not found..." ; exit 1 ; fi
 
+AC_CHECK_PROGS(SED,sed)
+if test [ -z $SED ]; then echo "sed not found..." ; exit 1 ; fi
+
+
 AC_CONFIG_FILES([Makefile 
 		bin/Makefile 
 

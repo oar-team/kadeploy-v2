@@ -9,6 +9,7 @@ use libkadeploy2::deployconf;
 use libkadeploy2::nodelist;
 use libkadeploy2::command;
 use libkadeploy2::sudo;
+use libkadeploy2::environment;
 
 sub execcmd($);
 
@@ -19,7 +20,8 @@ my $kadeploydir=$conf->get("kadeploy2_directory");
 my $kadeployenv=$conf->getpath_cmd("kadeployenv");
 my $kareboot=$conf->getpath_cmd("kareboot");
 my $kachecknodes=$conf->getpath_cmd("kachecknodes");
-
+my $deployenvname=$conf->get("deployenvname");
+my $deploylogin=$conf->get("deploylogin");
 my @node_list;
 my $disknumber=1;
 my $partnumber=1;
@@ -35,6 +37,7 @@ my $cmd;
 my $ok=1;
 my $noreboot=0;
 my $command;
+my $envfile;
 my $timetosleep=60;
 my $sudo_user=libkadeploy2::sudo::get_sudo_user();
 
@@ -64,6 +67,7 @@ GetOptions(
 
 foreach my $arg (@ARGV) { if ($arg =~ /([a-zA-Z0-9_]+)\@([a-zA-Z0-9\._]+)/) { $login=$1; $envname=$2; } }
 
+
 if ($help)            { $message->kadeploy_help(); exit 0; }
 if (@node_list)
 {
@@ -92,14 +96,11 @@ if ($envname && $login)
     $environment->set_name($envname);
     $environment->set_user($login);    
 
-    if ($environment->get_descriptionfile_fromdb())
-    {		
-	if (! $environment->load()) 
-	{ 
-	    $message->erroropeningfile(2,$environment->get_descriptionfile());
-	    exit 1;
-	}
-    }
+    if (! $environment->get_descriptionfile_fromdb()) { $message->message(2,"Environment not registred in db...");    exit 1; }
+    if (! $environment->load())                       { $message->erroropeningfile(2,$environment->get_descriptionfile()); exit 1; 	}
+    if (! $environment->get_info("deploytype"))       { $message->message(2,"Your configuration file doesn't contain deploytype"); exit 1; 	}
+    $envfile=$environment->get_descriptionfile();
+
 }
 else
 {
@@ -119,7 +120,7 @@ if ($environment->get_info("deploytype") eq "pxelinux")
     else { $message->message(-1,"$sudo_user setting up pxe for node ".$nodelist->get_str()); exit 0; }
 }
 
-$cmd=$kadeployenv." ".$nodelist->get_cmdline()." -l deploy -e linuxdeploy";
+$cmd=$kadeployenv." ".$nodelist->get_cmdline()." -l $deploylogin -e $deployenvname";
 if (! execcmd($cmd)) { $message->message(2,"$sudo_user Fail with pxe for node ".$nodelist->get_str()); exit 1; }
 
 if ($noreboot==0)

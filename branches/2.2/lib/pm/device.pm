@@ -8,7 +8,7 @@ sub new($$$)
     my $disknumber=shift;
     my $partnumber=shift;
     my $self;
-    if (! ($type && $disknumber && $partnumber))
+    if (! ($type && $disknumber))
     { $message->unknowerror(2,"device.pm new() type:$type disknumber:$disknumber partnumber:$partnumber"); exit 1; }
 
     $self=
@@ -65,7 +65,7 @@ sub get_linux()
 	exit 1;
     }
     
-    if ($self->{partnumber})
+    if ($self->{partnumber} > 0)
     { $destdevice.=$self->{partnumber}; }
     return $destdevice;
 }

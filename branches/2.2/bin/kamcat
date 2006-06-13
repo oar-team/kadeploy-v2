@@ -9,6 +9,7 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::message;
 use libkadeploy2::tools;
 use libkadeploy2::remotecopy;
+use POSIX;
 use warnings;
 use strict;
 
@@ -50,7 +51,7 @@ GetOptions(
 	   );
 
 if ($help)        { $message->kamcat_help(); exit 0; }
-if (! $port)      { $port=$defaultport; }
+if (! $port)      { $port=getpid(); if ($port < 1024) { $port+=10000; } }
 if (! $connector) { $connector="ssh"; }
 if (! $user)      { $user="root"; }
 if (! $srvcmd)    { $message->kamcat_help(); exit 0; }
@@ -191,7 +192,9 @@ sub setup_cmdnode($)
 	$cmd=$conf->getpath_cmd("mcatseg")." 4 $port \"$srvcmd | pv -N mcat \" \"$cltcmd\" $node_list[0]";
 	@cmdlist=(@cmdlist,$cmd);
     }
-
+    print "\n\n";
+    foreach (@cmdlist) { print "$_\n\n"; }
+    print "\n\n";
 #    foreach my $tmp (@cmdlist) { print "$tmp\n"; }
     $i=0;
     $forknumber=0;
@@ -224,7 +227,7 @@ sub setup_cmdnode($)
 					$verbose
 					);
     $command->exec();
-    for ($i=0;$i<$forknumber;$i++) { wait(); }
+    for ($i=1;$i<$forknumber;$i++) { wait(); }
     return $command->get_status();
 }
 

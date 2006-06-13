@@ -18,7 +18,7 @@ sub severity($)
     my $severity=shift;
     my $str;
     
-    if (! $severity) { $severity=2; }
+
 
     if ($severity<0)
     {
@@ -546,12 +546,12 @@ sub kapart_help()
 \t-m|--machine          nodename
 \t-f|--nodefile         nodefile
 
+\t--partitionfile       partition description
 
-\t-d|--disk-number      disk number
-\t   --disktype         disk type [ide|scsi|sata]
+\t--disk-number         disk number
+\t--disktype            disk type [ide|scsi|sata]
 
-\t  --ostype            linux currently
-
+\t--ostype              linux currently
 
 \t-v|--verbose          verbose on
 \t-h|--help             this help message

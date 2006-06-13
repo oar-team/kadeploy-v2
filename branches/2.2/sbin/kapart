@@ -1,11 +1,14 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use POSIX;
 use libkadeploy2::cmdline;
 use libkadeploy2::message;
 use libkadeploy2::command;
 use libkadeploy2::nodelist;
 use libkadeploy2::remoteparallelcommand;
+use libkadeploy2::disk;
+use libkadeploy2::device;
 use Getopt::Long;
 
 sub get_options();
@@ -95,10 +98,39 @@ sub kapart($)
 {
     my $nodelist=shift;
     my $ok=1;
-    $cmd="$kamcat --login root --servercommand \"$kasetup -printvalidfdisk -loadpartitionfile $partitionfile\" -clientcommand \" cat > /tmp/fdisk.txt\"";
-    $cmd.=libkadeploy2::cmdline::get_nodes_cmdline($nodelist);
+    my $ref_node_list;
+    my @node_list;
+    my $node;
     my $remoteparallelcommand;
-    
+    my $nodename;
+    my $i;
+    my $device;
+    my $linuxdev;
+    my $disk;
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    $i=0;
+    foreach $node (@node_list)
+    {
+	$nodename=$node->get_name();
+	$disk=libkadeploy2::disk::new();
+	$disk->get_fromdb($nodename,$disknumber);
+	if ($i==0)
+	{
+	    $disktype=$disk->get_interface();
+	}
+	else
+	{
+	    if (! ($disktype eq $disk->get_interface()))
+	    { $message->message(2,"Error wrong interface disk (kapart)"); exit 1; }
+	}
+    }
+
+
+    $cmd="$kamcat --login root --servercommand \"$kasetup -printvalidfdisk -loadpartitionfile $partitionfile\" -clientcommand \" cat > /tmp/fdisk.txt\"";
+    $cmd.=libkadeploy2::cmdline::get_nodes_cmdline($nodelist);  
     
     $command=libkadeploy2::command::new(
 					$cmd,
@@ -107,23 +139,16 @@ sub kapart($)
 					);
 
 
-
     if (! $command->exec()) { $ok=0; }
 
 
-    $cmd="umount -a";
-    $remoteparallelcommand=libkadeploy2::remoteparallelcommand::new(
-								    "ssh",
-								    "internal",
-								    "root",
-								    $nodelist,
-								    $cmd,
-								    30,
-								    1
-								    );
-    $remoteparallelcommand->exec();
+    $device=libkadeploy2::device::new("$disktype",$disknumber,0);
+    $linuxdev=$device->get_linux();
 
-    $cmd="\"cat /tmp/fdisk.txt \| fdisk /dev/hda\"";
+
+
+
+    $cmd="\"cat /tmp/fdisk.txt \| fdisk /dev/$linuxdev\"";
     $remoteparallelcommand=libkadeploy2::remoteparallelcommand::new(
 								    "ssh",
 								    "internal",

@@ -103,8 +103,8 @@ foreach $node (@node_list)
     }
     else
     {
-	if ($disktype eq $disk->get_interface())
-	{ print "OK";} else { print "BAD\n"; exit 1; }
+	if (! ($disktype eq $disk->get_interface()))
+	{ $message->message(2,"Error wrong interface disk (kapart)"); exit 1; }
     }
 }
 
@@ -144,7 +144,7 @@ $command=libkadeploy2::command::new($cmd,
 				    );
 if (! $command->exec()) { exit 1; }
 
-$cmd="umount /dev/dest";
+$cmd="umount /mnt/dest";
 execcmd($cmd,200);
 print "Finished\n";
 

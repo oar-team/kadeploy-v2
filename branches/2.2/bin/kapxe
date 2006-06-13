@@ -59,6 +59,7 @@ my $menulst;
 my $disknumber=1;
 my $disktype="ide";
 my $sudo_user=libkadeploy2::sudo::get_sudo_user();
+if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
 
 my $kadeploydir=$conf->get("kadeploy2_directory");
 my $kadeploylibpxelinux=$kadeploydir."/lib/pxelinux/";
@@ -67,12 +68,13 @@ my $message=libkadeploy2::message::new();
 my $pxelinuxpath="$kadeploylibpxelinux/pxelinux.0";
 my $memdiskpath ="$kadeploylibpxelinux/memdisk";
 my $grubfloppyname="grub.img";
+my $windowsbootdirectory="WINDOWS";
 
 my $sourcewindowsfloppy="$kadeploydir/lib/floppy/windows/ntldr.img";
 my $sourcegrubfloppy="$kadeploydir/lib/floppy/grub/grub.img";
 
-my $grubfactory="$kadeploydir/lib/floppy/grub/grub-factory.pl";
-my $ntldrfactory="$kadeploydir/lib/floppy/windows/ntldr-factory.pl";
+my $grubfactory=$conf->getpath_cmd("factory_grub");
+my $ntldrfactory=$conf->getpath_cmd("factory_windows");
 
 my $bootiniref="$kadeploydir/lib/floppy/windows/boot.ini";
 my $righttocheck="PXE";
@@ -165,30 +167,31 @@ exit 0;
 sub check_options()
 {
     GetOptions(
-	       'm=s'           => \@node_list,
-	       'machine=s'     => \@node_list,
+	       'm=s'            => \@node_list,
+	       'machine=s'      => \@node_list,
 
-	       'f=s'           => \$hostfile,
-	       'e=s'           => \$environment,
+	       'f=s'            => \$hostfile,
+	       'e=s'            => \$environment,
 	       
-	       'verbose'       => \$verbose,
-	       'v'             => \$verbose,
+	       'verbose'        => \$verbose,
+	       'v'              => \$verbose,
 	       
-	       'type=s'        => \$type,
-	       'kernel=s'      => \$kernel,
-	       'initrd=s'      => \$initrd,
-	       'kernelparams=s'=> \$kernelparams,
-	       'serialport'    => \$serialport,
-	       'serialspeed'   => \$first_serial_speed,
-	       'environment=s' => \$environment,
-	       'timeout=s'     => \$timeout,
+	       'type=s'         => \$type,
+	       'kernel=s'       => \$kernel,
+	       'initrd=s'       => \$initrd,
+	       'kernelparams=s' => \$kernelparams,
+	       'windowsbootdirectory=s'=> \$windowsbootdirectory,
+	       'serialport'     => \$serialport,
+	       'serialspeed'    => \$first_serial_speed,
+	       'environment=s'  => \$environment,
+	       'timeout=s'      => \$timeout,
 	       
-	       'disknumber=s'  => \$disknumber,
-	       'partnumber=s'  => \$partnumber,
-	       'disktype=s'    => \$disktype,
+	       'disknumber=s'   => \$disknumber,
+	       'partnumber=s'   => \$partnumber,
+	       'disktype=s'     => \$disktype,
 	       
-	       'h!'            => \$help,
-	       'help!'         => \$help,
+	       'h!'             => \$help,
+	       'help!'          => \$help,
 	       );
     
     if ($help) { $message->kapxe_help(); exit 0; }
@@ -572,9 +575,11 @@ sub writewindowsdisk($$)
 	$destfloppy="$tftproot/$node_name/$grubfloppyname";
 	$menudest="$tftproot/$node_name/menu.lst";
 
-	$message->message("tftp boot modified for $node_name");
+	$message->message(0,"tftp boot modified for $node_name");
 	copy("$bootiniref","$menudest");
+	system("sed -i -e 's/WINNT/$windowsbootdirectory/g' $menudest");
 	system("sed -i -e 's/partition(0)/partition($partnumber)/g' $menudest");
+
 	system("$ntldrfactory -s $sourcewindowsfloppy -d $destfloppy -m $menudest");
     }
 }

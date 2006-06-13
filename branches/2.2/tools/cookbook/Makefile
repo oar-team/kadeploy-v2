@@ -70,6 +70,7 @@ MYSQL = mysql
 NMAP = nmap
 PACKAGE = kadeploy
 PERL = perl
+SUDO = sudo
 VERSION = 2.2
 
 EXTRA_DIST = README conf

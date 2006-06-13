@@ -24,6 +24,9 @@ my $karights_path="/sbin/karights";
 my $kachecknodes_path="/sbin/kachecknodes";
 my $mcatseg_path="/bin/mcatseg";
 
+my $factory_grub_path="/lib/floppy/grub/grub-factory.pl";
+my $factory_windows_path="/lib/floppy/windows/ntldr-factory.pl";
+
 my $environment_dd_path="/lib/environment/dd";
 my $environment_linux_path  ="/lib/environment/linux";
 my $environment_windows_path="/lib/environment/windows";
@@ -62,6 +65,9 @@ my %critic =
 	     "pre_install_script" => 5,
 	     "post_install_script" => 5,
 	     "tftp_repository" => 2,
+
+	     "deployenvname" => 5,
+	     "deploylogin"   => 5,
 	     #############################
 	     );
 
@@ -339,6 +345,11 @@ sub getpath_cmd($)
     elsif ($cmd eq "environment_dd")        { $cmdpath=$environment_dd_path; }
     elsif ($cmd eq "environment_linux")     { $cmdpath=$environment_linux_path; }
     elsif ($cmd eq "environment_windows")   { $cmdpath=$environment_windows_path; }
+
+    elsif ($cmd eq "factory_grub")          { $cmdpath=$factory_grub_path; }
+    elsif ($cmd eq "factory_windows")       { $cmdpath=$factory_windows_path; }
+
+
 
     if (! $cmdpath) { $message->message(2,"deployconf.pm error cmd=$cmd"); exit 255;  }
     $scriptpath=$kadeploydir.$cmdpath;

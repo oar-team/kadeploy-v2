@@ -18,6 +18,7 @@ sub deploypxelinux();
 sub deploydd();
 sub deploywindows();
 sub setuppxelinux();
+sub setuppxewindows();
 sub setupgrubchainload();
 sub check_necessary_right_or_exit($);
 sub check_disk_partnumber();
@@ -158,20 +159,18 @@ elsif ($environment->get_info("deploytype") eq "windows")
 {
     $message->message(0,"Begin deployment windows with ".$nodelist->get_str());
     $ok=deploywindows();
+    if ($ok)
+    {
+	$message->message(0,"Setup pxe with ".$nodelist->get_str());
+	$ok=setuppxewindows();
+    }
 }
 
 
 if ($ok)
-{
-    $message->message(0,"Deployment success with ".$nodelist->get_str());
-    exit 0;
-}
+{ $message->message(0,"Deployment success with ".$nodelist->get_str()); exit 0; }
 else
-{
-    $message->message(2,"Deployment failed with ".$nodelist->get_str());
-    exit 1;
-}
-
+{ $message->message(2,"Deployment failed with ".$nodelist->get_str());  exit 1; }
 
 $message->deployenv_help();
 
@@ -298,8 +297,6 @@ sub deploypxelinux()
 sub deploydd()
 {
 #	$environment->print_descriptionfile();
-    $basefile=$environment->get_info("basefile");
-
     $cmd="perl $ddpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
@@ -315,8 +312,6 @@ sub deploydd()
 sub deploylinux()
 {
 #	$environment->print_descriptionfile();
-    $basefile=$environment->get_info("basefile");
-    my $postinstall=$environment->get_info("postinstall");
     #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
     $cmd="perl $linuxpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
@@ -333,12 +328,10 @@ sub deploylinux()
 sub deploywindows()
 {
 #	$environment->print_descriptionfile();
-    $basefile=$environment->get_info("basefile");
-    #linuxdeploy  -m cls1 --disknumber 1 --partnumber 2 --basefile envref/envref.tgz
     $cmd="perl $windowspath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
-	" --basefile ".$basefile;
+	" --envfile ".$envfile;
     if ($verbose) { $cmd.=" -v"; }
     my $command=libkadeploy2::command::new($cmd,
 					   600,
@@ -382,6 +375,24 @@ sub setupgrubchainload()
     { $cmd.=" --partnumber $partnumber"; }
     elsif ($partnumber)
     { $cmd.=" --partnumber $partnumber"; }
+    if ($verbose) { $cmd.=" -v"; }
+    my $command=libkadeploy2::command::new($cmd,
+					   50,
+					   $verbose);
+    $command->exec();
+    return $command->get_status();
+}
+
+
+sub setuppxewindows()
+{
+    $cmd="$kapxe ".$nodelist->get_cmdline().
+	" --type windows -p $partnumber";
+    if ($environment->get_info("windowsbootdirectory"))
+    {
+	$cmd.=" --windowsbootdirectory ".$environment->get_info("windowsbootdirectory");
+    }
+    
     if ($verbose) { $cmd.=" -v"; }
     my $command=libkadeploy2::command::new($cmd,
 					   50,
