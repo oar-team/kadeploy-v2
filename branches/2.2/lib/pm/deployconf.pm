@@ -70,6 +70,9 @@ my %critic =
 	     "deployenv_login"   => 5,
 	     
 	     "deploy_user"  => 5,
+
+	     "default_partition_number" => 1,
+	     "default_disk_number"      => 1,
 	     #############################
 	     );
 

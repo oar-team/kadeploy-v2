@@ -38,8 +38,8 @@ my $kapxe=$conf->getpath_cmd("kapxe");
 my $kapart=$conf->getpath_cmd("kapart");
 
 my @node_list;
-my $disknumber=1;
-my $partnumber;
+my $disknumber=$conf->get("default_disk_number");
+my $partnumber=$conf->get("default_partition_number");
 my $login;
 my $help;
 my $verbose=0;
