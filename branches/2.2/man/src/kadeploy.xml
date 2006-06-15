@@ -22,11 +22,15 @@
   <refsect1>
     <title>DESCRIPTION</title>
     <para>
-      kadeploy deploys the specified environment on the requested nodes. When successfully over, the nodes are available under the new and freshly installed environment.
-      It needs critic variables to be defined in the /etc/kadeploy/deploy.conf configuration file ; see configuration file section for further details.
+      kadeploy deploys the specified environment on the requested
+      nodes. When successfully over, the nodes are available under the
+      new and freshly installed environment.
     </para>
 
     <para>
+      It needs critic variables to be defined in the /etc/kadeploy/deploy.conf
+      configuration file ; see configuration file section for further
+      details.
       If you want to know how to deploy real environment see kadeploy-environment (1).
     </para>
   </refsect1>
@@ -42,33 +46,33 @@
     </para>
     <para>
       <command>-p, --partition partition</command> the target partition. This option can't be used more than once and the partition is the same for all the nodes.
-      </para>
+    </para>
+    <para>
+      <command>-l, --login login</command> the environment owner. 
+    </para>
 
   </refsect1>
     
   <refsect1>
     <title>CONFIGURATION FILES</title>	  	    
     <para>
-      <command>/etc/kadeploy/deploy.conf</command> Contains variables that MUST be defined prior to the command execution. 
-These variables are grouped into several sections. 
-A very short description is available for each variable and sometimes example values are given in commentary. 
-The file is read once at the beginning of the execution and prior to any other action. 
-If values are missing, it should be told as precisely as possible. 
+      <command>/etc/kadeploy/deploy.conf</command> Contains variables
+      that MUST be defined prior to the command execution.  
     </para>
 
     <para>
-      You can man it and an example of this file can be found at in the <emphasis>tools/cookbook/</emphasis> folder of the installation directory.      
+      You can man it and an example of this file can be found at in
+      the <emphasis>tools/cookbook/</emphasis> folder of the
+      installation directory.
     </para>
-    <para>
-      <command>/etc/kadeploy/deploy_cmd.conf</command> Contains entries describing reboot command needed for deployment. Please see man page for further details.    
-      </para>
   </refsect1>
 	
   <refsect1>
     <title>FILES</title>
     
     <para>
-    kadeploy needs read and write access to several folder and files to acheive a deployment. These rights should be granted to the deploy user. Here are the files and folder list :
+    kadeploy needs read and write access to several folder and files to acheive a deployment. 
+      These rights should be granted to the deploy user. Here are the files and folder list :
     </para>
 
     <para>      
@@ -82,11 +86,15 @@ If values are missing, it should be told as precisely as possible.
   <refsect1>
     <title>EXAMPLE</title>	      	      
     <para>
-      <command>kadeploy -e debian -m node7 -p hda3</command> deploys the debian on partition hda3 of node 7
+      <command>kadeploy -e debian -l deploy -m node7 -p 3</command>
+      deploys the debian on partition hda3 of node 7
     </para>
     <para>
-      <command>kadeploy -e debian -m node1 -m node2 -p hdb6</command> deploys the debian on partition hdb6 of nodes 1 and 2
+      <command>kadeploy yoyz@slack -m node1 -m node2 -p 6</command>
+      deploys the slack environment of the user yoyz on partition 6 of
+      nodes 1 and 2
     </para>
+
   </refsect1>
 	
 </refentry>

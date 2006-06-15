@@ -1,0 +1,76 @@
+<refentry id="kaenvironmentsv">
+
+  <refmeta>
+    <refentrytitle>kaenvironments</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>kaenvironments</refname>
+    <refpurpose> list and remove an environment </refpurpose>
+  </refnamediv>
+  
+
+
+  <refsect1>
+    <title>SYNOPSIS</title>
+    <command>kaenvironments</command>
+    <para>
+      <command>--add</command> Want to add an environment
+    </para>
+    <para>
+      <command>--del</command> Want to del an environment
+    </para>
+    <para>
+      <command>--list</command> Want to list all environment
+    </para>
+
+    <para>
+      <command>-e environmentname</command> environment name
+    </para>
+    <para>
+      <command>-l login</command> login of environment
+    </para>
+
+    <para>
+      <command>-m host</command> host to scan
+    </para>
+    <para>
+      <command>-h|--help</command> help screen.
+    </para>
+    
+  </refsect1>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    kaenv register, display and delete environment from the database.
+    you can see all the information of an environment with <emphasis>-e</emphasis> or
+    delete it with <emphasis>--del</emphasis>.
+    You can see the environment of another user with <emphasis>-l</emphasis>.
+  </refsect1>
+      
+  <refsect1>
+    <title>EXAMPLE</title>
+    <command> kaenv --list</command>  
+    <para> display all the environment.</para>
+
+    <command> kaenv --del -e debian -l yoyz</command>  
+    <para> remove the environment debian for the current user.</para>
+
+    <command> kaenv --add -e debian4all -l yoyz -f $(pwd)/debian4all.env</command>  
+    <para> register the environment debian4all with the user yoyz.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This
+      software is licensed under the GNU Library General Public
+      License. There is NO warranty; not even for MERCHANTABILITY or
+      FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+
+
+</refentry>

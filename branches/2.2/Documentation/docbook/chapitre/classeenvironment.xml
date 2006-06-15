@@ -4,6 +4,7 @@
   <para>
      Les classes d'environments sont prévu pour : 
     <itemizedlist>
+
       <listitem>isoler la mise en place d'un environment vis à vis du code de kadeploy
       </listitem>
 
@@ -11,32 +12,26 @@
       </listitem>
     </itemizedlist>
     <para>
-      Exemple : le déploiement d'un système d'exploitation sur PC 
+      Exemple : le déploiement d'un système d'exploitation par kadeploy 
       se passe généralement comme ça : 
       <itemizedlist>
-	<listitem>
-	  configuration d'un boot réseau ( pxe )
+	<listitem>Configuration d'un boot réseau ( pxe )
 	</listitem>
-	<listitem>
-	  redémarage ( reboot )
-	  </listitem>
-	<listitem>
-	  envoie de la preinstall
+	<listitem>Redémarage du noeud ( reboot )
 	</listitem>
-	<listitem>
-	  envoie de l'environment
+	<listitem>Attente du noeud
 	</listitem>
-	<listitem>
-	  envoie de la postinstall
+	<listitem>Envoie de la preinstall
 	</listitem>
-	<listitem>
-	  configuration d'un noyau de boot pxe
+	<listitem>Envoie de l'environment
 	</listitem>
-	<listitem>
-	  reboot
+	<listitem>Envoie de la postinstall
 	</listitem>
-	<listitem>
-	  check du noeud
+	<listitem>Configuration d'un boot réseau pxe
+	</listitem>
+	<listitem>Redémarage du noeud ( reboot )
+	</listitem>
+	<listitem>Attente du noeud
 	</listitem>
       </itemizedlist>
       Deux environments ont été déployé durant ces étapes, un environment
@@ -44,7 +39,7 @@
     </para>
 
     <para>
-      kadeploy distingue quatre type d'environments : 
+      kadeploy distingue quatre type de déploiement :
       <itemizedlist>
 	<listitem> environment PXE
 	</listitem>
@@ -60,32 +55,27 @@
   </para>
 
   <sect1>
-    <title> Etape et séquence de déploiement
+    <title> type de déploiement
     </title>
-    <para>
+      <para>
       Il existe un grand nombre d'application de déploiement d'os.
       Chacune de ces applications à sa propre méchanique de déploiement.
-      kadeploy tente d'offrir une méchanique de base simple et robuste
-      sur lequel il est facile de greffer tout type de système de déploiement.
+      Kadeploy n'à pas pour but de déployer un système d'exploitation en particulier. 
     </para>
 
+    
     <para>
-      Les classes d'environments  permettent de découper l'application en deux partie.
+      Les classes d'environments permettent de séparer le code de
+      kadeploy du code de déploiement d'un système d'exploitation en
+      particulier.
+      Il sagit de script se trouvant dans
+      "lib/environment/".
+      Chacun de ces scripts à la même API, on peut les voir comme des plugins.
+      Pour crée une nouvelle classe d'environment il suffit de :
       <itemizedlist>
-	<listitem>Le code des outils kadeploy
-	</listitem>
-	<listitem>Le code de déploiement d'un environment
-	</listitem>
-      </itemizedlist>
-    </para>
-
-    <para>
-      L'API d'une classe d'environment est simple.
-      Pour crée une classe d'environment il suffit de :
-      <itemizedlist>
-	<listitem>crée un répertoire du nom de la classe d'environment.
-	</listitem>
 	<listitem>crée un scripts d'étapes.      
+	</listitem>
+	<listitem>modifier le main de kadeployenv pour lui préciser son existences
 	</listitem>
 	<listitem>d'associer un environment de la base de donnée à cette classe.
 	  Exemple : debian4all => linux
@@ -94,23 +84,23 @@
     </para>
 
     <sect2>
-      <title> scripts d'étapes
+      <title> scripts de déploiement
       </title>
       <para>
-	Un scripts d'étapes, est un fichier executables qui prend les même
-
-      </para>      
-      <para>
-	Ces scripts prennent en paramétres les noeuds qui sont impliqué 
-	dans cette étape.
-	Un nombre de reprise sur echec "-failnumber".
-	Ainsi que deux fichier de noeuds :
+	Les scripts prennent en paramétres :
 	<itemizedlist>
-	  <listitem>Un fichier contenant les noeuds défaillant : -failnodefile
+	  <listitem>les noeuds impliqué
 	  </listitem>
-	  <listitem>Un fichier contenant les noeuds qui ont réussie : -goodnode
+	  <listitem>un fichier de description de l'environment
 	  </listitem>
 	</itemizedlist>
+
+	<para>
+	  Le script de déploiement se charge des verifications du
+	  fichier de description (cela pourrait être ajouté à l'API du
+	  script de déploiement) et du déploiement à proprement parler.	 
+	</para>
+
 	Le code de retour du script doit être : 
 	<itemizedlist>
 	  <listitem>0 si l'étape à fonctionner correctement
@@ -118,9 +108,9 @@
 	  <listitem>1 si l'étape a échoué pour au moins un noeud
 	  </listitem>
 	</itemizedlist>	
-	Exemple :
+	Le déploiement d'un environment slackware sur la partition 2 du disque 1 de deux noeud peut s'ecrire ainsi :
 	<programlisting>	 
-	  01-check -failnumber 5 -failnodefile /tmp/failnode -goodnode /tmp/goodnode -m noeud-1.cluster.net -m noeud-2.cluster.net
+	  (prefixkadeploy)/lib/environment/linux -m noeud-1.cluster.net -m noeud-2.cluster.net -envfile /home/yoyz/maslack.env -p 2 -d 1
 	</programlisting>
       </para>
       <para>	

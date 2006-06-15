@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <chapter id="modelisationdonnee">
-  <title>Modélisation des donnés</title>
-
-&schemaglobal;
-&schemasql;
-&schematftppxe;
-&schemafichierconfiguration;
-&schemaclasseenvironment;
+  <title>Description du contenue du "Package"</title>
+  
+  &schemaglobal;
+  &schemasql;
+  &schematftppxe;
+  &schemafichierconfiguration;
+  &schemaclasseenvironment;
 
 
 

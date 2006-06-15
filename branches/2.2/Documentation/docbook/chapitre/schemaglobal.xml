@@ -3,20 +3,11 @@
   <title>Global
   </title>
   <para>
-    Les données relatif à l'application sont stoqués sous différentes forme.
-    <itemizedlist>
-      <listitem>fichiers de configurations
-      </listitem>
-      <listitem>librairies externe (pxe)
-      </listitem>
-
-      <listitem>base de donnée
-      </listitem>
-    </itemizedlist>
+    Les fichiers lié à l'application sont de différentes forme.
   </para>
 
   <sect2>
-    <title>/etc/kadeploy
+    <title>Fichiers de configurations : /etc/kadeploy
     </title>
     <para>
       Ce repertoire contient la configuration global de l'application
@@ -24,29 +15,45 @@
   </sect2>
 
   <sect2>
+    <title>Commande utilisateur : kadeploy/bin/
+    </title>
+    <para>
+      Ce repertoire contient les commandes mise à disposition de l'utilisateur
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>Commande administrateur : kadeploy/sbin/
+    </title>
+    <para>
+      Ce repertoire contient les commandes de mise en place et d'administration de kadeploy
+    </para>
+  </sect2>
+
+
+  <sect2>
+    <title>Librairies interne (perl module) : kadeploy/share/perl/
+    </title>
+    <para>
+      Ce repertoire contient les librairies perl de kadeploy
+    </para>
+  </sect2>
+
+
+  <sect2>
     <title>kadeploy/lib/environment
     </title>
     <para>
-      Ce repertoire contient les classes d'environments
+      Ce repertoire contient les scripts de déploiement d'environments
     </para>
   </sect2>
 
 
   <sect2>
-    <title>kadeploy/lib/deployment_kernel/
+    <title>kadeploy/lib/floppy/
     </title>
     <para>
-      Ce repertoire contient les différents noyau de déploiement
-    </para>
-  </sect2>
-
-
-
-  <sect2>
-    <title>kadeploy/lib/grub/
-    </title>
-    <para>
-      Ce repertoire contient la disquette grub de reference
+      Ce repertoire contient les differentes "disquettes réseau" utilisé avec pxelinux.
     </para>
   </sect2>
   
@@ -58,8 +65,6 @@
     </para>
   </sect2>
 
-
-
   <sect2>
     <title>kadeploy/lib/pre_post_script/
     </title>
@@ -67,16 +72,6 @@
       Ce repertoire contient la preinstall et la postinstall de la distribution kadeploy.
     </para>
   </sect2>
-
-  <sect2>
-    <title>kadeploy/share/perl/
-    </title>
-    <para>
-      Ce repertoire contient les librairies perl de kadeploy
-    </para>
-  </sect2>
-
-
 
   <sect2>
     <title>kadeploy/share/mysql/

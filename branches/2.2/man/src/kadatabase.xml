@@ -19,8 +19,7 @@
     <command>-delmysqlrights</command> 
     <command>-create_db_deploy</command> 
     <command>-drop_db_deploy</command> 
-    <command>-patch21</command> 
-    <command>-patch211</command> 
+    <command>-patchXXX</command> 
   </refsect1>
   <refsect1>
     <title>DESCRIPTION</title>

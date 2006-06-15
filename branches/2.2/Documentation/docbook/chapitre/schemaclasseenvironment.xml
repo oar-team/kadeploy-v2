@@ -6,11 +6,13 @@
   <itemizedlist>
     <listitem>kadeploy/lib/environment : Repertoire des classes d'environments	  
     </listitem>
-    <listitem>kadeploy/lib/environment/linux : Repertoire de la classe d'environments "linux"
+    <listitem>kadeploy/lib/environment/linux : classe d'environments "linux"
     </listitem>
-    <listitem>kadeploy/lib/environment/linuxpxe : Repertoire de la classe d'environment "linuxpxe"
+    <listitem>kadeploy/lib/environment/linuxpxe : la classe d'environment "linuxpxe"
     </listitem>
-    <listitem>kadeploy/lib/environment/windows : Repertoire de la classe d'environment "windows"
+    <listitem>kadeploy/lib/environment/windows : classe d'environment "windows"
+    </listitem>
+    <listitem>kadeploy/lib/environment/dd : classe d'environment "dd"
     </listitem>
 
   </itemizedlist>
