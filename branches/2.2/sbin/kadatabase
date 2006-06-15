@@ -149,7 +149,24 @@ sub mysqlload($)
 {
     my $func=shift;
     my $ret;
-    $ret=system("cat $mysqlschemapath/$func.sql | sed -e 's/SUBSTmydeploypasswordSUBST/$deploy_db_password/g' -e 's/SUBSTmydeployloginSUBST/$deploy_db_login/g' -e 's/SUBSTmydeploydbSUBST/$deploy_db_name/g' | mysql -u $login --password=$password --host=$host ");
+    my $line;
+    my $modifiedfile;
+    my $filetoopen="$mysqlschemapath/$func.sql";
+
+    open(FH,$filetoopen) or die "can't open $filetoopen";
+    while ($line=<FH>)
+    {
+	$line=~s/SUBSTmydeploypasswordSUBST/$deploy_db_password/g;
+	$line=~s/SUBSTmydeployloginSUBST/$deploy_db_login/g;
+	$line=~s/SUBSTmydeploydbSUBST/$deploy_db_name/g;
+	$modifiedfile.=$line;
+    }
+    
+    close(FH);
+    open(MYSQL,"|mysql -u $login --password=$password --host=$host");
+    print MYSQL $modifiedfile;
+    if (close(MYSQL)) { $ret=0; } else { $ret=1; }
+    
     if ($ret==0)
     {
 	print("$func Done !!!\n");
