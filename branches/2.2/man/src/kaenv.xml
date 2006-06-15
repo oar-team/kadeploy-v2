@@ -1,20 +1,20 @@
 <refentry id="kaenvironmentsv">
 
   <refmeta>
-    <refentrytitle>kaenvironments</refentrytitle>
+    <refentrytitle>kaenv</refentrytitle>
     <manvolnum>1</manvolnum>
   </refmeta>
   
   <refnamediv>
-    <refname>kaenvironments</refname>
-    <refpurpose> list and remove an environment </refpurpose>
+    <refname>kaenv</refname>
+    <refpurpose> list, add or remove an environment </refpurpose>
   </refnamediv>
   
 
 
   <refsect1>
     <title>SYNOPSIS</title>
-    <command>kaenvironments</command>
+    <command>kaenv</command>
     <para>
       <command>--add</command> Want to add an environment
     </para>

@@ -14,15 +14,14 @@
     <title>DESCRIPTION</title>
     <para>
       This file describe the nodes partition schema.
-      Actually you can partition only one drive.
       The syntax is simple, they are only three "class" of line.
     </para>
 
     <para>
-      <emphasis>hda size=8000</emphasis>
+      <emphasis>ide size=8000</emphasis>
     </para>
     <para>
-      The primary master harddrive named "hda" of the specified "size".
+      A ide harddrive named of the specified "size".
     </para>
 
     <para>
@@ -34,7 +33,7 @@
     </para>
     
     <para>
-      <emphasis>part=2 size=4000  label=empty type=extended</emphasis>
+      <emphasis>part=2 size=4000  type=extended</emphasis>
     </para>
 
     <para>
@@ -55,7 +54,7 @@
     <refsect1>
       <title>EXAMPLE</title>
       <programlisting>
-hda size=8000
+ide size=8000
 part=1 size=4000  fdisktype=83 label=empty type=primary
 part=2 size=4000  label=empty type=extended
 
@@ -72,7 +71,10 @@ part=6 size=1000   fdisktype=82 label=empty type=logical
   <refsect1>
     <title>COPYRIGHTS</title>
     <para>
-      Copyright  2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+      Copyright 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This
+      software is licensed under the GNU Library General Public
+      License. There is NO warranty; not even for MERCHANTABILITY or
+      FITNESS FOR A PARTICULAR PURPOSE.
     </para>
   </refsect1>
 </refentry>

@@ -1,3 +1,5 @@
+CONNECT SUBSTmydeploydbSUBST;
+
 alter table disk add `nodeid` int(10) unsigned NOT NULL default '0';
 alter table disk add `dnumber` int(10) unsigned NOT NULL default '1';
 alter table disk drop device;
