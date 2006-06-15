@@ -10,9 +10,9 @@ alter table partition add `diskid` int(10) unsigned NOT NULL default '0';
 
 drop table rights;
 CREATE TABLE IF NOT EXISTS rights (
-   `user`   VARCHAR(255) NOT NULL default '',
-   `node`   VARCHAR(255) NOT NULL default '',
-   `rights` VARCHAR(255) NOT NULL default '',
+   `user`   VARCHAR(155) NOT NULL default '',
+   `node`   VARCHAR(155) NOT NULL default '',
+   `rights` VARCHAR(155) NOT NULL default '',
    PRIMARY KEY (user,node,rights)
    );
 

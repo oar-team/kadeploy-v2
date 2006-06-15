@@ -1,3 +1,5 @@
+CONNECT SUBSTmydeploydbSUBST;
+
 alter table disk add `nodeid` int(10) unsigned NOT NULL default '0';
 alter table disk add `dnumber` int(10) unsigned NOT NULL default '1';
 alter table disk drop device;
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS environment
 PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS state 
+CREATE TABLE IF NOT EXISTS nodestate 
 ( 
 `nodeid` int(10) unsigned NOT NULL, 
 `service` VARCHAR(255) NOT NULL default '', 
