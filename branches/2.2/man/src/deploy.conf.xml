@@ -53,6 +53,7 @@
       fix the first serial port speed (9600 38400...)
     </para>
 
+    <para>
       <command>second_serial_speed</command>
       fix the second serial port speed (9600 38400...)
     </para>
