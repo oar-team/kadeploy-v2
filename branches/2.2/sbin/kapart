@@ -9,6 +9,7 @@ use libkadeploy2::nodelist;
 use libkadeploy2::remoteparallelcommand;
 use libkadeploy2::disk;
 use libkadeploy2::device;
+use libkadeploy2::disks;
 use Getopt::Long;
 
 sub get_options();
@@ -55,7 +56,6 @@ sub get_options()
 	       'partitionfile=s'      => \$partitionfile,
 	       
 	       'disknumber=s'         => \$disknumber,
-	       'disktype=s'           => \$disktype,
 	       
 	       'ostype=s'             => \$ostype,
 	       
@@ -83,7 +83,6 @@ sub check_options()
     
     
     if (! $disknumber)    { $message->missing_cmdline(2,"disknumber"); $message->kapart_help(); exit 1; }
-    if (! $disktype)      { $message->missing_cmdline(2,"disktype"); exit 1; } 
     if (! $ostype)        { $message->missing_cmdline(2,"ostype"); exit 1; }
     if (! $partitionfile) { $message->missing_cmdline(2,"partitionfile"); exit 1; }
     if (! @node_list)     { $message->missing_node_cmdline(2); exit 1; }
@@ -107,27 +106,12 @@ sub kapart($)
     my $device;
     my $linuxdev;
     my $disk;
+    my $disks;
 
-    $ref_node_list=$nodelist->get_nodes();
-    @node_list=@$ref_node_list;
+    $disks=libkadeploy2::disks::new($nodelist);
+    if (! $disks->check_disk_type($disknumber)) { exit 1; }
 
-    $i=0;
-    foreach $node (@node_list)
-    {
-	$nodename=$node->get_name();
-	$disk=libkadeploy2::disk::new();
-	$disk->get_fromdb($nodename,$disknumber);
-	if ($i==0)
-	{
-	    $disktype=$disk->get_interface();
-	}
-	else
-	{
-	    if (! ($disktype eq $disk->get_interface()))
-	    { $message->message(2,"Error wrong interface disk (kapart)"); exit 1; }
-	}
-    }
-
+    $disktype=$disks->get_disk_type($disknumber);
 
     $cmd="$kamcat --login root --servercommand \"$kasetup -printvalidfdisk -loadpartitionfile $partitionfile\" -clientcommand \" cat > /tmp/fdisk.txt\"";
     $cmd.=libkadeploy2::cmdline::get_nodes_cmdline($nodelist);  

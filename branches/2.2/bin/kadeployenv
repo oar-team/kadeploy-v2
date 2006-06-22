@@ -254,7 +254,6 @@ sub partitionlinuxnodes()
     $cmd=$kapart." ".
 	$nodelist->get_cmdline()." ".
 	" --disknumber ".$disknumber.
-	" --disktype ide ".
 	" --ostype linux ".
 	" --partitionfile ".$partitionfile
 	;
@@ -300,7 +299,7 @@ sub deploydd()
     $cmd="perl $ddpath ".$nodelist->get_cmdline().
 	" --disknumber ".$disknumber.
 	" --partnumber ".$partnumber.
-	" --basefile ".$basefile;
+	" --envfile ".$envfile;
     if ($verbose) { $cmd.=" -v"; }
     my $command=libkadeploy2::command::new($cmd,
 					   600,

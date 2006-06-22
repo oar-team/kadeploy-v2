@@ -10,6 +10,7 @@ use libkadeploy2::nodelist;
 use libkadeploy2::device;
 use libkadeploy2::remoteparallelcommand;
 use libkadeploy2::disk;
+use libkadeploy2::disks;
 use libkadeploy2::environment;
 
 sub execcmd($$);
@@ -71,6 +72,7 @@ GetOptions(
 	   'verbose!'             => \$verbose,
 	   );
 
+if (! $envfile)          { $message->missing_cmdline(2,"envfile");   exit 1; }
 
 if (@node_list)     { $nodelist=libkadeploy2::nodelist::new(); $nodelist->loadlist(\@node_list);  }
 else { $message->missing_node_cmdline(2); exit 1; }
@@ -87,26 +89,10 @@ if (! $partnumber)    { $message->missing_cmdline(2,"partnumber"); exit 1; }
 if (! $basefile)      { $message->missing_cmdline(2,"basefile"); exit 1; }
 if (! -f $basefile)   { $message->filenotfound(2,$basefile); exit 1; }
 
+$disks=libkadeploy2::disks::new($nodelist);
+if (! $disks->check_disk_type($disknumber)) { exit 1; }
 
-$ref_node_list=$nodelist->get_nodes();
-@node_list=@$ref_node_list;
-
-$i=0;
-foreach $node (@node_list)
-{
-    $nodename=$node->get_name();
-    $disk=libkadeploy2::disk::new();
-    $disk->get_fromdb($nodename,$disknumber);
-    if ($i==0)
-    {
-	$disktype=$disk->get_interface();
-    }
-    else
-    {
-	if (! ($disktype eq $disk->get_interface()))
-	{ $message->message(2,"Error wrong interface disk (kapart)"); exit 1; }
-    }
-}
+$disktype=$disks->get_disk_type($disknumber);
 
 $device=libkadeploy2::device::new("$disktype",$disknumber,$partnumber);
 $linuxdev=$device->get_linux();
