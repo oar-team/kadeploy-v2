@@ -156,6 +156,7 @@ sub kapart($)
 								    20,
 								    1
 								    );								   
+    $remoteparallelcommand->exec();
 
     $cmd="\"cat /tmp/fdisk.txt \| fdisk /dev/$linuxdev\"";
     $remoteparallelcommand=libkadeploy2::remoteparallelcommand::new(
