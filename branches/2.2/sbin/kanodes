@@ -148,13 +148,13 @@ sub nodetoadd($)
     $iwanthelp=0;
     my $disk;
     my $node;
-    my $ok;
     my $base;
     my $i;
     my $nodenamedir="$nodesdir/$nodename";
     my $nodefile="$nodenamedir/net";
     my $diskfileprefix="$nodenamedir/disk";
     my $diskfile;
+    my $ok=1;
     if (! -d $nodenamedir)   { $message->dirnotfound(2,$nodenamedir); return 0; }
     if (! -e $nodefile)      { $message->filenotfound(2,$nodefile);   return 0; }
 
@@ -192,8 +192,8 @@ sub nodetoadd($)
 	}	
 	if (-e $diskfile)
 	{
-	    $disk->loadfile($diskfile);
-	    $disk->addtodb($nodename,$i);
+	    if (! $disk->loadfile($diskfile))   { $ok=0;}
+	    if (! $disk->addtodb($nodename,$i)) { $ok=0;}
 	}
     }
     
@@ -201,12 +201,12 @@ sub nodetoadd($)
     if ($ok)
     {
 	updatedeployedtable(); 
-	return 1;
+	return $ok;
     }
     else
     {
 	print "Check your configuration files...\n";
-	return 0;
+	return $ok;
     }
 
 }

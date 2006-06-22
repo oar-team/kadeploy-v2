@@ -278,28 +278,16 @@ sub node_name_to_id($)
     my $sth;
     my $ref;
     my $nbresult=0;
-    my $id;
+    my $id=0;
 
-    if ($name=~/\./)
-    {
-	$sth = $dbh->prepare("
+
+    $sth = $dbh->prepare("
 SELECT node.id 
 FROM 
 node 
 WHERE 
 node.name = \"$name\"
 "); 
-    }
-    else #find the fqdn name
-    {
-	$sth = $dbh->prepare("
-SELECT node.id 
-FROM 
-node 
-WHERE 
-node.name like \"$name.%\"
-"); 
-    }
     $sth->execute(); 
     while ($ref = $sth->fetchrow_hashref())
     {
@@ -308,10 +296,28 @@ node.name like \"$name.%\"
     }
     $sth->finish();
 
-    if(!$id || $nbresult!=1)
+    if ($nbresult!=1)    
+    {
+	$nbresult=0;
+	$sth = $dbh->prepare("
+SELECT node.id 
+FROM 
+node 
+WHERE 
+node.name like \"$name.%\"
+"); 
+	$sth->execute(); 
+	while ($ref = $sth->fetchrow_hashref())
+	{
+	    $id = $ref->{'id'};
+	    $nbresult++;
+	}
+	$sth->finish();
+    }
+    if($nbresult!=1)
     {
 	return 0;
-    }
+    }    
     return $id;
 }
 

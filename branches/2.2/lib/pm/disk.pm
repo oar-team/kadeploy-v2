@@ -22,6 +22,7 @@ sub loadfile($)
     my $line;
     my %disk;
     my %partitions;
+    my $ok=1;
     $self->{partition}=\%partitions; 
 
     my ($number,$size,$fdisktype,$label,$type);
@@ -95,7 +96,7 @@ sub loadfile($)
 	    if ($linecorrect==0)
 	    {
 		print STDERR "ERROR in line :\n$line";
-		exit 1;
+		$ok=0;
 	    }
 
 	    $linecorrect=0;
@@ -105,13 +106,17 @@ sub loadfile($)
     else
     {
 	print "Error opening $partitionfile\n";
-	exit 1;
+	$ok=0;
     }
     if ($sizeoflogical >= $sizeofextended &&
 	$numberofextended > 0 &&
 	$numberoflogical  > 0	
 	) 
-    { print STDERR "ERROR size of extended part <= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; exit 1; }   
+    { 
+	print STDERR "ERROR size of extended part <= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; 
+	$ok=0; 
+    }   
+    return $ok;
 }
 
 sub sort_par_num { return $a <=> $b }
@@ -279,8 +284,13 @@ sub addtodb($$)
     my $self=shift;
     my $nodename=shift;
     my $disknumber=shift;
-    $self->adddisktodb($nodename,$disknumber);
-    $self->addpartitiontodb($nodename,$disknumber);
+    my $ok=0;
+    if ($self->adddisktodb($nodename,$disknumber))
+    {
+	$self->addpartitiontodb($nodename,$disknumber);
+	$ok=1;
+    }
+    return $ok;
 }
 
 sub adddisktodb($$)
@@ -311,9 +321,13 @@ sub adddisktodb($$)
 	$db=libkadeploy2::deploy_iolib::new();
 	$db->connect();
 	$nodeid=$db->node_name_to_id($nodename);
-	@info = ($disknumber,$interface,$size,$nodeid);
-	$disk_id = $db->add_disk(\@info);
-	if ($disk_id) { $ok=1; }
+	if (! $nodeid) { $ok=0; }
+	else
+	{
+	    @info = ($disknumber,$interface,$size,$nodeid);
+	    $disk_id = $db->add_disk(\@info);
+	    if ($disk_id) { $ok=1; }
+	}
 	$db->disconnect();    
     }
 
@@ -395,7 +409,7 @@ sub addpartitiontodb($$)
 			    $number=undef;
 			    $type=undef;
 			    $db->disconnect();
-			    if ($part_id) {$ok=1; } else { return $ok; }
+			    if ($part_id) {$ok=1; } else { $ok=0; }
 			}
 		    }
 		}
