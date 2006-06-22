@@ -55,6 +55,7 @@ my $i;
 my $taropts;
 my $environment;
 my $envfile;
+my $disks;
 
 GetOptions(
 	   'm=s'                  => \@node_list,

@@ -13,6 +13,7 @@ use libkadeploy2::pxelinux;
 use libkadeploy2::tftppxe;
 use libkadeploy2::sudo;
 use libkadeploy2::karights;
+use libkadeploy2::disks;
 use strict;
 use warnings;
 
@@ -56,8 +57,10 @@ my $nodelist;
 my $help;
 my $menulst;
 
+
 my $disknumber=1;
-my $disktype="ide";
+my $disktype;
+my $disks;
 my $sudo_user=libkadeploy2::sudo::get_sudo_user();
 if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
 
@@ -188,7 +191,6 @@ sub check_options()
 	       
 	       'disknumber=s'   => \$disknumber,
 	       'partnumber=s'   => \$partnumber,
-	       'disktype=s'     => \$disktype,
 	       
 	       'h!'             => \$help,
 	       'help!'          => \$help,
@@ -200,7 +202,12 @@ sub check_options()
 
     if (@node_list)     { $nodelist=libkadeploy2::nodelist::new(); $nodelist->loadlist(\@node_list);  }
     else { $message->missing_node_cmdline(2); exit 1; }
-
+    
+    $disks=libkadeploy2::disks::new($nodelist);
+    if (! $disks->check_disk_type($disknumber)) { exit 1; }
+    
+    $disktype=$disks->get_disk_type($disknumber);
+    
 
 }
 

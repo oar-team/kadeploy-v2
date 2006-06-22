@@ -51,6 +51,7 @@ my $disk;
 my $i;
 my $unzip;
 my $environment;
+my $disks;
 
 GetOptions(
 	   'm=s'                  => \@node_list,
