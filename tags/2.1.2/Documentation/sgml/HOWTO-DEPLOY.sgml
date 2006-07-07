@@ -383,7 +383,7 @@ Every tool has his own man page.
 <p>
 You have to feed mysql with kadeploy schema.
 the <tt>kadatabase</tt> command was created for this.
-<verb>#kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211</verb>
+<verb>#kadatabase -addmysqlrights -create_db_deploy -create_table_deploy -patch21 -patch211</verb>
 
 <p>
 You can test it with <tt>kaenvironments</tt> command.
