@@ -85,6 +85,23 @@ You can specify a name to each port of each switch.
 See the configuration file named "siteExample.conf". 
 
 .SH "EXAMPLES"
+
+To add a vlan with a specific configuration file :
+.br
+\fB	$kavlan -F kavlan.conf -a essai\fR
+.br
+To show information of the vlan essai on the switch XX
+.br
+\fB	$kavlan -i essai -s XX\fR
+.br
+Add a computer as tag for vlan "essai" with a specific path for the coresponding table
+.br
+\fB	$kavlan -P ./ -t computer5 essai\fR
+.br
+Add a port as untag for default vlan
+.br
+\fB	$kavlan -u 10 DEFAULT -s XX \fR
+
 .SH "BUGS"
 .SH "AUTHOR"
 jeremie TISSERAND
