@@ -2,6 +2,9 @@
 ----
 
 * rewrite
+* deploy solaris
+* deploy nfs
+* support multiple mountpoint on linux
 
 2.1.2:
 ------
