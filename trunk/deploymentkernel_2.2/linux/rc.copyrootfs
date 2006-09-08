@@ -1,0 +1,10 @@
+#!/bin/sh
+
+NAME=copyrootfs
+SCRIPTNAME=rc.$NAME
+
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+( cd $SOURCEROOTFS ; tar cvO . ) | ( cd $PREFS ; tar xvf - )
+

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+NAME=createdir
+SCRIPTNAME=rc.$NAME
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+
+mkdir -p $BUILDDIR
+mkdir -p $KERNELDEST
+mkdir -p $PREFS
+mkdir -p $FSDEST
+
