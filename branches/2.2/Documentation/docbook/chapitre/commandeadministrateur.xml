@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<chapter id="commandeadministrateur">
+<sect1 id="commandeadministrateur">
   <title>Commande administrateur</title>
 
 
-  <sect1> 
+  <sect2> 
     <title>kanodes (Ajout et suppression de noeud)</title> 
     <para>
       Commande relative aux noeuds
@@ -19,50 +19,50 @@
     </itemizedlist>
 
 
-    <sect2>
+    <sect3>
       <title>Ajout d'un noeud
       </title>
       <itemizedlist>
 	<listitem>--add
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
 
-    <sect2>
+    <sect3>
       <title>Suppression d'un noeud
       </title>
       <itemizedlist>
 	<listitem>--del
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
 
 
-    <sect2>
+    <sect3>
       <title>affichage des noeuds
       </title>
       <itemizedlist>
 	<listitem>--listnode
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
 
-    <sect2>
+    <sect3>
       <title>affichage du partitionnement d'un noeud
       </title>
       <itemizedlist>
 	<listitem>--listpartition
 	</listitem>
       </itemizedlist>
-    </sect2>
-  </sect1>
+    </sect3>
+  </sect2>
 
 
 
-  <sect1>
+  <sect2>
     <title>karights (ajout ou suppression de droit utilisateur)
     </title>
     <para>
@@ -79,16 +79,16 @@
     </itemizedlist>
 
 
-    <sect2>
+    <sect3>
       <title>Affichage des droits
       </title>
       <itemizedlist>
 	<listitem>--login login
 	</listitem>	
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>Ajout
       </title>
       <para>
@@ -102,9 +102,9 @@
 	<listitem>--rights rights
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>Suppression
       </title>
       <para>
@@ -118,10 +118,10 @@
 	<listitem>--right right
 	</listitem>
       </itemizedlist>
-    </sect2>
-  </sect1>
+    </sect3>
+  </sect2>
 
-  <sect1>
+  <sect2>
     <title>kapxe (gestion du boot pxe)
     </title>
     <para>
@@ -136,7 +136,7 @@
       </listitem>
     </itemizedlist>
 
-    <sect2>
+    <sect3>
       <title>pxelinux
       </title>
       <itemizedlist>
@@ -153,9 +153,9 @@
 	<listitem>--kernelparams
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>pxelinux
       </title>
       <itemizedlist>
@@ -168,60 +168,54 @@
 	<listitem>--kernelparams
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-  </sect1>
+  </sect2>
 
-  <sect1>
+  <sect2>
     <title>kasetup (installation de kadeploy)
     </title>
 
-    <sect2>
+    <sect3>
       <title>chmodconf
       </title>
-    </sect2>
+    </sect3>
 
 
-    <sect2>
+    <sect3>
       <title>sudowrap
       </title>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>createtftp
       </title>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>checkconf
       </title>
-    </sect2>
-  </sect1>
+    </sect3>
+  </sect2>
 
-  <sect1>
+  <sect2>
     <title>kadatabase (installation de kadeploy)
     </title>
 
-    <sect2>
+    <sect3>
       <title>createdatabase
       </title>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>dropdatabase
       </title>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>patch
       </title>
-    </sect2>
-  </sect1>
-
-
-
-
-    
-
-</chapter>
+    </sect3>
+  </sect2>
+</sect1>
 

@@ -1,12 +1,11 @@
 kadeploypmdir=$(prefix)/share/perl/5.8/libkadeploy2
-kadeploypm_DATA=bootlib.pm conflib.pm disk.pm fdiskscript.pm		\
-linuxdevice.pm nodelist.pm partitionfile.pm remoteparallelcommand.pm	\
-script.pm checknodes.pm conf.pm environment.pm globalvar.pm message.pm	\
-node.pm partitionscript.pm remoteparallelscript.pm sudo.pm cmdline.pm	\
-deployconf.pm environments.pm grub.pm nmap.pm nodesfile.pm pxelinux.pm	\
-right.pm tftppxe.pm commandlist.pm deploy_iolib.pm envlib.pm hexlib.pm	\
-node_bd.pm nodes.pm remotecommand.pm rights_iolib.pm tools.pm		\
-command.pm device.pm errormessage.pm hostlist.pm node_cmd.pm		\
-parallelcommand.pm remotecopy.pm rights.pm karights.pm sudowrap.pm	\
-disks.pm
+kadeploypm_DATA=checknodes.pm cmdline.pm command.pm conflib.pm conf.pm	\
+deployconf.pm deploy_iolib.pm device.pm disk.pm disks.pm		\
+environment.pm environments.pm fdiskscript.pm hexlib.pm karights.pm	\
+message.pm nmap.pm node_cmd.pm nodelist.pm node.pm nodesfile.pm		\
+parallelcommand.pm partitionfile.pm partitionscript.pm pxelinux.pm	\
+remotecommand.pm remotecopy.pm remoteparallelcommand.pm			\
+remoteparallelscript.pm right.pm rights.pm script.pm sudo.pm		\
+sudowrap.pm tftppxe.pm tools.pm
+
 EXTRA_DIST=$(kadeploypm_DATA)

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-<chapter id="commandeutilisateur">
+<sect1 id="commandeutilisateur">
   <title>Commande utilisateur</title>
 
-  <sect1> 
+  <sect2> 
     <title>kadeploy (outil de déploiement d'environment)</title>
     <para>
       La commande kadeploy déploie un environment sur un ensemble de noeud.
@@ -19,16 +19,16 @@
       <listitem> --verbose (flag verbeux)
       </listitem>
     </itemizedlist>
-  </sect1>
+  </sect2>
 
-  <sect1> 
+  <sect2> 
     <title>kaenv (manipulation des environments)</title>
     <para>
       La commande kaenv manipule les environments.
       Il y a quatre types de manipulation différentes.
     </para>
     
-    <sect2>
+    <sect3>
       <title>Ajout</title>
       <itemizedlist>
 	<listitem> --environmentname nom_environment
@@ -38,11 +38,11 @@
 	<listitem> --descriptionfile chemin_vers_fichier_description
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
 
 
-    <sect2>
+    <sect3>
       <title>Suppression</title>
       <itemizedlist>
 	<listitem> --environment environment
@@ -50,11 +50,11 @@
 	<listitem> --login utilisateur
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
 
 
-    <sect2>
+    <sect3>
       <title>Affichage</title>
       <itemizedlist>
 	<listitem> --environment environment
@@ -64,14 +64,14 @@
 	<listitem> --machine node
 	</listitem> 
       </itemizedlist>
-    </sect2>
-  </sect1>
+    </sect3>
+  </sect2>
 
-  <sect1>
+  <sect2>
     <title>kareboot (commande de reboot des noeuds)
     </title>
     
-    <sect2>
+    <sect3>
       <title>reboot software
       </title>
       <itemizedlist>
@@ -82,9 +82,9 @@
 	<listitem> --disk-number disknumber (par défaut le précedent)
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-    <sect2>
+    <sect3>
       <title>reboot hardware
       </title>
       <itemizedlist>
@@ -95,9 +95,9 @@
 	<listitem> --disk-number disknumber (par défaut le précedent)
 	</listitem>
       </itemizedlist>
-    </sect2>
+    </sect3>
 
-  </sect1>
+  </sect2>
 
-</chapter>
+</sect1>
 

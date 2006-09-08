@@ -67,11 +67,13 @@
     <title>EXAMPLE</title>
     
     <para>
-    <command>kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211</command> Install all the required schema.
+    <command>kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211 -patch22</command> 
+      Install the kadeploy schema in mysql database.
     </para>
 
     <para>
-      <command>kadatabase -delmysqlrights -drop_db_deploy</command> Remove the schema.
+      <command>kadatabase -delmysqlrights -drop_db_deploy</command> 
+      Remove the schema.
     </para>
       
   </refsect1>

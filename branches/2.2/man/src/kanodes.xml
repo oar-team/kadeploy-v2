@@ -28,12 +28,14 @@
 
   <refsect1>DESCRIPTION
     <para>
-      kanodes registers nodes and their disk and partition features for them to be available to the deployment system.
-      It is used at the very beginning to describe a whole cluster (after having completed the installation for instance) 
-      or later when new nodes are added to a cluster already managed by the deployment system.
+      kanodes registers nodes and their disk and partition features
+      for them to be available to the deployment system.  It is used
+      at the very beginning to describe a whole cluster (after having
+      completed the installation for instance) or later when new nodes
+      are added to a cluster already managed by the deployment system.
       </para>
       <para>
-      It use directory named <emphasis>/etc/kadeploy/nodes/*</emphasis> 
+      It use all the sub directory of <emphasis>/etc/kadeploy/nodes/</emphasis> 
     </para>
     </refsect1>
     <refsect1>
@@ -56,6 +58,27 @@
       <para>
 	<command>-h|--help</command> Print help screen.
       </para>	
+  </refsect1>
+
+  <refsect1>
+    <title>configuration</title>
+    <para>
+      /etc/kadeploy/nodes/ is the root of the configuration file for each node of the deployment system.
+    </para>
+
+    <para>
+      <command>/etc/kadeploy/nodes/node-1.mycluster.net/net</command> 
+      file contain the network configuration of node-1.mycluster.net
+    </para>
+    <para>
+node-1.mycluster.net      00:02:b3:49:9c:8e       192.168.0.1
+    </para>
+
+    <para>
+      <command>/etc/kadeploy/nodes/node-1.mycluster.net/disk1</command> 
+      file contains the default partitioning schema of the node node-1.mycluster.net.
+      see clusterpartition.conf man page.
+      </para>
   </refsect1>
 
   <refsect1>
