@@ -26,10 +26,25 @@ sub get()
     $db->disconnect();    
 }
 
-sub print($)
+sub print_header()
 {
     my $self=shift;
-    my $oldstyle=shift;
+    my $environment=libkadeploy2::environment::new();
+    $environment->print_header(1);
+}
+
+sub print_footer()
+{
+    my $self=shift;
+    my $environment=libkadeploy2::environment::new();
+    $environment->print_footer(1);
+}
+
+
+sub print()
+{
+    my $self=shift;
+    my $filter=shift;
     my $ref_array;
     my @array;
     my $line;
@@ -38,7 +53,9 @@ sub print($)
     my $environment;
     my $name;
     my $user;
+    my $oldstyle=1;
     my $descriptionfile;
+
     $ref_array=$self->{ENV};
     if (! $ref_array) { $message->missing_env_db(0); return 1; }
     foreach $refline (@$ref_array)
@@ -46,22 +63,23 @@ sub print($)
 	$name=$$refline[0];
 	$user=$$refline[1];
 	$descriptionfile=$$refline[2];
+	
 	$environment=libkadeploy2::environment::new();
 	$environment->set_name($name);
 	$environment->set_user($user);
 	$environment->set_descriptionfile($descriptionfile);
+	
 
-	if ($i==0)
+	if (! $filter)
 	{
-	    $environment->print_header($oldstyle);
-	    $i++;
+	    $environment->print_line($oldstyle);
 	}
-	$environment->print_line($oldstyle);
+	elsif ($filter eq $name ||
+	    $filter eq $user)
+	{
+	    $environment->print_line($oldstyle);
+	}
     }    
-    if ($i)
-    {
-	$environment->print_footer($oldstyle);
-    }
 }
 
 

@@ -1,7 +1,11 @@
 package libkadeploy2::nmap;
 use strict;
 use warnings;
+use libkadeploy2::deployconf;
 
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->load()) { exit 1; }
+my $nmappath=$conf->get("nmap_cmd");
 
 sub new()
 {
@@ -19,11 +23,14 @@ sub check_tcp($$)
 
     my $hostip=shift;
     my $port=shift;
-
+    
     my $line;
+    my $nmapcmd;
     my $ok=0;
 
-    open(NMAPCMD, "nmap -p $port -oG - $hostip|");
+    $nmapcmd="$nmappath --system-dns -p $port -oG - $hostip";
+
+    open(NMAPCMD, "$nmapcmd |");
     while ($line=<NMAPCMD>)
     {
 	if ($line=~ /^Host: $hostip \(.*\)[\s\t]+Ports: $port\/open\//)
@@ -43,15 +50,16 @@ sub check_icmp($)
 
     my $line;
     my $ok=0;
-    my $cmd;
+    my $nmapcmd;
 
-    $cmd="nmap -sP -oG - $hostip";
-    open(NMAPCMD, "$cmd|");
+    $nmapcmd="$nmappath --system-dns -sP -oG - $hostip";
+    open(NMAPCMD, "$nmapcmd|");
     while ($line=<NMAPCMD>)
     {
 	if ($line=~ /^Host: $hostip \(.*\)[\s\t]+Status:[\s]Up/)
 	{
 	    $ok=1;
+
 	}
     }
     close(NMAPCMD);

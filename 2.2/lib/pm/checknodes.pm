@@ -3,10 +3,15 @@ package libkadeploy2::checknodes;
 use libkadeploy2::remotecommand;
 use libkadeploy2::message;
 use libkadeploy2::node;
+use libkadeploy2::nmap;
+
 use warnings;
 use strict;
 
 my $message=libkadeploy2::message::new();
+my $sshd_port=22;
+my $rshd_port=514;
+
 
 sub new($$)
 {
@@ -17,11 +22,13 @@ sub new($$)
     {
 	db   => $db,
 	node => $node,
+	verbose => 0,
     };
     bless $self;
     return $self;
 }
 
+sub set_verbose()  { my $self=shift; $self->{verbose}=1; }
 
 sub exec($)
 {
@@ -33,6 +40,7 @@ sub exec($)
     my $ok=0;
     if ($checktype eq "ICMP")     { $correctcheck=1; $self->check_node_icmp(); }
     if ($checktype eq "SSH")      { $correctcheck=1; $self->check_node_ssh();  }
+    if ($checktype eq "RSH")      { $correctcheck=1; $self->check_node_rsh();  }
     if ($checktype eq "MCAT")     { $correctcheck=1; $self->check_node_mcat(); }
     if ($correctcheck)
     {
@@ -70,7 +78,7 @@ sub check_node_ssh()
     my $db=$self->{db};
 
     my $nmap=libkadeploy2::nmap::new();
-    if ($nmap->check_tcp($node->get_ip(),22))
+    if ($nmap->check_tcp($node->get_ip(),$sshd_port))
     {
 	$db->update_nodestate($node->get_name(),"SSH","UP");
     }
@@ -81,6 +89,25 @@ sub check_node_ssh()
 
 }
 
+sub check_node_rsh()
+{
+    my $self=shift;
+    my $node=$self->{node};
+    my $db=$self->{db};
+
+    my $nmap=libkadeploy2::nmap::new();
+    if ($nmap->check_tcp($node->get_ip(),$rshd_port))
+    {
+	$db->update_nodestate($node->get_name(),"RSH","UP");
+    }
+    else
+    {
+	$db->update_nodestate($node->get_name(),"RSH","DOWN");
+    }   
+
+}
+
+
 
 sub check_node_mcat()
 {
@@ -88,25 +115,44 @@ sub check_node_mcat()
     my $node=$self->{node};
     my $db=$self->{db};
     my $ok=0;
-    my $remotecommand=libkadeploy2::remotecommand::new("ssh",
-						       "root",
-						       $node,
-						       "which mcatseg",
-						       10,
-						       0
-						       );
+
+    my $remotecommand=libkadeploy2::remotecommand::new();
+    
+    if    ($db->get_nodestate($node->get_name(),"ssh") eq "UP")
+    {
+	$remotecommand->set_connector("ssh");
+    }
+    elsif ($db->get_nodestate($node->get_name(),"rsh") eq "UP")
+    {
+	$remotecommand->set_connector("rsh");
+    }
+    else
+    {
+	$message->message(2,"rsh && ssh down");
+	$db->update_nodestate($node->get_name(),"MCAT","DOWN");
+	return 0;
+    }
+
+    $remotecommand->set_login("root");
+    $remotecommand->set_node($node);
+    $remotecommand->set_command("which mcatseg");
+    $remotecommand->set_timeout(60);
+
+    if ($self->{verbose})  { $remotecommand->set_verbose(); } 
+						       
     $remotecommand->exec();
     if ($remotecommand->get_status())     
     {  	
 	$ok=1;    
 	$db->update_nodestate($node->get_name(),"MCAT","UP");
-	$remotecommand=libkadeploy2::remotecommand::new("ssh",
-							"root",
-							$node,
-							"pkill mcatseg",
-							10,
-							0
-							);
+	$remotecommand=libkadeploy2::remotecommand::new();
+	$remotecommand->set_connector("ssh");
+	$remotecommand->set_login("root");
+	$remotecommand->set_node($node);
+	$remotecommand->set_command("pkill mcatseg");
+	$remotecommand->set_timeout(60);
+	if ($self->{verbose})  { $remotecommand->set_verbose(); } 
+	
 	$remotecommand->exec();
     }
     else

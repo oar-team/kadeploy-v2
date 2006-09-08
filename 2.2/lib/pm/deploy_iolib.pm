@@ -50,7 +50,8 @@ sub add_partition($); #(\(pnumber,size,parttype,disk_id))
 sub get_diskid_from_nodeid_disknumber($$); #(nodeid,disknumber)
 sub get_diskinfo_from_diskid($);           #(diskid)
 sub get_partitioninfo_from_partitionid($); #(partitionid)
-sub get_listpartitionid_from_diskid($);    #(partitionid)
+
+sub diskidpartnumber_to_partitionid($$);   #(diskid,partnumber) => partitionid
 sub del_partition_from_diskid($);          #(diskid)
 
 sub list_node($);
@@ -2110,18 +2111,26 @@ sub add_deploy($$$$){
 # registers partition
 # parameters : base, partition_info, disk id
 # return value : partition id
-sub add_partition($) #(\(pnumber,size,parttype,disk_id))
+sub add_partition($) #(\(pnumber,size,parttype,disk_id,label))
 {
     my $self=shift;
+    my $disk_id=shift;
     my $ref_part = shift;
+
     my $dbh = $self->{dbh};
-    
-    my $pnumber=$$ref_part[0];
-    my $size=$$ref_part[1];
-    my $parttype=$$ref_part[2];
-    my $disk_id=$$ref_part[3];
+   
+    my $pnumber=$ref_part->{number};
+    my $size=$ref_part->{size};
+    my $parttype=$ref_part->{type};
+    my $label=$ref_part->{label};
+    my $ostype=$ref_part->{ostype};
+    my $fdisktype=$ref_part->{fdisktype};
+    my $fs=$ref_part->{fs};
+    my $mkfs=$ref_part->{mkfs};
+
     my $part_id;
     my $sqlupdate;
+    my $sqlinsert;
     # TODO : faire des vérifications !
 
     # debug print
@@ -2140,8 +2149,10 @@ sub add_partition($) #(\(pnumber,size,parttype,disk_id))
     $sth->finish();   
 
     if(!$part_id){
-	$sth = $dbh->do("INSERT partition (pnumber, size,diskid,parttype)
-                         VALUES (\"$pnumber\",\"$size\",\"$disk_id\",\"$parttype\")");
+	$sqlinsert="
+INSERT partition (pnumber,     size,     diskid,      parttype,     label,     fs,     mkfs,     ostype     ,fdisktype) 
+VALUES           (\"$pnumber\",\"$size\",\"$disk_id\",\"$parttype\",\"$label\",\"$fs\",\"$mkfs\",\"$ostype\",\"$fdisktype\")";
+	$sth = $dbh->do($sqlinsert);
 
         $sth = $dbh->prepare($sqltest);
 	$sth->execute();
@@ -2155,12 +2166,18 @@ sub add_partition($) #(\(pnumber,size,parttype,disk_id))
 UPDATE partition 
 SET 
 size = \"$size\",
-parttype = \"$parttype\",
-pnumber  = \"$pnumber\"
+parttype  = \"$parttype\",
+pnumber   = \"$pnumber\",
+label     = \"$label\",
+fs        = \"$fs\",
+mkfs      = \"$mkfs\",
+ostype    = \"$ostype\",
+fdisktype = \"$fdisktype\"
 WHERE
 id=\"$part_id\"";
 
-	$sth = $dbh->do($sqlupdate);       
+	$sth = $dbh->do($sqlupdate);
+	if (!$sth) { $part_id=0; }
     }
     return $part_id;
 }
@@ -2435,9 +2452,17 @@ sub get_partitioninfo_from_partitionid($)         #(partitionid)
     my $info;
     my $refinfo;
     my $sqlquery="
-SELECT partition.pnumber, partition.size, partition.parttype 
+SELECT 
+pnumber, 
+size, 
+parttype, 
+label,
+fs,
+mkfs,
+fdisktype,
+ostype
 FROM 
-disk,partition 
+partition 
 WHERE 
 partition.id=\"$partitionid\"     
 ";
@@ -2449,15 +2474,22 @@ partition.id=\"$partitionid\"
 	pnumber   => $ref->{pnumber},
 	size      => $ref->{size},
 	parttype  => $ref->{parttype},
+	label     => $ref->{label},
+	fs        => $ref->{fs},
+	mkfs      => $ref->{mkfs},
+	fdisktype => $ref->{fdisktype},
+	ostype    => $ref->{ostype}
     };
     return $info;
 }
 
-sub get_listpartitionid_from_diskid($)         #(partitionid)
+sub diskidpartnumber_to_partitionid($$)    #(diskid,partnumber) => partitionid
 {
     my $self=shift;
     my $diskid=shift;
+    my $partnumber=shift;
     my $dbh=$self->{dbh};
+    my $partitionid=0;
     my $sth;
     my $id;
     my @listid;
@@ -2471,11 +2503,44 @@ FROM
 disk,partition 
 WHERE 
 partition.diskid=disk.id AND
-disk.id=\"$diskid\"      
+disk.id=\"$diskid\"      AND
+partition.pnumber=\"$partnumber\"
 ";
+
     $sth = $dbh->prepare($sqlquery);
     $sth->execute();
-    while ($ref = $sth->fetchrow_hashref())
+    while ( my $ref = $sth->fetchrow_hashref())
+    {
+	$partitionid=$ref->{id};
+    }
+
+    return $partitionid;
+}
+
+sub get_listpartitionid_from_diskid($)    #(diskid) => (partitionid1,...,partitionidn)
+{
+    my $self=shift;
+    my $diskid=shift;
+    my $dbh=$self->{dbh};
+    my $partitionid=0;
+    my $sth;
+    my $id;
+    my @listid;
+    my $reflistid;
+    my $ref;
+    my $info;
+    my $refinfo;
+    my $sqlquery="
+SELECT partition.id
+FROM 
+partition 
+WHERE 
+partition.diskid=\"$diskid\"
+";
+
+    $sth = $dbh->prepare($sqlquery);
+    $sth->execute();
+    while ( my $ref = $sth->fetchrow_hashref())
     {
 	@listid=(@listid,$ref->{id});
     }
@@ -2631,6 +2696,7 @@ INSERT rights
 VALUES 
 (\"$username\",\"$nodename\",\"$rights\")
 ";
+
     my $sqltest="
 SELECT 
 rights.rights FROM rights
@@ -2641,6 +2707,7 @@ rights.node = \"$nodename\"
 AND
 rights.rights = \"$rights\"
 ";
+
     $sth = $dbh->prepare($sqltest);
     $sth->execute();
     $row = $sth->fetchrow_hashref(); 
@@ -2765,7 +2832,6 @@ rights
 	$node=$h->{'node'};
 	$rights=$h->{'rights'};
 	my @line=($user,$node,$rights);
-	
 	@array_rights=(@array_rights,\@line);
 	$ok=1;
     }
@@ -2833,13 +2899,14 @@ sub debug_print($$)
 # sets end deployment time to current date
 # parameters : base, deployment id
 # return value : /
-sub set_time($$){
+sub set_time($$)
+{
     my $dbh = shift;
     my $id = shift;
     my $sth;
-
-    $sth = $dbh->do("UPDATE deployment 
-                     SET deployment.enddate = NOW() 
+    
+    $sth = $dbh->do("UPDATE deployment
+                     SET deployment.enddate = NOW()
                      WHERE deployment.id = $id");
 }
 
@@ -2926,58 +2993,72 @@ sub report_state($$$$$){
 # performs several checks and do db appropriate modifications
 # parameters : base, hostname, deploy id, env name, disk dev, part nb
 # return value : 1 if successful, 0 if failed
-#sub add_node_to_deployment($$$$$$){
-#    my $dbh = shift;
-#    my $hostname = shift;
-#    my $deploy_id = shift;
-#    my $env_name = shift;
-#    my $disk_dev = shift;
-#    my $part_nb = shift;
-#
-#    my $node_id = libkadeploy2::deploy_iolib::node_name_to_id($dbh,$hostname);
-#    my $disk_id = libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$disk_dev);
-#    my $part_id = libkadeploy2::deploy_iolib::part_nb_to_id($dbh,$part_nb,$node_id);
-#    my $env_id  = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($dbh,$env_name);
+sub add_node_to_deployment($$$$$$)
+{
+    my $self = shift;
+    my $dbh=$self->{dbh};
+    my $hostname = shift;
+    my $deploy_id = shift;
+    my $env_name = shift;
+    my $disk_dev = shift;
+    my $part_nb = shift;
+
+    my $node_id = $self->node_name_to_id($hostname);
+    my $disk_id = $self->disk_dev_to_id($disk_dev);
+    my $part_id = $self->part_nb_to_id($part_nb,$node_id);
+    my $env_id  = $self->env_name_to_last_ver_id($dbh,$env_name);
+    my $is_free;
     
     # performs cheks
-#    if((!$node_id) || (!$disk_id) || (!$part_id) || (!$env_id)){
+    if((!$node_id) || (!$disk_id) || (!$part_id) || (!$env_id))
+    {
 #	return 0;
 #    }
-
-    # ! debug print !
-    # print "DEBUG : NODE = $node_id ; DISK = $disk_id ; PART = $partition_id ; ENV = $env_id\n";
+	# ! debug print !
+	# print "DEBUG : NODE = $node_id ; DISK = $disk_id ; PART = $partition_id ; ENV = $env_id\n";
     
-#    my $is_free = libkadeploy2::deploy_iolib::is_node_free($dbh,$node_id,$deploy_id);
-#    if($is_free){
-#	my $env_size  = libkadeploy2::deploy_iolib::env_id_to_size($dbh,$env_id);
-#	my $part_size = libkadeploy2::deploy_iolib::part_id_to_size($dbh,$part_id);
-#	if($env_size < $part_size){
-#	    libkadeploy2::deploy_iolib::set_deployment_features($dbh,$node_id,$deploy_id,$env_id,$disk_id,$part_id);
-#	}else{
-#	    print "Environment too large for the partition\n";
-#	    return 0;
-#	}
-#    }else{
-#	print "Node isn't free\n";
-#	return 0;
-#    }
-#    return 1;
-#
-#}
+	 $is_free = libkadeploy2::deploy_iolib::is_node_free($dbh,$node_id,$deploy_id);
+    }
+    if($is_free)
+    {
+	my $env_size  = $self->env_id_to_size($env_id);
+	my $part_size = $self->part_id_to_size($part_id);
+	if($env_size < $part_size)
+	{
+	    $self->set_deployment_features($node_id,
+					   $deploy_id,
+					   $env_id,
+					   $disk_id,
+					   $part_id);
+	}
+	else
+	{
+	    print "Environment too large for the partition\n";
+	    return 0;
+	}
+    }
+    else
+    {
+	print "Node isn't free\n";
+	return 0;
+    }
+    return 1;    
+}
 
 # set_deployment_features
 # sets deployment id in deployed table
 # parameters : base, node id, deploy id, env id, disk id, part id
 # return value : 1 if successful
-sub set_deployment_features($$$$$$)
+    sub set_deployment_features($$$$$$)
 {
-    my $dbh = shift;
+    my $self=shift;
+    my $dbh = $self->{dbh};
     my $node_id = shift;
     my $deploy_id = shift;
     my $env_id = shift;
     my $disk_id = shift;
     my $part_id= shift;
-
+    
     my $sth = $dbh->do("INSERT deployed
                      SET deployed.envid = $env_id,
                          deployed.state = 'deploying',
@@ -2985,7 +3066,7 @@ sub set_deployment_features($$$$$$)
                          deployed.nodeid = $node_id,
                          deployed.diskid = $disk_id,
                          deployed.partid = $part_id");
-
+    
     return 1;
 }	  
 

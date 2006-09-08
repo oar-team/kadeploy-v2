@@ -1,16 +1,25 @@
 package libkadeploy2::message;
 use strict;
 use warnings;
+use libkadeploy2::caller;
 use Sys::Syslog;
+use Term::ANSIColor;
+use Term::ANSIColor qw(:constants);
+$Term::ANSIColor::AUTORESET = 1;
 
 sub new()
 {
     my $self;
     openlog("kadeploy", 'cons,pid', 'user');
-    $self ={};
+    $self =
+    {
+	debug => 0,
+    };
     bless $self;
     return $self;
 }
+
+sub set_debug() { my $self=shift; $self->{debug}=1; }
 
 sub severity($)
 {
@@ -22,77 +31,60 @@ sub severity($)
 
     if ($severity<0)
     {
-	$str="INFO    : ";
+	$str="INFO     : ";
     }
     elsif ($severity==0)
     {
-	$str="NOTICE  : ";
+	$str="NOTICE   : ";
     }
     elsif($severity==1)
     {
-	$str="WARNING : ";
+	$str="WARNING  : ";
     }
     elsif($severity==2)
     {
-	$str="ERROR   : ";
+	$str="ERROR    : ";
     }
-    elsif($severity>2)
+    elsif($severity==3)
     {
-	$str="ERROR   : ";
+	$str="INTERNERR: ";
+    }
+    elsif($severity>3)
+    {
+	$str="UNKNOWERR: ";
     }
 
     return $str;
 }
 
-sub missing_node_cmdline($)
+sub printstderr($)
 {
     my $self=shift;
-    my $severity=shift;
-    my $msg="missing nodename";
-    print STDERR $self->severity($severity).$msg."\n";
-}
-
-sub missing_login_cmdline($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="missing login";
-    print STDERR $self->severity($severity).$msg."\n";
-}
-
-sub missing_envname_cmdline($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="missing envname";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $str=shift;
+#    if ($str=~ /^INFO/)
+#    { 	print color 'green';  print $str;     }
+#    elsif ($str=~ /^NOTICE/)
+#    { 	print color 'green';  print $str;     }   
+#    elsif ($str=~ /^WARNING/)
+#    { 	print color 'yellow'; print $str;     }   
+#    elsif ( $str=~ /^ERROR/)
+#    {   print color 'red';    print  $str;     }
+#    else 
+#    {   print color 'blue';   print  $str;     }
+#    print color 'reset';
+    print STDERR $str;
 }
 
 
-sub missing_rights_cmdline($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="missing rights";
-    print STDERR $self->severity($severity).$msg."\n";
-}
-
-sub missing_flags_cmdline($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="missing flags";
-    print STDERR $self->severity($severity).$msg."\n";
-}
 
 sub missing_cmdline($$)
 {
     my $self=shift;
     my $severity=shift;
     my $cmdline=shift;
-    my $msg="missing $cmdline";
-    print STDERR $self->severity($severity).$msg."\n";
-
+    my $msg="Missing $cmdline";
+    $self->printstderr($self->severity($severity).$msg."\n");
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub unknowerror($$)
@@ -101,8 +93,9 @@ sub unknowerror($$)
     my $severity=shift;
     my $specialmsg=shift;
     my $msg="Unknow error on ( $specialmsg )";
-    print STDERR $self->severity($severity).$msg."\n";
+    $self->printstderr($self->severity($severity).$msg."\n");
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 
@@ -111,8 +104,9 @@ sub message($$)
     my $self=shift;
     my $severity=shift;
     my $msg=shift;
-    print STDERR $self->severity($severity).$msg."\n";
-    if ($severity>=0) { syslog('info', $msg); }
+    $self->printstderr($self->severity($severity).$msg."\n");
+    if ($severity>=1) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub missing_node_db($)
@@ -120,10 +114,11 @@ sub missing_node_db($)
     my $self=shift;
     my $severity=shift;
     my $nodename=shift;
-    my $msg="node $nodename doesn't exist in db";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="$nodename doesn't exist in db";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub missing_env_db($)
@@ -131,10 +126,9 @@ sub missing_env_db($)
     my $self=shift;
     my $severity=shift;
     my $nodename=shift;
-    my $msg="there is no environments in db";
-    print STDERR $self->severity($severity).$msg."\n";
-
-    if ($severity>=0) { syslog('info', $msg); }
+    my $msg="There is no environments in db";
+    $self->printstderr($self->severity($severity).$msg."\n");
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 
@@ -143,20 +137,22 @@ sub notenough_right($$)
     my $self=shift;
     my $severity=shift;
     my $right=shift;
-    my $msg="not enough rights => ".$right;
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Not enough rights => ".$right;
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub missing_rights_db($)
 {
     my $self=shift;
     my $severity=shift;
-    my $msg="there is no rights in db";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="There is no rights in db";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 
@@ -166,10 +162,13 @@ sub missing_disk_db($)
     my $severity=shift;
     my $nodename=shift;
     my $msg="Disk not found for node $nodename in db";
-    print STDERR $self->severity($severity).$msg."\n";    
+    $self->printstderr($self->severity($severity).$msg."\n");    
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
+
+
 
 sub osnotsupported($)
 {
@@ -177,43 +176,23 @@ sub osnotsupported($)
     my $severity=shift;
     my $osname=shift;
     my $msg="$osname operating system is not supported yet";
-    print STDERR $self->severity($severity).$msg."\n";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
-
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
-sub dirnotfound($$)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $dirname=shift;
-    my $msg="the directory $dirname doesn't exist";
-    print STDERR $self->severity($severity).$msg."\n";
 
-    if ($severity>=0) { syslog('info', $msg); }
-}
-
-sub filenotfound($$)
+sub erroropeningfile($)
 {
     my $self=shift;
     my $severity=shift;
     my $filename=shift;
-    my $msg="the file $filename doesn't exist";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Can't open $filename";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
-}
-
-sub erroropeningfile($$)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $filename=shift;
-    my $msg="can't open $filename";
-    print STDERR $self->severity($severity).$msg."\n";
-
-    if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub statfile($$)
@@ -221,21 +200,45 @@ sub statfile($$)
     my $self=shift;
     my $severity=shift;
     my $filename=shift;
-    my $msg="stating file $filename";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Stating file $filename";
+    $self->printstderr($self->severity($severity).$msg."\n");
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
+}
+
+
+
+sub loadingfileyoumust($)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $msg="you have to load a file first";
+    $self->printstderr($self->severity($severity).$msg."\n");
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
+}
+
+
+sub checkingdb($)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $msg="Checking database access...";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
+
 
 sub loadingfile($$)
 {
     my $self=shift;
     my $severity=shift;
     my $filename=shift;
-    my $msg="loading $filename...";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Loading $filename";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
 sub loadingfileDone($$)
@@ -243,32 +246,54 @@ sub loadingfileDone($$)
     my $self=shift;
     my $severity=shift;
     my $filename=shift;
-    my $msg="load file $filename finished.";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Loading $filename finished.";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
+
+
+
+
+sub dirnotfound($$)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $dirname=shift;
+    my $msg="Directory $dirname doesn't exist";
+    $self->printstderr($self->severity($severity).$msg."\n");
+
+    if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
+}
+
+sub filenotfound($$)
+{
+    my $self=shift;
+    my $severity=shift;
+    my $filename=shift;
+    my $msg="$filename doesn't exist";
+    $self->printstderr($self->severity($severity).$msg."\n");
+
+    if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
+}
+
+
 
 sub loadingfilefailed($$)
 {
     my $self=shift;
     my $severity=shift;
     my $filename=shift;
-    my $msg="loading $filename failed";
-    print STDERR $self->severity($severity).$msg."\n";
+    my $msg="Loading $filename failed";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
-sub loadingfileyoumust($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="you have to load a file first";
-    print STDERR $self->severity($severity).$msg."\n";
-
-    if ($severity>=0) { syslog('info', $msg); }
-}
 
 sub commandnodenamefailed($$$)
 {
@@ -277,57 +302,163 @@ sub commandnodenamefailed($$$)
     my $commandname=shift;
     my $nodename=shift;
     my $msg="$commandname failed for node $nodename";
-    print STDERR $self->severity($severity).$msg."\n";
+    $self->printstderr($self->severity($severity).$msg."\n");
 
     if ($severity>=0) { syslog('info', $msg); }
+    if ($self->{debug}) { libkadeploy2::caller::print(); }
 }
 
-sub checkingdb($)
-{
-    my $self=shift;
-    my $severity=shift;
-    my $msg="Checking database access...";
-    print STDERR $self->severity($severity).$msg."\n";
-
-    if ($severity>=0) { syslog('info', $msg); }
-}
 
 ########################################HELP########################################
+
+my $addnode_flags=          "--add                                add nodes";
+my $delnode_flags=          "--del                                delete specified hostname";
+
+my $addenv_flags=           "--add                                add environment to db";
+my $delenv_flags=           "--del                                delete environemnt to db";
+
+my $addright_flags=         "--add                                add a right";
+my $delright_flags=         "--del                                remove a right";
+
+
+my $listenv_flags=          "--list                               list environment";
+my $listright_flags=        "--list                               list right";
+
+my $help_flags=             "-h|--help                            this help message";
+my $verbose_flags=          "-v|--verbose                         verbose mode";
+
+my $confcommand_flags=      "--confcommand                        execute a configuration command on a set of node";
+my $nodecommand_flags=      "--nodecommand                        execute a command on a set of node";
+my $checknode_flags=        "--check                              check some nodes";
+
+my $listresult_flags=       "--list                               show result from a check";
+my $listnode_flags=         "--listnode                           list node from db";
+my $listpartition_flags=    "--listpartition                      list partition from db";
+
+my $softboot_flags=         "--soft                               softboot command";
+my $hardboot_flags=         "--hard                               hardboot";
+my $deployboot_flags=       "--deploy                             deploy";
+
+my $fromdisk_flags=         "--fromdisk                           read kernel, module, initrd from disk";
+my $fromtftp_flags=         "--fromtftp                           read kernel, module, initrd from tftp";
+
+
+my $checkdeployconf_flags=  "--checkdeployconf                    check deployconf";
+my $checksudoers_flags=     "--checksudoers                       print a valid sudoers";
+my $sudowrapping_flags=     "--sudowrapping                       wrap files with kasudowrapper.sh";
+my $printvalidsudoers_flags="--printvalidsudoers                  generate a sudoers from deploy.conf";
+my $createtftp_flags=       "--createtftp                         create the kadeploy tftp/pxe system";
+my $exportenv_flags=        "--exportenv                          configure sudowrapping (this is done after sudowrapping)";
+my $chmodconf_flags=        "--chmodconf                          put correct write on configuration files";
+
+my $fdisk_flags=            "--fdisk                              fdisk the node with a partition file or from db";
+my $printfdisk_flags=       "--printfdisk                         print a fdisk file from";
+my $printfstab_flags=       "--printfstab                         print a fstab file from a clusterpartition";
+my $printformat_flags=      "--printformat                        print a format file from a clusterpartition ( solaris )";
+
+
+my $partitionf_params=      "--partitionfile     partionfile      load a custom partition file";
+
+my $machine_params=         "-m, --machine       node             nodename";
+my $machinefile_params=     "-f                  hostfile         node file";
+my $tcpport_params=         "-p, --port          port             tcp port";
+#my $connector_params=       "--connector         connector        rsh or ssh";
+my $login_params=           "-l, --login         login            username";
+
+my $timeoutcmd_params=      "-t, --timeout       timeout          timeout for command in s";
+my $timeoutpxe_params=      "--timeout                            pxe loader timeout in second";
+
+my $retry_params=           "--retry             count            blocking time in 's'";
+my $environmentname_params= "-e|--environment    environmentname  name of the environment";
+my $environmentdsc_params = "-f|--envfile        envdsc           environment description file";
+my $right_params=           "-r|--rights         right            right you want to add or del";
+
+my $check_type_params=      "--type              checktype        choose a check type [ICMP|SSH|MCAT]";
+my $pxeloadertype_params=   "--type              pxeloader        choose from pxelinux, pxegrub, pxegrubfloppy, pxewindowsfloppy";
+my $recordtype_params=      "--type              recordtype       choose from linux, dd";
+
+my $ostype_params=          "--ostype            ostype           only linux (currently)";
+
+
+my $kernel_params=          "--kernel            kernel           path to kernel";
+my $initrd_params=          "--initrd            initrd           path to initrd";
+my $module_params=          "--module            module           path to module";
+my $kernelparams_params=    "--kernelparams      kernel_params    kernel parameters";
+my $floppy_params=          "--floppy            floppy_path      path to floppy file";
+my $disknumber_params=      "-d|--disknumber     disknumber       disk number      (begin at 1)";
+my $partnumber_params=      "-p|--partnumber     partnumber       partition number (begin at 1)";
+my $slice_params=           "-s|--slice          slice            slice            (a-z)";
+
+my $serialport_params=      "--serialport        serialportnumber serial port number";
+my $serialportspeed_params= "--serialspeed       serialportspeed  serial port speed";
+
+
+my $command_params=         "-c, --command       \"distcmd\"        command to exec on a set of node";
+my $servercmd_params=       "--servercommand     \"localcmd\"       command on server";
+my $clientcmd_params=       "--clientcommand     \"distcmd\"        command on client";
 
 sub kanodes_help()
 {
     my $self=shift;
     my $help="kanodes
-\t--add                 add nodes
-\t--del                 delete specified hostname
+\t$help_flags
 
-\t--listnode            list node from db
-\t--listpartition       list partition from db 
+\t$addnode_flags
+\t$delnode_flags
 
-\t-m|--machine          nodename
+\t$listnode_flags
+\t$listpartition_flags
 
-\t-h|--help             this help message
+
+\t$machine_params
+
+\t$partitionf_params
+
 ";
 
     print $help;
 }
 
+sub kadatabase_help()
+{
+    my $self=shift;
+    my $help="kadatabase
+\t$help_flags
+
+\t--addmysqlrights             # create the \"deploy\" user for the db
+\t--delmysqlrights             # delete this user from the db
+
+\t--create_db_deploy           # create database
+\t--create_table_deploy        # create table
+\t--drop_db_deploy             # drop database
+\t--clean_db_deploy            # clean deployed and deployement table
+
+\t--patch21                    # patch db 2.0   -> 2.1
+\t--patch211                   # patch db 2.1   -> 2.1.X
+\t--patch22                    # patch db 2.1.X -> 2.2
+
+";
+
+    print $help;
+}
+
+
 sub kamcat_help()
 {
     my $self=shift;
     my $help="kamcat
-\t-m|--machine          nodena
-
-\t-p|--port             tcp port
-\t--connector           rsh|ssh
-
-\t-l|--login            username
-
-\t--servercommand       \"local command\"
-\t--clientcommand       \"distant command\"
+\t$help_flags
 
 
-\t-h|--help             this help message
+\t$machine_params
+
+\t$tcpport_params
+
+\t$login_params
+
+\t$servercmd_params
+\t$clientcmd_params
+
 ";
 
     print $help;
@@ -337,20 +468,21 @@ sub kaexec_help()
 {
     my $self=shift;
     my $help="kaexec
-\t--confcommand         execute a configuration command on a set of node
-\t--nodecommand         execute a command on a set of node
+\t$help_flags
+\t$verbose_flags
 
-\t-m|--machine          node name
-\t-f                    node file
+\t$confcommand_flags
+\t$nodecommand_flags
 
-\t-c|--command          command to exec on a set of node
 
-\t--connector           rsh|ssh
-\t-l|--login            username
-\t-t|--timeout          timeout for command
+\t$machine_params
+\t$machinefile_params
 
-\t-v|--verbose          verbose mode
-\t-h|--help             this help message
+\t$command_params
+
+\t$login_params
+\t$timeoutcmd_params
+
 ";
 
     print $help;
@@ -361,17 +493,19 @@ sub kaenv_help()
 {
     my $self=shift;
     my $help="kaenv
-\t--add                 add environment to db
-\t--del                 delete environemnt to db
-\t--list                list environment
+\t$help_flags
 
-\t-e|--environment      environment
+\t$addenv_flags
+\t$delenv_flags
+\t$listenv_flags
 
-\t-l|--login            username
 
-\t-f|--envfile          environment description file
+\t$environmentname_params
 
-\t-h|--help             this help message
+\t$login_params
+
+\t$environmentdsc_params
+
 ";
 
     print $help;
@@ -384,9 +518,11 @@ sub kaconsole_help()
 {
     my $self=shift;
     my $help="kaconsole
-\t-m|--machine          nodename
+\t$help_flags
 
-\t-h|--help             this help message
+
+\t$machine_params
+
 ";
 
     print $help;
@@ -396,15 +532,18 @@ sub kachecknodes_help()
 {
     my $self=shift;
     my $help="kachecknodes
-\t--check               whant to check some nodes
-\t--list                show result from a check
+\t$help_flags
+\t$verbose_flags
 
-\t--type                choose a check type [ICMP|SSH|MCAT]
-\t--retry               blocking time in 's'
+\t$checknode_flags
+\t$listresult_flags
 
-\t-m|--machine          nodename
-\t-v|--verbose          be verbose
-\t-h|--help             this help message
+
+\t$check_type_params
+\t$retry_params
+
+\t$machine_params
+
 ";
 
     print $help;
@@ -416,19 +555,22 @@ sub kareboot_help()
 {
     my $self=shift;
     my $help="kareboot
-\t-m|--machine          nodename
-\t-f|--nodefile         nodefile
+\t$help_flags
 
-\t-e|--environment      environment_name
-\t-p|--part-number      partition number
-\t-d|--disk-number      disk number
+\t$verbose_flags
 
-\t--soft                softboot
-\t--hard                hardboot
-\t--deploy              deploy
+\t$softboot_flags
+\t$hardboot_flags
+\t$deployboot_flags
 
-\t-v|--verbose          verbose on
-\t-h|--help             this help message
+
+\t$machine_params
+\t$machinefile_params
+
+\t$environmentname_params
+\t$partnumber_params
+\t$disknumber_params
+
 ";
 
     print $help;
@@ -439,16 +581,19 @@ sub karights_help()
 {
     my $self=shift;
     my $help="karights
-\t--add                 add a right 
-\t--del                 remove a right
-\t--list                list
+\t$help_flags
 
-\t-m|--machine          nodename
-\t-f|--nodefile         nodefile
+\t$addright_flags
+\t$delright_flags
+\t$listright_flags
 
-\t-r|--rights           rights
-\t-l|--login            username
-\t-h|--help             this help message
+
+\t$machine_params
+\t$machinefile_params
+
+\t$right_params
+\t$login_params
+
 ";
 
     print $help;
@@ -458,41 +603,73 @@ sub kapxe_help()
 {
     my $self=shift;
     my $help="kapxe
-\t-m|--machine          nodename
+\t$help_flags
 
-\t--type [type]         pxe boot loader [pxelinux|grub|windows]
+\t$fromdisk_flags
+\t$fromtftp_flags
 
-\t--kernel              path to kernel
-\t--initrd              path to initrd
-\t--kernelparams        kernel parameters
 
-\t--disk-number         disk number
-\t--part-number         partition number
+\t$machine_params
 
-\t--serialport          serialport number
-\t--serialspeed         serialport speed
-\t--timeout             pxe loader timeout in second
+\t$pxeloadertype_params
 
-\t-h|--help             this help message
+\t$kernel_params
+\t$initrd_params
+\t$module_params
+\t$kernelparams_params
+\t$floppy_params
+\t$disknumber_params
+\t$partnumber_params
+\t$slice_params
+
+\t$serialport_params
+\t$serialportspeed_params
+\t$timeoutpxe_params
+
 ";
 
     print $help;
 }
 
+sub karecordenv_help()
+{
+    my $self=shift;
+    my $help="karecordenv
+\t$help_flags
+
+\t$verbose_flags
+
+\t$machine_params
+
+\t$recordtype_params
+
+\t$disknumber_params
+\t$partnumber_params
+
+";
+
+    print $help;
+}
+
+
 sub kadeploy_help()
 {
     my $self=shift;
     my $help="kadeploy
-\t-m|--machine          nodename
-\t-f|--nodefile         nodefile
+\t$help_flags
 
-\t-p|--partnumber       partition number
-\t-d|--disknumber       disk number
+\t$verbose_flags
 
-\t-e|--environment      environment name
-\t-l|--login            username
 
-\t-h|--help             this help message
+\t$machine_params
+\t$machinefile_params
+
+\t$disknumber_params
+\t$partnumber_params
+
+\t$environmentname_params
+\t$login_params
+
 ";
     print $help;
 }
@@ -501,17 +678,15 @@ sub kasetup_help()
 {
     my $self=shift;
     my $help="kasetup
-\t--checkdeployconf               check deployconf
-\t--checksudoers                  print a valid sudoers
-\t--copybinfiles                  copy required files in /usr/local/bin
-\t--sudowrapping                  wrap files with kasudowrapper.sh
-\t--printvalidsudoers             generate a sudoers from deploy.conf
-\t--createtftp                    copy all the files required for tftp boot
-\t--exportenv                     export environment variable file for sudowrapping (this is done after sudowrapping)
-\t--chmodconf                     put correct write on configuration files
+\t$help_flags
 
-\t--printvalidfdisk               print a fdisk file from 
-\t--loadpartitionfile             load a custom partition file
+\t$checkdeployconf_flags
+\t$checksudoers_flags
+\t$sudowrapping_flags
+\t$printvalidsudoers_flags
+\t$createtftp_flags
+\t$exportenv_flags
+\t$chmodconf_flags
 
 ";
     print $help;
@@ -521,17 +696,21 @@ sub kasetup_help()
 sub kadeployenv_help()
 {
     my $self=shift;
-    my $help="deployenv
-\t-m|--machine          nodename
-\t-f|--nodefile         nodefile
+    my $help="kadeployenv
+\t$help_flags
 
-\t-p|--partnumber      partition number
-\t-d|--disknumber      disk number
+\t$verbose_flags
 
-\t-e|--environment      environment name
-\t-l|--login            username
 
-\t-h|--help             this help message
+\t$machine_params
+\t$machinefile_params
+
+\t$disknumber_params
+\t$partnumber_params
+
+\t$environmentname_params
+\t$login_params
+
 ";
     print $help;
 }
@@ -540,9 +719,10 @@ sub kareset_help()
 {
     my $self=shift;
     my $help="kareset
-\t-m|--machine          nodename
+\t$help_flags
 
-\t-h|--help             this help message
+\t$machine_params
+
 ";
     print $help;
 }
@@ -553,18 +733,27 @@ sub kapart_help()
 {
     my $self=shift;
     my $help="kapart
-\t-m|--machine          nodename
-\t-f|--nodefile         nodefile
+\t$help_flags
 
-\t--partitionfile       partition description
+\t$verbose_flags
 
-\t--disknumber         disk number
-\t--disktype            disk type [ide|scsi|sata]
+\t$fdisk_flags
+\t$printfdisk_flags
+\t$printfstab_flags
+\t$printformat_flags
 
-\t--ostype              linux currently
+\t$partitionf_params
 
-\t-v|--verbose          verbose on
-\t-h|--help             this help message
+\t$machine_params
+\t$machinefile_params
+
+\t$partitionf_params
+
+\t$disknumber_params
+\t$partnumber_params
+
+\t$ostype_params
+
 ";
     print $help;
 }

@@ -2,6 +2,8 @@ package libkadeploy2::pxelinux_label;
 
 use strict;
 use warnings;
+use libkadeploy2::message;
+my $message=libkadeploy2::message::new();
 
 
 sub new()
@@ -57,7 +59,7 @@ sub get()
     if (! $name || 
 	! $kernel)
     {
-	print STDERR "ERROR name or kernel not set !!!!\n";
+	$message->message(2,"name or kernel not set !!!!");
 	exit 1;	
     }
 
@@ -199,6 +201,265 @@ default $defaultlabel
     $menu.=$defaultconf.$labelentry;
 
     return $menu;
+}
+
+1;
+
+package libkadeploy2::pxelinuxtftp;
+
+use strict;
+use warnings;
+use libkadeploy2::deployconf;
+
+
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->loadcheck()) { exit 1; }
+my $tftproot=$conf->get("tftp_repository");
+my $first_serial_speed;
+my $second_serial_speed;
+if ($conf->is_conf("first_serial_speed"))  { $first_serial_speed=$conf->get("first_serial_speed"); } else { $first_serial_speed=9600; }
+if ($conf->is_conf("second_serial_speed")) { $second_serial_speed=$conf->get("second_serial_speed"); } else { $second_serial_speed=9600; }
+my $sudo_user=libkadeploy2::sudo::get_sudo_user();
+if (! $sudo_user) { $sudo_user=libkadeploy2::sudo::get_user(); }
+
+
+
+sub new()
+{
+    my $self;
+    $self=
+    {
+	nodelist     => 0,
+	kernel       => "",
+	initrd       => "",
+	module       => "",
+	kernelparams => "",
+	disknumber   => "",
+	partnumber   => "",
+	slice        => "",
+	linux        => 0,
+
+	nfsroot      => 0,
+	initrdroot   => 0,
+	diskroot     => 1,
+
+	NFSnfsroot   => "",
+	NFSclientip  => "",
+	NFSserverip  => "",
+	NFSgw        => "",
+	NFSnetmask   => "",
+	NFShostname  => "",
+	NFSinterface => "",
+	NFSautoconf  => "",
+    };
+    bless $self;
+    return $self;
+}
+
+
+sub set_nodelist($)      { my $self=shift; $self->{nodelist}=shift; }
+sub set_kernel($)        { my $self=shift; $self->{kernel}=shift; }
+sub set_initrd($)        { my $self=shift; $self->{initrd}=shift; }
+sub set_module($)        { my $self=shift; $self->{module}=shift; }
+sub set_kernelparams($)  { my $self=shift; $self->{kernelparams}=shift; }
+
+sub set_disknumber($)    { my $self=shift; $self->{disknumber}=shift; }
+sub set_partnumber($)    { my $self=shift; $self->{partnumber}=shift;  }
+sub set_slice($)         { my $self=shift; $self->{slice}=shift; }
+sub set_linux()          { my $self=shift; $self->{linux}=1; }
+
+sub set_diskroot()       { my $self=shift; $self->{diskroot}=1; $self->{initrdroot}=0; $self->{nfsroot}=0;}
+sub set_initrdroot()     { my $self=shift; $self->{initrdroot}=1; $self->{diskroot}=0; $self->{nfsroot}=0;}
+
+sub set_nfsroot($$$$$$$$)
+{ 
+    my $self=shift; 
+
+
+    $self->{NFSnfsroot}=$conf->get("nfs_repository");
+    $self->{NFSserverip}=$conf->get("server_ip");
+    $self->{NFSgw}=$conf->get("gw");
+    $self->{NFSnetmask}=$conf->get("netmask");
+    $self->{NFSinterface}="eth0";
+    $self->{NFSautoconf}="dhcp";
+    $self->{nfsroot}=1;
+    $self->{diskroot}=0;
+    $self->{initrd}=0;
+    	
+}
+
+
+sub readpxelinuxcfg()
+{
+    my $self=shift;
+    my $nodelist=$self->{nodelist};
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node_hexip;
+    my $line;
+    
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
+	$message->message(-1,"show pxe for $node_name");
+	$message->message(-1,"file path : $tftproot/pxelinux.cfg/$node_hexip");
+	open(PXELINUXCFG,"$tftproot/pxelinux.cfg/$node_hexip") or die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
+	while ($line=<PXELINUXCFG>) { print $line; }
+	close(PXELINUXCFG);
+    }
+}
+
+sub generate_kernel_initrd_module_tftpnodes()
+{
+    my $self=shift;
+
+    my @pathtokernel;
+    my @pathtoinitrd;
+    my @pathtomodule;
+
+    @pathtokernel=split(/\//,$self->{kernel});
+    $self->{kerneltftp}=$pathtokernel[$#pathtokernel];
+    if ($self->{initrd})
+    {
+	my @pathtoinitrd=split(/\//,$self->{initrd});
+	$self->{initrdtftp}=$pathtoinitrd[$#pathtoinitrd];
+    }
+    if ($self->{module})
+    {
+	my @pathtomodule=split(/\//,$self->{module});
+	$self->{moduletftp}=$pathtomodule[$#pathtomodule];
+    } 
+}
+
+
+sub writepxelinuxcfg()
+{
+    my $self=shift;
+    my $nodelist=$self->{nodelist};
+    my $node;
+    my $ref_node_list;
+    my @node_list;
+    my $node_name;
+    my $node_hexip;
+    my $kerneltftpnode;
+    my $initrdtftpnode;
+    my $conffiledata;
+
+
+    $self->generate_kernel_initrd_module_tftpnodes();
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    foreach $node (@node_list)
+    {
+	$node_name=$node->get_name();
+	
+
+	if ($self->{kernel}) { $kerneltftpnode="$node_name/".$self->{kernel}; }
+	if ($self->{initrd}) { $initrdtftpnode="$node_name/".$self->{initrd}; }
+
+	$conffiledata=$self->generate_pxelinuxcfg_file($node,
+						       "pxelinux-$node_name"
+						       );
+
+	$node_hexip=libkadeploy2::hexlib::hexalizeip($node->get_ip());
+	$message->message(0,"$sudo_user setting up pxe for $node_name");
+	mkdir("$tftproot/pxelinux.cfg",0755);
+	open(PXELINUXCFG,"> $tftproot/pxelinux.cfg/$node_hexip") or 
+	    die "Can't open $tftproot/pxelinux.cfg/$node_hexip";
+	print PXELINUXCFG $conffiledata;
+	close(PXELINUXCFG);
+    }
+}
+
+
+sub generate_pxelinuxcfg_file($$$)
+{
+    my $self=shift;
+    my $node=shift;
+    my $title_name=shift;
+    my $timeout=$self->{timeout};
+    my $node_name=$node->get_name();
+    my $node_ip=$node->get_ip();
+
+
+    my $firstserialspeed;
+    my $secondserialspeed;
+
+    my $kerneltftp=$self->{kerneltftp};
+    my $initrdtftp=$self->{initrdtftp};
+    my $kernelparams=$self->{kernelparams};
+
+    my $partnumber=$self->{partnumber};
+    my $disknumber=$self->{disknumber};
+
+    my $device;
+    my $linuxdevice;
+    my $conffile;
+    my $disktype;
+    my $disk;
+    my $pxelinuxconf=libkadeploy2::pxelinux::new();
+
+    if ($conf->is_conf("first_serial_speed"))  { $first_serial_speed=$conf->get("first_serial_speed"); } else { $first_serial_speed=9600; }
+    if ($conf->is_conf("second_serial_speed")) { $second_serial_speed=$conf->get("second_serial_speed"); } else { $second_serial_speed=9600; }
+
+
+    if (! $kernelparams) { $kernelparams=""; }
+
+    if ($self->{diskroot} && $partnumber)
+    {
+	$disk=libkadeploy2::disk::new();
+	$disk->get_fromdb($node_name,$disknumber);
+
+    	$device=libkadeploy2::device::new();
+	$device->set_type($disk->get_interface());
+	$device->set_disknumber($disknumber);
+	$device->set_partnumber($partnumber);
+	$linuxdevice=$device->get("linux");
+	$kernelparams=" root=/dev/$linuxdevice ".$kernelparams; 
+    }
+    elsif ($self->{initrdroot} && $self->{initrd})
+    {
+	$linuxdevice="ram0";
+	$kernelparams=" root=/dev/$linuxdevice ".$kernelparams; 
+    }
+    elsif ($self->{nfsroot})
+    {
+	$kernelparams.=" root=/dev/nfs".
+	    " nfsroot=".$self->{NFSnfsroot}."/".$node_name.
+	    " ip=".
+	    $node_ip.":".
+	    $self->{NFSserverip}.":".
+	    $self->{NFSgw}.":".
+	    $self->{NFSnetmask}.":".
+	    $node_name.":".
+	    $self->{NFSinterface}.":".
+	    $self->{NFSautoconf}." ";
+    }
+    else
+    {
+	$message->message(3,"error you must not be there generate_pxelinuxcfg_file");
+    }
+
+    if (! $kerneltftp) { $kerneltftp=""; } else { $kerneltftp="$node_name/$kerneltftp"; } 
+    if (! $initrdtftp) { $initrdtftp=""; } else { $initrdtftp="$node_name/$initrdtftp"; }
+
+    
+    $pxelinuxconf->add("$title_name","$kerneltftp","$initrdtftp","$kernelparams");
+
+    $pxelinuxconf->set_default("$title_name");
+    $pxelinuxconf->set_serialspeed(1,$first_serial_speed);
+    $pxelinuxconf->set_serialspeed(2,$second_serial_speed);
+    $conffile=$pxelinuxconf->get();
+
+    return $conffile;
 }
 
 1;

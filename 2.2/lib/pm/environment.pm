@@ -2,6 +2,9 @@ package libkadeploy2::environment;
 
 use strict;
 use warnings;
+use libkadeploy2::message;
+
+my $message=libkadeploy2::message::new();
 
 sub new()
 {
@@ -26,7 +29,7 @@ sub set_name($)
     $self->{name}=$name;
 }
 
-sub get_name($)
+sub get_name()
 {
     my $self=shift;
     my $name=shift;
@@ -60,7 +63,7 @@ sub get_descriptionfile()
     return $self->{descriptionfilepath};
 }
 
-sub get_info($)
+sub get($)
 {
     my $self=shift;
     my $key=shift;
@@ -68,12 +71,20 @@ sub get_info($)
     return $descriptionfile->get($key);
 }
 
-sub info_exist($)
+sub is_set($)
 {
     my $self=shift;
     my $key=shift;
     my $descriptionfile=$self->{descriptionfile};
-    return $descriptionfile->is_conf($key);
+    return $descriptionfile->is_set($key);
+}
+
+sub set($$)
+{
+    my $self=shift;
+    my $key=shift;
+    my $descriptionfile=$self->{descriptionfile};
+    return $descriptionfile->set($key);
 }
 
 sub get_descriptionfile_fromdb()
@@ -82,9 +93,18 @@ sub get_descriptionfile_fromdb()
     my $ok=0;
     my $descriptionfilepath;
     my $db=libkadeploy2::deploy_iolib::new();
+
+    if (! $self->{name} ||
+	! $self->{user})
+    {
+	$message->message(3,"can't fetch env from db (no name or user) environment::get_descriptionfile_fromdb");
+	exit 255;
+    }
+
     $db->connect();
     $descriptionfilepath=$db->get_environment_descriptionfile($self->{name},
-							      $self->{user}							  );
+							      $self->{user}
+							      );
     $db->disconnect();
     if ($descriptionfilepath)
     {
@@ -161,8 +181,9 @@ sub print_header()
 {
     my $self=shift;
     print "
-environment :
---------------
++-----------------------+--------------+--------------------+---------------------------------------------------------------------------------------------+
+| shortname             | login        | envname            | descriptionfile_path                                                                        |
++-----------------------+--------------+--------------------+---------------------------------------------------------------------------------------------+
 ";
 	
 }
@@ -170,13 +191,22 @@ environment :
 sub print_footer()
 {
     my $self=shift;
-    print "\n";
+    print "+-----------------------+--------------+--------------------+---------------------------------------------------------------------------------------------+
+";
 }
 
 sub print_line()
 {
     my $self=shift;
-    print "$self->{user}"."@".$self->{name}." ".$self->{descriptionfilepath}."\n";
+#    print "$self->{user}"."@".$self->{name}." ".$self->{descriptionfilepath}."\n";
+    no warnings;
+    format STDOUT=
+| @<<<<<<<<<<<<<<<<<<<< | @<<<<<<<<<<<<| @<<<<<<<<<<<<<<<<<<| @<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<|
+$self->{user}."\@".$self->{name}, $self->{user}, $self->{name}, $self->{descriptionfilepath}
+.
+    write;
+
+    use warnings;
 }
 
 

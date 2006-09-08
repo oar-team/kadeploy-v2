@@ -6,6 +6,8 @@ use libkadeploy2::node;
 use libkadeploy2::message;
 use IO::Socket;
 
+
+my $message=libkadeploy2::message::new();
 my $nodeconfdir="/etc/kadeploy/nodes/";
 
 sub new()
@@ -219,7 +221,10 @@ sub loadlist($)
 	else
 	{
 	    ($nodename,$tmp,$tmp,$tmp,$thisaddr)=gethostbyname($nodeelem);
-	    $nodeip = inet_ntoa((gethostbyname($nodename))[4]);
+	    if ($nodename)
+	    {
+		$nodeip = inet_ntoa((gethostbyname($nodename))[4]);
+	    }
 	    if ($nodename && $nodeip)
 	    {
 		$nodeobject->set_name($nodename);
@@ -229,7 +234,9 @@ sub loadlist($)
 	    }
 	    else
 	    {
-		print "ERROR : node $nodeelem doesn't exist in DB\n";
+		$nodeobject->set_name($nodeelem);
+		$message->message(2,"node $nodeelem doesn't exist in DB (nodelist::loadlist)");
+		$message->message(2,"You have to write $nodeelem in your local DNS");
 		$ok=0;
 	    }
 	}

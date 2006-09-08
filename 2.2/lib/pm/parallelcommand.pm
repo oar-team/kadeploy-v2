@@ -2,26 +2,31 @@ package libkadeploy2::parallelcommand;
 
 use strict;
 use warnings;
+use libkadeploy2::message;
 
+my $message=libkadeploy2::message::new(); 
 #parallelLauncher : internalsafe
 #                   internalwindow
 #                   DKsentinelle
 
 #$connector,$login,$timeout,$parallelLauncher
-sub new($$)
+sub new()
 {
-    my $timeout=shift;
-    my $verbose=shift;
     my $self;
 
      $self = 
     {
-	"timeout"          => $timeout,
-	"verbose"          => $verbose,
+	timeout          => 0,
+	verbose          => 0,
     };
     bless $self;
     return $self;
 }
+
+sub set_timeout($)   { my $self=shift; my $args=shift; $self->{timeout}=$args; }
+sub set_verbose()    { my $self=shift; $self->{verbose}=1; }
+sub set_unverbose()  { my $self=shift; $self->{verbose}=0; }
+
 
 
 #param1: \@listcommand 
@@ -73,7 +78,7 @@ sub execparallel($)
     my $ref_to_commands = shift;
     my $timeout = $self->{timeout};
     my $window_size = 2;
-    my $errorString = "toto";
+    my $errorString = "execparallel error";
     my $verbose=$self->{verbose};
 
 
@@ -96,30 +101,30 @@ sub execparallel($)
 	while((scalar(keys(%running_processes)) < $window_size) && 
 	      ($index <= $#nodes))
 	{
-	    print("[VERBOSE] fork process for the $nodes[$index]\n") if ($verbose);
+#	    $message->message(-1,"fork process for the $nodes[$index]") if ($verbose);
 	    my $pid = fork();
+	    my $cmd = $commandsToRun[$index];
 	    if (defined($pid)){
 		if ($pid == 0){
 		    #In the child
 		    # Initiate timeout
 		    alarm($timeout);
-		    my $cmd = $commandsToRun[$index];
-		    print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
+#		    $message->message(-1,"Execute command : $cmd") if ($verbose);
 		    if ($verbose)
 		    {
 			exec($cmd);
 		    }
 		    else
 		    {
-			exec($cmd." 2>&1 > /dev/null");
+			exec($cmd." >/dev/null 2>&1 > /dev/null");
 		    }
 		}
 		$running_processes{$pid} = $index;
-		print ("[VERBOSE] job $pid forked\n") if ($verbose);
+		$message->message(-1,"pid $pid : $cmd") if ($verbose);
 	    }
 	    else
 	    {
-		warn("/!\\ fork system call failed for $nodes[$index].\n");
+		$message->message(1,"fork system call failed for $nodes[$index].");
 	    }
 	    $index++;
 	}
@@ -134,8 +139,18 @@ sub execparallel($)
 	}
 	else
 	{
-	    if (defined($running_processes{$waited_pid})){
-		print("[VERBOSE] Child process $waited_pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n") if ($verbose);
+	    if (defined($running_processes{$waited_pid}))
+	    {
+		if ($exit_value==0 &&
+		    $signal_num==0 &&
+		    $dumped_core==0)
+		{
+		    $message->message(-1,"Child process $waited_pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core") if ($verbose);
+		}
+		else 
+		{
+		    $message->message(1,"Child process $waited_pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core") if ($verbose);
+		}
 		$finished_processes{$running_processes{$waited_pid}} = [$exit_value,$signal_num,$dumped_core];
 		delete($running_processes{$waited_pid});
 	    }
@@ -155,7 +170,14 @@ sub execparallel($)
 	    $commandRuned{$nodes[$i]}=0;
 	    $ok=0;
 	}
-	print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])\n") if ($verbose);
+	if ($verdict eq "GOOD")
+	{
+	    $message->message(-1,"$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])") if ($verbose);
+	}
+	else
+	{
+	    $message->message(1,"$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])") if ($verbose);
+	}
 	
     }
     

@@ -16,16 +16,16 @@ use libkadeploy2::message;
 #@EXPORT_OK = qw(init_conf get_conf is_conf dump_conf reset_conf);
 
 ## prototypes
+sub new($$);  #(conffile,critic)
 sub check_conf;
 sub check_cmd;
 sub check_cmd_exist;
 sub check_db_access;
 sub get($);
-sub is_conf($);
+sub set($$);
+sub is_set($);
 sub dump_conf();
 sub reset_conf();
-
-sub checkdeployconf();
 
 
 
@@ -43,9 +43,9 @@ my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)}; #
 
 sub new($$)
 {
-    my $self;
     my $conffile = shift; ## configuration  file
     my $critic = shift; 
+    my $self;
     my %params = ();  ## parameters container
     my $refparams=\%params;
     $self = 
@@ -73,9 +73,10 @@ sub load()
     $conf=$self->{conffile};
 
     #$message->loadingfile(0,$conf);
-    open(CONF,$conf) or die "Can't open $conf";
-    if (! $ok) { $message->erroropeningfile(2,$conf); exit 1; }
-
+#    open(CONF,$conf) or die "Can't open $conf";
+    open(CONF,$conf) or $ok=0;
+    if (! $ok) { $message->erroropeningfile(2,$conf); exit 255; }
+    
     foreach my $line (<CONF>)
     {
 	if ($line =~ $regex) 
@@ -222,7 +223,7 @@ sub check()
 
 
 
-sub is_conf($)
+sub is_set($)
 {
     my $self=shift;
     my $key = shift;
@@ -259,7 +260,7 @@ sub get($)
     %params=%$refparams;
 
 
-    (defined $key) or $ok=0;
+    (defined $key && $key) or $ok=0;
     if ($ok==0)
     { 	$message->message(2,"get expects a parameter !!! \n"); 	exit 1;     }
 
@@ -304,6 +305,31 @@ sub print()
     }
     return 1;
 }
+
+sub write()
+{
+    my $self=shift;
+    my %params;
+    my $refparams;
+    my $ok=1;
+    $refparams=$self->{params};
+    %params=%$refparams;
+
+#    if (! -f $self->{conffile}) { $ok=0; }
+    open(FH,">".$self->{conffile}) or $ok=0;
+
+    if ($ok)
+	{
+	    print FH "Config_file = ".$self->{conffile}."\n";
+	    while (my ($key,$val) = each %params) 
+	    {
+		print FH $key." = ".$val."\n";
+	    }
+	}
+    close(FH);
+    return $ok;
+}
+
 
 # reset the module state
 sub reset() 

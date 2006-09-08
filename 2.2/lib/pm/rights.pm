@@ -42,12 +42,11 @@ sub get_next()
     $ref_array=$self->{ACL};
     $refline=$$ref_array[$self->{index}];
     $self->{index}=$self->{index}+1;
-
     if ($refline)
     {
 	$user=$$refline[0];
 	$node=$$refline[1];
-	$rights=$$refline[2];    
+	$rights=$$refline[2];
 	$right->set_user($user);
 	$right->set_node($node);
 	$right->set_right($rights);
@@ -154,7 +153,7 @@ sub print_node($)
 	$right=libkadeploy2::right::new();
 	$right->set_user($user);
 	$right->set_node($node);
-	$right->set_user($rights);
+	$right->set_right($rights);
 
 	if ($i==0)
 	{
