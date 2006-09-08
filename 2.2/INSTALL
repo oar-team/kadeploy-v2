@@ -18,7 +18,6 @@ SYSTEM REQUIREMENTS ON THE SERVER
 
 Required system tools:
 	- Nmap to check if the target nodes are there
-	- copy DKsentinelle binary (located in kadeploy2/cookbook/bin) to /usr/local/bin on the server !!!! It is mandatory !!!! see if it works, if not compile taktuk from : http://www-id.imag.fr/Laboratoire/Membres/Martin_Cyrille/taktuk/downloads/taktuk2_0.5-7.tar.gz
 
 Required user's priviledges:
 	- user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
@@ -40,12 +39,6 @@ Sample of this file are in /share/cookbook/conf/.
 1. deploy.conf
 --------------
 This file presents all the variables the user must defined in order to be able to use the deployment system. It is divided into several sections. A very short description is available for each variable and sometimes exemple values are given in commentary.
-
-2. deploy_cmd.conf
-------------------
-This file should contain the appropriate reboot and remote console opening commands. The kareboot and kaconsole tools will get the command to execute according to node given in parameter from it. This file is very temporary and may change (even disappear ?) in next development steps.
-
-Also, the user can find exemples of both files in the tools/cookbook folder with a brief description of the syntax to use.
 
 
 TFTP CONFIGURATION
@@ -92,9 +85,10 @@ database schema creation
 #kadatabase -create_db_deploy
 #kadatabase -patch21
 #kadatabase -patch211
+#kadatabase -patch22
 
 test it with : 
-#kaenvironments  -l nobody
+#kaenv
 
 edit /etc/kadeploy/clusternodes.conf /etc/kadeploy/clusterpartition.conf then
 #kanodes -add
@@ -104,9 +98,6 @@ create the tftp folder for pxe
 
 
 It's done !!
-
-
-
 
 
 FROM Version 2
@@ -142,5 +133,5 @@ It's done !!
 
 FURTHER INFORMATION
 ===================
-For further information, please contact ka-tools@imag.fr
+For further information, please contact https://gforge.inria.fr/projects/kadeploy/
 
