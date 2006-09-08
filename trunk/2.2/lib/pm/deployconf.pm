@@ -7,6 +7,8 @@ use libkadeploy2::conflib;
 use libkadeploy2::command;
 use libkadeploy2::sudo;
 
+$ENV{PATH}="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin";
+
 my $kadeployconfdir="/etc/kadeploy";
 my $deployconf=$kadeployconfdir."/deploy.conf";
 my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
@@ -19,6 +21,7 @@ my $kapxe_path="/bin/kapxe";
 my $kaexec_path="/bin/kaexec";
 my $kamcat_path="/bin/kamcat";
 my $kasetup_path="/sbin/kasetup";
+my $kanodes_path="/sbin/kanodes";
 my $kadeployenv_path="/bin/kadeployenv";
 my $karights_path="/sbin/karights";
 my $kachecknodes_path="/sbin/kachecknodes";
@@ -156,7 +159,7 @@ sub is_conf($)
     if ($self->{loaded})
     {
 	$conf=$self->{conf};
-	$val=$conf->is_conf($key);
+	$val=$conf->is_set($key);
     }
     return $val;
 }
@@ -343,6 +346,7 @@ sub getpath_cmd($)
     elsif ($cmd eq "kadeployenv")    { $cmdpath=$kadeployenv_path; }
     elsif ($cmd eq "karights")       { $cmdpath=$karights_path; }
     elsif ($cmd eq "kachecknodes")   { $cmdpath=$kachecknodes_path; }
+    elsif ($cmd eq "kanodes")        { $cmdpath=$kanodes_path; }
 
     elsif ($cmd eq "mcatseg")        { $cmdpath=$mcatseg_path; }
     elsif ($cmd eq "kasudowrapper")  { $cmdpath=$kasudowrapper_path; }
@@ -368,7 +372,7 @@ sub chmodconf()
     my $kadeployuser=$self->get("deploy_user");
     my $kadeploydir=$self->get("kadeploy2_directory");
     my $sudouser=libkadeploy2::sudo::get_sudo_user();
-
+    my $tftpdir=$self->get("tftp_repository");
     if (! $sudouser) { $sudouser=libkadeploy2::sudo::get_user(); }
 
     my $kasudowrapperfile="$kadeploydir/bin/kasudowrapper.sh";
@@ -390,6 +394,10 @@ sub chmodconf()
 	system("chmod 755 $kasudowrapperfile");           
 	system("chown $kadeployuser:root $kasudowrapperfile"); 
 	
+	$message->message(-1,"chmoding $tftpdir");
+	system("chmod -R 755 $tftpdir");
+	system("chown -R $kadeployuser $tftpdir");
+
 	$message->message(-1,"chmoding plugin");
 	system("chmod 755 ".$self->getpath_cmd("environment_linux"));
 	system("chmod 755 ".$self->getpath_cmd("environment_dd"));

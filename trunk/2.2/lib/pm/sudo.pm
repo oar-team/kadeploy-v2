@@ -5,17 +5,14 @@ use warnings;
 
 my $message=libkadeploy2::message::new(); 
 
-
-sub get_user()
+sub new()
 {
-    return $ENV{USER};
+    my $self={};
+    bless $self;
+    return $self;
 }
 
-sub get_sudo_user()
-{
-    return $ENV{SUDO_USER};
-}
-
-
+sub get_user()      { my $self=shift; return $ENV{USER}; }
+sub get_sudo_user() { my $self=shift; return $ENV{SUDO_USER}; }
 
 1;

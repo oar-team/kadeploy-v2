@@ -74,10 +74,11 @@ sub exec_next()
 
     $cmd=$commandlist[$self->return_currentcommandnumber()];
     
-    my $command = libkadeploy2::command::new($cmd,
-					     $self->{timeout},
-					     $self->{verbose},
-					     );
+    my $command = libkadeploy2::command::new();
+    $command->set_command($cmd);
+    $command->set_timeout($self->{timeout});
+    if ($self->{verbose}) { $command->set_verbose(); }
+    
     $command->exec();
     if ($command->get_status()==0)
     {

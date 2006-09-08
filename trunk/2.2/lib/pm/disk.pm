@@ -2,32 +2,89 @@ package libkadeploy2::disk;
 use strict;
 use warnings;
 use libkadeploy2::deploy_iolib;
+use libkadeploy2::message;
+use libkadeploy2::partition;
+use libkadeploy2::conflib;
+use libkadeploy2::tools;
+
+my $message=libkadeploy2::message::new();
+my $kadeployconfdir="/etc/kadeploy";
+my $nodesdir="$kadeployconfdir/nodes";
 
 sub get_fromdb($$);
+sub get_frompartition($$);
 
 sub new()
 {
     my $self;
+    my %partitionhash=();
     $self=
     {
+	partition => \%partitionhash,
+	interface => "unknow",
+	size      => 0,
+	numberofpartition => 0,
     };
     bless $self;
     return $self;
 }
 
-sub loadfile($)
+sub loaddisksetting($$)
 {
     my $self=shift;
-    my $partitionfile=shift;
-    my $line;
-    my %disk;
-    my %partitions;
+    my $nodename=shift;
+    my $disknumber=shift;
+    my $nodenamedir="$nodesdir/$nodename";
+    my $diskfileprefix="$nodenamedir/disk";
+    my $diskfile="$diskfileprefix"."-".$disknumber;
     my $ok=1;
-    $self->{partition}=\%partitions; 
 
-    my ($number,$size,$fdisktype,$label,$type);
-    my $linecorrect=0;
+    $message->statfile(0,$diskfile);
+    if (! -e $diskfile) 
+    { 
+	$message->filenotfound(2,$diskfile);
+	$ok=0; 
+    }
+    elsif (-e $diskfile)
+    {
+	return $self->loaddisksettingfile($diskfile);
+    }
+    else { $ok=0 }
+    return $ok;
+}
+
+sub loaddisksettingfile($)
+{
+    my $self=shift;
+    my $disksettingfilename=shift;
+    my $ok=1;
+    my $disksetting=libkadeploy2::conflib::new($disksettingfilename,0);
+    $disksetting->load();
+    if (
+	$disksetting->is_set("interface") &&
+	$disksetting->is_set("size")
+	)
+    {
+	$self->set_interface($disksetting->get("interface"));
+	$self->set_size(libkadeploy2::tools::translate_to_megabyte($disksetting->get("size")));
+    }
+    else
+    {
+	$message->message(2,"$disksettingfilename doesn't contain interface(ide|sata|scsi) or size(200M|30G)");
+	$ok=0;
+    }
+    return $ok
+}
+
+sub check()
+{
+    my $self=shift;
+    my $ref_partitionhash=$self->{partition};
+    my %partitionhash=%$ref_partitionhash;
+    my $ok=1;
+
     my @listnumber;
+    my $linecorrect;
     my $sizeofextended=0;
     my $sizeoflogical=0;
     my $sizeofprimary=0;
@@ -35,87 +92,106 @@ sub loadfile($)
     my $numberofextended=0;
     my $numberoflogical=0;
 
-    my $tmpnumber;
-    $type="";
 
-    if (open(FH,$partitionfile))
-    {
-	foreach $line (<FH>)
-	{
-	    my $linenotseen=1;
-	    my %partition;
+    foreach my $partnumber ( sort sort_par_num keys %partitionhash)
+    { 
+	my ($number,$size,$fdisktype,$label,$type)=("","","","","");
+	my $part="";
+	
+	$part=$partitionhash{$partnumber};
 
-	    if ($numberofextended > 1) { print STDERR "ERROR you can only have one extended part\n"; exit 1; }
-	    if ($numberofprimary > 4   ) { print STDERR "ERROR you can only have four primary part\n"; exit 1; }
-	    if ($numberofprimary + $numberofextended > 4   ) { print STDERR "ERROR you can only have four part (primary + extended)\n"; exit 1; }
-	    if ($numberofextended == 0 && $numberoflogical > 0 ) 
-	    { print STDERR "ERROR extended partition must be defined before logical\n"; exit 1; }
+	$number=$part->get_number();
+	$size=$part->get_size();
+	$fdisktype=$part->get_fdisktype();
+	$type=$part->get_type();
+	$label=$part->get_label();
 
-	    if($line =~ /^(ide|scsi|sata)[\s\t]+size=([0-9]+)[\t\s]*$/)
-	    {
-		$type=$1;
-		$size=$2;
-		$self->set_interface($type);
-		$self->set_size($size);
-		$linecorrect=1;
+
+	if ($numberofextended > 1)   { $message->message(2,"you can only have one extended part"); exit 1; }
+	if ($numberofprimary > 4   ) { $message->message(2,"you can only have four primary part"); exit 1; }
+	if ($numberofprimary + $numberofextended > 4   ) { $message->message(2,"you can only have four part (primary + extended)"); exit 1; }
+	if ($numberofextended == 0 && $numberoflogical > 0 ) 
+	{ $message->message(2,"extended partition must be defined before logical"); exit 1; }
+
+	if ($type eq "logical" && $number < 4) { $message->message(2,"logical part begin at 5"); $linecorrect=0;}
+	if ($type eq "primary" && $number > 4) { $message->message(2,"primary part must be [1..4]"); $linecorrect=0;}
+	if ($type eq "primary") { $numberofprimary++; $sizeofprimary+=$size; }
+	if ($type eq "logical") { $sizeoflogical+=$size; $numberoflogical++; }
+	if ($type eq "extended") 
+	{ 
+	    $numberofextended++; $sizeofextended=$size; 
+	    if ($number > 4) 
+	    { 
+		$message->message(2,"extended partition must be in [1..4]"); 
+		$linecorrect=0; 
 	    }
-
-	    if ($line =~ /^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+fdisktype=([0-9a-zA-Z]+)[\t\s]+label=([a-zA-Z]+)[\t\s]+type=([a-zA-Z]+)[\t\s]*$/)
-	    {
-		($number,$size,$fdisktype,$label,$type)=($1,$2,$3,$4,$5);
-		if ($type eq "logical" && $number < 4) { print STDERR "ERROR logical part begin at 5\n"; $linecorrect=0;}
-		if ($type eq "primary" && $number > 4) { print STDERR "ERROR primary part must be [1..4]\n"; $linecorrect=0;}
-		if ($type eq "primary") { $numberofprimary++; $sizeofprimary+=$size; }
-		if ($type eq "logical") { $sizeoflogical+=$size; $numberoflogical++; }
-		foreach $tmpnumber (@listnumber)
-		{
-		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number alreayd defined\n"; $linecorrect=0; }
-		}
-		@listnumber=(@listnumber,$number);
-		$self->setpartition($number,$size,$fdisktype,$label,$type);
-		$linecorrect=1;
-	    }
-		
-	    if ($line =~/^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+type=(extended)[\t\s]*$/)
-	    {
-		($number,$size,$type)=($1,$2,$3,$4);
-		if ($number > 4) { print STDERR "ERROR extended partition must be in [1..4]\n"; $linecorrect=0; }
-		if ($type eq "extended") { $numberofextended++; $sizeofextended=$size; }
-		foreach $tmpnumber (@listnumber)
-		{
-		    if ($tmpnumber==$number) { print STDERR "ERROR part=$number already defined\n"; $linecorrect=0; }
-		}
-		@listnumber=(@listnumber,$number);
-		$self->setpartition($number,$size,$fdisktype,$label,$type);
-		$linecorrect=1;
-	    }
-	    if ($line =~ /^$/ ||
-		$line =~ /^\#/)
-	    { $linecorrect=1; }
-
-	    if ($linecorrect==0)
-	    {
-		print STDERR "ERROR in line :\n$line";
-		$ok=0;
-	    }
-
-	    $linecorrect=0;
 	}
-	close(FH);
+	foreach my $tmpnumber (@listnumber)
+	{
+	    if ($tmpnumber==$number) 
+	    { $message->message(2,"part=$number alreayd defined"); $linecorrect=0; }
+	}
+	@listnumber=(@listnumber,$number);
+	if ($ok) { $ok=$part->check(); }
     }
-    else
-    {
-	print "Error opening $partitionfile\n";
-	$ok=0;
-    }
+
     if ($sizeoflogical >= $sizeofextended &&
 	$numberofextended > 0 &&
 	$numberoflogical  > 0	
 	) 
     { 
-	print STDERR "ERROR size of extended part <= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical\n"; 
+	$message->message(2,"size of extended part <= size of logical part\nsizeofextended $sizeofextended\nsizeoflogical $sizeoflogical"); 
 	$ok=0; 
-    }   
+    }
+
+    return $ok;
+}
+
+
+sub loadpartitionfile($)
+{
+    my $self=shift;
+    my $partitionfile=shift;
+    my $line;
+    my %disk;
+    my %partitions;
+    my $ok=1;
+    my $linecorrect=0;
+    $self->{partition}=\%partitions; 
+    
+    $message->loadingfile(0,$partitionfile);
+    if (open(FH,$partitionfile))
+    {
+	foreach $line (<FH>)
+	{
+	    $linecorrect=0;
+	    my $part=libkadeploy2::partition::new();
+	    if ($line =~ /^part=([0-9]+).+$/)
+	    {
+		if ($part->load_line($line)) 
+		{
+		    $self->add_partition($part);
+		    $linecorrect=1;
+		}
+	    }
+	    elsif ($line =~ /^$/ ||
+		   $line =~ /^\#/)
+	    { $linecorrect=1; }
+
+	    if ($linecorrect==0)
+	    {
+		chomp($line);
+		$message->message(2,"line => ".$line."]");
+		$ok=0;
+	    }
+	}
+	close(FH);
+    }
+    else
+    {
+	$message->loadingfilefailed(2,$partitionfile);
+	$ok=0;
+    }
     return $ok;
 }
 
@@ -124,36 +200,16 @@ sub sort_par_num { return $a <=> $b }
 sub print()
 {
     my $self=shift;
-    my $key1;
-    my $key2;
-    my $key3;
-    my $key4;
-    my $tmphash1;
-    my $tmphash2;
-    my $tmphash3;
-    foreach $key1 (sort keys %$self)
-    {
-	$tmphash1 = $self->{$key1};
-	if (ref($tmphash1) eq 'HASH')
-	{
-	    foreach $key2 (sort sort_par_num keys %$tmphash1)
-	    {
-		print "\t\t$key1=$key2\n";		    
-		$tmphash2 = $$tmphash1{$key2};
-		if (ref($tmphash2) eq 'HASH')
-		{
-		    foreach $key3 (sort keys %$tmphash2) 
-		    {
-			print "\t\t\t$key3=".$$tmphash2{$key3}."\n";
-		    }
-		}
-	    }
-	}
-	else
-	{
-	    print "\t$key1=$self->{$key1}\n";
-	}
+    my $ok=1;
+    my $ref_partitionhash=$self->{partition};
+    my %partitionhash=%$ref_partitionhash;
+    
+    foreach my $partnumber ( sort sort_par_num keys %partitionhash)
+    { 
+	my $parthash=$partitionhash{$partnumber};
+	if (!$parthash->print()) { $ok=0; }
     }
+    return $ok;
 }
 
 sub set_interface($)
@@ -196,6 +252,8 @@ sub get_fromdb($$)
     my $reflistpartitionid;
     my @listpartitionid;
     my $partitionid;
+    my $ok=0;
+    my $firstpass=1;
 
     $db = libkadeploy2::deploy_iolib::new();
     $db->connect();
@@ -217,66 +275,61 @@ sub get_fromdb($$)
 	    {
 		$refinfo=$db->get_partitioninfo_from_partitionid($partitionid);
 		%info=%$refinfo;
-		$self->setpartition($info{pnumber},
-				    $info{size},
-				    0,
-				    "",				
-				    $info{parttype});
+
+		my $part=libkadeploy2::partition::new();
+
+		$part->set_type($info{parttype});	
+		$part->set_number($info{pnumber});
+		$part->set_size($info{size});
+		$part->set_label($info{label});
+		$part->set_fdisktype($info{fdisktype});
+		$part->set_ostype($info{ostype});
+		$part->set_mkfs($info{mkfs});
+		$part->set_fs($info{fs});
+
+		if ($firstpass && $ok==0) { $ok=1; }
+		if ($self->add_partition($part) && $ok)  { $ok=1; }
+		else { $ok=0; }
 	    }
 	}   
 	else
 	{
-	    print STDERR "Disk not found in DB...\n";
+	    $message->message(-1,"Disk n°$disknumber not found in db");
+	    $ok=0;
 	}
     }
     else
     {
-	print STDERR "Node not found in DB...\n";
+	$message->message(2,"Node $nodename not found in db");
+	$ok=0;
     }
+    return $ok;
 }
 
-sub setpartition($$$$$)
+sub add_partition($)
 {
     my $self=shift;
-    my $number=shift;
-    my $size=shift;
-    my $fdisktype=shift;
-    my $label=shift;
-    my $type=shift;
-    my %partition;
-    my $ok=0;
-    
-    if ($type eq "primary"  ||
-	$type eq "logical"
-	)
-	{	
-	    %partition=(
-			number    => $number,
-			size      => $size,
-			fdisktype => $fdisktype,
-			label     => $label,
-			type      => $type,
-			);
-	    $self->{partition}{$partition{number}}=\%partition;
-	    $ok=1;
-	}
+    my $partition=shift;
+    my $ok=1;
 
-	if ($type eq "extended")
-	{
-	    %partition=(
-			number    => $number,
-			size      => $size,
-			label     => $label,
-			type      => $type,
-			);
-	    $self->{partition}{$partition{number}}=\%partition;
-	    $ok=1;
-	}	  
-#    if ($ok)
-#    {
-#	$self->{partition}{$number};
-#    }
+    my %partitionhash;
+    my $ref_partitionhash;
+    $ref_partitionhash=$self->{partition};
+    %partitionhash=%$ref_partitionhash;
+    $partitionhash{$partition->get_number()}=$partition;
+    $ref_partitionhash=\%partitionhash;
+    $self->{partition}=$ref_partitionhash;
+
+    if ($partition->get_number() > $self->{numberofpartition})
+    { $self->{numberofpartition}= $partition->get_number(); }
+
     return $ok;
+}
+
+sub get_numberofpartition()
+{
+    my $self=shift;
+    return $self->{numberofpartition};
 }
 
 sub addtodb($$)
@@ -285,11 +338,11 @@ sub addtodb($$)
     my $nodename=shift;
     my $disknumber=shift;
     my $ok=0;
-    if ($self->adddisktodb($nodename,$disknumber))
-    {
-	$self->addpartitiontodb($nodename,$disknumber);
-	$ok=1;
-    }
+    if ($self->adddisktodb($nodename,$disknumber) &&
+	$self->addpartitiontodb($nodename,$disknumber)
+	)
+    { $ok=1; 	}
+
     return $ok;
 }
 
@@ -310,11 +363,8 @@ sub adddisktodb($$)
 
     $ok=0;
 
-    foreach $key1 (sort keys %$self)
-    {
-	if ($key1 eq "size") { $size=$self->{size}; }
-	if ($key1 eq "interface") { $interface=$self->{interface}; }
-    }
+    $size=$self->{size};
+    $interface=$self->{interface};
 
     if ($size && $interface)
     {
@@ -332,13 +382,10 @@ sub adddisktodb($$)
     }
 
     if ($ok)
-    {
-	print "Register $interface harddisk $disknumber for node $nodename\n";
-    }
+    { 	$message->message(0,"Register $interface harddisk $disknumber for node $nodename");     }
     else
-    {
-	print "Fail to register $interface harddisk $disknumber for node $nodename\n";
-    }
+    {  	$message->message(0,"Fail to register $interface harddisk $disknumber for node $nodename");     }
+
     return $ok;
 }
 
@@ -348,100 +395,44 @@ sub addpartitiontodb($$)
     my $self=shift;
     my $nodename = shift;
     my $disknumber = shift;
-    my $key1;
-    my $key2;
-    my $key3;
-    my $key4;
-    my $tmphash1;
-    my $tmphash2;
-    my $tmphash3;
-    my $nodeid;
-    my $db;
-    my $diskid;
-    my @info;
-    my $size;
-    my $part_id;
-    
-    my $fdisktype;
-    my $label;
-    my $number;
-    my $type;
-    my $ok;    
+    my $ok=0;
 
-    $ok=0;
+    my $ref_partitionhash=$self->{partition};
+    my %partitionhash=%$ref_partitionhash;
+    foreach my $partnumber ( keys %partitionhash)
+    { 
 
-    foreach $key1 (sort keys %$self)
-    {
-	$tmphash1 = $self->{$key1};
-	if (ref($tmphash1) eq 'HASH')
-	{
-	    foreach $key2 (sort sort_par_num keys %$tmphash1)
-	    {
-		$tmphash2 = $$tmphash1{$key2};
-		if (ref($tmphash2) eq 'HASH')
-		{
-
-		    foreach $key3 (sort keys %$tmphash2) 
-		    {
-			if ($key3 eq "fdisktype") { $fdisktype=$$tmphash2{$key3}; }
-			if ($key3 eq "label")     { $label=$$tmphash2{$key3}; }
-			if ($key3 eq "number")    { $number=$$tmphash2{$key3}; }
-			if ($key3 eq "type")      { $type=$$tmphash2{$key3}; }
-			if ($key3 eq "size")      { $size=$$tmphash2{$key3}; }
-			if ($fdisktype && 
-			    $label     && 
-			    $number    &&
-			    $type      &&
-			    $size
-			    )
-			{
-			    $db = libkadeploy2::deploy_iolib::new();
-			    $db->connect();
-			    $nodeid=$db->node_name_to_id($nodename);
-			    $diskid=$db->nodename_disknumber_to_diskid($nodename,$disknumber);
-			    @info=($number,$size,$type,$diskid);
-			    $part_id = $db->add_partition(\@info);
-			    if ($part_id) { print "Registring partition $number for disk $disknumber of node $nodename\n"; }
-			    else          { print "Fail to register partition $number for disk $disknumber of node $nodename\n"; }
-
-			    $fdisktype=undef;
-			    $label=undef;
-			    $number=undef;
-			    $type=undef;
-			    $db->disconnect();
-			    if ($part_id) {$ok=1; } else { $ok=0; }
-			}
-		    }
-		}
-	    }
-	}
+	my $parthash=$partitionhash{$partnumber};
+	$ok=$parthash->addtodb($nodename,$disknumber);
     }
     return $ok;
 }
 
-sub getsizeofpartition($)
+sub get_frompartition($$)
 {
     my $self=shift;
     my $partnumber=shift;
-    my $size;
-    my %partition;
-    my $refpartition;
-    $refpartition=$self->{partition}{$partnumber};
-    %partition=%$refpartition;
-    return $partition{size};
+    my $info=shift;
+    my $ret=0;
+
+    my $ref_partitionhash;
+    my %partitionhash;
+    my $parthash;
+
+    if ($partnumber)
+    {
+	$ref_partitionhash=$self->{partition};
+	%partitionhash=%$ref_partitionhash;
+	$parthash=$partitionhash{$partnumber};
+	$ret=$parthash->{$info};
+    }
+    else
+    {
+	$ret=0;
+    }
+    return $ret;
 }
 
-sub gettypeofpartition($)
-{
-    my $self=shift;
-    my $partnumber=shift;
-    my $size;
-    my %partition;
-    my $refpartition;
-    $refpartition=$self->{partition}{$partnumber};
-    %partition=%$refpartition;
-    return $partition{type};
-}
 
 
 1;

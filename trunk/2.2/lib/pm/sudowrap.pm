@@ -14,6 +14,7 @@ my @listfiletowrapuser=(
 			"kareboot",
 			"kaenv",
 			"kapxe",
+			"kamcat",
 			);			
 
 my @listfiletowraproot=(
@@ -23,6 +24,7 @@ my @listfiletowraproot=(
 			"kasetup",
 			"kachecknodes",
 			"kamigration",
+			"kapart",
 			);
 
 

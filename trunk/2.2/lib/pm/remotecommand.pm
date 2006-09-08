@@ -9,27 +9,34 @@ my $message=libkadeploy2::message::new();
 my $conf=libkadeploy2::deployconf::new();
 $conf->load();
 
-sub new($$$$$$)
+sub new()
 {
-    my $connector=shift;
-    my $login=shift;
-    my $node=shift;
-    my $cmd=shift;
-    my $timeout=shift;
-    my $verbose=shift;
     my $self=
     {
-	connector        => $connector,
-	login            => $login,
-	node             => $node,
-	cmd              => $cmd,
-	timeout          => $timeout,
-	verbose          => $verbose,
+	connector        => "ssh",
+	login            => "",
+	node             => 0,
+	command          => "",
+	timeout          => 0,
+	verbose          => 0,
 	status           => -1,
-	};
+
+	openstdout       => 0,
+    };
     bless $self;
     return $self;
 }
+
+sub set_openstdout() { my $self=shift; $self->{openstdout}=1; }
+sub set_command($)   { my $self=shift; my $args=shift; $self->{command}=$args; }
+sub set_verbose()    { my $self=shift; $self->{verbose}=1; }
+sub set_unverbose()  { my $self=shift; $self->{verbose}=0; }
+sub set_timeout($)   { my $self=shift; my $args=shift; $self->{timeout}=$args; }
+
+sub set_login($)     { my $self=shift; my $args=shift; $self->{login}=$args; }
+sub set_connector($) { my $self=shift; my $args=shift; $self->{connector}=$args; }
+sub set_node($)      { my $self=shift; my $args=shift; $self->{node}=$args; }
+
 
 sub exec()
 {
@@ -47,7 +54,7 @@ sub exec()
     }
     if ($findconnector==0)
     {
-	print STDERR "ERROR : connector not found : ".$self->{connector}."\n";
+	$message->message(2,"INTERNAL connector not found : ".$self->{connector});
 	exit 1;
     }	
 }
@@ -57,15 +64,9 @@ sub exec_rsh()
     my $self=shift;
     my $cmd;
     my $command;
-    $cmd="rsh -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{cmd};
 
-    $command=libkadeploy2::command::new($cmd,
-					$self->{timeout},
-					$self->{verbose}
-					);
-
-    $self->{status}=$command->exec();
-    return($self->{status});
+    $cmd="rsh -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{command};    
+    return $self->exec_prot($cmd);
 }
 
 sub exec_ssh()
@@ -77,15 +78,27 @@ sub exec_ssh()
 
     $ssh_default_args=$conf->get("ssh_default_args");
     if (! $ssh_default_args) { $ssh_default_args=""; }
-    $cmd="ssh ".$ssh_default_args." -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{cmd};
+    $cmd="ssh ".$ssh_default_args." -l ".$self->{login}." ".$self->{node}->get_ip()." ".$self->{command};
+    return $self->exec_prot($cmd);
+}
 
-    $command=libkadeploy2::command::new($cmd,
-					$self->{timeout},
-					$self->{verbose}
-					);
+
+sub exec_prot($)
+{
+    my $self=shift;
+    my $cmd=shift;
+    my $command;
+
+    $command=libkadeploy2::command::new();
+    $command->set_command($cmd);
+    $command->set_timeout($self->{timeout});
+    if ($self->{verbose})    { $command->set_verbose(); }
+    if ($self->{openstdout}) { $command->set_openstdout(); }
+	
     $self->{status}=$command->exec();
     return($self->{status});
 }
+    
 
 sub get_status()
 {

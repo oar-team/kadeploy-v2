@@ -20,6 +20,7 @@ sub new($)
 	nodelist => $nodelist,
     };
     bless $self;
+    if (! $nodelist) { $message->message(3,"nodelist not found..."); exit 255; }
     return $self;
 }
 

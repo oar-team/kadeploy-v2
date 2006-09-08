@@ -4,6 +4,11 @@ package libkadeploy2::node;
 use strict;
 use warnings;
 use libkadeploy2::deploy_iolib;
+use libkadeploy2::message;
+use libkadeploy2::conflib;
+
+my $message=libkadeploy2::message::new();
+
 #my $default_state = 0;
 
 ## Class constructor
@@ -136,23 +141,22 @@ sub loadfile($)
     my $ip;
     my $ok=0;
 
-    open(DESC,$file) or die "Can't open $file\n";
-    foreach $line (<DESC>)
+    my $conffile=libkadeploy2::conflib::new($file,0);
+    if (! $conffile->load()) { $message->message(2,"error loading file $file"); }
+
+    if ($conffile->is_set("name") &&
+	$conffile->is_set("ip")   &&
+	$conffile->is_set("mac"))
     {
-	chomp($line);
-	if($line)
-	{
-	    #check line 
-	    #node1.cluster.net 11:22:33:44:55:66 192.168.0.1
-	    if($line =~ /^([a-z0-9\-\.]+)[\t\s]+(..:..:..:..:..:..)[\t\s]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)[\t\s]*$/)
-	    {
-		($name,$mac,$ip)=($1,$2,$3);
-		$self->set_name($name);
-		$self->set_mac($mac);
-		$self->set_ip($ip);
-		$ok=1;
-	    }
-	}
+	$self->set_name($conffile->get("name"));
+	$self->set_ip($conffile->get("ip"));
+	$self->set_mac($conffile->get("mac"));
+	$ok=1;
+    }
+    else
+    {
+	$message->message(2,"name | ip | mac not defined in $file");
+	$ok=0;
     }
     return $ok;
 }

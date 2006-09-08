@@ -2,19 +2,19 @@ package libkadeploy2::command;
 
 use strict;
 use warnings;
+use libkadeploy2::message;
 
+my $message=libkadeploy2::message::new();
 
 #new(command,timeout,verbose)
-sub new($$$)
+sub new()
 {
-    my $command=shift;
-    my $timeout=shift;
-    my $verbose=shift;
     my $self = 
     {
-	timeout     => $timeout,
-	command     => $command,
-	verbose     => $verbose,
+	timeout     => 0,
+	command     => "",
+	verbose     => 0,
+	openstdout  => 0,
 	childpid    => -1,
 	exit_value  => -1,
 	signal_num  => -1,
@@ -24,39 +24,46 @@ sub new($$$)
     return $self;
 }
 
+sub set_openstdout() { my $self=shift; $self->{openstdout}=1; }
+sub set_command($)   { my $self=shift; my $args=shift; $self->{command}=$args; }
+sub set_verbose()    { my $self=shift; $self->{verbose}=1; }
+sub set_unverbose()  { my $self=shift; $self->{verbose}=0; }
+sub set_timeout($)   { my $self=shift; my $args=shift; $self->{timeout}=$args; }
+
+
 sub exec()
 {
     my $self = shift;
     my $cmd = $self->{command};
     my $ok=1;
+    my $timeout=$self->{timeout};
     my $pid = fork();
+    
+    if ($timeout<0) { $timeout=86400; }
+
     if (! defined($pid))
     {
-	warn("WARNING : fork system call failed\n");
+	$message->message(1,"fork failed");
 	$ok=0;
     }        
 
     if ($pid == 0)
     {
-	local $SIG{ALRM} = sub { die "alarm\n" };       # NB \n required
-	alarm($self->{timeout});
-	if ($self->{verbose}==1) { print("cmd_launch: $cmd \n"); }
-	if ($self->{verbose}>=2)
-	{
-	    exec($cmd);
-	}
+	local $SIG{ALRM} = sub { die "alarm\n" };
+	alarm($timeout);
+	if ($self->{verbose}) { $message->message(-1,"launch pid $pid : $cmd"); }
 	
-	if ($self->{verbose}==1 ||
-	    $self->{verbose}==0
-	    )
+	if ($self->{openstdout}==0)
 	{
-#	    close STDOUT;
-#	    close STDERR;		
-	    exec($cmd." 2>&1 > /dev/null");
+	    $cmd.=" >/dev/null 2>&1 > /dev/null";
 	}
+	no warnings;
+	exec($cmd);
+	use warnings;
+	$message->message(3,"malformed command line [$cmd]");
 	$ok=0;
 	alarm 0;
-	exit 1;
+	exit 254;
     }
     else
     {
@@ -65,11 +72,18 @@ sub exec()
 	$self->{signal_num}  = $? & 127;
 	$self->{dumped_core} = $? & 128;
     } 
-    if ($self->{verbose}) 
+    if ($self->{verbose})
     { 
-	print "cmd_return: $cmd ";
-	if ($self->get_status()==1) { print " [OK]\n"; }
-	else                        { print " [FAILED]\n"; }
+	if ($self->get_status()) 
+	{ 
+	    $message->message(-1,"wait pid $pid : $cmd [OK]");
+	}
+	else
+	{ 
+	    $message->message(1,"wait pid $pid : $cmd [FAILED]"); 
+	    $self->print_status();
+	}
+	
     }
     return $self->get_status();
 }
@@ -91,6 +105,18 @@ sub get_status()
 	$ok=0;
     }
     return $ok;
+}
+
+sub print_status()
+{
+    my $self=shift;
+    $message->message(2,
+		      "exit_value:".$self->{exit_value}.
+		      " signal_num:".$self->{signal_num}.
+		      " dumped_core:".$self->{dumped_core}
+		      );
+    if ($self->{signal_num}==14) 
+    { $message->message(3,"Alarm catched !!!!"); }
 }
 
 sub get_exit_value()
