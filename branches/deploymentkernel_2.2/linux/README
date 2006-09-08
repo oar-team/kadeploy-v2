@@ -1,28 +1,27 @@
-script for creating a deployment kernel with debootstrap
+script for creating a deployment linux kernel with debootstrap
 
 ################################################################################
 #                                    config                                    #
 ################################################################################
 
 See the etc/ directory
-
+-kernel is build with the configuration file located in etc/linuxconfig
+-etc/rc.debootstrap.conf contains the debootstrap parameters
+-etc/rc.initrd.conf contain the initrdsize (not compressed)
 ################################################################################
 #                                     Build                                    #
 ################################################################################
 
 The main script is ./rc
 
+When you configured your kernel, you have to go to the build directory...
+Then copy back your .config file
+
+rootfs directory is included in the initrd
+
 ################################################################################
 #                                       API                                    #
 ################################################################################
 
+....
 
-The kernel is build with :
--all network drivers
--ide, scsi, sata drivers
--serial drivers
-
-rootfs:
--------
-
-This directory contain files that must be on the ramdrive
