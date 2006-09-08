@@ -6,6 +6,11 @@ alter table disk drop device;
 alter table disk add `interface` char(10) NOT NULL default '';
 alter table partition add `parttype` char(10) NOT NULL default '';
 alter table partition add `diskid` int(10) unsigned NOT NULL default '0';
+alter table partition add `fs` char(10) NOT NULL default '';
+alter table partition add `mkfs` char(10) NOT NULL default '';
+alter table partition add `ostype` char(10) NOT NULL default 'linux';
+
+
 
 
 drop table rights;
