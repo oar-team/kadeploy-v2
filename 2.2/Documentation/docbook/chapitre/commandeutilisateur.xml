@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<sect1 id="commandeutilisateur">
+  <title>Commande utilisateur</title>
+
+  <sect2> 
+    <title>kadeploy (outil de déploiement d'environment)</title>
+    <para>
+      La commande kadeploy déploie un environment sur un ensemble de noeud.
+    </para>
+    <itemizedlist>
+      <listitem> --machine noeud
+      </listitem>
+      <listitem> --environment environment
+      </listitem>
+      <listitem> --partnumber numéro de partition (optionelle => utilisation de partition volatile)
+      </listitem>
+      <listitem> --disknumber numéro de disque (optionelle)
+      </listitem>
+      <listitem> --verbose (flag verbeux)
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2> 
+    <title>kaenv (manipulation des environments)</title>
+    <para>
+      La commande kaenv manipule les environments.
+      Il y a quatre types de manipulation différentes.
+    </para>
+    
+    <sect3>
+      <title>Ajout</title>
+      <itemizedlist>
+	<listitem> --environmentname nom_environment
+	</listitem>
+	<listitem> --login utilisateur
+	</listitem>
+	<listitem> --descriptionfile chemin_vers_fichier_description
+	</listitem>
+      </itemizedlist>
+    </sect3>
+
+
+
+    <sect3>
+      <title>Suppression</title>
+      <itemizedlist>
+	<listitem> --environment environment
+	</listitem>
+	<listitem> --login utilisateur
+	</listitem>
+      </itemizedlist>
+    </sect3>
+
+
+
+    <sect3>
+      <title>Affichage</title>
+      <itemizedlist>
+	<listitem> --environment environment
+	</listitem>
+	<listitem> --login utilisateur
+	</listitem>
+	<listitem> --machine node
+	</listitem> 
+      </itemizedlist>
+    </sect3>
+  </sect2>
+
+  <sect2>
+    <title>kareboot (commande de reboot des noeuds)
+    </title>
+    
+    <sect3>
+      <title>reboot software
+      </title>
+      <itemizedlist>
+	<listitem> --machine noeud
+	</listitem>
+	<listitem> --part-number partnumber (par défaut le précédent)
+	</listitem>
+	<listitem> --disk-number disknumber (par défaut le précedent)
+	</listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>reboot hardware
+      </title>
+      <itemizedlist>
+	<listitem> --machine noeud
+	</listitem>
+	<listitem> --part-number partnumber (par défaut le précédent)
+	</listitem>
+	<listitem> --disk-number disknumber (par défaut le précedent)
+	</listitem>
+      </itemizedlist>
+    </sect3>
+
+  </sect2>
+
+</sect1>
+

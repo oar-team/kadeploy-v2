@@ -1,0 +1,91 @@
+<refentry id="kaconsole">
+
+<refmeta>
+    <refentrytitle>kadatabase</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>kadatabase</refname>
+    <refpurpose>Manage mysql db</refpurpose>
+  </refnamediv>
+
+  
+  <refsect1>
+    <title>SYNOPSIS</title>
+    
+    <command>kadatabase </command>  
+    <command>-addmysqlrights</command> 
+    <command>-delmysqlrights</command> 
+    <command>-create_db_deploy</command> 
+    <command>-drop_db_deploy</command> 
+    <command>-patchXXX</command> 
+  </refsect1>
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kadatabase is a tool for managing mysql schema of kadeploy.
+      It use mysql script and the configuration file of kadeploy.
+      You can install kadeploy faster with this tool.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+    <para>      
+      <command>-addmysqlrights</command> Add your "deploy" user to mysql rights.
+    </para>
+
+    <para>      
+      <command>-delmysqlrights</command> Remove your "deploy" user from mysql rights.
+    </para>
+
+    <para>      
+      <command>-create_db_deploy</command> Create the required database.
+    </para>
+
+    <para>      
+      <command>-drop_db_deploy</command> Drop this required database.
+    </para>
+
+
+    <para>      
+      <command>-patchXXX</command> Apply the XXX patch.
+    </para>
+
+
+
+  </refsect1>
+  <refsect1>
+    <title>CONFIGURATION FILE</title>
+    <emphasis>/etc/kadeploy/deploy_cmd.conf</emphasis> must be correctly written.
+    The mysql user (login/password/dbname) will be created from this file.
+    
+  </refsect1>
+  
+  <refsect1>
+    <title>EXAMPLE</title>
+    
+    <para>
+    <command>kadatabase -addmysqlrights -create_db_deploy -patch21 -patch211 -patch22</command> 
+      Install the kadeploy schema in mysql database.
+    </para>
+
+    <para>
+      <command>kadatabase -delmysqlrights -drop_db_deploy</command> 
+      Remove the schema.
+    </para>
+      
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This
+      software is licensed under the GNU Library General Public
+      License. There is NO warranty; not even for MERCHANTABILITY or
+      FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+
+  </refentry>

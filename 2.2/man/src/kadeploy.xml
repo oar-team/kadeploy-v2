@@ -1,0 +1,100 @@
+<refentry id="kadeploy">
+    
+  <refmeta>
+    <refentrytitle>kadeploy</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+    
+  <refnamediv>
+    <refname>kadeploy</refname>
+    <refpurpose>deploys an environment on the given nodes</refpurpose>
+  </refnamediv>
+    
+  
+  
+  <refsect1>
+    <title>SYNOPSIS</title>
+    <para>
+      <emphasis>kadeploy -e|--environment environment_name -m|--machine hostname -p|--partition partition</emphasis>
+    </para>
+  </refsect1>
+  
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kadeploy deploys the specified environment on the requested
+      nodes. When successfully over, the nodes are available under the
+      new and freshly installed environment.
+    </para>
+
+    <para>
+      It needs critic variables to be defined in the /etc/kadeploy/deploy.conf
+      configuration file ; see configuration file section for further
+      details.
+      If you want to know how to deploy real environment see kadeploy-environment (1).
+    </para>
+  </refsect1>
+  
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <para>
+    <command>-e, --environment environment_name</command> the name of the environment to deploy
+    </para>
+    <para>
+    <command>-m, --machine hostname</command> specifies a host. This option can be used more than once to specify several hosts. By default, it tries to deploy on all the nodes.
+    </para>
+    <para>
+      <command>-p, --partition partition</command> the target partition. This option can't be used more than once and the partition is the same for all the nodes.
+    </para>
+    <para>
+      <command>-l, --login login</command> the environment owner. 
+    </para>
+
+  </refsect1>
+    
+  <refsect1>
+    <title>CONFIGURATION FILES</title>	  	    
+    <para>
+      <command>/etc/kadeploy/deploy.conf</command> Contains variables
+      that MUST be defined prior to the command execution.  
+    </para>
+
+    <para>
+      You can man it and an example of this file can be found at in
+      the <emphasis>tools/cookbook/</emphasis> folder of the
+      installation directory.
+    </para>
+  </refsect1>
+	
+  <refsect1>
+    <title>FILES</title>
+    
+    <para>
+    kadeploy needs read and write access to several folder and files to acheive a deployment. 
+      These rights should be granted to the deploy user. Here are the files and folder list :
+    </para>
+
+    <para>      
+      the <emphasis>tftp</emphasis> folder where grub and pxe files will be put is configured in : 
+    <emphasis>/etc/kadeploy/deploy.conf</emphasis> configuration file	
+      and <emphasis>/tmp/</emphasis> for a few temporary files.
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLE</title>	      	      
+    <para>
+      <command>kadeploy -e debian -l deploy -m node7 -p 3</command>
+      deploys the debian on partition hda3 of node 7
+    </para>
+    <para>
+      <command>kadeploy yoyz@slack -m node1 -m node2 -p 6</command>
+      deploys the slack environment of the user yoyz on partition 6 of
+      nodes 1 and 2
+    </para>
+
+  </refsect1>
+	
+</refentry>

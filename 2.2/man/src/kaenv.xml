@@ -1,0 +1,177 @@
+<refentry id="kaenvironmentsv">
+
+  <refmeta>
+    <refentrytitle>kaenv</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>kaenv</refname>
+    <refpurpose> list, add or remove an environment </refpurpose>
+  </refnamediv>
+  
+
+
+  <refsect1>
+    <title>SYNOPSIS</title>
+    <command>kaenv</command>
+    <para>
+      <command>--add</command> Want to add an environment
+    </para>
+    <para>
+      <command>--del</command> Want to del an environment
+    </para>
+    <para>
+      <command>--list</command> Want to list all environment
+    </para>
+
+    <para>
+      <command>-e environmentname</command> environment name
+    </para>
+    <para>
+      <command>-l login</command> login of environment
+    </para>
+
+    <para>
+      <command>-m host</command> host to scan
+    </para>
+    <para>
+      <command>-h|--help</command> help screen.
+    </para>
+    
+  </refsect1>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      kaenv register, display and delete environment from the database.
+      It is a simple environment referencing system.
+      You can see the environment of another user with <emphasis>-l</emphasis>.
+    </para>
+    <para>
+      kaenv doesn't check the syntax of the environment file.      
+      kadeploy will try to detect error in the file but will deploy what is describe...
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>DEPLOYMENT CLASS
+    </title>
+    <para>
+      kadeploy manage four class of deployment system : 
+    </para>
+    <para>
+      - pxelinux system (linux + initrd)
+    </para>
+    <para>
+      - Linux system with tar and ext3 fs
+    </para>
+    <para>
+      - Windows 2000 and XP with fat32 fs
+    </para>
+    <para>
+      - raw partition with bootsector included
+    </para>
+    <para>
+      
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>ENVIRONMENT FILE
+    </title>
+
+    <para>
+      <command>pxe linux deployment example</command>
+    </para>
+    <para>
+deploytype=pxelinux
+    </para>
+    <para>
+kernel=/pathto/vmlinuz      
+    </para>
+    <para>
+initrd=/pathto/initrd
+    </para>
+    <para>
+kernelparams=init=/bin/sh
+    </para>
+
+
+
+    <para>
+      <command>linux deployment example</command>
+    </para>
+    <para>
+deploytype=linux
+    </para>
+    <para>
+basefile=/pathto/basefile.tgz
+    </para>
+    <para>
+postinstall=/pathto/postinstall.tgz
+      </para>
+    <para>
+kernel=/pathto/vmlinuz
+    </para>
+    <para>
+initrd=/pathto/initrd.img
+      </para>
+    <para>
+kernelparams=init=/bin/sh
+      </para>
+    <para>
+
+
+
+      <command>dd deployment example</command>
+    </para>
+    <para>
+deploytype=dd
+    </para>
+    <para>
+basefile=/pathtobasefile.tgz
+    </para>
+    <para>
+
+
+
+      <command>windows deployment example</command>
+    </para>
+    <para>
+deploytype=windows
+    </para>
+    <para>
+basefile=/pathtobasefile.tgz
+    </para>
+    <para>
+windowsbootdirectory=WINDOWS
+    </para>
+
+  </refsect1>
+      
+  <refsect1>
+    <title>EXAMPLE</title>
+    <command> kaenv --list</command>  
+    <para> display all the environment.</para>
+
+    <command> kaenv --del -e debian -l yoyz</command>  
+    <para> remove the environment debian for the current user.</para>
+
+    <command> kaenv --add -e debian4all -l yoyz -f $(pwd)/debian4all.env</command>  
+    <para> register the environment debian4all with the user yoyz.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright 2004 Laboratoire Id-Imag (http://www-id.imag.fr). This
+      software is licensed under the GNU Library General Public
+      License. There is NO warranty; not even for MERCHANTABILITY or
+      FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+
+
+</refentry>
