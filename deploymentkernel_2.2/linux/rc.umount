@@ -1,0 +1,8 @@
+#!/bin/sh
+
+NAME=initrd
+SCRIPTNAME=rc.$NAME
+
+. etc/rc.conf
+
+umount 
