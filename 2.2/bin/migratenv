@@ -2,39 +2,80 @@
 use strict;
 use warnings;
 
-use Getopt::Long;
+use File::Copy;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::hexlib;
 
-my $env_list;
-my $base;
-my $username;
-my $retcode=0;
-my $dbh;
+sub migrate_deploy_cmd_conf();
+sub migrate_clusternodesconf();
 
-if ($ENV{SUDO_USER})
-{  $username=$ENV{SUDO_USER}; }
-else                     
-{ $username=$ENV{USER}; }
+my $deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
+my $clusterpartitionfile="/etc/kadeploy/clusterpartition.conf";
+my $clusternodesconf="/etc/kadeploy/clusternodes.conf";
+my $pathnode="/etc/kadeploy/nodes/";
 
-if (!@ARGV) { print "$0 [-e environment]\n"; }
-
-GetOptions(
-	   'e=s'               => \$env_list,
-	   );
+migrate_deploy_cmd_conf();
+migrate_clusternodesconf();
+print "Now you can
+for i in \$(cat /etc/kadeploy/deploy_cmd.conf | awk '{print \$1}' | sort -u | grep -v \\#) ; do kanodes --add -m \$i ; done
+";
 
 
-if ($env_list)
+################################################################################
+
+sub migrate_clusternodesconf()
 {
-    $base = libkadeploy2::deploy_iolib::connect();
-    my $sth = $base->prepare("update environment 
-set user='$username' where user='nobody' 
-and name='$env_list'");
-    $retcode=$sth->execute();
-    libkadeploy2::deploy_iolib::disconnect($base);
-    if ($retcode!=0) { print "environment migrated\n"; }
-    else             { print "environment not migrated\n"; }
+    my $line;
+    
+    open(CLUSTERNODESCONF,$clusternodesconf);
+    while ($line=<CLUSTERNODESCONF>)
+    {
+	if ($line =~ /^([a-zA-Z\.1-9]+)[\s\t]+([\da-f]+:[\da-f]+:[\da-f]+:[\da-f]+:[\da-f]+:[\da-f]+)[\s\t]+(\d+\.\d+\.\d+\.\d+)/)
+	{
+	    my $nodename=$1;
+	    my $ether=$2;
+	    my $ip=$3;
+	    my $currentfile="$pathnode/$nodename/net";
+	    mkdir("$pathnode/$nodename");
+	    copy($clusterpartitionfile,"$pathnode/$nodename/disk1");
+	    open(NETFILE,"> $currentfile") or die "can't open $currentfile";
+	    print NETFILE $line;
+	    close(NETFILE);
+	}
+    }
 }
 
-exit $retcode;
+
+sub migrate_deploy_cmd_conf()
+{
+    my $line;
+    
+
+    my $commandname;
+    my $command;
+    my $nodename;
+
+    open(DEPLOYCMDCONF,$deploycmdconf) or die "can't open $deploycmdconf";
+    mkdir($pathnode);
+
+    if (! -f $clusterpartitionfile ) { die "can't open the clusterpartition file : $clusterpartitionfile"; }
+    
+    while ($line=<DEPLOYCMDCONF>) 
+    { 
+	if ($line =~ /^([a-zA-Z\.1-9]+)[\s\t]+([a-z]+)[\s\t]+(.+)/)
+	{
+	    $nodename=$1;
+	    $commandname=$2;
+	    $command=$3;	
+	    my $currentfile="$pathnode/$nodename/command/$commandname";
+	    mkdir("$pathnode/$nodename");
+	    mkdir("$pathnode/$nodename/command");
+	    copy($clusterpartitionfile,"$pathnode/$nodename/");
+	    open(COMMANDFILE,"> $currentfile");
+	    print COMMANDFILE "#!/bin/sh\n$command\n";
+	    close(COMMANDFILE);	    
+	    chmod(0755,$currentfile);
+	}
+    }
+}
