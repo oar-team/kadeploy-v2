@@ -1,0 +1,234 @@
+#!/usr/bin/perl
+use Getopt::Long;
+use libkadeploy2::command;
+use libkadeploy2::remotecommand;
+use libkadeploy2::node;
+use libkadeploy2::nodelist;
+use libkadeploy2::remoteparallelcommand;
+use libkadeploy2::deploy_iolib;
+use libkadeploy2::message;
+use libkadeploy2::tools;
+use libkadeploy2::remotecopy;
+use POSIX;
+use warnings;
+use strict;
+
+sub passive_check_nodes($);
+sub setup_nodes($);
+sub setup_cmdnode($);
+
+my $conf=libkadeploy2::deployconf::new();
+if (! $conf->load()) { exit 1; }
+my $message=libkadeploy2::message::new(); 
+
+my $nodelist;
+my $cmdnode;
+my $fifo="/tmp/mcatfifo";
+my $defaultport=10000;
+my $port;
+my $srvcmd;
+my $cltcmd;
+my $connector;
+my @node_list;
+my $user;
+my $help;
+my $verbose=1;
+
+GetOptions(
+	   'm=s'                  => \@node_list,
+	   'machine=s'            => \@node_list,
+	   'port=s'               => \$port,
+	   'p=s'                  => \$port,
+	   'servercommand=s'      => \$srvcmd,
+	   'clientcommand=s'      => \$cltcmd,
+	   'connector=s'          => \$connector,
+	   'login=s'              => \$user,
+	   'l=s'                  => \$user,
+	   'h!'                   => \$help,
+	   'help!'                => \$help,
+	   'v!'                   => \$verbose,
+	   'verbose!'             => \$verbose,
+	   );
+
+if ($help)        { $message->kamcat_help(); exit 0; }
+if (! $port)      { $port=getpid(); if ($port < 1024) { $port+=10000; } }
+if (! $connector) { $connector="ssh"; }
+if (! $user)      { $user="root"; }
+if (! $srvcmd)    { $message->kamcat_help(); exit 0; }
+if (! $cltcmd)    { $message->kamcat_help(); exit 0; }
+if (! @node_list) { $message->kamcat_help(); exit 0; }
+
+if (@node_list)
+{
+    $nodelist=libkadeploy2::nodelist::new();
+    $nodelist->loadlist(\@node_list);
+}
+else
+{
+    $message->missing_node_cmdline(2);
+    exit 1;
+}
+
+if ($nodelist)
+{
+    if (! passive_check_nodes($nodelist)) { $message->message(2,"check node... failed\n"); exit 1;}
+    if (! setup_nodes($nodelist))         { $message->message(2,"setup node... failed\n"); exit 1;}
+    if (setup_cmdnode($nodelist))
+    {
+	exit 0;
+    }
+    else
+    {
+	exit 1;
+    }
+    
+}
+help();
+exit 0;
+
+################################################################################
+
+sub passive_check_nodes($)
+{
+    my $nodelist=shift;
+    my $node;
+    my $ok=1;
+    my $ref_node_list;
+    my @node_list;
+    my $db=libkadeploy2::deploy_iolib::new();
+    $db->connect();
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+    foreach $node (@node_list)
+    {
+	if (! ($db->get_nodestate($node->get_name(),"MCAT") eq "UP"))
+	{
+	    $message->message(2,"mcat service for node ".$node->get_name()." is not up");
+	    $ok=0;
+	}
+    }
+    $db->disconnect();
+    return $ok;
+}
+
+
+sub setup_nodes($)
+{
+    my $nodelist=shift;
+    my $ok;
+    my $node;
+    my @cmdlist;
+    my $refcmdlist;
+    my $ref_node_list;
+    my $cmd;
+    my $parallelcommand;
+    my $ssh_default_args;
+    my $hostfileinstr=libkadeploy2::tools::returnvalidhostsfile();
+    my $remotecopy=libkadeploy2::remotecopy::new(
+						 "ssh",
+						 "root",
+						 $nodelist,
+						 "/etc/hosts",
+						 "/etc/hosts",
+						 10,
+						 $verbose
+						 );
+    $remotecopy->exec();
+    if ($remotecopy->get_status())  { $ok=1; }
+    else     { 	$ok=0;     }
+
+    $ref_node_list=$nodelist->get_nodes();
+    @node_list=@$ref_node_list;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+
+
+    foreach $node (@node_list)
+    {
+	$cmd="ssh ".$ssh_default_args." root"."@".$node->get_ip()." hostname ".$node->get_name();
+	@cmdlist=(@cmdlist,$cmd);	
+    }
+    $refcmdlist=\@cmdlist;
+    $parallelcommand=libkadeploy2::parallelcommand::new(10,$verbose);
+    if (! $parallelcommand->execparallel($refcmdlist)) { $ok=0; }
+    return $ok;
+}
+
+sub setup_cmdnode($)
+{
+    my $nodelist=shift;
+    my @node_list;
+    my $ref_node_list;
+    my $ok;
+    my @cmdlist;
+    my $cmd;
+    my $node;
+    my $i;
+    my $forknumber;
+    my $sleeptime=20;
+    my $timeout=600;
+    my $command;
+    my $ssh_default_args;
+
+    $ref_node_list=$nodelist->get_ip_list();
+    @node_list=@$ref_node_list;
+
+    $ssh_default_args=$conf->get("ssh_default_args");
+    if (! $ssh_default_args) { $ssh_default_args=""; }
+    if ($connector eq "ssh") { $connector.=" ".$ssh_default_args; }
+
+    for ($i=0; $i< $#node_list+1;$i++)
+    {
+	#Seeking mcatseg with $PATH on the node
+	# 1 is for receiver
+	$cmd="$connector $user\@$node_list[$i] \"mcatseg 1 $port \'$srvcmd\' \'$cltcmd\' @node_list\"";
+	@cmdlist=(@cmdlist,$cmd);
+    }       
+    if ($i>0)
+    {
+	#mcatseg is in path
+	# 4 is for sender
+	$cmd=$conf->getpath_cmd("mcatseg")." 4 $port \"$srvcmd | pv -N mcat \" \"$cltcmd\" $node_list[0]";
+	@cmdlist=(@cmdlist,$cmd);
+    }
+    print "\n\n";
+    foreach (@cmdlist) { print "$_\n\n"; }
+    print "\n\n";
+#    foreach my $tmp (@cmdlist) { print "$tmp\n"; }
+    $i=0;
+    $forknumber=0;
+    for ($i=0; $i<$#node_list+1;$i++)
+    {
+	$cmd=$cmdlist[$i];
+	if (fork()==0)
+	{
+	#    print "exec cmd : $cmd\n";
+	    if ($verbose)
+	    {
+		exec($cmd);
+	    }
+	    else
+	    {
+		exec($cmd." 2>&1 > /dev/null");		    
+	    }
+	}
+	else
+	{
+	    $forknumber++;
+	}
+    }
+    $cmd=$cmdlist[$i];
+    sleep(1);
+
+#    print "$cmd\n";
+    $command=libkadeploy2::command::new($cmd,
+					$timeout,
+					$verbose
+					);
+    $command->exec();
+    for ($i=1;$i<$forknumber;$i++) { wait(); }
+    return $command->get_status();
+}
+
+

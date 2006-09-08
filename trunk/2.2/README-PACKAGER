@@ -1,0 +1,3 @@
+Pour faire le package qui va bien :
+
+aclocal && autoconf && automake && ./configure && make dist-all

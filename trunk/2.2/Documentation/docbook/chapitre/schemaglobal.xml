@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+  <sect1> 
+  <title>Global
+  </title>
+  <para>
+    Les fichiers lié à l'application sont de différentes forme.
+  </para>
+
+  <sect2>
+    <title>Fichiers de configurations : /etc/kadeploy
+    </title>
+    <para>
+      Ce repertoire contient la configuration global de l'application
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>Commande utilisateur : kadeploy/bin/
+    </title>
+    <para>
+      Ce repertoire contient les commandes mise à disposition de l'utilisateur
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>Commande administrateur : kadeploy/sbin/
+    </title>
+    <para>
+      Ce repertoire contient les commandes de mise en place et d'administration de kadeploy
+    </para>
+  </sect2>
+
+
+  <sect2>
+    <title>Librairies interne (perl module) : kadeploy/share/perl/
+    </title>
+    <para>
+      Ce repertoire contient les librairies perl de kadeploy
+    </para>
+  </sect2>
+
+
+  <sect2>
+    <title>kadeploy/lib/environment
+    </title>
+    <para>
+      Ce repertoire contient les scripts de déploiement d'environments
+    </para>
+  </sect2>
+
+
+  <sect2>
+    <title>kadeploy/lib/floppy/
+    </title>
+    <para>
+      Ce repertoire contient les differentes "disquettes réseau" utilisé avec pxelinux.
+    </para>
+  </sect2>
+  
+ <sect2>
+    <title>kadeploy/lib/pxelinux/
+    </title>
+    <para>
+      Ce repertoire contient une compilation des outils pxelinux de ( syslinux.zytor.com )
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>kadeploy/lib/pre_post_script/
+    </title>
+    <para>
+      Ce repertoire contient la preinstall et la postinstall de la distribution kadeploy.
+    </para>
+  </sect2>
+
+  <sect2>
+    <title>kadeploy/share/mysql/
+    </title>
+    <para>
+      Ce repertoire contient les schéma de la base de donnée mysql.      
+    </para>
+  </sect2>
+
+
+
+  </sect1>
