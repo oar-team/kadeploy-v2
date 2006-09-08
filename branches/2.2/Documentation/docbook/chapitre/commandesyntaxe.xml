@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<sect1 id="commandesyntaxe">
+  <title>Syntaxe des commandes </title>
+  <para>
+    Les commandes doivent avoir un minimum d'érgonomie.
+    Les options longue à la "GNU" doivent être disponible.
+  </para>
+
+  <itemizedlist>
+    <listitem> -m | --machine : nom du noeud
+    </listitem>
+    <listitem> -f | --nodefile : nom du fichier contenant les noeuds.      
+    </listitem>
+    <listitem> -l | --login : nom d'utilisateur      
+    </listitem>
+    <listitem> -e | --environmentname : nom de l'environment      
+    </listitem>
+    <listitem> -d | --disknumber : numéro de disque      
+    </listitem>
+    <listitem> -p | --partnumber : numéro de partition      
+    </listitem>
+    <listitem> -a | --add : demande d'ajout
+    </listitem>
+    <listitem> -d | --del : demande de suppression      
+    </listitem>
+    <listitem> -h | --help : demande d'aide      
+    </listitem>
+    <listitem> -v | --verbose : verbeux      
+    </listitem>
+  </itemizedlist>
+</sect1>
