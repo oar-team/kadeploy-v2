@@ -1,9 +1,0 @@
-#!/usr/bin/perl
-
-use strict;
-use warnings;
-use libkadeploy2::kaconsole;
-
-my $kaconsole=libkadeploy2::kaconsole::new();
-$kaconsole->get_options_cmdline();
-exit $kaconsole->run();

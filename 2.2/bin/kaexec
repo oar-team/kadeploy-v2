@@ -1,8 +1,0 @@
-#!/usr/bin/perl
-use libkadeploy2::kaexec;
-use strict;
-use warnings;
-
-my $kaexec=libkadeploy2::kaexec::new();
-$kaexec->get_options_cmdline();
-exit $kaexec->run();
