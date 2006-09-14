@@ -1,0 +1,27 @@
+#!/bin/sh
+
+NAME=initrd
+SCRIPTNAME=rc.$NAME
+
+. etc/rc.conf
+. etc/$SCRIPTNAME.conf
+
+umount $FSDEST
+mkdir $FSDEST
+cd $FSDEST/..
+dd if=/dev/zero of=debian.ext2.img count=1 bs=1024 seek=$INITRDSIZEKO
+yes | mkfs.ext2 debian.ext2.img
+mount -o loop debian.ext2.img $FSDEST
+echo ""
+echo -n "Transfering..."
+(cd $PREFS ; tar cO .) | ( cd $FSDEST ; tar xvf -) | (while read a; do echo -n "."; done ;) 
+echo ""
+
+echo -n "Creating tarball file "
+(cd $PREFS ; tar cO .) | ( cd $OBJ ; gzip -c > debian.tgz )
+echo "Done"
+umount $FSDEST
+
+echo -n "Compressing initrd "
+cat  debian.ext2.img | gzip -9 -c >  $INITRD
+echo "Done"
