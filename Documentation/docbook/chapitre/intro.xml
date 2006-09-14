@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<chapter id="intro">
+  <title>Introduction</title>
+  
+  &copyright;
+
+  <sect1> 
+    <title>Présentation</title> 
+    <para>
+      Kadeploy est un outil de déploiement de système d'exploitation
+      pour grappe et grille de calcul. 
+      
+      Sa force réside dans le
+      déploiement de machine en paralléle.
+    </para>
+
+    <para>
+      Une grappe est composé d'un ensemble de noeud.
+      Ces noeuds sont répartie entre noeud de calcul 
+      et noeud de services.
+      Voici une représentation d'une grappe.
+    </para>
+   <mediaobject>
+      <imageobject>
+      <imagedata fileref="grappe.jpg"/>  
+    </imageobject>
+    </mediaobject>
+
+    <para>
+      Kadeploy déploit un système d'exploitation sur plusieurs noeud en même temps
+      grâce à l'utilisation d'un pipeline réseau nommé <emphasis>mcat</emphasis>.      
+      Celui ci sera vu en détail dans les chapitres suivant.
+    </para>
+     <mediaobject>
+      <imageobject>
+      <imagedata fileref="mcat.jpg"/>  
+    </imageobject>
+    </mediaobject>
+  </sect1>
+
+  
+  
+
+</chapter>

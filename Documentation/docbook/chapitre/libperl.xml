@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <chapter id="libperl">
+  <title>bibliothéque perl
+    </title>
+
+  <sect1>
+    <title>
+      Execution de commande
+    </title>
+    <sect2>
+      <title>command.pm
+      </title>
+      Execution de commande et retour d'erreur.
+    </sect2>
+    <sect2>
+      <title>parallelcommand.pm
+      </title>
+      Classe de gestion d'execution des commandes paralléles.
+    </sect2>
+    
+    <sect2>
+      <title>remotecommand.pm
+      </title>
+      Gestion de l'execution d'une commande à distance.
+    </sect2>
+    <sect2>
+      <title>remotecopy.pm
+      </title>
+      Bibliothéque  de copie de fichier à distance via SCP...
+    </sect2>
+    <sect2>
+      <title>remoteparallelcommand.pm
+      </title>
+      Execution de commande paralléle distante via dsh, DKsentinelle, et
+      le paralléliseur interne.
+    </sect2>
+    <sect2>
+      <title>remoteparallelscript.pm
+      </title>
+      Execution de script de commande à distance.
+    </sect2>
+    <sect2>
+      <title>script.pm
+      </title>
+      Execution de script sur le serveur
+    </sect2>
+  </sect1>
+
+
+  <sect1>
+    <title>
+      Gestion des fichiers
+    </title>
+
+    <sect2>
+      <title>conflib.pm
+      </title>
+      Gestion des fichiers du type : keyword = value
+    </sect2>
+    
+    <sect2>
+      <title>deployconf.pm
+      </title>
+      Implémentation fille de la conflib,
+      gestion du fichier deploy.conf,
+      localistation des scripts et des binaires.      
+    </sect2>
+    <sect2>
+      <title>environment.pm
+      </title>
+      Gestion niveau DB des environments (cad : login/envname/descriptionfilepath)
+    </sect2>
+    
+    <sect2>
+      <title>disk.pm
+      </title>
+      Gestion du type de disque et de son partitionment.
+    </sect2>
+    
+    <sect2>
+      <title>partitionfile.pm
+      </title>
+      Bibliothéque de gestion des partitions utilisé par disk.pm
+    </sect2>
+    
+    <sect2>
+      <title>pxelinux.pm
+      </title>
+      Gestion des fichiers de configuration de pxelinux
+    </sect2>
+    
+    <sect2>
+      <title>sudowrap.pm
+      </title>
+      Bibliothéque de wrapping par sudo.
+      (execution d'un script qui executent un autre script par sudo)
+    </sect2>    
+  </sect1>
+
+
+  <sect1>
+    <title>Gestion des droits
+    </title>
+    <sect2>
+      <title>conf.pm
+      </title>
+      Gestion des fichiers de configuration et de la sécurité de kadeploy via sudo
+    </sect2>
+    <sect2>
+      <title>karights.pm
+      </title>
+      fonction déporté de la commande karights, verification de droits
+      DB et de droit type UNIX.
+    </sect2>
+    <sect2>
+      <title>right.pm
+      </title>
+      Classe de gestion des droits
+    </sect2>
+    <sect2>
+      <title>rights.pm
+      </title>
+      Classe de gestion des droits et de leurs affichage.
+    </sect2>
+    <sect2>
+      <title>sudo.pm
+      </title>
+      Bibliothéque de gestion des variables d'environments SUDO_USER et USER
+    </sect2>
+
+  </sect1>
+
+  <sect1>
+    <title>Gestion des noeuds
+    </title>
+    <sect2>
+      <title>node.pm
+      </title>
+      Classe noeud + gestion DB
+    </sect2>
+    
+    <sect2>
+      <title>nodelist.pm
+      </title>
+      Classe liste de noeud
+    </sect2>
+  </sect1>
+  
+  <sect1>
+    <title>Bibliothéque d'outils spécifique
+    </title>
+    <sect2>
+      <title>checknodes.pm
+      </title>
+      Check les services ICMP, SSH, MCAT d'un neud
+    </sect2>
+    
+    <sect2>
+      <title>cmdline.pm
+      </title>
+      Gestion des noeuds sur la ligne de commande.
+    </sect2>
+    
+    <sect2>
+      <title>deploy_iolib.pm
+      </title>
+      Dialogue sql avec la base de donnée mysql.
+    </sect2>
+    <sect2>
+      <title>device.pm
+      </title>
+      bibliothéque permettant de gerer /dev ( get_linux(ide,disk1,part2)=/dev/hda2 )
+    </sect2>
+    
+    
+    <sect2>
+      <title>disks.pm
+      </title>
+      Gestion d'un ensemble de disque (verification du type, récupération du type)
+      type : ide, scsi, sata
+    </sect2>
+    <sect2>
+      <title>environments.pm
+      </title>
+      Gestion de l'affichage d'un ensemble d'environment
+    </sect2>
+    <sect2>
+      <title>fdiskscript.pm
+      </title>
+      Traducteur de fichier de disque vers commande fdisk linux.
+    </sect2>
+    <sect2>
+      <title>hexlib.pm
+      </title>
+      Traduction d'ip en hexa et l'inverse
+    </sect2>
+
+    <sect2>
+    <title>message.pm
+    </title>
+    Bibliothéque de gestion de l'affichage et du syslog.
+  </sect2>
+    
+    <sect2>
+      <title>nmap.pm
+      </title>
+      Gestion de la commande nmap 3.9 et supérieur
+    </sect2>
+    
+    <sect2>
+      <title>partitionscript.pm
+      </title>
+      Verification du contenue et de la cohérence d'un fichier de partitionment.
+    </sect2>
+    <sect2>
+      <title>tftppxe.pm
+      </title>
+      Création du repertoire tftp
+    </sect2>
+    <sect2>
+      <title>tools.pm
+      </title>
+      ...
+    </sect2>
+
+    
+  </sect1>
+
+
+</chapter>
+

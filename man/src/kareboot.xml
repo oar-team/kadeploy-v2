@@ -1,0 +1,154 @@
+  <refentry id="kareboot">
+    
+    <refmeta>
+      <refentrytitle>kareboot</refentrytitle>
+      <manvolnum>1</manvolnum>
+    </refmeta>
+    
+    <refnamediv>
+      <refname>kareboot</refname>
+      <refpurpose>reboots a node</refpurpose>
+    </refnamediv>
+    
+    
+    
+    <refsect1>
+      <title>SYNOPSIS</title>
+      
+      <command>kareboot [-n|--noreboot] [-s|--soft] [-h|--hard] [-d|--deploy] -m|--machine hostname [-e|--environment name] [-p|--partition partition]</command>
+    </refsect1>
+    
+    <refsect1>
+      <title>DESCRIPTION</title>
+    
+      <para>
+      kareboot can execute software or hardware reboots on given nodes. 
+      It can execute five types of query : no reboot, simple reboot, deploy reboot, environment reboot and partition reboot. For all of them, the user can specify one or several hosts.
+      </para>
+
+
+      <para>
+      Here is a brief description of the effects of each reboot type :
+      </para>
+	<para>
+	  no reboot : setups pxe, grub and tftp stuff for the given nodes without rebooting
+	</para>
+	<para>
+	  simple reboot : executes a 'normal' (classic) reboot of the given nodes
+	</para>
+	<para>
+	  deploy reboot : reboots the given nodes on the deployment kernel
+	</para>
+	<para>
+	  environment reboot : looks for the specified environment on the given nodes and reboots on it. The environment should thus already be installed.
+	</para>
+	<para>
+	  partition reboot : reboots the given nodes on the requested partition if an appropriate environment is found
+	</para>
+
+
+
+      <para>
+	Consult the example section below for more explicit usage descriptions.      
+	kareboot needs the appropriate command (softboot, hardboot, deployboot) to be defined in the configuration file in order to be able to execute the requested reboot on the given node ; see configuration file section for further details.
+      </para>
+
+    </refsect1>
+    <refsect1>
+      <title>OPTIONS</title>
+
+
+      <command>-n, --noreboot</command>
+      setups pxe, grub and tftp stuff
+      
+      <command>-s, --soft</command>
+      requests a software reboot (default reboot type)
+      
+      <command>-h, --hard</command>
+      requests a hardware reboot
+
+      <command>-d, --deploy</command>
+      specify to reboot on the deployment kernel
+
+      <command>-m, --machine</command> hostname
+      specifies a host. This option can be used more than once to specify several hosts.
+      <command>-e, --environment</command>
+      gives an (already installed) environment to boot. When used, only one environment can be specified.
+
+      <command>-p, --partition</command>
+      gives a partition to boot on. When used, only one partition can be specified.
+
+    </refsect1>
+
+    <refsect1>
+      <title>CONFIGURATION FILE</title>
+      
+
+	<command>/etc/kadeploy/deploy_cmd.conf</command>Can contain four entry types per node whose three are relative to the kareboot command. Those three entries describe the reboot commands for the soft, hard and deploy reboot type. Here is the description of the expected syntax : 
+      
+      host_name reboot_type command
+      
+      where reboot_type can be either softboot, hardboot or deployboot. 
+      
+      Example for idpot1 of idpot cluster :
+
+      <para>
+	idpot1 softboot ssh root@idpot1 -o ConnectTimeout=2 /sbin/reboot
+      </para>
+      <para>
+	idpot1 hardboot ssh localuser@ldap-idpot ~/commande_modules/logiciel/dio_reset 0x81 0
+      </para>
+      <para>
+	idpot1 deployboot ../boot/setup_pxe.pl 192.168.10.1:label_deploy_tg3
+      </para>
+      
+      In this example, 
+
+      <para>soft reboot is actually a simple "reboot" command done via a ssh connection as root</para>
+      <para>hard reboot is a hard signal sent via a ssh connection on a precise server as a special user</para>
+      <para>deploy boot is a call to the (deployment system) setup_pxe.pl perl script with appropriate arguments</para>
+    </refsect1>
+
+    <refsect1>
+      <title>EXAMPLE</title>
+      
+      
+      <para><emphasis>No reboot : </emphasis></para>
+      <para><command>kareboot -n -m node1 -e debian </command> setups pxe, grub and tftp stuff for rebooting node1 on debian environment (if already installed).</para>
+      <para><command>kareboot -n -m node7 -p hda5 </command> setups pxe, grub and tftp stuff for rebooting node7 on partition hda5 (if an environment is found).</para>
+      
+      
+
+      <para><emphasis>Simple reboot : </emphasis>	</para>
+      <para><command>kareboot -s -m node1</command> executes a software reboot of node1.</para>
+      <para><command>kareboot -h -m node7 -m node6</command> executes a hardware reboot of nodes 7 and 6.</para>
+      <para><command>kareboot -m node7</command> executes a software reboot of node7.</para>
+      
+
+
+      <para><emphasis>Deploy reboot : </emphasis>      </para>
+      <para><command>kareboot -d -m node2</command> (soft) reboots on deployment kernel. </para>
+      <para><command>kareboot -d -h -m node2</command> (hard) reboots on deployment kernel.</para>
+
+      
+
+
+      <para><emphasis>Environment reboot : </emphasis>      </para>
+      <para><command>kareboot -e debian -m node3</command> looks for environment debian on node3 and (soft) reboots on it if it exists. </para>
+      <para><command>kareboot -h -e debian -m node3</command> looks for environment debian on node3 and (hard) reboots on it if it exists. </para>
+      
+      
+
+      <para><emphasis>Partition reboot : </emphasis></para>
+      <para><command>kareboot -s -p hda6 -m node4</command> checks the environment installed on partition hda6 of node4 and (soft) reboots on it if appropriate.</para>
+    </refsect1>
+
+
+  <refsect1>
+    <title>COPYRIGHTS</title>
+    <para>
+      Copyright  2004 Laboratoire Id-Imag (http://www-id.imag.fr). This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    </para>
+  </refsect1>
+
+  </refentry>

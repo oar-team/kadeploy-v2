@@ -1,0 +1,8 @@
+#!/usr/bin/perl
+use libkadeploy2::kareboot;
+use strict;
+use warnings;
+
+my $kareboot=libkadeploy2::kareboot::new();
+$kareboot->get_options_cmdline();
+exit $kareboot->run();

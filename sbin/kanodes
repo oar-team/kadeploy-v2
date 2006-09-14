@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use libkadeploy2::kanodes;
+
+my $kanodes=libkadeploy2::kanodes::new();
+$kanodes->get_options_cmdline();
+exit $kanodes->run();
+
+
+
+################################################################################
+
+
+
+
+
