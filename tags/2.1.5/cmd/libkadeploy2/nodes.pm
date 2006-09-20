@@ -10,6 +10,15 @@ use IPC::Open3;
 use Data::Dumper;
 use POSIX qw(:signal_h :errno_h :sys_wait_h);
 
+# Try to load high precision time module
+my $useTime = 1;
+my $timeStart;
+my $timeEnd;
+unless (eval "use Time::HiRes qw(gettimeofday tv_interval);1"){
+    $useTime = 0;
+}
+
+
 ##
 # Configuration Variables
 ##
@@ -166,6 +175,10 @@ sub add {
 
     if (!$nodeIP) {
 	print "[Nodes::add] node $nodeName has no IP, not added to Nodes instance\n";
+	return ;
+    }
+    if (exists $self->{nodesByIPs}->{$nodeIP}) {
+    	print "[Nodes::add] node $nodeName was already inserted, not added twice\n";
 	return ;
     }
     $self->{nodesByIPs}->{$nodeIP}=$node; # perl uses references to instances, every hash refers to the same node instance
@@ -602,6 +615,14 @@ sub runThoseExtern {
     return 1;
 }
 
+#
+# runs an array of timedout commands
+#
+# %commandToRun: hash of already built commands to run  (host => command)
+# timeout: timeout for the commands
+# window_size: max number of simultaneous processes
+# $errorString: error to register for the nodes on failure (not reported yet)
+#
 sub runThose {
     my $self = shift;
     my $ref_to_commands = shift;
@@ -610,67 +631,124 @@ sub runThose {
     my $errorString = shift;
     my $verbose=1;
 
-
     my %commandsToRun = %{$ref_to_commands};
 
-    my @nodes=keys(%commandsToRun);
+    my @nodes = keys(%commandsToRun);
 
+    # local variables
+    my $nbcommands = $#nodes + 1;
     my $index = 0;
     my %running_processes;
+    my $nb_running_processes = 0;
     my %finished_processes;
+    my %processDuration;
 
 
-    if (!$window_size) {
-        $window_size = scalar(@nodes)+1;
+    if ($window_size <= 0) {
+        $window_size = $nbcommands;
     }
 
-    while (scalar(keys(%finished_processes)) <= $#nodes){
-      while((scalar(keys(%running_processes)) < $window_size) && ($index <= $#nodes)){
-        print("[VERBOSE] fork process for the node $nodes[$index]\n") if ($verbose);
-        my $pid = fork();
+    # Treate finished processes
+    # Clean declaration for a sub function in Perl
+    local *register_wait_results = sub ($$){
+      my $pid = shift;
+      my $returnCode = shift;
+
+      my $exit_value = $returnCode >> 8;
+      my $signal_num  = $returnCode & 127;
+      my $dumped_core = $returnCode & 128;
+      if ($pid > 0){
+         if (defined($running_processes{$pid})){
+            $processDuration{$running_processes{$pid}}{"end"} = [gettimeofday()] if ($useTime == 1);
+            print("[VERBOSE] Child process $pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n") if ($verbose);
+            $finished_processes{$running_processes{$pid}} = [$exit_value,$signal_num,$dumped_core];
+            delete($running_processes{$pid});
+            $nb_running_processes--;
+         }
+      }
+    };
+
+
+    $timeStart = [gettimeofday()] if ($useTime == 1);
+
+    # Start to launch subprocesses with the window limitation
+    my @timeout;
+    my $pid;
+    while (($index < $nbcommands) or ($#timeout >= 0)){
+      # Check if window is full or not
+      while((($nb_running_processes) < $window_size) and ($index < $nbcommands)){
+        print("[VERBOSE] fork process for $index command\n") if ($verbose);
+        $processDuration{$index}{"start"} = [gettimeofday()] if ($useTime == 1);
+
+        $pid = fork();
         if (defined($pid)){
-          if ($pid == 0){
-            #In the child
-            # Initiate timeout
-            alarm($timeout);
-            my $cmd = $commandsToRun{$nodes[$index]};
-            print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
-            exec($cmd);
-          }
-          $running_processes{$pid} = $index;
-          print ("[VERBOSE] job $pid forked\n") if ($verbose);
+            $running_processes{$pid} = $index;
+            $nb_running_processes++;
+            push(@timeout, [$pid,time()+$timeout]);
+            if ($pid == 0){
+                #In the child
+                my $cmd = $commandsToRun{$nodes[$index]};
+                print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
+                exec($cmd);
+            }
         }else{
-          warn("/!\\ fork system call failed for node $nodes[$index].\n");
+            warn("/!\\ fork system call failed for command $index.\n");
         }
         $index++;
       }
-      my $waited_pid = wait();
-      my $exit_value = $? >> 8;
-      my $signal_num  = $? & 127;
-      my $dumped_core = $? & 128;
-
-      if ($waited_pid == -1){
-        die("/!\\ wait return -1 so there is no child process. It is a mistake\n");
-      }else{
-        if (defined($running_processes{$waited_pid})){
-          print("[VERBOSE] Child process $waited_pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n") if ($verbose);
-          $finished_processes{$running_processes{$waited_pid}} = [$exit_value,$signal_num,$dumped_core];
-          delete($running_processes{$waited_pid});
-        }
+      while(($pid = waitpid(-1, WNOHANG)) > 0) {
+        register_wait_results($pid, $?);
       }
+
+      my $t = 0;
+      while(defined($timeout[$t]) and (($timeout[$t]->[1] <= time()) or (!defined($running_processes{$timeout[$t]->[0]})))){
+        if (!defined($running_processes{$timeout[$t]->[0]})){
+            shift(@timeout);
+        }else{
+            if ($timeout[$t]->[1] <= time()){
+	     	# kills all the processes whose parent pid is the positive value of the pid and the parent
+		# WARNING reported to fail in some cases where pids change their grouppid
+		# cf sentinelle2 if happens with rsh
+		kill(9,-$timeout[$t]->[0]);
+            }
+        }
+        $t++;
+      }
+      select(undef,undef,undef,0.1) if ($t == 0);
     }
 
+    my $exit_code = 0;
+    # Print summary for each nodes
     foreach my $i (keys(%finished_processes)){
       my $verdict = "BAD";
       if (($finished_processes{$i}->[0] == 0) && ($finished_processes{$i}->[1] == 0) && ($finished_processes{$i}->[2] == 0)){
         $verdict = "GOOD";
+      }else{
+        $exit_code = 1;
       }
-      print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])\n");
+      print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2]) ");
+
+      if ($useTime == 1){
+        my $duration = tv_interval($processDuration{$i}{"start"}, $processDuration{$i}{"end"});
+        printf("%.3f s",$duration);
+      }
+
+      print("\n");
+    } 
+
+    foreach my $i (keys(%running_processes)){
+      print("$nodes[$running_processes{$i}] : BAD (-1,-1,-1) -1 s process disappeared\n");
+      $exit_code = 1;
     }
 
-    return 1;
-}
+    # Print global duration
+    if ($useTime == 1){
+      $timeEnd = [gettimeofday()];
+      printf("Total duration : %.3f s (%d nodes)\n", tv_interval($timeStart, $timeEnd), $nbcommands);
+    }
 
+    return ($exit_code);
+}
 
 
 
@@ -905,38 +983,30 @@ sub runRemoteCommand($$)
         return 1;
     }
 
-    if ($internal_parallel_command eq "yes")
-    {
-	foreach my $nodeIP (sort keys %{$self->{nodesReady}}) 
-	{
-	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
-	}
-	return $self->runThose(\%executedCommands, 20, 50, "failed on node");		    
-    }
-    else
-    {
-	return $self->runRemoteCommandExtern($remoteCommand);
-    }
-}
-
-sub runRemoteCommandTimeout($$$)
-{
-    my $self = shift;
-    my $remoteCommand = shift;
-    my $timeout = shift;
-    my $connector = "rsh -l root";
-    my %executedCommands;
-    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-
-    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-        return 1;
-    }
-
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
-	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
-    return $self->runThose(\%executedCommands, $timeout, 50, "failed on node");		    
+	return $self->runThose(\%executedCommands, 50, 50, "failed on node");		    
 }
+
+#sub runRemoteCommandTimeout($$$)
+#{
+#    my $self = shift;
+#    my $remoteCommand = shift;
+#    my $timeout = shift;
+#    my $connector = "rsh -l root";
+#    my %executedCommands;
+#    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+#    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+#        return 1;
+#    }
+
+#    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+#	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+#    }
+#    return $self->runThose(\%executedCommands, $timeout, 50, "failed on node");		    
+#}
 
 
 
@@ -1065,28 +1135,6 @@ sub rebootThoseNodes
 
 
 
-
-sub rebootThoseNodesold {
-    my $self = shift;
-    my $connector = "rsh -l root";
-    my $remoteCommand = "reboot_detach &";
-
-    my %executedCommands;
-    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-
-    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-        return 1;
-    }
-
-    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
-	$executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
-    }
-
-    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");		    
-}
-
-
-
 #
 # Runs a remote system command and kill it after sentinelleTimeout
 #
@@ -1127,33 +1175,6 @@ sub runRemoteSystemCommand {
     return 1;
 }
 
-
-
-#
-# Reboot nodes from deployment system
-#
-#sub rebootNodes {
-#    my $self = shift;
-#    my $launcherOpts = "-c rsh -l root -t 2 -w 50";
-#    my $launcherDirectory = $kadeploy2Directory . "/tools/sentinelle/";
-#    my $parallelLauncher = $launcherDirectory . "sentinelle.pl";
-#    my $remoteCommand = "shutdown  -r now";
-#
-#    my $executedCommand = $parallelLauncher . " " . $launcherOpts;
-#
-#    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-#
-#    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-#        return 1;
-#    }
-#
-#    foreach my $key (sort keys %{$self->{nodesReady}}) {
-#        $executedCommand .= " -m $key";
-#    }
-#    $executedCommand .=	" -p " . "\"" . $remoteCommand . "\"";
-#    system ($executedCommand);
-#    return 1;
-#}
 
 
 1;
