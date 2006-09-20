@@ -69,7 +69,7 @@ my $dest_pipe;
 my $post_pipe;
 
 
-## Nodes sets used during depoymetnt process
+## Nodes sets used during deployment process
 my $nodes_set;
 my $deployed_nodes_set;
 ## Deployment method
@@ -167,7 +167,7 @@ if($depmethod != 0)
 	     print "WARNING:There are $optsupport_nodes nodes that don't support optimisation method\n";
 	 }
 	 
-	 print "cannot proceed with fast deployement method,\n";
+	 print "cannot proceed with fast deployment method,\n";
 	 print "proceeding with normal deployment method\n";
 
 #no optimisation method
