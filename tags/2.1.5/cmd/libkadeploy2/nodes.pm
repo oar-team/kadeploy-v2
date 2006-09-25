@@ -47,6 +47,16 @@ my %parallel_launcher = (
     },
 );
 
+
+my %nodes_commands = (
+	deployment => {
+		remote_command => libkadeploy2::conflib::get_conf("deploy_rcmd"),
+	},
+	production => {
+		remote_command => libkadeploy2::conflib::get_conf("prod_rcmd"),
+	},
+);	
+
 ##
 # WARNING!!!
 # sentinelle command must remain global variables, because you can't run commands
@@ -864,7 +874,7 @@ sub runCommandSimplessh {
 sub runCommandMcat {
     my $self = shift;
     my $server_command = shift;
-    my $nodes_command = shift;
+    my $node_pipe = shift;
     my $mcatPort = shift; # port to use for data transfert
     my $nodes="";
     my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
@@ -876,37 +886,41 @@ sub runCommandMcat {
     my $firstnode="";
     my $timetosleep=1.0;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-
-    if ($internal_parallel_command eq "yes")
-    {
-
-	foreach my $key (sort keys %{$self->{nodesReady}}) 
-	{
-	    if ( $firstnode eq "") { $firstnode=$key; }
-	    $nodes .= " $key";
-	    $timetosleep+=0.08;
-	}
-	
-	$pid=fork();
-	if ($pid==0)
-	{
-	    $self->runRemoteCommandTimeout("\" $remote_mcat 1 $mcatPort '".$server_command."' '".$nodes_command."' ".$nodes."  \" ",$timeout);
-	    exit 0;
-	}
-	else
-	{
-	    my $command="$kadeploy2_directory/bin/mcatseg 4 $mcatPort '".$server_command."'  '".$nodes_command."' ".$firstnode;
-	    sleep($timetosleep);
-	    print "mcat local: $command\n";
-	    system($command);
-	    print "mcat local done\n";
-	    waitpid($pid,0);
-	}
+    my $connector = $nodes_commands{$environment}{remote_command};
+    
+    my @nodesIP;
+    my %num;
+    # build sorted nodesfile
+    foreach my $key (sort keys %{$self->{nodesReady}}) {
+	push (@nodesIP, $key);
     }
-    else #use external mcat
-    {
-	$self->runCommandMcatExtern($server_command,$nodes_command,$mcatPort);
+    for (@nodesIP) {
+	$num{$_} = sprintf("%d%03d%03d%03d", split(/\./));
     }
+    my @sortedIP = sort { $num{$a} <=> $num{$b}; } @nodesIP;
+    print "Sorted IPs:\n";
+    for (@sortedIP) { print $_ . "\n";}
+
+    # create nodesfile.txt 
+    open (NODESFILE, "> /tmp/nodesfile" . $mcatPort) or die "Couldn't open nodesfile for writing /tmp/nodesfile" . $mcatPort ." : $!\n";
+    foreach my $nodeIP (@sortedIP) {
+            print NODESFILE $nodeIP . "\n";
+	    }
+    close (NODESFILE);
+
+    # distribute nodesfile across the nodes
+    $self->runLocalRemote (" cat /tmp/nodesfile" .  $mcatPort . " |", "\" cat > /nodes.txt \"");
+    # build chain
+    $self->runRemoteCommand ("/usr/local/bin/launch_transfert.sh " . $node_pipe);
+    # launch local command and pass data to the first node
+    my $command = $server_command . " | " . $connector . " " . $sortedIP[0] . " \" cat > /entry_pipe \" ";
+    print "mcat local: $command\n";
+    system($command);
+    print "mcat done\n";
+    $self->runRemoteCommand ("sync");
+
+    # previous command
+    # $self->runCommandMcatExtern($server_command,"\" cat > $node_pipe\"",$mcatPort);
 }
 
 
@@ -973,20 +987,33 @@ sub runRemoteCommand($$)
 {
     my $self = shift;
     my $remoteCommand = shift;
-    my $connector = "rsh -l root";
+
+    return $self->runLocalRemote ("", $remoteCommand);		    
+}
+
+
+#
+# runs a bunch of commands
+#
+sub runLocalRemote($$$) {
+    my $self = shift;
+    my $localCommand = shift;
+    my $remoteCommand = shift;
+    my $connector = $nodes_commands{$environment}{remote_command};
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-    my $internal_parallel_command = libkadeploy2::conflib::get_conf("use_internal_parallel_command");
-    if (!$internal_parallel_command) { $internal_parallel_command = "no"; }
 
     if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
         return 1;
     }
 
+print "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP " . $remoteCommand . "\n";
+
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
-	    $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+            $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-	return $self->runThose(\%executedCommands, 50, 50, "failed on node");		    
+        return $self->runThose(\%executedCommands, 50, 50, "failed on node");
+
 }
 
 #sub runRemoteCommandTimeout($$$)
@@ -1132,48 +1159,6 @@ sub rebootThoseNodes
     return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");
 }
 
-
-
-
-#
-# Runs a remote system command and kill it after sentinelleTimeout
-#
-sub runRemoteSystemCommand {
-    my $self = shift;
-    my $executedCommand = $sentinelleCmd . " " . $sentinelleDefaultArgs;
-    my $commandRemote = shift; # command to execute on a set of nodes
-    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
-    my $return_value = 1;
-    my $timedout;
-    my $pid;
-
-    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
-	return 1;
-    }
-    
-    foreach my $key (sort keys %{$self->{nodesReady}}) {
-	$executedCommand .= " -m$key";
-    }
-    $executedCommand .= " -- " . $commandRemote;
-
-    #print $executedCommand;
-
-    if (!defined($pid = fork())) {
-	die "cannot fork: $!";
-    } elsif ($pid) {
-	# I'm the parent
-	print "Forking child $pid\n";
-    } else {
-	exec ("$executedCommand") or die "Couldn't execute $executedCommand: $!\n";
-    }
-    # waits a little...
-    sleep(2*$sentinelleTimeout);
-    # kill the job!!!
-    kill(9, $pid);
-
-    #system($executedCommand);
-    return 1;
-}
 
 
 

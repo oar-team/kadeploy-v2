@@ -371,16 +371,18 @@ print "Retrieving preinstall\n";
 #$nodes_set->runCommandMput("$pre_install_archive /pre_pipe");
 my $mcat_first_port = ($deployment%400)*6+12000;
 
-$nodes_set->runCommandMcat("cat $pre_install_archive", "cat > $pre_pipe", $mcat_first_port);
+$nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe, $mcat_first_port);
 
 if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
     $mcat_first_port++;
+    # TODO: à remplacer par une autre commande
     $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
 }
 
 $mcat_first_port++;
-$nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
+# TODO: idem que le Mcat précédent
+#$nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
 print "Executing preinstall...";
 $nodes_set->runRemoteCommand("\" $rambinpath/$pre_install_script \"");
 print "Done\n";
@@ -415,7 +417,7 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     print "<tar Transfert>\n";
 # send the environment!!
     print "Sending Computing environment to the nodes...\n";
-    $nodes_set->runCommandMcat("cat $filebase", "cat > $dest_pipe", $mcat_first_port);
+    $nodes_set->runCommandMcat("cat $filebase", $dest_pipe, $mcat_first_port);
     print "Done\n";
 }
 if ($filebase =~ /^.+\.dd$/ ||
@@ -445,14 +447,8 @@ if ($usetar)
     libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # post-installation
     print "Executing postinstall...";
-    #$nodes_set->runCommandMcat("cat /home/images/Scripts/postinstall/Debian/traitement_new.tgz", "cat > /tmp/post_pipe", $mcat_first_port+2);
     $mcat_first_port++;
-    $nodes_set->runCommandMcat("cat $filesite", "cat > $post_pipe", $mcat_first_port);
-#    if ($depmethod==0)
-#    {
-#	$mcat_first_port++;
-#	$nodes_set->runCommandMcat("$kadeploydir/bin/kasetup -printvalidfstab -rootdev=/dev/$dev -rootpartnumber=$part", "cat > /rambin/fstab", $mcat_first_port+2);
-#    }
+    $nodes_set->runCommandMcat("cat $filesite", $post_pipe, $mcat_first_port);
     $nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
     print "Done\n";
 
@@ -492,11 +488,8 @@ if ($usetar)
 
 
 # grub and pxe
-#libkadeploy2::deploy_iolib::disconnect($base);
-#$base=libkadeploy2::deploy_iolib::connect();
 libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
 
-#my @to_reboot = @db_checked_hosts;
 if($depmethod==0)
 {
     $nodes_set->rebootThoseNodes();}
@@ -506,16 +499,6 @@ else
 }
 print "rebooting the nodes...\n";
 }
-
-# reboot
-#$nodes_set->rebootThoseNodes();
-
-#$nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
-#$nodes_set->runRemoteSystemCommand("\"reboot -f\"");
-#$nodes_set->runRemoteSystemCommand("\"(sleep 5 ; reboot -f) &> /dev/null &\"");
-#$nodes_set->runRemoteSystemCommand("\"reboot_detach &\"");
-
-#print "rebooting the nodes...\n";
 
 # time transfert
 $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);

@@ -97,6 +97,9 @@ sub check_conf {
 		  "prod_sentinelle_endings" => 1,
 		  "prod_sentinelle_timeout" => 1,
 
+		  "deploy_rcmd" => 1,
+		  "prod_rcmd" => 1,
+
 		  "perl_sentinelle_cmd" => 3,
 		  "perl_sentinelle_default_args" => 1,
 
