@@ -388,7 +388,6 @@ $nodes_set->runRemoteCommand("\" $rambinpath/$pre_install_script \"");
 print "Done\n";
 
 # time bench
-libkadeploy2::deploy_iolib::set_time($base,$deployment);
 $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 print "Preinstall: " . $time_preinstall . "\n";
 
@@ -501,9 +500,9 @@ print "rebooting the nodes...\n";
 }
 
 # time transfert
-$time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
+#$time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
-print "Transfert: " . $time_transfert . "\n";
+#print "Transfert: " . $time_transfert . "\n";
 
 @to_reboot = $nodes_set->getReadyNodes();
 # discard the previous nodes' set to allow the creation of a new one
