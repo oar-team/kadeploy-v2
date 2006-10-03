@@ -130,6 +130,31 @@ sub clean_db($){
     }
 }
 
+
+
+# check_node_rights
+# checks if the given user has appropriate rights for requested node
+# parameters : base, user name, node, target part number
+# return value : 1 if he has, 0 if not
+sub check_node_rights($$$$) {
+    my $dbh = shift;
+    my $user = shift;
+    my $nodename = shift;
+    my $device = shift;
+
+    my $sth = $dbh->do("SELECT * FROM rights
+                        WHERE (user = \"$user\" OR user = '*')
+                        AND (node = '*' OR node = \"$nodename\")
+                        AND (part = '*' OR part = \"$device\")");
+
+    if($sth >= 1) { # right OK
+	return 1;
+    }
+    # right not granted on this node
+    return 0;
+}
+
+
 # check_rights_kadeploy
 # checks if the given user has appropriate rights for requested deployment
 # parameters : base, user name, node, target part number
@@ -140,27 +165,43 @@ sub check_rights_kadeploy($$$$){
     my $ref_host = shift;
     my $device = shift;
 
-    my @granted_host = ();
+    my $result;
 
     # debug print
     # print "LOG = $user ; PART = $device ; ";
 
     my @host_list = @{$ref_host};
     foreach my $host (@host_list){
-	my $sth = $dbh->do("SELECT * FROM rights
-                            WHERE (user = \"$user\" OR user = '*')
-                            AND (node = '*' OR node = \"$host\")
-                            AND (part = '*' OR part = \"$device\")");
+        $result = check_node_rights($dbh, $user, $host, $device);
 
-	if($sth >= 1){
-	    push(@granted_host, $host);
-	}else{
+	if($result == 0){
 	    print("WARNING : \"$user\" does not have deployment rights on $host $device (node excluded)\n");
 	    return 0;
 	}
     }
 
     return 1;
+}
+
+
+# check_node_lazy_rights
+# checks if the given user has appropriate rights for requested deployment
+# parameters : base, user name, node
+# return value : 1 if he has, 0 if not
+sub check_node_lazy_rights($$$) {
+    my $dbh = shift;
+    my $user = shift;
+    my $nodename = shift;
+
+    my $sth = $dbh->do("SELECT * FROM rights
+                        WHERE (user = \"$user\" OR user = '*')
+                        AND (node = '*' OR node = \"$nodename\")");
+
+    if($sth >= 1) { # right OK
+        return 1;
+    }
+    # right not granted on this node
+    return 0;
 }
 
 # check_lazy_rights_kadeploy
@@ -172,28 +213,23 @@ sub check_lazy_rights_kadeploy($$$){
     my $user = shift;
     my $ref_host = shift;
 
-    my @granted_host = ();
+    my $result;
 
     # debug print
     # print "LOG = $user ; PART = $device ; ";
 
     my @host_list = @{$ref_host};
     foreach my $host (@host_list){
-	my $sth = $dbh->do("SELECT * FROM rights
-                            WHERE (user = \"$user\" OR user = '*')
-                            AND (node = '*' OR node = \"$host\")");
+        $result = check_node_lazy_rights($dbh, $user, $host);
 
-	if($sth >= 1){
-	    push(@granted_host, $host);
-	}else{
-	    print("WARNING : \"$user\" does not have rights on $host\n");
-	    return 0;
-	}
+        if($result == 0){
+            print("WARNING : \"$user\" does not have deployment rights on $host $device (node excluded)\n");
+            return 0;
+        }
     }
 
     return 1;
 }
-
 
 # END OF THE MODULE
 return 1;
