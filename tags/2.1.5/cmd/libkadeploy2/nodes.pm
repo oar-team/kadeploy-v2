@@ -1,5 +1,7 @@
-package libkadeploy2::Nodes;
+package libkadeploy2::nodes;
 ## operations on sets of nodes
+
+use libkadeploy2::conflib;
 
 use strict;
 use warnings;
@@ -990,6 +992,24 @@ sub runRemoteCommand($$)
 
     return $self->runLocalRemote ("", $remoteCommand);		    
 }
+
+
+
+#
+# runs the remote command in background
+# 
+sub runRemoteCommandBackground($$$) {
+    my $self = shift;
+    my $remoteCommand = shift;
+    my $lock = shift;
+    
+    my $CommandToLaunch = "\" /usr/local/bin/launch_background.sh /var/lock/" . $lock . " " . $remoteCommand . " \"";
+    $self->runLocalRemote ("", $CommandToLaunch);
+
+    $CommandToLaunch = "\" /usr/local/bin/wait_background.sh /var/lock/" . $lock . " \"";
+    return $self->runLocalRemote ("", $CommandToLaunch);
+}
+
 
 
 #

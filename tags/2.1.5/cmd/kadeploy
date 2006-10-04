@@ -216,7 +216,7 @@ else{
 ###############################################
 
 
-$nodes_set = libkadeploy2::Nodes->new($nodetype);
+$nodes_set = libkadeploy2::nodes->new($nodetype);
 
 
 ## deployment node set creation
@@ -384,7 +384,10 @@ $mcat_first_port++;
 # TODO: idem que le Mcat précédent
 #$nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
 print "Executing preinstall...";
-$nodes_set->runRemoteCommand("\" $rambinpath/$pre_install_script \"");
+#$nodes_set->runRemoteCommand("\"/usr/local/bin/launch_background.sh /var/lock/preinstall $rambinpath/$pre_install_script \"");
+
+#$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
+$nodes_set->runRemoteCommandBackground("$rambinpath/$pre_install_script", "preinstall");
 print "Done\n";
 
 # time bench
@@ -408,7 +411,8 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $usetar=1;
 # format desired partition and mount it
     print "Formatting destination partition $destination_partition on the nodes...";
-    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
+#    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
+    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $destination_partition", "format_target");
     $nodes_set->runRemoteCommand("\" mount $destination_partition /mnt/dest \"");
     print "Done\n";
 
@@ -508,7 +512,7 @@ libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # discard the previous nodes' set to allow the creation of a new one
 $nodes_set->discard();
 # Waits for all the nodes to be there
-$deployed_nodes_set = libkadeploy2::Nodes->new("production"); 
+$deployed_nodes_set = libkadeploy2::nodes->new("production"); 
 
 foreach my $hostName (@to_reboot)
 {
