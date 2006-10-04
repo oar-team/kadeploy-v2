@@ -223,7 +223,7 @@ sub check_lazy_rights_kadeploy($$$){
         $result = check_node_lazy_rights($dbh, $user, $host);
 
         if($result == 0){
-            print("WARNING : \"$user\" does not have deployment rights on $host $device (node excluded)\n");
+            print("WARNING : \"$user\" does not have deployment rights on $host (node excluded)\n");
             return 0;
         }
     }
