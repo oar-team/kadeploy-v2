@@ -412,7 +412,7 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
 # format desired partition and mount it
     print "Formatting destination partition $destination_partition on the nodes...";
 #    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
-    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $destination_partition", "format_target");
+    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $destination_partition", "format");
     $nodes_set->runRemoteCommand("\" mount $destination_partition /mnt/dest \"");
     print "Done\n";
 
