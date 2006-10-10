@@ -641,7 +641,10 @@ sub runThose {
     my $timeout = shift;
     my $window_size = shift;
     my $errorString = shift;
-    my $verbose=1;
+    my $verbose=0;
+
+# for tests reduce window_size
+#$window_size=4;
 
     my %commandsToRun = %{$ref_to_commands};
 
@@ -900,18 +903,18 @@ sub runCommandMcat {
 	$num{$_} = sprintf("%d%03d%03d%03d", split(/\./));
     }
     my @sortedIP = sort { $num{$a} <=> $num{$b}; } @nodesIP;
-    print "Sorted IPs:\n";
-    for (@sortedIP) { print $_ . "\n";}
+    #print "Sorted IPs:\n";
+    #for (@sortedIP) { print $_ . "\n";}
 
-    # create nodesfile.txt 
-    open (NODESFILE, "> /tmp/nodesfile" . $mcatPort) or die "Couldn't open nodesfile for writing /tmp/nodesfile" . $mcatPort ." : $!\n";
+    # create echo command
+    my $echo_string="";
     foreach my $nodeIP (@sortedIP) {
-            print NODESFILE $nodeIP . "\n";
-	    }
-    close (NODESFILE);
-
+	$echo_string .= $nodeIP . " ";
+    }
+    
     # distribute nodesfile across the nodes
-    $self->runLocalRemote (" cat /tmp/nodesfile" .  $mcatPort . " |", "\" cat > /nodes.txt \"");
+    # dsitributing files with cat should be avoided because of TIME_WAIT
+    $self->runRemoteCommand (" /usr/local/bin/filenode.sh /nodes.txt " . $echo_string);
     # build chain
     $self->runRemoteCommand ("/usr/local/bin/launch_transfert.sh " . $node_pipe);
     # launch local command and pass data to the first node
