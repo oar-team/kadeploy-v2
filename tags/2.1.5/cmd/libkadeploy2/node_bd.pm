@@ -14,11 +14,11 @@ use strict;
 use warnings;
 
 sub new {
-    my ($class,$name,$deploy_id,$env_name,$disk_dev,$part_nb) = @_;
+    my ($class,$name,$deploy_id,$env_id,$disk_dev,$part_nb) = @_;
 
     ## database modifications ##
     my $base = libkadeploy2::deploy_iolib::connect();
-    my $successful = libkadeploy2::deploy_iolib::add_node_to_deployment($base,$name,$deploy_id,$env_name,$disk_dev,$part_nb);
+    my $successful = libkadeploy2::deploy_iolib::add_node_to_deployment($base,$name,$deploy_id,$env_id,$disk_dev,$part_nb);
     if(!$successful){
 	print "ERROR : impossible to add node to deployment\n";
 	return 0;

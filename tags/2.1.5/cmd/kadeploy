@@ -39,6 +39,7 @@ my $environment;            # environment identifier
 
 my $username;               # real user
 
+my $envid=0;		    # environment id
 my @db_checked_hosts = ();  # nodes existing in database
 my $dev;                    # device e.g. hda
 my $part;                   # partition number e.g. 1
@@ -254,7 +255,7 @@ my $tmp_node;
 
 
 foreach my $host (@db_checked_hosts){
-    $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $env, $dev, $part);
+    $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $envid, $dev, $part);
     if ($tmp_node) 
     {
 	$nodes_set->add($tmp_node);
@@ -387,7 +388,7 @@ print "Executing preinstall...";
 #$nodes_set->runRemoteCommand("\"/usr/local/bin/launch_background.sh /var/lock/preinstall $rambinpath/$pre_install_script \"");
 
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
-$nodes_set->runRemoteCommandBackground("$rambinpath/$pre_install_script", "preinstall");
+$nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script", "preinstall");
 print "Done\n";
 
 # time bench
@@ -452,7 +453,7 @@ if ($usetar)
     print "Executing postinstall...";
     $mcat_first_port++;
     $nodes_set->runCommandMcat("cat $filesite", $post_pipe, $mcat_first_port);
-    $nodes_set->runRemoteCommand("\" /rambin/$post_script /rambin \"");
+    $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
     print "Done\n";
 
 # time bench
@@ -840,7 +841,6 @@ sub check_options(){
 sub check_consistency()
 {
     my $dopostinstall=1;
-    my $envid=0;
     ## check partitioning schema
     if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
