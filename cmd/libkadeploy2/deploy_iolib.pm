@@ -1916,14 +1916,14 @@ sub add_node_to_deployment($$$$$$){
     my $dbh = shift;
     my $hostname = shift;
     my $deploy_id = shift;
-    my $env_name = shift;
+    my $env_id = shift;
     my $disk_dev = shift;
     my $part_nb = shift;
 
     my $node_id = libkadeploy2::deploy_iolib::node_name_to_id($dbh,$hostname);
     my $disk_id = libkadeploy2::deploy_iolib::disk_dev_to_id($dbh,$disk_dev);
     my $part_id = libkadeploy2::deploy_iolib::part_nb_to_id($dbh,$part_nb,$node_id);
-    my $env_id  = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($dbh,$env_name);
+    #my $env_id  = libkadeploy2::deploy_iolib::env_name_to_last_ver_id($dbh,$env_name);
     
     # performs cheks
     if((!$node_id) || (!$disk_id) || (!$part_id) || (!$env_id)){

@@ -341,13 +341,15 @@ sub setNodesErrorMessage {
 # fills $self->{nodesPinged} with hosts'IPs
 sub checkNmap {
     my $self = shift;
-    my $command = $nmapCmd . " -sP ";
+    my $command = $nmapCmd . " -n -sP ";
     my $commandArgs = join(" ",@{$self->{nodesToPing}});
     my $pingedIP;
     my $line;
     $self->{nodesPinged} = []; # should be reset when using nmap or multiple node's occurrences appear
  
-    open(PINGSCAN, $command.$commandArgs." |") or die ("[checkNmap] can't reach nmap output");
+    if (!defined($nmapArgs)) { $nmapArgs=" "; }
+ 
+    open(PINGSCAN, $command. " ". $nmapArgs . " " . $commandArgs." |") or die ("[checkNmap] can't reach nmap output");
     while($line=<PINGSCAN>) 
     {
 	if ($line =~ /(\d+\.\d+\.\d+\.\d+)/)
@@ -390,7 +392,7 @@ sub checkPortswithNmap {
     $nmapPortsList =~ s/^,//; # remove first coma
 
     if (!defined($nmapArgs)) { $nmapArgs=" "; } 
-    my $nmapCommand = $nmapCmd . " -n -p " .  $nmapPortsList. " " . $nmapArgs. " " . join(" ", @{$self->{nodesPinged}});
+    my $nmapCommand = $nmapCmd . " -T5 -n -p " .  $nmapPortsList. " " . join(" ", @{$self->{nodesPinged}});
 
     my $pid = open3(\*WRITER, \*READER, \*ERROR, $nmapCommand );
     my $testedPorts; # tested ports number for node
@@ -475,19 +477,9 @@ sub check {
     }
 
     if($self->{useNmap}) { # let's perform a first check
-	$nodesNumber = $self->checkNmap();
-	if($nodesNumber == 0) { # nothing to do after nmap, so why get any further?
-	    # set the state of the disappeared nodes
-	    foreach $nodeIP (@{$self->{nodesToPing}}) {
-		$self->{nodesByIPs}{$nodeIP}->set_state(-1);
-	    }
-	    # Let's sync the structures 
-	    $self->syncNodesReadyOrNot();
-	    return 1;
-	} else { # check thanks to nmap and not sentinelle
-	    $self->checkPortswithNmap();
-	    return 1;
-	}
+	# check thanks to nmap and not sentinelle
+	$self->checkPortswithNmap();
+	return 1;
     }
 
     $checkCommand .= " " . $sentinelleDefaultArgs . " -m".join(" -m",@{$self->{nodesPinged}});
@@ -641,6 +633,7 @@ sub runThose {
     my $timeout = shift;
     my $window_size = shift;
     my $errorString = shift;
+    my $report_failed = shift;
     my $verbose=0;
 
 # for tests reduce window_size
@@ -736,8 +729,10 @@ sub runThose {
     # Print summary for each nodes
     foreach my $i (keys(%finished_processes)){
       my $verdict = "BAD";
+      my $report_failed_node = $report_failed;
       if (($finished_processes{$i}->[0] == 0) && ($finished_processes{$i}->[1] == 0) && ($finished_processes{$i}->[2] == 0)){
         $verdict = "GOOD";
+	$report_failed_node = 0;
       }else{
         $exit_code = 1;
       }
@@ -747,19 +742,32 @@ sub runThose {
         my $duration = tv_interval($processDuration{$i}{"start"}, $processDuration{$i}{"end"});
         printf("%.3f s",$duration);
       }
-
       print("\n");
-    } 
+      if ($report_failed_node == 1) {
+        $self->{nodesByIPs}->{$nodes[$i]}->set_state(-1);
+	print "node " . $nodes[$i] . " marked as failed\n";
+      }
+     
+      } 
 
     foreach my $i (keys(%running_processes)){
       print("$nodes[$running_processes{$i}] : BAD (-1,-1,-1) -1 s process disappeared\n");
       $exit_code = 1;
+      if ($report_failed == 1) { 
+        $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_state(-1);
+	print "node " . $nodes[$i] . " marked as failed\n";
+      }
     }
 
     # Print global duration
     if ($useTime == 1){
       $timeEnd = [gettimeofday()];
       printf("Total duration : %.3f s (%d nodes)\n", tv_interval($timeStart, $timeEnd), $nbcommands);
+    }
+
+    # sync nodes structures
+    if ($report_failed == 1) {
+      $self->syncNodesReadyOrNot();
     }
 
     return ($exit_code);
@@ -922,7 +930,8 @@ sub runCommandMcat {
     print "mcat local: $command\n";
     system($command);
     print "mcat done\n";
-    $self->runRemoteCommand ("sync");
+    #$self->runRemoteCommand ("sync");
+    $self->runRemoteCommandBackground ("sync", "transfert");
 
     # previous command
     # $self->runCommandMcatExtern($server_command,"\" cat > $node_pipe\"",$mcatPort);
@@ -993,7 +1002,19 @@ sub runRemoteCommand($$)
     my $self = shift;
     my $remoteCommand = shift;
 
-    return $self->runLocalRemote ("", $remoteCommand);		    
+    return $self->runLocalRemote ("", $remoteCommand, 0);		    
+}
+
+
+#
+# runs the remote command only and report failed nodes
+#
+sub runRemoteCommandReportFailed($$)
+{
+    my $self = shift;
+    my $remoteCommand = shift;
+
+    return $self->runLocalRemote ("", $remoteCommand, 1);
 }
 
 
@@ -1007,21 +1028,42 @@ sub runRemoteCommandBackground($$$) {
     my $lock = shift;
     
     my $CommandToLaunch = "\" /usr/local/bin/launch_background.sh /var/lock/" . $lock . " " . $remoteCommand . " \"";
-    $self->runLocalRemote ("", $CommandToLaunch);
+    $self->runLocalRemote ("", $CommandToLaunch, 0);
 
     $CommandToLaunch = "\" /usr/local/bin/wait_background.sh /var/lock/" . $lock . " \"";
-    return $self->runLocalRemote ("", $CommandToLaunch);
+    # don't report failed nodes on background commands
+    return $self->runLocalRemote ("", $CommandToLaunch, 0);
 }
+
+
+
+#
+# runs the remote command in background and report failed nodes (usefull for preinstall)
+# 
+sub runRemoteCommandBackgroundReportFailed($$$) {
+    my $self = shift;
+    my $remoteCommand = shift;
+    my $lock = shift;
+
+    my $CommandToLaunch = "\" /usr/local/bin/launch_background.sh /var/lock/" . $lock . " " . $remoteCommand . " \"";
+    $self->runLocalRemote ("", $CommandToLaunch, 1);
+
+    $CommandToLaunch = "\" /usr/local/bin/wait_background.sh /var/lock/" . $lock . " \"";
+    # don't report failed nodes on background commands
+    return $self->runLocalRemote ("", $CommandToLaunch, 1);
+}
+
 
 
 
 #
 # runs a bunch of commands
 #
-sub runLocalRemote($$$) {
+sub runLocalRemote($$$$) {
     my $self = shift;
     my $localCommand = shift;
     my $remoteCommand = shift;
+    my $report_failed = shift;
     my $connector = $nodes_commands{$environment}{remote_command};
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
@@ -1035,7 +1077,7 @@ print "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP "
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-        return $self->runThose(\%executedCommands, 50, 50, "failed on node");
+        return $self->runThose(\%executedCommands, 50, 50, "failed on node", $report_failed);
 
 }
 
@@ -1179,7 +1221,7 @@ sub rebootThoseNodes
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
 
-    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node");
+    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node", 0);
 }
 
 
