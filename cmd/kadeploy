@@ -253,7 +253,7 @@ my $tmp_node;
 #
 
 
-
+print "registering environment: " . $envid . "for this deployment:" . $deployment . "\n";
 foreach my $host (@db_checked_hosts){
     $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $envid, $dev, $part);
     if ($tmp_node) 
@@ -406,8 +406,7 @@ $mcat_first_port++;
 
 print "filebase: $filebase\n";
 if ($filebase =~ /^.+\.tar\.gz$/ ||
-    $filebase =~ /^.+\.tgz$/     ||
-    $filebase =~ /^.+\.tar\.bz2$/  )
+    $filebase =~ /^.+\.tgz$/     )
 {
     $usetar=1;
 # format desired partition and mount it
@@ -424,20 +423,13 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $nodes_set->runCommandMcat("cat $filebase", $dest_pipe, $mcat_first_port);
     print "Done\n";
 }
-if ($filebase =~ /^.+\.dd$/ ||
-    $filebase =~ /^.+\.dd\.gz$/)
+if ($filebase =~ /^.+\.dd\.gz$/)
 {
     print "<dd Transfert>\n";
     print "Sending Computing environment to the nodes...\n";
-    if ($filebase =~ /^.+\.dd$/)
-    {
-	$nodes_set->runCommandMcat("cat $filebase", "cat > $destination_partition", $mcat_first_port);
-    }
-    if ($filebase =~ /^.+\.dd\.gz$/)
-    {
-	$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port);
-    }
-    
+    $nodes_set->runRemoteCommand("\" ln -sf $destination_partition /dest_part \"");
+    $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe", $mcat_first_port);
+    #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port); 
     print "Done\n";
 }
 
