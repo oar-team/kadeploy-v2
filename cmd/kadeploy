@@ -367,25 +367,17 @@ $nodes_set->runRemoteCommand("\" umount /mnt/dest \"");
 print "<PreInstall>\n";
 # pre-installation
 # mount rambin to perform hd optimizations and benches,...
-#$nodes_set->runCommand(" cat $pre_install_archive  |", "\"tar $pre_install_option /rambin \"");
 print "Retrieving preinstall\n";
-#$nodes_set->runCommandMput("$pre_install_archive /pre_pipe");
-my $mcat_first_port = ($deployment%400)*6+12000;
 
-$nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe, $mcat_first_port);
+$nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe);
 
 if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 {
-    $mcat_first_port++;
     # TODO: à remplacer par une autre commande
-    $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file", $mcat_first_port);
+    $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file");
 }
 
-$mcat_first_port++;
-# TODO: idem que le Mcat précédent
-#$nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -printpreinstallconf", "cat > $remote_preinstall_conf", $mcat_first_port);
 print "Executing preinstall...";
-#$nodes_set->runRemoteCommand("\"/usr/local/bin/launch_background.sh /var/lock/preinstall $rambinpath/$pre_install_script \"");
 
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
 $nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script", "preinstall");
@@ -402,7 +394,6 @@ print "<Transfert>\n";
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 
-$mcat_first_port++;
 
 print "filebase: $filebase\n";
 if ($filebase =~ /^.+\.tar\.gz$/ ||
@@ -420,7 +411,7 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     print "<tar Transfert>\n";
 # send the environment!!
     print "Sending Computing environment to the nodes...\n";
-    $nodes_set->runCommandMcat("cat $filebase", $dest_pipe, $mcat_first_port);
+    $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
     print "Done\n";
 }
 if ($filebase =~ /^.+\.dd\.gz$/)
@@ -428,7 +419,7 @@ if ($filebase =~ /^.+\.dd\.gz$/)
     print "<dd Transfert>\n";
     print "Sending Computing environment to the nodes...\n";
     $nodes_set->runRemoteCommand("\" ln -sf $destination_partition /dest_part \"");
-    $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe", $mcat_first_port);
+    $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe");
     #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port); 
     print "Done\n";
 }
@@ -443,8 +434,7 @@ if ($usetar)
     libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # post-installation
     print "Executing postinstall...";
-    $mcat_first_port++;
-    $nodes_set->runCommandMcat("cat $filesite", $post_pipe, $mcat_first_port);
+    $nodes_set->runCommandMcat("cat $filesite", $post_pipe);
     $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
     print "Done\n";
 
