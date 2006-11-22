@@ -888,7 +888,6 @@ sub runCommandMcat {
     my $self = shift;
     my $server_command = shift;
     my $node_pipe = shift;
-    my $mcatPort = shift; # port to use for data transfert
     my $nodes="";
     my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
     my $remote_mcat=libkadeploy2::conflib::get_conf("remote_mcat");
@@ -921,7 +920,7 @@ sub runCommandMcat {
     }
     
     # distribute nodesfile across the nodes
-    # dsitributing files with cat should be avoided because of TIME_WAIT
+    # distributing files with cat should be avoided because of TIME_WAIT
     $self->runRemoteCommand (" /usr/local/bin/filenode.sh /nodes.txt " . $echo_string);
     # build chain
     $self->runRemoteCommand ("/usr/local/bin/launch_transfert.sh " . $node_pipe);
@@ -930,11 +929,7 @@ sub runCommandMcat {
     print "mcat local: $command\n";
     system($command);
     print "mcat done\n";
-    #$self->runRemoteCommand ("sync");
     $self->runRemoteCommandBackground ("sync", "transfert");
-
-    # previous command
-    # $self->runCommandMcatExtern($server_command,"\" cat > $node_pipe\"",$mcatPort);
 }
 
 
