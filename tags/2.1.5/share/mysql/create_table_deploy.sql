@@ -78,7 +78,7 @@ INSERT INTO `environment` VALUES (4, 'empty', 1, NULL, '', '', '', '', '', 0, ''
 
 CREATE TABLE IF NOT EXISTS `node` (
   `id` int(10) unsigned NOT NULL auto_increment,
-  `name` varchar(26) NOT NULL default '',
+  `name` varchar(255) NOT NULL default '',
   `macaddr` varchar(17) NOT NULL default '',
   `ipaddr` varchar(15) NOT NULL default '',
   PRIMARY KEY  (`id`)
