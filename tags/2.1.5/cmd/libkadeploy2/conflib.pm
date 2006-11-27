@@ -72,9 +72,9 @@ sub check_conf {
 		  #   4                                      - 4 check pas / debut mais / fin
 		  #   5                                      - 5 check pas de / ni debut ni fin
 		  #   6                                      - 6 check / debut & peu importe fin
-		  "remote_sentinelle_rsh" => 3,
-		  "remote_sentinelle_rsh_default_args" => 1,
-		  "remote_mcat" => 3,
+		  #"remote_sentinelle_rsh" => 3,
+		  #"remote_sentinelle_rsh_default_args" => 1,
+		  #"remote_mcat" => 3,
 		  # ce ne sont pas des variables critiques
 		  #"use_internal_parallel_command" => 7,
 		  #"do_fdisk_on_deploy" => 7,
@@ -85,23 +85,23 @@ sub check_conf {
 		  "enable_nmap" => 1,
 		  "nmap_cmd" => 3,
 
-		  "deploy_sentinelle_cmd" => 3,
-		  "deploy_sentinelle_default_args" => 1,
-		  "deploy_sentinelle_pipelined_args" => 1,
-		  "deploy_sentinelle_endings" => 1,
-		  "deploy_sentinelle_timeout" => 1,
+		  #"deploy_sentinelle_cmd" => 3,
+		  #"deploy_sentinelle_default_args" => 1,
+		  #"deploy_sentinelle_pipelined_args" => 1,
+		  #"deploy_sentinelle_endings" => 1,
+		  #"deploy_sentinelle_timeout" => 1,
 
-		  "prod_sentinelle_cmd" => 3,
-		  "prod_sentinelle_default_args" => 1,
-		  "prod_sentinelle_pipelined_args" => 1,
-		  "prod_sentinelle_endings" => 1,
-		  "prod_sentinelle_timeout" => 1,
+		  #"prod_sentinelle_cmd" => 3,
+		  #"prod_sentinelle_default_args" => 1,
+		  #"prod_sentinelle_pipelined_args" => 1,
+		  #"prod_sentinelle_endings" => 1,
+		  #"prod_sentinelle_timeout" => 1,
 
 		  "deploy_rcmd" => 1,
 		  "prod_rcmd" => 1,
 
-		  "perl_sentinelle_cmd" => 3,
-		  "perl_sentinelle_default_args" => 1,
+		  #"perl_sentinelle_cmd" => 3,
+		  #"perl_sentinelle_default_args" => 1,
 
 
 		  "deploy_db_host" => 1,
@@ -204,39 +204,6 @@ sub check_conf {
 	return 0;
     }
 
-    #checks if the values of the critic variables are correct (when possible) ?
-    #print "Checking variables values...\n";
-
-    my $DK="/usr/local/bin/DKsentinelle";
-    my $MC="/usr/local/bin/mcatseg";
-
-    my $line;
-    
-    if ( -x "$DK" &&
-	 ( ! -l "$DK") && 
-	 open(FH,"$DK -h 2>&1|") )
-    {
-	while ($line=<FH>) { }
-	close(FH);
-    }
-    else
-    {
-	print "!!! WARNING You have to copy DKsentinelle to $DK...\nAnd check if it works !!!\n";
-	sleep(1);
-    }
-
-    
-    if ( -x "$MC" &&
-	 open(FH,"$DK  2>&1|") )
-    {
-	while ($line=<FH>) { }
-	close(FH);
-    }
-    else
-    {
-	print "!!! WARNING You have to copy or link mcatseg to $MC!!!\n";
-	sleep(1);
-    }
 
     return 1;
 }
