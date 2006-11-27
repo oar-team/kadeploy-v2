@@ -217,7 +217,7 @@ else{
 ###############################################
 
 
-$nodes_set = libkadeploy2::nodes->new($nodetype);
+$nodes_set = libkadeploy2::nodes->new($nodetype,$verbose);
 
 
 ## deployment node set creation
@@ -1004,12 +1004,10 @@ sub tsktsk {
 	if ($deployed_nodes_set != 0) 
 	{
 	    print "killing sentinelle\n";
-	    $deployed_nodes_set->kill_sentinelle();
 	} 
 	elsif ($nodes_set != 0) 
 	{
 	    print "killing sentinelle\n";
-	    $nodes_set->kill_sentinelle();
 	}
     }
     exit 0;
