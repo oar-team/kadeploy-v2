@@ -388,6 +388,10 @@ sub checkPortswithNmap {
     # change state of unseen nodes
     for $nodeIP (@{$self->{nodesToPing}}) {
 	if (!exists($seenNodes{$nodeIP})) { #unseen node
+	    if ($self->{nodesByIPs}->{$nodeIP}->get_state() == 1) { # node disappeared
+		print "node should have rebooted: $nodeIP\n";
+		$displayReadyNodesNumber = 1;
+	    }
 	    $self->{nodesByIPs}->{$nodeIP}->set_state(-1);
 	}
     }
@@ -548,6 +552,10 @@ sub runThose {
     my %finished_processes;
     my %processDuration;
 
+    # reset node command_status
+    foreach my $nodeIP (keys(%commandsToRun)){
+	$self->{nodesByIPs}->{$nodeIP}->set_command_status(0); # initial status before command
+    }
 
     if ($window_size <= 0) {
         $window_size = $nbcommands;
@@ -629,8 +637,10 @@ sub runThose {
       my $report_failed_node = $report_failed;
       if (($finished_processes{$i}->[0] == 0) && ($finished_processes{$i}->[1] == 0) && ($finished_processes{$i}->[2] == 0)){
         $verdict = "GOOD";
+	$self->{nodesByIPs}->{$nodes[$i]}->set_command_status(1); # report execution OK
 	$report_failed_node = 0;
       }else{
+        $self->{nodesByIPs}->{$nodes[$i]}->set_command_status(-1); # report execution KO
         $exit_code = 1;
       }
       print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2]) ")  if ($verbose);
@@ -835,6 +845,95 @@ sub rebootThoseNodes
     }
 
     return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node", 0);
+}
+
+
+
+sub rebootMyNodes {
+    my $self = shift;
+    my $method = shift; # method can be "deployboot" "softboot" "hardboot" "deployreboot"
+
+    my $use_next_method = 1;
+    my $next_method = "deployreboot";
+
+    my %executedCommands;
+    my %nextExecutedCommands;
+    my %tmpExecutedCommands;
+   
+    my $nbsoftboot_nodes = 0; # number of nodes rebooted softly
+    my $nbdeployreboot_nodes = 0; # number of nodes deployrebooted
+    my $nbhardboot_nodes = 0; # number of nodes hardrebooted
+    my $nbmethod_nodes;
+
+    my $result;
+
+    # get commands for all the nodes
+    my %cmd = libkadeploy2::conflib::check_cmd;
+
+    my $hostname;
+
+    if ($method ne "deployreboot") { # no need for a connector, nodes to reboot: @nodesToPing
+        foreach my $nodeIP (@{$self->{nodesToPing}}) {
+	    $nbsoftboot_nodes++;
+            $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
+            if(!$cmd{$hostname}{$method}){
+                print "WARNING : no $method command found for $hostname !\n";
+            } else {
+                $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
+            }
+        }
+        $self->runThose(\%executedCommands, 6, 50, "$method failed on node", 0);
+	
+    } else {
+        # deployreboot
+        return $self->rebootThoseNodes();
+    }
+
+    while ($use_next_method) {
+        # verify if all commands ended successfully
+	$nbmethod_nodes = 0;
+	%nextExecutedCommands = (); # empty next commands to be run
+        foreach my $nodeIP (keys(%executedCommands)) {
+	    if ( $self->{nodesByIPs}{$nodeIP}->get_command_status() != 1 ) {
+	        print "$executedCommands{$nodeIP} went wrong \n " if ($verbose);
+	        $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
+	        print "Problem occured rebooting node :" . $hostname . " trying " . $next_method . " \n";
+		if ($next_method eq "hardboot") {
+		    $use_next_method = 0;
+	            if(!$cmd{$hostname}{"hardboot"}){
+	                print "WARNING : no hardboot command found for $hostname !\n";
+	            } else {
+		        $nbmethod_nodes++;
+		        print "rebooting node $hostname hard \n" if ($verbose);
+	                $nextExecutedCommands{$nodeIP} = $cmd{$hostname}{"hardboot"};
+	            }
+		}
+	        if ($next_method eq "deployreboot") {
+		    $nbmethod_nodes++;
+		    $nextExecutedCommands{$nodeIP} = "rsh -l root " . $nodeIP . " reboot_detach";
+		} 
+	    }
+        }
+	%executedCommands = %nextExecutedCommands;
+        if ( $nbmethod_nodes != 0 ) {
+            print "Launching parrallel commands \n" if ($verbose);
+	    $self->runThose(\%nextExecutedCommands, 6, 50, "hardboot failed on node", 0);
+	} else {
+            $use_next_method = 0;
+	}
+	if ($next_method eq "deployreboot") {
+	    $next_method = "hardboot";
+	    $nbdeployreboot_nodes = $nbmethod_nodes;
+	} elsif ($next_method eq "hardreboot") {
+            $nbhardboot_nodes = $nbmethod_nodes;
+	    $use_next_method = 0;
+	}
+    }
+
+    if ( (($nbsoftboot_nodes == 0) or ($nbdeployreboot_nodes > 0)) and ($method eq "softboot" )) {
+        # if a single node is rebooted from softboot it is enough to ensure good detection
+        sleep 20;
+    }
 }
 
 
