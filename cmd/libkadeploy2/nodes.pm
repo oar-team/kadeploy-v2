@@ -854,7 +854,7 @@ sub rebootMyNodes {
     my $method = shift; # method can be "deployboot" "softboot" "hardboot" "deployreboot"
 
     my $use_next_method = 1;
-    my $next_method = "deployreboot";
+    my $next_method = "hardboot"; # can be "deployreboot" if a reboot from deploy environment should be tryied before the hard one
 
     my %executedCommands;
     my %nextExecutedCommands;
