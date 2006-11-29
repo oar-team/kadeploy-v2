@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 my $default_state = 0;
+my $default_command_status = 0;
 
 ## Class constructor
 # 
@@ -18,6 +19,7 @@ sub new {
     my $self = {};
     $self->{name} = $name;
     $self->{state} = $default_state;
+    $self->{command_status} = $default_command_status;
     $self->{error} = ""; # error to report on set_state
     bless ($self, $class);
     return $self;
@@ -47,6 +49,20 @@ sub get_state {
 sub set_state {
     my $node = shift;
     $node->{state} = shift;
+}
+
+## last command status
+# 0: initial state before any command is issued
+# 1: command was successfull
+# -1: command failed
+sub get_command_status {
+    my $node = shift;
+    return $node->{command_status};
+}
+
+sub set_command_status {
+    my $node = shift;
+    $node->{command_status} = shift;
 }
 
 ## name
