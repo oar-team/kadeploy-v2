@@ -67,6 +67,7 @@ sub new {
     my ($class, $env, $debug) = @_; # environment is production or deployment 
     my $self = {};
 
+    my $errorMessage = "";
     if($debug) { $verbose=1; }
 
     if(!$environment) { # environment is not defined
@@ -94,6 +95,19 @@ sub new {
     $self->{commandSummary} = ""; # STDOUT summary of the last parallel command
     bless ($self, $class);
     return $self;
+}
+
+
+##  error
+# allows to report dedicated errors on nodes
+sub set_error {
+    my $self = shift;
+    $self->{errorMessage} = shift;
+}
+
+sub get_error {
+    my $self = shift;
+    return $self->{errorMessage};
 }
 
 
@@ -272,18 +286,6 @@ sub resetCommandSummary {
 }
 
 
-#
-# Allows to report error on events that occurs to nodes
-#
-sub setNodesErrorMessage {
-    my $self = shift;
-    my $errorMessage = shift; # error message to report after a set_state
-
-    foreach my $nodeIP (@{$self->{nodesToPing}}) {
-	$self->{nodesByIPs}{$nodeIP}->set_error($errorMessage);
-    }    
-}
-
 
 # checkNmap
 #
@@ -326,7 +328,6 @@ sub checkPortswithNmap {
     my $portsToTest = 0; # number of ports to test
     my $displayReadyNodesNumber = 0; # display the number of ready nodes?
 
-    $self->setNodesErrorMessage("Not there on last check!");
     if ($environment eq "deployment") {
       $portsToCheck{"22"} = 0; # ssh should be closed
       $portsToCheck{"514"} = 1; # login port should be opened
@@ -392,6 +393,7 @@ sub checkPortswithNmap {
 		print "node should have rebooted: $nodeIP\n";
 		$displayReadyNodesNumber = 1;
 	    }
+	    $self->{nodesByIPs}->{$nodeIP}->set_error($self->get_error());
 	    $self->{nodesByIPs}->{$nodeIP}->set_state(-1);
 	}
     }
@@ -418,8 +420,6 @@ sub check {
     my $nodesNumber = scalar(@{$self->{nodesToPing}});
     my $timedout;
 
-    # set error message before check
-    $self->setNodesErrorMessage("Not there on check!");
     # reset the nodesReady hash
     $self->{nodesReady} = {};
 
@@ -438,6 +438,20 @@ sub check {
 }
 
 
+sub initCheck {
+    my $self = shift;
+
+    $self->set_error("not there on first check");
+    return $self->check();
+}
+
+
+sub lastCheck {
+    my $self = shift;
+    
+    $self->set_error("not there on last check");
+    return $self->check();
+}
 
 
 ###                                                   ###
@@ -534,7 +548,7 @@ sub runThose {
     my $ref_to_commands = shift;
     my $timeout = shift;
     my $window_size = shift;
-    my $errorString = shift;
+    my $errorString = shift; # useless $self->get_error() instead
     my $report_failed = shift;
 
 # for tests reduce window_size
@@ -641,6 +655,7 @@ sub runThose {
 	$report_failed_node = 0;
       }else{
         $self->{nodesByIPs}->{$nodes[$i]}->set_command_status(-1); # report execution KO
+	$self->{nodesByIPs}->{$nodes[$i]}->set_error($errorString); # set error to errorString
         $exit_code = 1;
       }
       print("$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2]) ")  if ($verbose);
@@ -651,6 +666,7 @@ sub runThose {
       }
       print("\n");
       if ($report_failed_node == 1) {
+        $self->{nodesByIPs}->{$nodes[$i]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$i]}->set_state(-1);
 	print "node " . $nodes[$i] . " marked as failed\n";
       }
@@ -660,7 +676,8 @@ sub runThose {
     foreach my $i (keys(%running_processes)){
       print("$nodes[$running_processes{$i}] : BAD (-1,-1,-1) -1 s process disappeared\n");
       $exit_code = 1;
-      if ($report_failed == 1) { 
+      if ($report_failed == 1) {
+        $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_state(-1);
 	print "node " . $nodes[$i] . " marked as failed\n";
       }
@@ -750,10 +767,12 @@ sub runRemoteCommand($$)
 #
 # runs the remote command only and report failed nodes
 #
-sub runRemoteCommandReportFailed($$)
+sub runRemoteCommandReportFailed($$$)
 {
     my $self = shift;
     my $remoteCommand = shift;
+    my $errorString = shift;
+    $self->set_error($errorString);
 
     return $self->runLocalRemote ("", $remoteCommand, 1);
 }
@@ -781,10 +800,12 @@ sub runRemoteCommandBackground($$$) {
 #
 # runs the remote command in background and report failed nodes (usefull for preinstall)
 # 
-sub runRemoteCommandBackgroundReportFailed($$$) {
+sub runRemoteCommandBackgroundReportFailed($$$$) {
     my $self = shift;
     my $remoteCommand = shift;
     my $lock = shift;
+    my $errorString = shift;
+    $self->set_error($errorString);
 
     my $CommandToLaunch = "\" /usr/local/bin/launch_background.sh /var/lock/" . $lock . " " . $remoteCommand . " \"";
     $self->runLocalRemote ("", $CommandToLaunch, 1);
