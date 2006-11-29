@@ -895,7 +895,6 @@ sub rebootMyNodes {
 
     if ($method ne "deployreboot") { # no need for a connector, nodes to reboot: @nodesToPing
         foreach my $nodeIP (@{$self->{nodesToPing}}) {
-	    $nbsoftboot_nodes++;
             $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
             if(!$cmd{$hostname}{$method}){
                 print "WARNING : no $method command found for $hostname !\n";
@@ -928,6 +927,10 @@ sub rebootMyNodes {
 		        print "rebooting node $hostname hard \n" if ($verbose);
 	                $nextExecutedCommands{$nodeIP} = $cmd{$hostname}{"hardboot"};
 	            }
+		} else {
+		    if ($method eq "softboot") {
+		        $nbsoftboot_nodes++;
+		    }
 		}
 	        if ($next_method eq "deployreboot") {
 		    $nbmethod_nodes++;
@@ -943,9 +946,11 @@ sub rebootMyNodes {
             $use_next_method = 0;
 	}
 	if ($next_method eq "deployreboot") {
+	    $method = "deployreboot";
 	    $next_method = "hardboot";
 	    $nbdeployreboot_nodes = $nbmethod_nodes;
 	} elsif ($next_method eq "hardreboot") {
+	    $method = "hardreboot";
             $nbhardboot_nodes = $nbmethod_nodes;
 	    $use_next_method = 0;
 	}
