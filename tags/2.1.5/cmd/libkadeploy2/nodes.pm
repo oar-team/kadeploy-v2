@@ -958,8 +958,9 @@ sub rebootMyNodes {
 
     if ( (($nbsoftboot_nodes == 0) or ($nbdeployreboot_nodes > 0)) and ($method eq "softboot" )) {
         # if a single node is rebooted from softboot it is enough to ensure good detection
-        sleep 20;
+        return 0;
     }
+    return 1;
 }
 
 

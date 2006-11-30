@@ -8,6 +8,8 @@ use libkadeploy2::conflib;
 use libkadeploy2::bootlib;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
+use libkadeploy2::node_bd;
+use libkadeploy2::nodes;
 use strict;
 
 my $soft = 0;
@@ -130,6 +132,7 @@ my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
 my $base = libkadeploy2::deploy_iolib::connect();
 
 
+
 #Check rights on DB if user ! deploy or root
 if ($username eq "root" ||
     $username eq $deployuser )
@@ -240,71 +243,28 @@ if ($noreboot) {
   exit (1);
 }
 
-my @hosts_to_reboot_hard;
 
-my $index = 0;
-my $timeout = 5;
-my $window_size = 50;
 
-# Now, we have to reboot the nodes efficiently
-if (!$hard) { # there should be a timed operation
-  my %running_processes;
-  my %finished_processes;
-  my $host;
 
-  while (scalar(keys(%finished_processes)) <= $#hosts_to_reboot){
-    while((scalar(keys(%running_processes)) < $window_size) && ($index <= $#hosts_to_reboot)){
-      print("[VERBOSE] fork process for the node $hosts_to_reboot[$index]\n") if ($verbose);
-      my $pid = fork();
-      if (defined($pid)){
-	if ($pid == 0){
-	  #In the child
-	  # Initiate timeout
-	  alarm($timeout);
-	  $host = $hosts_to_reboot[$index];
-	  my $cmd = $cmd{$host}{$reboot};
-	  print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
-	  exec($cmd);
-	}
-	$running_processes{$pid} = $index;
-      }else{
-	warn("/!\\ fork system call failed for node $hosts_to_reboot[$index].\n");
-      }
-      $index++;
+# create node set
+my $nodes_set = libkadeploy2::nodes->new("deployment",$verbose);
+my $tmp_node;
+
+foreach my $host (@hosts_to_reboot) {
+    $tmp_node = libkadeploy2::node_bd->new($host, 0, 0, 0, 0);
+
+    if ($tmp_node) {
+        $nodes_set->add($tmp_node);
     }
-    my $pid = wait();
-    my $exit_value = $? >> 8;
-    my $signal_num  = $? & 127;
-    my $dumped_core = $? & 128;
-    
-    if ($pid == -1){
-      die("/!\\ wait return -1 so there is no child process. It is a mistake\n");
-    }else{
-      if (defined($running_processes{$pid})){
-	print("[VERBOSE] Child process $pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n") if ($verbose);
-	$finished_processes{$running_processes{$pid}} = [$exit_value,$signal_num,$dumped_core];
-	delete($running_processes{$pid});
-      }
+    else {
+        print "node $host not included in current deployment\n";
     }
-  }
-  
-  foreach my $i (keys(%finished_processes)){
-    my $verdict = "BAD";
-    if (($finished_processes{$i}->[0] == 0) && ($finished_processes{$i}->[1] == 0) && ($finished_processes{$i}->[2] == 0)){
-      $verdict = "GOOD";
-    }
-    print("$hosts_to_reboot[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2])\n");
-    push (@hosts_to_reboot_hard, $hosts_to_reboot[$i]);
-  }
+}
+
+if (!$hard) {
+    $nodes_set->rebootMyNodes("softboot");
 } else {
-  @hosts_to_reboot_hard = @hosts_to_reboot;
+    $nodes_set->rebootMyNodes("hardboot");
 }
 
-foreach my $host (@hosts_to_reboot_hard){
-  if ($cmd{$host}{"hardboot"}) {
-    print ("[VERBOSE] rebooting node $host hard \n") if ($verbose);
-    system ($cmd{$host}{"hardboot"}." &");
-  } else {
-    print "No hardboot command found for node $host \n";
-  }
-}
+exit(1);
