@@ -273,8 +273,10 @@ libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
 # rebooting the nodes
 if ($bootstrap == 0) {
     $nodes_set->rebootMyNodes("deployboot");
-    $nodes_set->rebootMyNodes("softboot");
-    # if node is rebooted from deploy environment the check is too fast => preinstall begins before effective reboot!
+    if ($nodes_set->rebootMyNodes("softboot") == 0) {
+        # if node is rebooted from deploy environment the check is too fast => preinstall begins before effective reboot!
+        sleep (20);
+    }
 } 
 
 

@@ -18,10 +18,12 @@ sub new {
 
     ## database modifications ##
     my $base = libkadeploy2::deploy_iolib::connect();
-    my $successful = libkadeploy2::deploy_iolib::add_node_to_deployment($base,$name,$deploy_id,$env_id,$disk_dev,$part_nb);
-    if(!$successful){
-	print "ERROR : impossible to add node to deployment\n";
-	return 0;
+    if ($deploy_id != 0) {
+        my $successful = libkadeploy2::deploy_iolib::add_node_to_deployment($base,$name,$deploy_id,$env_id,$disk_dev,$part_nb);
+        if(!$successful){
+	    print "ERROR : impossible to add node to deployment\n";
+	    return 0;
+        }
     }
     my $addr = libkadeploy2::deploy_iolib::node_name_to_ip($base,$name);
     if(!$addr){return 0;}
@@ -77,9 +79,11 @@ sub set_state {
 
     my $name = $self->get_name();
 
-    my $base = libkadeploy2::deploy_iolib::connect();
-    libkadeploy2::deploy_iolib::report_state($base,$deploy_id,$name,$state_db,$error_status);
-    libkadeploy2::deploy_iolib::disconnect($base);
+    if ($deploy_id != 0) {
+        my $base = libkadeploy2::deploy_iolib::connect();
+        libkadeploy2::deploy_iolib::report_state($base,$deploy_id,$name,$state_db,$error_status);
+        libkadeploy2::deploy_iolib::disconnect($base);
+    }
 
     $self->SUPER::set_state($nextState);
 }
