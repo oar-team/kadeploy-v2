@@ -390,7 +390,7 @@ sub checkPortswithNmap {
     for $nodeIP (@{$self->{nodesToPing}}) {
 	if (!exists($seenNodes{$nodeIP})) { #unseen node
 	    if ($self->{nodesByIPs}->{$nodeIP}->get_state() == 1) { # node disappeared
-		print "node should have rebooted: $nodeIP\n";
+		print "node should have rebooted: $nodeIP\n" if ($environment ne "production");
 		$displayReadyNodesNumber = 1;
 	    }
 	    $self->{nodesByIPs}->{$nodeIP}->set_error($self->get_error());
