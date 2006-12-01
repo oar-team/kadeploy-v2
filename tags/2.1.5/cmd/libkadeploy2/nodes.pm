@@ -616,7 +616,7 @@ sub runThose {
                 #In the child
                 my $cmd = $commandsToRun{$nodes[$index]};
                 print("[VERBOSE] Execute command : $cmd\n") if ($verbose);
-                exec($cmd);
+		exec($cmd);
             }
         }else{
             warn("/!\\ fork system call failed for command $index.\n");
@@ -664,7 +664,7 @@ sub runThose {
         my $duration = tv_interval($processDuration{$i}{"start"}, $processDuration{$i}{"end"});
         printf("%.3f s",$duration) if ($verbose);
       }
-      print("\n");
+      print("\n") if ($verbose);
       if ($report_failed_node == 1) {
         $self->{nodesByIPs}->{$nodes[$i]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$i]}->set_state(-1);
@@ -872,10 +872,12 @@ sub rebootThoseNodes
 
 sub rebootMyNodes {
     my $self = shift;
-    my $method = shift; # method can be "deployboot" "softboot" "hardboot" "deployreboot"
+    my $method = shift; # method can be "deployboot" "softboot" "hardboot" "deployreboot" "failednodes"
 
     my $use_next_method = 1;
     my $next_method = "hardboot"; # can be "deployreboot" if a reboot from deploy environment should be tryied before the hard one
+
+    my $get_failed_nodes = 0; # should only reboot failed nodes
 
     my %executedCommands;
     my %nextExecutedCommands;
@@ -893,17 +895,28 @@ sub rebootMyNodes {
 
     my $hostname;
 
+    if ($method eq "failednodes") {
+        $get_failed_nodes = 1;
+	$method = "hardboot"; # reboot failed node the hard way
+    }
+
     if ($method ne "deployreboot") { # no need for a connector, nodes to reboot: @nodesToPing
         foreach my $nodeIP (@{$self->{nodesToPing}}) {
             $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
-            if(!$cmd{$hostname}{$method}){
+            if (!$cmd{$hostname}{$method}){
                 print "WARNING : no $method command found for $hostname !\n";
             } else {
-                $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
+	        if (!$get_failed_nodes) {
+		    $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
+		} else {
+		    if ($self->{nodesByIPs}{$nodeIP}->get_state() == -1) {
+		        print "Rebooting node $hostname hard\n";
+                        $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
+		    }
+		}
             }
         }
         $self->runThose(\%executedCommands, 6, 50, "$method failed on node", 0);
-	
     } else {
         # deployreboot
         return $self->rebootThoseNodes();

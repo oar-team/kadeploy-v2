@@ -270,6 +270,9 @@ foreach my $host (@db_checked_hosts){
 ## runs the deployment (changes state to run)
 libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
 
+# Let start the chronometer
+my $checkTimeout = libkadeploy2::conflib::get_conf("first_check_timeout");
+
 # rebooting the nodes
 if ($bootstrap == 0) {
     $nodes_set->rebootMyNodes("deployboot");
@@ -283,7 +286,6 @@ if ($bootstrap == 0) {
 ## waits for all the nodes to be ready
 # first check is important before ready to ensure
 # node state coherancy
-my $checkTimeout = libkadeploy2::conflib::get_conf("first_check_timeout");
 if ($checkTimeout <= 0) { # invalid value
 	$checkTimeout = 200;
 }
@@ -306,7 +308,30 @@ while((!$nodes_set->ready()) and ($time_check < $checkTimeout))
 if ($nodes_set->ready()) {
     print "All nodes are ready!\n";
 } else {
-    print "There are some missing nodes, pursuing deploy process!\n";
+    if($depmethod==0) {
+        if ($bootstrap==0) {
+	    print "There are some missing nodes, rebooting them hard!\n";
+	    $nodes_set->rebootMyNodes("failednodes");
+	}
+        # let's wait for another timeout
+        $reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
+        $time_check = 0;
+        $nodes_set->check();
+        while((!$nodes_set->ready()) and ($time_check < $checkTimeout))
+        {
+            $nodes_set->check();
+            $time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment) - $reference_time_check;
+            sleep(1);
+        }
+        if ($nodes_set->ready())
+        {
+            print "All nodes are ready!\n";
+        }
+        else
+        {
+            print "There are some missing nodes, pursuing deploy process!\n";
+        }
+    }
 }
 
 
@@ -503,7 +528,6 @@ if ($checkTimeout <= 0) { # invalid value
         $checkTimeout = 300;
 }
 print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
-print "<BootEnv 0>\n";
 
 $deployed_nodes_set->lastCheck();
 while((!$deployed_nodes_set->ready()) and ($time_check < $checkTimeout)) 
