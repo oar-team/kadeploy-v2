@@ -6,6 +6,7 @@ use strict;
 
 sub add_user($$$$);
 sub del_user($$$$);
+sub get_node_rights($$$);
 sub check_rights_kadeploy($$$$);
 sub check_lazy_rights_kadeploy($$$);
 # Unfinished
@@ -130,7 +131,32 @@ sub clean_db($){
     }
 }
 
+# get_node_rights
+# returns the allowed partitions for the user
+sub get_node_rights($$$) {
+    my $dbh = shift;
+    my $user = shift;
+    my $nodename = shift;
 
+    my $res = "";
+
+    my $sth = $dbh->prepare("SELECT * FROM rights
+                             WHERE (user = \"$user\" OR user = '*')
+			     AND (node = '*' OR node = \"$nodename\")");
+    $sth->execute();
+    my @res_array;
+    if($sth >= 1) {
+        while (my $ref = $sth->fetchrow_hashref()) {
+	    if ($ref->{part} eq "*") {
+	        return "*";
+	    } else {
+	        push (@res_array, $ref->{part})
+	    }
+	}
+	$res = join (" ", @res_array);
+    }
+    return $res;
+}
 
 # check_node_rights
 # checks if the given user has appropriate rights for requested node
