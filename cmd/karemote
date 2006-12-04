@@ -96,7 +96,7 @@ foreach $host (@host_list) {
 	            }
 	            $filter .= "\\\$ROOTPART != ". "\\\"" . $item ."\\\"";
 		}
-		$filter .= " ]] ; then exit; fi; " . $remote_command;
+		$filter .= " ]] ; then exit 2; fi; " . $remote_command;
 	    }
 	    print $filter . "\n" if ($verbose);
             $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " ". " \" " . $filter ." \"";
