@@ -622,6 +622,28 @@ sub runThose {
 
 
 
+sub getThoseCommandSummary {
+    my $self = shift;
+    my $status;
+    my $test = 0;
+    my $result = 1;
+   
+    print "\nCommand execution summary:\n";
+    foreach my $nodeIP (sort @{$self->{nodesToPing}}) {
+	$test=1; # at least one node
+        if ( $self->{nodesByIPs}{$nodeIP}->get_command_status() == 1 ) {
+            $status = "OK";
+	} else {
+	    $status = "ERROR";
+	    $result=0;
+	}
+        print "\t" . $self->{nodesByIPs}{$nodeIP}->get_name() . "\t" . $status . "\n";
+    }
+    print "Finished\n\n";
+    
+    return ($test && $result);
+}
+
 
 	
 sub runCommandMcat {

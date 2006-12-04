@@ -56,6 +56,10 @@ if (!scalar(@host_list)){
     print $kareboot_usage;
     exit 0;
 }
+if ($remote_command eq "") {
+    print "WARNING: no command specified running simple test\n";
+    $remote_command = "true";
+}
 
 
 my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
@@ -71,7 +75,7 @@ my $nodes_set = libkadeploy2::nodes->new("production", $verbose);
 my $tmp_node;
 my $nodeIP;
 
-my $connector = "ssh -l root";
+my $connector = libkadeploy2::conflib::get_conf("prod_rcmd");
 
 foreach $host (@host_list) {
     $tmp_node = libkadeploy2::node_bd->new($host, 0, 0, 0, 0);
@@ -107,5 +111,7 @@ foreach $host (@host_list) {
 }
 
 $nodes_set->runThose(\%executedCommands, 10, 50, "", 0);
-
+if ($nodes_set->getThoseCommandSummary()) {
+	exit(0);
+}
 exit (1);
