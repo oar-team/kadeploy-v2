@@ -80,12 +80,12 @@ my $connector = libkadeploy2::conflib::get_conf("prod_rcmd");
 foreach $host (@host_list) {
     $tmp_node = libkadeploy2::node_bd->new($host, 0, 0, 0, 0);
     if ($tmp_node) {
-        $nodes_set->add($tmp_node);
         $nodeIP = $tmp_node->get_IP;
  	my $filter = "";
         @right_array = ();
         $right_string = libkadeploy2::rights_iolib::get_node_rights($base, $username, $host);
 	if ($right_string ne "") { # there is a command to issue
+	    $nodes_set->add($tmp_node);
 	    if ($right_string eq "*") {
                 $filter = $remote_command;
 	    } else {
