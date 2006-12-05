@@ -17,7 +17,7 @@ User should have a key without passphase, to create this:
  ssh-keygen -t dsa -P ""
 
 To prevent the system to ask for host key verification during ssh connection, ~/.ssh/config should contain those lines:
- Host *.grid5000.fr
+ Host *
        StrictHostKeyChecking no
 
 =head1 OPTIONS
