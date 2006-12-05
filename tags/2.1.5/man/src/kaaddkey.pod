@@ -1,0 +1,60 @@
+=head1 NAME
+
+kaaddkey - add users public key to root's authorized keys on the deployed nodes.
+
+=head1 SYNOPSIS
+
+B<kaaddkey>  [B<-k|--key-file> public_keyfile] [B<-m|--machine> hostname] [B<-f> nodefile][B<-p> property_query] [B<-v|--verbose>]
+
+=head1 DESCRIPTION
+
+This command is used to grant an user the right to log as root on a set of nodes without any password.
+Kaaddkeys simply adds the specified I<public_keyfile> to root's authorized_keys file on the deployed nodes of the specified set.
+
+Additional configuration should be done to ensure passwordless connection to remote nodes.
+User should have a key without passphase, to create this:
+ ssh-keygen -t dsa -P ""
+
+To prevent the system to ask for host key verification during ssh connection, ~/.ssh/config should contain those lines:
+ Host *.grid5000.fr
+       StrictHostKeyChecking no
+
+=head1 OPTIONS
+
+=over
+
+=item B<-k|--key-file> public_keyfile
+
+Defines public key file to propagate on the set of deployed nodes.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts.
+
+=item B<-f> nodefile
+
+Specifies a file containing a set of target nodes.
+
+=item B<-v, --verbose>
+
+verbose mode.
+
+=back
+
+=head1 EXAMPLE
+
+Propagating dsa public key file on all the nodes of a reservation:
+
+=over
+
+=item kaaddkey -f ~/.ssh/id_dsa.pub -f $OAR_NODEFILE
+
+=back
+
+=head1 SEE ALSO
+
+ssh_keygen(1), ssh_config(5)
+
+=head1 COPYRIGHTS
+
+ This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
