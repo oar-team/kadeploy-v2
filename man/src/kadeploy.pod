@@ -4,7 +4,7 @@ kadeploy - deploys an environment on the given nodes.
 
 =head1 SYNOPSIS
 
-B<kadeploy>  B<-e|--environment> environment_name [B<-l> username]  B<-p|--partition> partition [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+B<kadeploy>  B<-e|--environment> environment_name [B<-l> username] B<-p|--partition> partition [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
@@ -44,19 +44,15 @@ verbose mode.
 
 =head1 EXAMPLE
 
-Deploys the debian4all environment on partition sda3 of node7:
-
 =over
 
 =item kadeploy -e debian4all -p sda3 -m node7
 
-=back
-
-Deploys the debian4jul environment user jleduc on partition sda3 of a set of nodes reserved with OAR in the deploy queue:
-
-=over
+Deploys the debian4all environment on partition sda3 of node7.
 
 =item kadeploy -e debian4jul -l jleduc -p sda3 -f $OAR_NODEFILE
+
+Deploys the debian4jul environment user jleduc on partition sda3 of a set of nodes reserved with OAR in the deploy queue.
 
 =back
 
