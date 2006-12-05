@@ -5,7 +5,9 @@ kaenvironments - list and remove an environment.
 =head1 SYNOPSIS
 
 B<kaenvironments>  B<-e|--environment> environment_name [B<-l> username]
+
 B<kaenvironments>  B<-d> environment_name
+
 B<kaenvironments>  B<-m|--machine> hostname
 
 =head1 DESCRIPTION
