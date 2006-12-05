@@ -17,4 +17,4 @@ distdir:
 
 
 %.1: %.pod
-	@if ! test -f ../man1/$@ ; then pod2man --center $(CENTERBANNER) $< > ../man1/$@ ; fi
+	@if ! test -f ../man1/$@ ; then pod2man --section=1 --center $(CENTERBANNER) $< > ../man1/$@ ; fi

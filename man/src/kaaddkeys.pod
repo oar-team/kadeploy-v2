@@ -1,10 +1,10 @@
 =head1 NAME
 
-kaaddkey - add users public key to root's authorized keys on the deployed nodes.
+kaaddkeys - add users public key to root's authorized keys on the deployed nodes.
 
 =head1 SYNOPSIS
 
-B<kaaddkey>  [B<-k|--key-file> public_keyfile] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+B<kaaddkeys>  [B<-k|--key-file> public_keyfile] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
@@ -48,13 +48,13 @@ Propagating dsa public key file on all the nodes of a reservation:
 
 =over
 
-=item kaaddkey -f ~/.ssh/id_dsa.pub -f $OAR_NODEFILE
+=item kaaddkeys -k ~/.ssh/id_dsa.pub -f $OAR_NODEFILE
 
 =back
 
 =head1 EXIT STATUS
 
-kaaddkey returns a zero exist status if it succeeds to authorize the public key on all the target nodes, else one.
+kaaddkeys returns a zero exist status if it succeeds to authorize the public key on all the target nodes, else one.
 
 =head1 SEE ALSO
 
