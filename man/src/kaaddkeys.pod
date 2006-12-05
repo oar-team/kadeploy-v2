@@ -4,12 +4,13 @@ kaaddkey - add users public key to root's authorized keys on the deployed nodes.
 
 =head1 SYNOPSIS
 
-B<kaaddkey>  [B<-k|--key-file> public_keyfile] [B<-m|--machine> hostname] [B<-f> nodefile][B<-p> property_query] [B<-v|--verbose>]
+B<kaaddkey>  [B<-k|--key-file> public_keyfile] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
 This command is used to grant an user the right to log as root on a set of nodes without any password.
 Kaaddkeys simply adds the specified I<public_keyfile> to root's authorized_keys file on the deployed nodes of the specified set.
+The target nodes should be deployed on an user's authorized partition to ensure proper execution of the command.
 
 Additional configuration should be done to ensure passwordless connection to remote nodes.
 User should have a key without passphase, to create this:
@@ -50,6 +51,10 @@ Propagating dsa public key file on all the nodes of a reservation:
 =item kaaddkey -f ~/.ssh/id_dsa.pub -f $OAR_NODEFILE
 
 =back
+
+=head1 EXIT STATUS
+
+kaaddkey returns a zero exist status if it succeeds to authorize the public key on all the target nodes, else one.
 
 =head1 SEE ALSO
 
