@@ -4,7 +4,7 @@ karemote - issue a remote command as root on the deployed nodes.
 
 =head1 SYNOPSIS
 
-B<kaaddkey>  [B<-m|--machine> hostname] [B<-f> nodefile] [B<-c|--command> "remote command"] [B<-v|--verbose>]
+B<karemote>  [B<-m|--machine> hostname] [B<-f> nodefile] [B<-c|--command> "remote command"] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
