@@ -95,6 +95,11 @@ my $help;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
 
+my $defaulttargetpartition="";
+if (libkadeploy2::conflib::get_conf("default_target_partition")) {
+	$defaulttargetpartition = libkadeploy2::conflib::get_conf("default_target_partition");
+}
+
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
 else
@@ -781,8 +786,12 @@ sub check_options(){
 	exit 1;
     }
     if (!$device){
-	print "ERROR : target partition unspecified\n";
-	exit 1;
+	if ($defaulttargetpartition eq "") {
+	    print "ERROR : target partition unspecified\n";
+	    exit 1;
+        } else {
+            $device = $defaulttargetpartition;
+	}
     }
     if(!$depmethod){
     	# print"No deployment method specified, proceeding with normal deployment\n";
