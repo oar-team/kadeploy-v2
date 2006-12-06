@@ -791,6 +791,7 @@ sub check_options(){
 	    exit 1;
         } else {
             $device = $defaulttargetpartition;
+	    print "no target partition specified, using default one: $device\n";
 	}
     }
     if(!$depmethod){
