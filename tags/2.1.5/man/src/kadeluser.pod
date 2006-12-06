@@ -1,0 +1,55 @@
+=head1 NAME
+
+kadeluser - revokes user granted rights on given nodes and partitions
+
+=head1 SYNOPSIS
+
+B<kaadduser>  [B<-l|--login> username] [B<-p|--partition> partition] [B<-m|--machine> hostname]
+
+=head1 DESCRIPTION
+
+kadeluser revokes deployment rights to the specified user on the given partition
+
+=head1 OPTIONS
+
+=over
+
+=item B<-l|--login> username
+
+Specifies the granted user, can be used more than once to revoke deployment rights to multiple users.
+
+=item B<-p|--partition> partition
+
+Specifies the authorized partition on the target nodes, can be used more than once to revoke deployment rights on multiple partitions.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts.
+
+=back
+
+=head1 RETURN VALUE
+
+kadeluser returns 0 if it fails. Otherwise, it returns 1.
+
+=head1 EXAMPLE
+
+=over
+
+=item kadeluser -l titi -p hda3 -m node1
+
+revokes rights of user titi on node "node1" on partition hda3.
+
+=item kadeluser -l toto -m node1 -m node2 -p hda1
+
+revokes rights to user toto on node1 and node2 partition hda1
+
+=back
+
+=head1 SEE ALSO
+
+kaadduser(1)
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
