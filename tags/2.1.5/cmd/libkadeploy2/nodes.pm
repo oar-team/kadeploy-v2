@@ -602,7 +602,7 @@ sub runThose {
       if ($report_failed == 1) {
         $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_state(-1);
-	print "node " . $nodes[$i] . " marked as failed\n";
+	print "node " . $nodes[$running_processes{$i}] . " marked as failed\n";
       }
     }
 
