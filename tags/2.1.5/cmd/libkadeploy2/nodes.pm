@@ -784,7 +784,7 @@ print "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP "
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-        return $self->runThose(\%executedCommands, 50, 50, "failed on node", $report_failed);
+    return $self->runThose(\%executedCommands, 50, 50, "failed on node", $report_failed);
 
 }
 

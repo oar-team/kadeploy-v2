@@ -414,7 +414,9 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
 # format desired partition and mount it
     print "Formatting destination partition $destination_partition on the nodes...";
 #    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
-    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $destination_partition", "format");
+    my $mkfs_fs_options = libkadeploy2::conflib::get_conf($mkfs_fs . "_options")
+    print "using $mkfs_fs file system with options: " . $mkfs_fs_options . "\n";
+    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
     $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
     print "Done\n";
 
