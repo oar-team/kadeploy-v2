@@ -28,6 +28,10 @@ my $verbose = 0;
 # Configuration Variables
 ##
 
+my $launcherWindowSize = 40; # default window_size
+if (libkadeploy2::conflib::get_conf("window_size")) {
+	$launcherWindowSize = libkadeploy2::conflib::get_conf("launcher_window_size");
+}
 my $nmapCmd = libkadeploy2::conflib::get_conf("nmap_cmd");
 my $useNmapByDefault = libkadeploy2::conflib::get_conf("enable_nmap");
 my $nmapArgs = libkadeploy2::conflib::get_conf("nmap_arguments"); # can add parameters to customize ping request to the site
@@ -784,7 +788,7 @@ print "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP "
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-    return $self->runThose(\%executedCommands, 50, 50, "failed on node", $report_failed);
+    return $self->runThose(\%executedCommands, 50, $launcherWindowSize, "failed on node", $report_failed);
 
 }
 
@@ -810,7 +814,7 @@ sub rebootThoseNodes
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
 
-    return $self->runThose(\%executedCommands, 2, 50, "reboot failed on node", 0);
+    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
 }
 
 
@@ -861,7 +865,7 @@ sub rebootMyNodes {
 		}
             }
         }
-        $self->runThose(\%executedCommands, 6, 50, "$method failed on node", 0);
+        $self->runThose(\%executedCommands, 6, $launcherWindowSize, "$method failed on node", 0);
     } else {
         # deployreboot
         return $self->rebootThoseNodes();
@@ -899,7 +903,7 @@ sub rebootMyNodes {
 	%executedCommands = %nextExecutedCommands;
         if ( $nbmethod_nodes != 0 ) {
             print "Launching parrallel commands \n" if ($verbose);
-	    $self->runThose(\%nextExecutedCommands, 6, 50, "hardboot failed on node", 0);
+	    $self->runThose(\%nextExecutedCommands, 6, $launcherWindowSize, "hardboot failed on node", 0);
 	} else {
             $use_next_method = 0;
 	}
