@@ -163,7 +163,7 @@ print "invalidating deployments older than $deployment_validity_timeout\n";
     my $rows_affected = $dbh->do("UPDATE deployment
                                   SET deployment.state = 'error', deployment.enddate=deployment.startdate
                                   WHERE (deployment.state!='terminated' and deployment.state!='error') and DATE_SUB(now(),INTERVAL $deployment_validity_timeout SECOND) > deployment.startdate;");
-    if($rows_affected = 0){ return 1; }
+    if ($rows_affected == 0){ return 1; }
 
      print "Warning $rows_affected deployment have been corrected automatically\n";
      return 0;
@@ -183,13 +183,11 @@ sub prepare_deployment($){
     my $nb=1;
     my $maxretry=50;
     my $sth;
-    # invalidate previously problematic deployments
-    clean_previous_deployments ($dbh);
     
-    while ($i<$maxretry &&
-	   $nb==1
-	   )
-    {
+    while ($i<$maxretry && $nb==1) {
+	# invalidate previously problematic deployments
+	clean_previous_deployments ($dbh);     
+	    
 	$dbh->do("LOCK TABLES deployment WRITE");
 	
 	$sth = $dbh->prepare("SELECT IFNULL(COUNT(deployment.id),0) as id
@@ -208,9 +206,7 @@ sub prepare_deployment($){
     }
 
     # $nb should be 0 or 1
-    if($nb == 0)
-    {
-
+    if ($nb == 0) {
 	# create new deployment, set state to waiting and start_date to current mysql server date
 	$sth = $dbh->do("INSERT deployment (state, startdate, enddate)
                          VALUES ('waiting', NOW(), NOW())");
