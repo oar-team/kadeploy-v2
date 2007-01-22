@@ -1858,14 +1858,9 @@ sub report_state($$$$$){
     my $state = shift;
     my $error_status = shift;
     
-    my $sth = $dbh->prepare("SELECT node.id FROM node WHERE node.name = \"$name\"");
-    $sth->execute();
-    my $ref = $sth->fetchrow_hashref(); 
-    my $id = $ref->{'id'}; 
-    $sth->finish();
-    $sth = $dbh->do("UPDATE deployed 
-                     SET deployed.state = \"$state\", deployed.error_description = \"$error_status\"
-                     WHERE deployed.nodeid = $id AND deployed.deployid = $deploy_id");
+    my $sth = $dbh->do("UPDATE deployed, node 
+                        SET deployed.state = \"$state\", deployed.error_description = \"$error_status\"
+                        WHERE deployed.nodeid = node.id AND node.name = \"$name\" AND deployed.deployid = $deploy_id");
 }
 
 # is_node_free
