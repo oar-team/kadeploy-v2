@@ -8,7 +8,7 @@ MANDIR=$(PREFIX)/man
 BINDIR=$(KADEPLOYHOMEDIR)/bin
 SBINDIR=$(KADEPLOYHOMEDIR)/sbin
 LIBDIR=$(KADEPLOYHOMEDIR)/lib
-PERLDIR=$(KADEPPLOYHOMEDIR)share/perl/5.8/libkadeploy2
+PERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2
 
 DEPLOYUSER=deploy
 DEPLOYGROUP=deploy
@@ -66,6 +66,9 @@ kadeploy_install:
 	install -m 755 cmd/kanodes $(SBINDIR)/
 
 	install -m 755 cmd/libkadeploy2/* $(PERLDIR)/ 
+
+
+
 
 #Install and creation of mans
 install_man:
