@@ -1,0 +1,83 @@
+=head1 NAME
+
+deploy.conf - kadeploy configuration file.
+
+=head1 DESCRIPTION
+
+This file presents all the variables the user must defined in order to be able to use the deployment system. It is divided into several sections. A very short description is available  for  each  variable  and often example values are given in commentary.
+
+=head1 NODES PROPERTIES
+
+This section is dedicated to the cluster specifics optimizations, all the timeouts are set there, and since they depend of hardware configuration, they are difficult to guess. Kadeploy incorporates default values that work on poorly tuned cluster nodes but, volontary, not with default BIOS values and its poor performances. This is to force sysadmin to think about their default setup.
+
+=over
+
+=item B<default_target_partition> sda3
+
+Default target partition on the nodes if no '-p' is passed to kadeploy.
+
+=item B<first_check_timeout> 210
+
+Timeout before ordering a hard reboot, after a soft one at the beginning if the node is still not booted on the deployment kernel.
+
+=item B<last_check_timeout> 250
+
+Timout for the last check, when rebooting the nodes on the deployed system: after that time, all the node that are not rebooted on the deployed environment are considered as failed and the deployment ends.
+
+=item B<deployment_validity_timeout> 700
+
+Deployment timeout upper time boundary for a deployment to remain valid. Every longer deployment is considered as a failed one. This allows kadeploy to clean its database by itself.
+
+=item B<ext2_options> -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+Options passed to mkfs when formatting a kadeploy target partition which has an ext2 filesystem, this allows to be five times faster than default mkfs values.
+
+=item B<ext2_options> -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+Options passed to mkfs when formatting a kadeploy target partition which has an ext3 filesystem, this allows to be five times faster than default mkfs values.
+
+=back
+
+=head1 NMAP CONFIGURATION
+
+Nmap is used by kadeploy to test the nodes'state.
+
+=over
+
+=item B<enable_nmap> 1
+
+1 enables nmap, 0 disables it.
+
+=item B<nmap_cmd> /usr/bin/nmap
+
+nmap command on your deployment server.
+
+=back
+
+=head1 PARALLEL COMMANDS
+
+This section describes tuning for parrallel commands launched by kadeploy.
+
+=over
+
+=item B<deploy_rcmd> rsh -l root
+
+Command launcher for the deployment kernel.
+
+=item B<prod_rcmd> ssh -l root
+
+Command launcher for the deployed environment (mainly to initiate reboots since B<deploy_user> should be authorized to log as root on all the deployed system on the nodes).
+
+=item B<launcher_window_size> 25
+
+Number of parrallel remote commands issued from the server during a single deployment. A smaller size mmeans more concurency between deployments. Kadeploy consumes up to 2 * min (launcher_window_size, number_of_implied_nodes) + 3 ports during a single deployment, if you multiply this by the number of maximum concurrent deployments on your system, you should not be able to reach 512. A value of 25 seems reasonable, since it allows 10 concurrents deployments at any time on the cluster.
+
+=back
+
+=head1 SEE ALSO
+
+kadeploy(1)
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
