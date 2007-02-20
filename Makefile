@@ -9,10 +9,11 @@ BINDIR=$(KADEPLOYHOMEDIR)/bin
 SBINDIR=$(KADEPLOYHOMEDIR)/sbin
 LIBDIR=$(KADEPLOYHOMEDIR)/lib
 PERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2
+KADEPLOYCONFDIR=/etc/kadeploy
 
-tftp_repository=/tftpboot/PXEClient/
+tftp_repository=/var/lib/tftpboot/PXEClient/
 pxe_rep=pxelinux.cfg/
-tftp_relative_path=images_grub
+tftp_relative_path=images_grub/
 ARCH=x86_64
 
 DEPLOYUSER=deploy
@@ -39,8 +40,7 @@ links_install:
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kadeploy
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kareboot
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karemote
-	
-	
+
 #Kadeploy installation in main directory
 kadeploy_install:
 
@@ -51,7 +51,15 @@ kadeploy_install:
 	mkdir -p $(LIBDIR)/deployment_kernel/x86
 	mkdir -p $(LIBDIR)/deployment_kernel/x86_64
 	mkdir -p $(PERLDIR)
-	
+	mkdir -p -m 700 $(KADEPLOYCONFDIR)
+
+	install -m 600 tools/cookbook/conf/deploy.conf $(KADEPLOYCONFDIR)/
+	install -m 600 tools/cookbook/conf/deploy_cmd.conf $(KADEPLOYCONFDIR)/
+	install -m 600 tools/cookbook/conf/clusternodes.conf $(KADEPLOYCONFDIR)/
+	install -m 600 tools/cookbook/conf/clusterpartition.conf $(KADEPLOYCONFDIR)/
+
+	chown -R $(DEPLOYUSER) $(KADEPLOYCONFDIR)
+
 	install -m 755 cmd/kaconsole $(BINDIR)/
 	install -m 755 cmd/kaenvironments  $(BINDIR)/
 	install -m 755 cmd/karecordenv $(BINDIR)/
@@ -59,7 +67,7 @@ kadeploy_install:
 	install -m 755 cmd/kareboot $(BINDIR)/
 	install -m 755 cmd/karemote $(BINDIR)/
 	install -m 755 tools/kasudowrapper/kasudowrapper.sh $(BINDIR)/	
-	
+
 	install -m 755 tools/libboot/deployment_kernel/x86/* $(LIBDIR)/deployment_kernel/x86/
 	install -m 755 tools/libboot/deployment_kernel/x86_64/* $(LIBDIR)/deployment_kernel/x86_64/
 	install -m 755 tools/libboot/grub/* $(LIBDIR)/grub/
@@ -78,7 +86,25 @@ install_man:
 	make -C man/src/
 	install -m 755 man/man1/* $(MANDIR)/man1/
 
-#Re 
+#Installation of ftp part
+tftp_install:
+	@echo "Installation of tftp"
+
+	mkdir -p $(tftp_repository)$(pxe_rep)
+	mkdir -p $(tftp_repository)$(tftp_relative_path)
+
+	chown $(DEPLOYUSER)  $(tftp_repository)$(tftp_relative_path)
+	chown $(DEPLOYUSER)  $(tftp_repository)$(pxe_rep)
+
+	install -m 755 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
+	install -m 755 tools/libboot/pxelinux/memdisk $(tftp_repository)
+	install -m 755 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
+
+	sed -i "s%^tftp_repository[\ |\t]*=.*%tftp_repository = $(tftp_repository)%" $(KADEPLOYCONFDIR)/deploy.conf
+	sed -i "s%^pxe-rep[\ |\t]*=.*%pxe_rep = $(pxe_rep)%" $(KADEPLOYCONFDIR)/deploy.conf
+	sed -i "s%^tftp_relative_path[\ |\t]*=.*%tftp_relative_path = $(tftp_relative_path)%" $(KADEPLOYCONFDIR)/deploy.conf
+
+#Remove Installation of Kadeploy 
 remove_installation:
 	rm -rf $(KADEPLOYHOMEDIR)
 	rm -f $(PREFIX)/bin/kaaddkeys
@@ -100,29 +126,19 @@ remove_installation:
 	rm -f $(MANDIR)/deploy.conf.1
 	rm -f $(MANDIR)/karemote.1
 	rm -f $(MANDIR)/deploy_cmd.conf.1
-	
+
+	rm -rf $(KADEPLOYCONFDIR)/
+
 	make clean -C man/src
-	
+
 	userdel -r $(DEPLOYUSER)
-	groupdel $(DEPLOYGROUP)
+#	groupdel $(DEPLOYGROUP)
 
 #Main part of the installation
 install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man
 
-#Installation of ftp part
-tftp_install:
-	@echo "Installation of tftp"
-	
-	mkdir -p $(tftp_repository)$(pxe_rep)
-	mkdir -p $(tftp_repository)$(tftp_relative_path)
 
-	chown $(DEPLOYUSER)  $(tftp_repository)$(tftp_relative_path)
-	chown $(DEPLOYUSER)  $(tftp_repository)$(pxe_rep)
 
-	install -m 755 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
-	install -m 755 tools/libboot/pxelinux/memdisk $(tftp_repository)
-	install -m 755 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
-	
 
 #Installation cleaning
 clean: root_check remove_installation
