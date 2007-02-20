@@ -74,6 +74,54 @@ Number of parrallel remote commands issued from the server during a single deplo
 
 =back
 
+=head1 DATABASE ACCESS
+
+This section specifies database acces for kadeploy.
+
+=over
+
+=item B<deploy_db_host> server.domainname
+
+Database server name or IP.
+
+=item B<deploy_db_name> deploy
+
+Database name on the mysql server hosting kadeploy's tables.
+
+=item B<deploy_db_login> deploy
+
+Login for data rw acces from the deployment server, ie the server kadeploy is installed on, on the database server.
+
+=item B<deploy_db_psswd> deploy
+
+Password associated to the previous login.
+
+=back
+
+=head1 PREINSTALL POSTINSTALL
+
+This section deals with deployment specific operations: preinstall and postinstall. The preinstall is specific to a cluster: it deals with harddisk preparation before initiating the deployment procedure. It consits of a tgz archive containing a script and everything it requires to prepare the disk (load disk drivers, manage partitions creation, format common partitions). Since it is specific to a site, it is the role of the sysadmin to manage it. At the other end of the deployment, the postinstall is specific to the deployed environment, it is up to the environments' maintainers to take care of those.
+
+=over
+
+=item B<pre_install_archive> /usr/local/share/kadeploy/preinstall.tgz
+
+Common preinstall for the all the nodes of the cluster kadeploy should take care of.
+
+=item B<pre_install_script> init.ash
+
+Relative path of the preintall script from the preinstall root directory.
+
+=item B<pre_install_script_timeout> 50
+
+Timeout for preinstall execution in seconds, this is the maximum time allowed for the preinstall execution on 1 node, timeout nodes are discarted from the rest of the deployment process.
+
+=item B<post_install_script> traitement.ash
+
+Relative path of the postinstall script from the postinstall root directory.
+
+=back
+
 =head1 SEE ALSO
 
 kadeploy(1)
