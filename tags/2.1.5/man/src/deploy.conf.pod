@@ -122,9 +122,49 @@ Relative path of the postinstall script from the postinstall root directory.
 
 =back
 
+=head1 PXE CONFIGURATION
+
+This sections details the TFTP part of kadeploy that allows it to control the way the nodes are booting.
+
+=over
+
+=item B<kernel_param> console=tty0 console=ttyS0,38400n8
+
+Kernel parameters passed to the deployment kernel: those allow to redirect console so a serial port linked to kvm capabilities.
+
+=item B<use_nogrub> 1
+
+By default 0, this allows to use grub as a remote bootloader. This option is usefull if your system cannot deal with grub remote execution (Itanium nodes, some nodes with SCSI harddrives...). If enabled, you won't be able to boot freeBSD environements (or any environment based on dd images).
+
+=item B<tftp_repository> /var/lib/tftpboot/PXEClient/
+
+Specify the tftp repository for PXE clients as defined by your cluster DHCP server.
+
+=item B<pxe_rep> pxelinux.cfg/
+
+Relative path from the B<tftp_repository>, where each node's PXE boot files are stored. Should be owned by B<deploy_user>.
+
+=item B<tftp_relative_path> images_grub
+
+Relative path from the B<tftp_repository>, where kadeploy will put environments' specific files required to reboot the nodes on the target environment. Should be owned by B<deploy_user>.
+
+=back
+
+=head1 LABEL
+
+This sections details the use of kadeploy labels to control the way the nodes are booting.
+
+=over
+
+=item label_deploy = duke-vmlinuz.x86_64:duke-initrd.x86_64 ETH_DRV=tg3 ETH_DEV=eth0 console=tty0 console=ttyS0,38400n8 ramdisk_size=40000
+
+This label tells kadeploy to boot duke-vmlinuz.x86_64 kernel with duke-initrd.x86_64 passing the following arguments: ethernet driver is tg3, using the node's eth0 interface.
+
+=back
+
 =head1 SEE ALSO
 
-kadeploy(1)
+deploy_cmd.conf(1)
 
 =head1 COPYRIGHTS
 
