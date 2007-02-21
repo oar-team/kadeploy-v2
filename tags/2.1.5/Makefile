@@ -83,9 +83,10 @@ kadeploy_install:
 	sed -i "s%kadeploy2_directory[\ |\t]*=.*%kadeploy2_directory = $(KADEPLOYHOMEDIR)%" $(KADEPLOYCONFDIR)/deploy.conf
 	sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(BINDIR)/kasudowrapper.sh
 
-#Sudo installation part
+#Sudo installation part. Modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" ; exit 1 )
+	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 	tools/cookbook/install_scripts/sudoers_install.pl $(KADEPLOYHOMEDIR)
 
 
@@ -138,6 +139,8 @@ remove_installation:
 	rm -f $(MANDIR)/deploy_cmd.conf.1
 
 	rm -rf $(KADEPLOYCONFDIR)/
+
+	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 
 	make clean -C man/src
 
