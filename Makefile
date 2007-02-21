@@ -80,29 +80,39 @@ kadeploy_install:
 
 	install -m 755 cmd/libkadeploy2/* $(PERLDIR)/ 
 
+	sed -i "s%kadeploy2_directory[\ |\t]*=.*%kadeploy2_directory = $(KADEPLOYHOMEDIR)%" $(KADEPLOYCONFDIR)/deploy.conf
+	sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(BINDIR)/kasudowrapper.sh
+
+#Sudo installation part
+sudo_install:
+	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" ; exit 1 )
+	tools/cookbook/install_scripts/sudoers_install.pl $(KADEPLOYHOMEDIR)
+
 
 #Install and creation of mans
 install_man:
 	make -C man/src/
+	mkdir -p $(MANDIR)/man1
 	install -m 755 man/man1/* $(MANDIR)/man1/
 
 #Installation of ftp part
 tftp_install:
 	@echo "Installation of tftp"
 
-	mkdir -p $(tftp_repository)$(pxe_rep)
-	mkdir -p $(tftp_repository)$(tftp_relative_path)
+	mkdir -p /$(tftp_repository)/$(pxe_rep)
+	mkdir -p /$(tftp_repository)/$(tftp_relative_path)
 
 	chown $(DEPLOYUSER)  $(tftp_repository)$(tftp_relative_path)
 	chown $(DEPLOYUSER)  $(tftp_repository)$(pxe_rep)
 
-	install -m 755 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
-	install -m 755 tools/libboot/pxelinux/memdisk $(tftp_repository)
-	install -m 755 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
+	install -m 644 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
+	install -m 644 tools/libboot/pxelinux/memdisk $(tftp_repository)
+	install -m 644 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
 
 	sed -i "s%^tftp_repository[\ |\t]*=.*%tftp_repository = $(tftp_repository)%" $(KADEPLOYCONFDIR)/deploy.conf
 	sed -i "s%^pxe-rep[\ |\t]*=.*%pxe_rep = $(pxe_rep)%" $(KADEPLOYCONFDIR)/deploy.conf
-	sed -i "s%^tftp_relative_path[\ |\t]*=.*%tftp_relative_path = $(tftp_relative_path)%" $(KADEPLOYCONFDIR)/deploy.conf
+	sed -i "s%^tftp_relative_path[\ |\t]*=.*%tftp_relative_path = $(tftp_relative_path)%" $(KADEPLOYCONFDIR)/deploy.conf	
+
 
 #Remove Installation of Kadeploy 
 remove_installation:
@@ -135,10 +145,7 @@ remove_installation:
 #	groupdel $(DEPLOYGROUP)
 
 #Main part of the installation
-install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man
-
-
-
+install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
 
 #Installation cleaning
 clean: root_check remove_installation
