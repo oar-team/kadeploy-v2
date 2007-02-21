@@ -151,12 +151,12 @@ remove_installation:
 install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
 
 #Installation cleaning
-clean: root_check remove_installation
+uninstall: root_check remove_installation
 
 
 #Usage of make
 usage:
 	@echo "Installation of Kadeploy 2.1.5."
 	@echo "Usage: make [ OPTIONS=<...> ] MODULES"
-	@echo "Where MODULES := { install | tftp_install | clean}"
+	@echo "Where MODULES := { install | tftp_install | uninstall}"
 	@echo "OPTIONS :={KADEPLOYHOMEDIR | ARCH | tftp_repository | pxe_rep | image_grub}"
