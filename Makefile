@@ -83,6 +83,13 @@ kadeploy_install:
 	sed -i "s%kadeploy2_directory[\ |\t]*=.*%kadeploy2_directory = $(KADEPLOYHOMEDIR)%" $(KADEPLOYCONFDIR)/deploy.conf
 	sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(BINDIR)/kasudowrapper.sh
 
+#Database scripts installation
+db_install:
+	install -m 755 tools/cookbook/install_scripts/kadeploy_db_init.pl $(KADEPLOYHOMEDIR)
+	install -m 644 share/mysql/create_table_deploy.sql $(KADEPLOYHOMEDIR)
+	install -m 644 tools/cookbook/install_scripts/kadeploy_conflib.pm $(KADEPLOYHOMEDIR)
+
+
 #Sudo installation part. Modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" ; exit 1 )
@@ -147,6 +154,13 @@ remove_installation:
 	userdel -r $(DEPLOYUSER)
 #	groupdel $(DEPLOYGROUP)
 
+#Database scripts installation
+db_uninstall:
+	rm $(KADEPLOYHOMEDIR)/kadeploy_db_init.pl 
+	rm $(KADEPLOYHOMEDIR)/create_table_deploy.sql 
+	rm $(KADEPLOYHOMEDIR)/kadeploy_conflib.pm 
+
+
 #Main part of the installation
 install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
 
@@ -158,5 +172,5 @@ uninstall: root_check remove_installation
 usage:
 	@echo "Installation of Kadeploy 2.1.5."
 	@echo "Usage: make [ OPTIONS=<...> ] MODULES"
-	@echo "Where MODULES := { install | tftp_install | uninstall}"
+	@echo "Where MODULES := { install | db_install | tftp_install | uninstall | db_uninstall}"
 	@echo "OPTIONS :={KADEPLOYHOMEDIR | ARCH | tftp_repository | pxe_rep | image_grub}"
