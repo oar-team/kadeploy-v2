@@ -1,4 +1,7 @@
 #!/usr/bin/make
+#
+#This program is derived from oar project's sources (http//:oar.imag.fr)
+#
 
 SHELL=/bin/sh
 PREFIX=/usr/local

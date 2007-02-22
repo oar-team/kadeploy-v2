@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 #
+#This program is derived from oar project's sources (http//:oar.imag.fr)
+#
 
 use strict;
 use warnings;

@@ -1,5 +1,6 @@
 ###############################################################################
 ##  *** ConfLib: ***
+##  This program is derived from oar project's sources (http//:oar.imag.fr)
 ##
 ## - Description:
 ##   Home brewed module managing configuration file for OAR
@@ -28,7 +29,7 @@
 ##  > print "toto = ".get_conf("toto")."\n" if is_conf("toto");
 ##
 ###############################################################################
-# $Id: oar_conflib.pm,v 1.8 2004/09/07 10:49:36 capitn Exp $
+
 package kadeploy_conflib;
 
 use strict;
