@@ -96,8 +96,6 @@ sub check_conf {
 		  "pre_install_archive" => 3,
 		  "pre_install_script" => 5,
 		  "post_install_script" => 5,
-		  "tftp_repository_intel" => 2,
-		  "pxe_rep_intel" => 4,
 		  "tftp_repository" => 2,
 		  "pxe_rep" => 4,
 		  "tftp_relative_path" => 5,
