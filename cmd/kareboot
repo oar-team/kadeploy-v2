@@ -94,9 +94,8 @@ if (($deploy && $env) || ($deploy && $device) || ($env && $device)){
 
 
 # checks if tftp folders exist
-my $intel_tftp = libkadeploy2::conflib::get_conf("tftp_repository_intel") . libkadeploy2::conflib::get_conf("tftp_relative_path");
 my $tftp = libkadeploy2::conflib::get_conf("tftp_repository") . libkadeploy2::conflib::get_conf("tftp_relative_path");
-if((!(-e $intel_tftp)) || (!(-e $tftp))){
+if(!(-e $tftp)){
     print "ERROR : unknown tftp folder\n";
     print "ERROR : please check your configuration file\n";
     exit 0;

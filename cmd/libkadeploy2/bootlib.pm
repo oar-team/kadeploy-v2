@@ -381,23 +381,17 @@ sub setup_pxe($$$){
 
     ## gets appropriate parameters from configuration file
     #my $network = conflibkadeploy2::get_conf("network");
-    my $tftp_repository_intel = libkadeploy2::conflib::get_conf("tftp_repository_intel");
-    my $pxe_rep_intel = $tftp_repository_intel . libkadeploy2::conflib::get_conf("pxe_rep_intel");
     my $tftp_repository = libkadeploy2::conflib::get_conf("tftp_repository");
     my $pxe_rep = $tftp_repository . libkadeploy2::conflib::get_conf("pxe_rep");
     my $tftp_relative_path = libkadeploy2::conflib::get_conf("tftp_relative_path");
     
-    my $images_repository_intel = $tftp_repository_intel . $tftp_relative_path;
     my $images_repository = $tftp_repository . $tftp_relative_path;
     
     # debug print
-    # print "1. network\n2. $tftp_repository_intel\n3. $pxe_rep_intel\n4. $tftp_repository\n5. $pxe_rep\n6. $tftp_relative_path\n7. $images_repository_intel\n8. $images_repository\n";
+    # print "1. network\n2. $tftp_repository\n3. $pxe_rep\n4. $tftp_relative_path\n5. $images_repository\n";
     
     my @hexnetworks;
-    #my @ranges1;
-    #my @ranges2;
     
-
     my $template_default_content="PROMPT $PROMPT\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
     
     # generate files in pxe directories and overwrite old ones
@@ -408,7 +402,6 @@ sub setup_pxe($$$){
 	my $initrd = $initrds[$i];
 	
 	my $append = "initrd=$tftp_relative_path/$initrd";
-	my $append_intel = $append; 
 	
 	foreach my $ip (@to_reboot){
 
@@ -425,12 +418,6 @@ sub setup_pxe($$$){
 	    open(DEST, "> $destination")
 		or die "Couldn't open $destination for writing: $!\n";
 	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
-	    close(DEST);
-	    
-	    my $destination_intel=$pxe_rep_intel.$hex_ip;
-	    open(DEST, "> $destination_intel")
-		or die "Couldn't open $destination_intel for writing: $!\n";
-	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append_intel";
 	    close(DEST);
 	}
     }
