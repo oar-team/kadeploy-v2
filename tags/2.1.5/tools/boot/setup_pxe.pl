@@ -15,17 +15,14 @@ if (!@ARGV){
 
 ## gets appropriate parameters from configuration file
 $network = libkadeploy2::conflib::get_conf("network");
-$tftp_repository_intel = libkadeploy2::conflib::get_conf("tftp_repository_intel");
-$pxe_rep_intel = $tftp_repository_intel . libkadeploy2::conflib::get_conf("pxe_rep_intel");
 $tftp_repository = libkadeploy2::conflib::get_conf("tftp_repository");
 $pxe_rep = $tftp_repository . libkadeploy2::conflib::get_conf("pxe_rep");
 $tftp_relative_path = libkadeploy2::conflib::get_conf("tftp_relative_path");
 
-$images_repository_intel = $tftp_repository_intel . $tftp_relative_path;
 $images_repository = $tftp_repository . $tftp_relative_path;
 
 # debug print
-#print "1. $network ; 2. $tftp_repository_intel ; 3. $pxe_rep_intel ; 4. $tftp_repository ; 5. $pxe_rep ; 6. $tftp_relative_path ; 7. $images_repository_intel ; 8. $images_repository\n";
+#print "1. $network ; 2. $tftp_repository ; 3. $pxe_rep ; 4. $tftp_relative_path ; 5. $images_repository\n";
 
 ###
 # Let's GO!
@@ -181,18 +178,11 @@ for ($i=0; $i<scalar(@kernels); $i++) {
     $initrd = $initrds[$i];
 
     $append = "initrd=$tftp_relative_path/$initrd";
-    $append_intel = $append; 
     for($j=$ranges1[$i]; $j<=$ranges2[$i]; $j++) {
 	$destination=$pxe_rep.$hexnetworks[$i].hexalize($j);
 	open(DEST, "> $destination")
 	    or die "Couldn't open $destination for writing: $!\n";
 	print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
-	close(DEST);
-
-	$destination_intel=$pxe_rep_intel.$hexnetworks[$i].hexalize($j);
-	open(DEST, "> $destination_intel")
-	    or die "Couldn't open $destination_intel for writing: $!\n";
-	print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append_intel";
 	close(DEST);
     }
 }
