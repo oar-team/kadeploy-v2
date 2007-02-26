@@ -16,7 +16,7 @@ KADEPLOYCONFDIR=/etc/kadeploy
 
 tftp_repository=/var/lib/tftpboot/PXEClient/
 pxe_rep=pxelinux.cfg/
-tftp_relative_path=images_grub/
+tftp_relative_path=images_grub
 ARCH=x86_64
 
 DEPLOYUSER=deploy
