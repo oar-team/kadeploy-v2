@@ -3,7 +3,6 @@
 #
 #hex patch
 #
-CONNECT SUBSTmydeploydbSUBST;
 update environment set fdisktype = 130 where filesystem='swap';
 update environment set fdisktype = 131 where filesystem='ext2';
 update environment set fdisktype = 131 where filesystem='ext3';
