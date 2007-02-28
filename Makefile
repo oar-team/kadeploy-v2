@@ -46,9 +46,9 @@ links_install:
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karemote
 
 #Admin_Tools
-	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kaadduser
-	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kadeluser
-	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kanodes
+	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kaadduser
+	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kadeluser
+	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kanodes
 
 #Kadeploy installation in main directory
 kadeploy_install:
