@@ -105,5 +105,5 @@ if (-r $mysqlFile){
 }else{
        	die("[ERROR] Database installation : can't open $mysqlFile \n");
 }
-dbh->disconnect();
+$dbh->disconnect();
 print "done.\n";
