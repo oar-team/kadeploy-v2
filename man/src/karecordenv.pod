@@ -104,6 +104,7 @@ Registers a debian image whose features are explicitly given in parameter
  size = 100
  initrdpath = /boot/initrd.img-2.6.8-1-686-smp
  kernelpath = /boot/vmlinuz-2.6.8-1-686-smp
+ kernelparam =
  EOF	
 
  $karecordenv -fe /tmp/myenv
