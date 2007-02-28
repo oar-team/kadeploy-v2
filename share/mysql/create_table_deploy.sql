@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS SUBSTmydeploydbSUBST;
-CONNECT SUBSTmydeploydbSUBST;
-
 # --------------------------------------------------------
 #
 # Table structure for table `deployed`
