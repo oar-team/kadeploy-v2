@@ -35,7 +35,8 @@ checks_user_and_group_deploy:
 
 
 #Links Installation in /usr/local/bin
-links_install:
+#Users' tools
+links_install_users:
 #	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaaddkeys
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaconsole
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaenvironments
@@ -44,6 +45,10 @@ links_install:
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kareboot
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karemote
 
+links_install_admin:
+	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kaadduser
+	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kaadeluser
+	ln -s $(SBINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kanodes
 #Kadeploy installation in main directory
 kadeploy_install:
 
@@ -136,6 +141,10 @@ remove_installation:
 	rm -f $(PREFIX)/bin/kareboot
 	rm -f $(PREFIX)/bin/karemote
 
+	rm -f $(PREFIX)/sbin/kaadduser
+	rm -f $(PREFIX)/sbin/kadeluser
+	rm -f $(PREFIX)/sbin/kanodes	
+
 	rm -f $(MANDIR)/kaadduser.1
 	rm -f $(MANDIR)/kaaddkeys.1
 	rm -f $(MANDIR)/kaconsole.1
@@ -165,7 +174,7 @@ db_uninstall:
 
 
 #Main part of the installation
-install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
+install: root_check checks_user_and_group_deploy kadeploy_install links_install_users links_install_admin install_man sudo_install
 
 #Installation cleaning
 uninstall: root_check remove_installation
