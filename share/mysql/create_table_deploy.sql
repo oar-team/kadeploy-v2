@@ -117,3 +117,20 @@ CREATE TABLE IF NOT EXISTS rights (
    `part` VARCHAR(5) NOT NULL default '',
   PRIMARY KEY (user,node,part)
 );
+
+#
+# hex patch previously in patch-kadeploy-2.1.sql
+#
+
+update environment set fdisktype = 130 where filesystem='swap';
+update environment set fdisktype = 131 where filesystem='ext2';
+update environment set fdisktype = 131 where filesystem='ext3';
+alter table environment add `optsupport` int(10) unsigned NOT NULL default '0';
+
+#
+#Environment linked to a user previously in patch-kadeploy-2.1.1.sql
+#
+
+alter table `environment` add user varchar(255) default 'nobody';
+update environment set user='deploy' where name='grid5000';
+update environment set user='deploy' where name='debian4all';
