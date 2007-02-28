@@ -75,15 +75,15 @@ if (! $query->fetchrow_hashref()){
 
         my $rightError = 0;
 
-        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Create_tmp_table_priv,Lock_tables_priv) VALUES ('localhost','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y','Y')") or $rightError = 1;
+        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Create_tmp_table_priv,Lock_tables_priv,Alter_priv) VALUES ('localhost','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y','Y','Y')") or $rightError = 1;
 
         if ($rightError == 1){
                 print("--- not enough rights; it is not a bug, it is a feature ---\n");
                 # the properties  Create_tmp_table_priv and Lock_tables_priv dose not exist
-                	$dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv) VALUES ('localhost','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y')") or die $dbh->errstr;
-                        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv) VALUES ('%','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y')") or die $dbh->errstr;
+                	$dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Alter_priv) VALUES ('localhost','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y')") or die $dbh->errstr;
+                        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Alter_priv) VALUES ('%','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y')") or die $dbh->errstr;
        	}else{
-        	        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Create_tmp_table_priv,Lock_tables_priv) VALUES ('%','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y','Y')") or $rightError = 1;
+        	        $dbh->do("INSERT INTO db (Host,Db,User,Select_priv,Insert_priv,Update_priv,Delete_priv, Create_priv,Drop_priv,Create_tmp_table_priv,Lock_tables_priv, Alter_priv) VALUES ('%','".$dbName."','".$dbUserName."','Y','Y','Y','Y','Y','Y','Y','Y','Y')") or $rightError = 1;
         }
        
 	 $query = $dbh->prepare("FLUSH PRIVILEGES") or die $dbh->errstr;
