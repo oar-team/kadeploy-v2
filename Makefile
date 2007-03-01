@@ -94,9 +94,10 @@ kadeploy_install:
 
 #Database scripts installation
 db_install:
-	install -m 755 tools/cookbook/install_scripts/kadeploy_db_init.pl $(KADEPLOYHOMEDIR)
-	install -m 644 share/mysql/create_table_deploy.sql $(KADEPLOYHOMEDIR)
-	install -m 644 tools/cookbook/install_scripts/kadeploy_conflib.pm $(KADEPLOYHOMEDIR)
+	mkdir -p $(KADEPLOYHOMEDIR)/
+	install -m 755 tools/cookbook/install_scripts/kadeploy_db_init.pl $(KADEPLOYHOMEDIR)/
+	install -m 644 share/mysql/create_table_deploy.sql $(KADEPLOYHOMEDIR)/
+	install -m 644 tools/cookbook/install_scripts/kadeploy_conflib.pm $(KADEPLOYHOMEDIR)/
 
 
 #Sudo installation part. Modification of /etc/sudoers
@@ -108,7 +109,7 @@ sudo_install:
 
 #Install and creation of mans
 install_man:
-	make -C man/src/
+#	make -C man/src/
 	mkdir -p $(MANDIR)/man1
 	install -m 755 man/man1/* $(MANDIR)/man1/
 
@@ -161,8 +162,6 @@ remove_installation:
 	rm -rf $(KADEPLOYCONFDIR)/
 
 	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
-
-	make clean -C man/src
 
 	userdel -r $(DEPLOYUSER)
 #	groupdel $(DEPLOYGROUP)
