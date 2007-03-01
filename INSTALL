@@ -52,10 +52,10 @@ In the current directory do :
 # make install
 
 then you have to install tftp part. You can use variable by defaut:
-#make tftp_install
+# make tftp_install
 
-or specifies tftp install variables (pxe_rep et image_grub is relative to tftp_repository):
-#make ARCH=x86 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ image_grub=images_grub/ tftp_install
+or specifies tftp install variables (pxe_rep and image_grub are relative to tftp_repository):
+# make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install
 
 Now you have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
 
@@ -159,7 +159,7 @@ Removes all following links and programs:
 
  mcat_ssh.pl  
 
- sentinelle.pl (à voir)
+ sentinelle.pl (according to local needs)
 
  DKsentinelle-x86_64
 
@@ -177,7 +177,7 @@ deploy_cmd.conf
 clusternodes.conf
 clusterpartition.conf
 
-And don't touch the deploy database
+And don't touch the deploy database (no change to database structure)
 
 ############
 Client Part
