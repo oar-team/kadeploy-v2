@@ -1,71 +1,44 @@
-INSTALLING THE KA DEPLOYMENT SYSTEM
-
+Installing Kadeploy 2.1.5
+===================================
 
 What do you need ?
-	- a cluster
-	- to be admin of this cluster
-	- to get the install package of Ka Deployment System
+        - a cluster
+        - to be admin of this cluster
+        - to get the install package of Ka Deployment System
 
-
-REQUIREMENTS
-============
+---------------
+1-Requirements
+---------------
 
 The system is designed to run on a server enabling deployment on compute nodes.
 
-
-SYSTEM REQUIREMENTS ON THE SERVER
-=================================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.1-System requirements on the server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Required system tools:
-	- Nmap to check if the target nodes are there
-	- copy DKsentinelle binary (located in kadeploy2/cookbook/bin) to /usr/local/bin on the server !!!! It is mandatory !!!! see if it works, if not compile taktuk from : http://www-id.imag.fr/Laboratoire/Membres/Martin_Cyrille/taktuk/downloads/taktuk2_0.5-7.tar.gz
-
+        - Nmap to check if the target nodes are there
+   
 Required user's priviledges:
-	- user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
+        - user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
 
-
-CONFIGURATION OF THE CLUSTER
-============================
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.2-Configuration of the cluster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 See the HOWTO in Documentation
 
+---------------
+2-Installation
+---------------
 
+~~~~~~~~~~~~~~~~
+2.1-From scratch
+~~~~~~~~~~~~~~~~
 
-CONFIGURATION FILES
-===================
-
-You need two configuration files that must be put in the /etc/kadeploy/ folder.
-Sample of this file are in /share/cookbook/conf/.
-
-1. deploy.conf
---------------
-This file presents all the variables the user must defined in order to be able to use the deployment system. It is divided into several sections. A very short description is available for each variable and sometimes exemple values are given in commentary.
-
-2. deploy_cmd.conf
-------------------
-This file should contain the appropriate reboot and remote console opening commands. The kareboot and kaconsole tools will get the command to execute according to node given in parameter from it. This file is very temporary and may change (even disappear ?) in next development steps.
-
-Also, the user can find exemples of both files in the tools/cookbook folder with a brief description of the syntax to use.
-
-
-TFTP CONFIGURATION
-------------------
-
-#kasetup -createtftp
-
-launch your tftp server, test it !!
-
-
-INSTALLATION
-============
-
-
-FROM SCRATCH
-------------
-
-#############
-#CLIENT PART#
-#############
+###############
+Client Part
+###############
 
 Install mysql (configure it)
 Install dhcpd (configure it)
@@ -75,7 +48,7 @@ Install dns (optional)
 
 For all commands you have to be root
 
-In the current directory do : 
+In the current directory do :
 # make install
 
 then you have to install tftp part. You can use variable by defaut:
@@ -86,9 +59,9 @@ or specifies tftp install variables (pxe_rep et image_grub is relative to tftp_r
 
 Now you have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
 
-#############
-#  DB PART  #
-#############
+#######
+DB part  
+#######
 
 In the current directory do:
 # make install
@@ -102,16 +75,125 @@ and follow instructions
 It's done !!
 
 
-FROM KADEPLOY 2.1.2
--------------------
+~~~~~~~~~~~~~~~~~~~~~~~
+2.2-From Kadeploy 2.1.2
+~~~~~~~~~~~~~~~~~~~~~~~
 
-#############
-#CLIENT PART#
-#############
+#######################
+Uninstall 2.1.2 version
+#######################
+
+Starting to localize your kadeploy home directory and remove it (useally it is /usr/local/kadeploy or /opt/kadeploy or /opt/kadeploy2)
+
+Edit your /etc/sudoers file to remove old references to kadeploy rights
+
+Removes all manpages:
+
+ /usr/share/man/man1/clusternodes.conf.1
+
+ /usr/share/man/man1/clusterpartition.conf.1
+
+ /usr/share/man/man1/deploy_cmd.conf.1
+
+ /usr/share/man/man1/deploy.conf.1
+
+ /usr/share/man/man1/kaadduser.1
+
+ /usr/share/man/man1/kaarchive.1
+
+ /usr/share/man/man1/kaconsole.1
+
+ /usr/share/man/man1/kacreateenv.1
+
+ /usr/share/man/man1/kadatabase.1
+
+ /usr/share/man/man1/kadeluser.1
+
+ /usr/share/man/man1/kadeploy.1
+
+ /usr/share/man/man1/kaenvironments.1
+
+ /usr/share/man/man1/kanodes.1
+
+ /usr/share/man/man1/kareboot.1
+
+ /usr/share/man/man1/karecordenv.1
+
+ /usr/share/man/man1/kasetup.1
+
+Removes all following links and programs:
+
+ kaconsole
+
+ kadeploy
+
+ kaenvironments
+
+ kareboot
+
+ karecordenv
+
+ mcatseg
+
+ migratenv
+
+ kaadduser
+
+ kadatabase
+
+ kadeluser
+
+ kanodes
+
+ kasetup
+
+ sentinelle
+
+ dksentinelle
+
+ mcat
+
+ mput
+
+ DKsentinelle-i686 
+
+ mcat_ssh.pl  
+
+ sentinelle.pl (à voir)
+
+ DKsentinelle-x86_64
+
+ kasudowrapper.sh  
+
+ mcatseg     
+            
+ mcat_rsh.pl 
 
 
+Finally save all your configuration files located in /etc/kadeploy/:
 
-FURTHER INFORMATION
-===================
+deploy.conf
+deploy_cmd.conf
+clusternodes.conf
+clusterpartition.conf
+
+And don't touch the deploy database
+
+############
+Client Part
+############
+Now you can do : make install
+
+and edit the configuration files located in /etc/kadeploy helping by mans pages and old saved files
+
+#########
+Db part
+#########
+Nothing to do
+
+
+####################
+Further Information
+####################
+
 For further information, please contact ka-tools@imag.fr
-
