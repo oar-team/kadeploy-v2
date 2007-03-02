@@ -90,7 +90,7 @@ and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
 
 For Remote Host DataBase:
 	connect to host where database is installed and connect to your database: mysql -u root -p
-	And type this command: delete from user where user=root && host=%
+	And type this command: delete from user where user='root' && host='KADEPLOY_HOST_ADDRESS'
 	And exit from mysql.
 
 and follow instructions
