@@ -67,8 +67,31 @@ In the current directory do:
 # make install
 # make db_install
 
+Edit /etc/kadeploy/cmd.conf to specify:  deploy_db_host 
+If you're database is on the same host that Kadeploy: deploy_db_host=localhost
+If not, specify th remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
+
+For Remote Host DataBase: 
+	You have to be able to make this command line without error:  
+		mysql -u root -h REMOTE_HOST_ADDRESS -p --database=mysql 
+
+	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line. 
+	So connect to host where database is installed and connect to your database: 
+		mysql -u root -p
+
+	And type this command:
+		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
+	
+	Reload or restart Mysql.
+	And exit from mysql. Reconnect to host where Kadeploy is installed
+
 and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
 #./kadeploy_db_init.pl
+
+For Remote Host DataBase:
+	connect to host where database is installed and connect to your database: mysql -u root -p
+	And type this command: delete from user where user=root && host=%
+	And exit from mysql.
 
 and follow instructions
 
