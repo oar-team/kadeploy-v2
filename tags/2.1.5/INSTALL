@@ -95,6 +95,8 @@ For Remote Host DataBase:
 
 and follow instructions
 
+Note: By default you can connect to deploy database from anywhere. It is not necessary, but you can reduce access to deploy database to your head node. It is more secure.
+
 It's done !!
 
 
