@@ -48,6 +48,11 @@ Install dns (optional)
 
 For all commands you have to be root
 
+Optionnaly before starting:
+	The first thing that the MAKEFILE do is create a user deploy in a group deploy with /home/deploy for homedir. 
+	If you want to specifie a custom homedir, you have to do that yourself before make install. i
+	The main thing is that you have a deploy user in a deploy group, home directory is not important
+
 In the current directory do :
 # make install
 

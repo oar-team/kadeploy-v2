@@ -31,8 +31,8 @@ root_check:
 #Add the "proxy" user/group to /etc/passwd if needed.
 checks_user_and_group_deploy: 
 
-	@grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
-
+#	@grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
+	@grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy 
 
 #Links Installation in /usr/local/bin
 links_install:
