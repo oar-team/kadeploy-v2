@@ -19,7 +19,7 @@ print SUDOERSTMP grep (!/$kadeploy_tag/, <SUDOERS>);
 print SUDOERSTMP <<TOTO;
 ##BEGIN $kadeploy_tag 
 Defaults>deploy          env_reset,env_keep = "PWD PERL5LIB DISPLAY" $kadeploy_tag 
-Cmnd_Alias DEPLOYCMDUSER = $bindir/kaconsole, $bindir/kadeploy, $bindir/kaenvironments, $bindir/kareboot, $bindir/karecordenv, $bindir/migratenv, $bindir/karemote $kadeploy_tag 
+Cmnd_Alias DEPLOYCMDUSER = $bindir/kaconsole, $bindir/kadeploy, $bindir/kaenvironments, $bindir/kareboot, $bindir/karecordenv, $bindir/karemote $kadeploy_tag 
 ALL ALL=(deploy) NOPASSWD: DEPLOYCMDUSER $kadeploy_tag 
 ##END$kadeploy_tag 
 TOTO
