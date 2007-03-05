@@ -67,8 +67,8 @@ $query = $dbh->prepare("SELECT * FROM user WHERE User=\"".$dbUserName."\" and (H
 $query->execute();
 
 if (! $query->fetchrow_hashref()){
-#        $query = $dbh->prepare("INSERT INTO user (Host,User,Password) VALUES('localhost','".$dbUserName."',PASSWORD('".$dbUserPassword."'))") or die $dbh->errstr;
-#        $query->execute();
+        $query = $dbh->prepare("INSERT INTO user (Host,User,Password) VALUES('localhost','".$dbUserName."',PASSWORD('".$dbUserPassword."'))") or die $dbh->errstr;
+        $query->execute();
 
         $query = $dbh->prepare("INSERT INTO user (Host,User,Password) VALUES('%','".$dbUserName."',PASSWORD('".$dbUserPassword."'))") or die $dbh->errstr;
         $query->execute();
