@@ -49,9 +49,9 @@ Install dns (optional)
 For all commands you have to be root
 
 Optionnaly before starting:
-	The first thing that the MAKEFILE do is create a user deploy in a group deploy with /home/deploy for homedir. 
-	If you want to specifie a custom homedir, you have to do that yourself before make install. i
-	The main thing is that you have a deploy user in a deploy group, home directory is not important
+	The first thing that the Makefile does is to create a user 'deploy' in a group 'deploy' with '/home/deploy' for homedir. 
+	If you want to specify a custom homedir, you have to do that by yourself before make install.
+	The main thing is that you have a 'deploy' user in a 'deploy' group, home directory is not important for kadeploy (but can be for you).
 
 In the current directory do :
 # make install
@@ -68,13 +68,14 @@ Now you have finished to install kadeploy client and you can edit kadeploy confi
 DB part  
 #######
 
-Before doing DB instal, client part has to be finished.
- In the current directory do:
-# make db_install
+Before doing DB install, client part has to be finished.
 
-Edit /etc/kadeploy/cmd.conf to specify:  deploy_db_host 
-If you're database is on the same host that Kadeploy: deploy_db_host=localhost
-If not, specify th remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
+Edit /etc/kadeploy/deploy.conf to specify:  deploy_db_host 
+If your database is on the same host as Kadeploy: deploy_db_host=localhost
+If not, specify the remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
+
+In the current directory do:
+# make db_install
 
 For Remote Host DataBase: 
 	You have to be able to make this command line without error:  
