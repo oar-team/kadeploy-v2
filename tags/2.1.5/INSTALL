@@ -63,8 +63,8 @@ Now you have finished to install kadeploy client and you can edit kadeploy confi
 DB part  
 #######
 
-In the current directory do:
-# make install
+Before doing DB instal, client part has to be finished.
+ In the current directory do:
 # make db_install
 
 Edit /etc/kadeploy/cmd.conf to specify:  deploy_db_host 
@@ -81,8 +81,7 @@ For Remote Host DataBase:
 
 	And type this command:
 		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
-	
-	Reload or restart Mysql.
+		FLUSH  PRIVILEGES;
 	And exit from mysql. Reconnect to host where Kadeploy is installed
 
 and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
