@@ -1838,10 +1838,10 @@ sub get_time($$){
                           FROM deployment WHERE deployment.id = $id");
     $sth->execute();
     my $diff = $sth->fetchrow_hashref();
-    $diff = $diff->{'diff'};
+    my $res = $diff->{'diff'};
     $sth->finish();
 
-    return $diff;
+    return $res;
 }
 
 ### deployment time end ###
