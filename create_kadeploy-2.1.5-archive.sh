@@ -12,4 +12,7 @@ MAN="man/man1"
 
 #Making mans pages before
 make -C man/src/
+#Setting execution rights to installation scripts
+chmod 755 tools/cookbook/install_scripts/*
+#Create archive
 tar czf kadeploy-2.1.5.tgz $ROOT $FILES $TOOLS $MAN
