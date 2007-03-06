@@ -1834,7 +1834,7 @@ sub get_time($$){
     my $id = shift;
     my $sth;
 
-    $sth = $dbh->prepare("SELECT (TIME_TO_SEC(NOW()) - TIME_TO_SEC(enddate)) AS diff
+    $sth = $dbh->prepare("SELECT (TIME_TO_SEC(NOW()) - TIME_TO_SEC(deployment.enddate)) AS diff
                           FROM deployment WHERE deployment.id = $id");
     $sth->execute();
     my $diff = $sth->fetchrow_hashref();
