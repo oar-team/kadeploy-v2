@@ -18,8 +18,10 @@ The system is designed to run on a server enabling deployment on compute nodes.
 
 Required system tools:
         - Nmap to check if the target nodes are there
+	- rsh client, to initiate connections to the deploying nodes
+	- Screen for deployments initiated from a non tty shell (this requirement is due to a but in rsh used by kadeploy)
    
-Required user's priviledges:
+Required user's privileges:
         - user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,21 +83,21 @@ For Remote Host DataBase:
 	You have to be able to make this command line without error:  
 		mysql -u root -h REMOTE_HOST_ADDRESS -p --database=mysql 
 
-	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line. 
-	So connect to host where database is installed and connect to your database: 
-		mysql -u root -p
+	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
+
+	So connect to host where database is installed and connect to your database:
+	   	mysql -u root -p
 
 	And type this command:
 		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
 		FLUSH  PRIVILEGES;
-	And exit from mysql. Reconnect to host where Kadeploy is installed
 
-and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
-#./kadeploy_db_init.pl
+	And exit from mysql. Reconnect to host where Kadeploy is installed and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
+	    	#./kadeploy_db_init.pl
 
 For Remote Host DataBase:
 	connect to host where database is installed and connect to your database: mysql -u root -p
-	And type this command: delete from user where user='root' && host='KADEPLOY_HOST_ADDRESS'
+	And type this command:  DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
 	And exit from mysql.
 
 and follow instructions
@@ -221,9 +223,46 @@ Db part
 #########
 Nothing to do
 
+---------------------------------
+3-Configuring kadeploy before use
+---------------------------------
 
-####################
+This is pretty important if kadeploy was installed from scratch, because kadeploy relies on a database that is empty after installation, and many scripts should be provided by the cluster admin.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3.1-Fill configuration files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/etc/kadeploy/deploy.conf and /etc/kadeploy/deploy_cmd.conf
+Please refer to deploy.conf and deploy_cmd.conf man pages for details about variables signification.
+
+~~~~~~~~~~~~~~~~~~~~~
+3.2-Fill the database
+~~~~~~~~~~~~~~~~~~~~~
+
+#################
+nodes information
+#################
+
+kanodes is used to fill information about the nodes in the database: it uses 2 files /etc/kadeploy/clusternodes.conf and clusterpartition.conf.
+Please refer to man pages for information about those 2 files: man clusternodes.conf and man clusterpartition.conf.
+After filling those 2 files refer to kadnodes man page and launch kanodes -add to register nodes information in the database.
+
+###############
+user management
+###############
+
+Kadeploy includes a user management system, that allows to grant deployment rights on some partitions of some nodes.
+The commands for granting/revoking rights are kaadduser/kadeluser, please refer to their man pages.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3.3-Customize sample preinstall script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Preinstall is executed to prepare the node's disk before the deployment. It's role is to make sure the partitions defined in the database exist and than the common partitions (swap, tmp,...) are correctly formatted.
+
+-------------------
 Further Information
-####################
+-------------------
 
 For further information, please contact ka-tools@imag.fr
