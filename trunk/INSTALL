@@ -1,0 +1,268 @@
+Installing Kadeploy 2.1.5
+===================================
+
+What do you need ?
+        - a cluster
+        - to be admin of this cluster
+        - to get the install package of Ka Deployment System
+
+---------------
+1-Requirements
+---------------
+
+The system is designed to run on a server enabling deployment on compute nodes.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.1-System requirements on the server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Required system tools:
+        - Nmap to check if the target nodes are there
+	- rsh client, to initiate connections to the deploying nodes
+	- Screen for deployments initiated from a non tty shell (this requirement is due to a but in rsh used by kadeploy)
+   
+Required user's privileges:
+        - user should be allowed to run root commands (for the moment, stronger limitations will then follow), this is only required for changes in the tftp server directory.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.2-Configuration of the cluster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the HOWTO in Documentation
+
+---------------
+2-Installation
+---------------
+
+~~~~~~~~~~~~~~~~
+2.1-From scratch
+~~~~~~~~~~~~~~~~
+
+###############
+Client Part
+###############
+
+Install mysql (configure it)
+Install dhcpd (configure it)
+Install tftp  (configure it)
+Install sudo
+Install dns (optional)
+
+For all commands you have to be root
+
+Optionnaly before starting:
+	The first thing that the Makefile does is to create a user 'deploy' in a group 'deploy' with '/home/deploy' for homedir. 
+	If you want to specify a custom homedir, you have to do that by yourself before make install.
+	The main thing is that you have a 'deploy' user in a 'deploy' group, home directory is not important for kadeploy (but can be for you).
+
+In the current directory do :
+# make install
+
+then you have to install tftp part. You can use variable by defaut:
+# make tftp_install
+
+or specifies tftp install variables (pxe_rep and image_grub are relative to tftp_repository):
+# make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install
+
+Now you have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
+
+#######
+DB part  
+#######
+
+Before doing DB install, client part has to be finished.
+
+Edit /etc/kadeploy/deploy.conf to specify:  deploy_db_host 
+If your database is on the same host as Kadeploy: deploy_db_host=localhost
+If not, specify the remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
+
+In the current directory do:
+# make db_install
+
+For Remote Host DataBase: 
+	You have to be able to make this command line without error:  
+		mysql -u root -h REMOTE_HOST_ADDRESS -p --database=mysql 
+
+	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
+
+	So connect to host where database is installed and connect to your database:
+	   	mysql -u root -p
+
+	And type this command:
+		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
+		FLUSH  PRIVILEGES;
+
+	And exit from mysql. Reconnect to host where Kadeploy is installed and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
+	    	#./kadeploy_db_init.pl
+
+For Remote Host DataBase:
+	connect to host where database is installed and connect to your database: mysql -u root -p
+	And type this command:  DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
+	And exit from mysql.
+
+and follow instructions
+
+Note: By default you can connect to deploy database from anywhere. It is not necessary, but you can reduce access to deploy database to your head node. It is more secure.
+
+It's done !!
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+2.2-From Kadeploy 2.1.2
+~~~~~~~~~~~~~~~~~~~~~~~
+
+#######################
+Uninstall 2.1.2 version
+#######################
+
+Starting to localize your kadeploy home directory and remove it (useally it is /usr/local/kadeploy or /opt/kadeploy or /opt/kadeploy2)
+
+Edit your /etc/sudoers file to remove old references to kadeploy rights
+
+Removes all manpages:
+
+ /usr/share/man/man1/clusternodes.conf.1
+
+ /usr/share/man/man1/clusterpartition.conf.1
+
+ /usr/share/man/man1/deploy_cmd.conf.1
+
+ /usr/share/man/man1/deploy.conf.1
+
+ /usr/share/man/man1/kaadduser.1
+
+ /usr/share/man/man1/kaarchive.1
+
+ /usr/share/man/man1/kaconsole.1
+
+ /usr/share/man/man1/kacreateenv.1
+
+ /usr/share/man/man1/kadatabase.1
+
+ /usr/share/man/man1/kadeluser.1
+
+ /usr/share/man/man1/kadeploy.1
+
+ /usr/share/man/man1/kaenvironments.1
+
+ /usr/share/man/man1/kanodes.1
+
+ /usr/share/man/man1/kareboot.1
+
+ /usr/share/man/man1/karecordenv.1
+
+ /usr/share/man/man1/kasetup.1
+
+Removes all following links and programs:
+
+ kaconsole
+
+ kadeploy
+
+ kaenvironments
+
+ kareboot
+
+ karecordenv
+
+ mcatseg
+
+ migratenv
+
+ kaadduser
+
+ kadatabase
+
+ kadeluser
+
+ kanodes
+
+ kasetup
+
+ sentinelle
+
+ dksentinelle
+
+ mcat
+
+ mput
+
+ DKsentinelle-i686 
+
+ mcat_ssh.pl  
+
+ sentinelle.pl (according to local needs)
+
+ DKsentinelle-x86_64
+
+ kasudowrapper.sh  
+
+ mcatseg     
+            
+ mcat_rsh.pl 
+
+
+Finally save all your configuration files located in /etc/kadeploy/:
+
+deploy.conf
+deploy_cmd.conf
+clusternodes.conf
+clusterpartition.conf
+
+And don't touch the deploy database (no change to database structure)
+
+############
+Client Part
+############
+Now you can do : make install
+
+and edit the configuration files located in /etc/kadeploy helping by mans pages and old saved files
+
+#########
+Db part
+#########
+Nothing to do
+
+---------------------------------
+3-Configuring kadeploy before use
+---------------------------------
+
+This is pretty important if kadeploy was installed from scratch, because kadeploy relies on a database that is empty after installation, and many scripts should be provided by the cluster admin.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3.1-Fill configuration files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/etc/kadeploy/deploy.conf and /etc/kadeploy/deploy_cmd.conf
+Please refer to deploy.conf and deploy_cmd.conf man pages for details about variables signification.
+
+~~~~~~~~~~~~~~~~~~~~~
+3.2-Fill the database
+~~~~~~~~~~~~~~~~~~~~~
+
+#################
+nodes information
+#################
+
+kanodes is used to fill information about the nodes in the database: it uses 2 files /etc/kadeploy/clusternodes.conf and clusterpartition.conf.
+Please refer to man pages for information about those 2 files: man clusternodes.conf and man clusterpartition.conf.
+After filling those 2 files refer to kadnodes man page and launch kanodes -add to register nodes information in the database.
+
+###############
+user management
+###############
+
+Kadeploy includes a user management system, that allows to grant deployment rights on some partitions of some nodes.
+The commands for granting/revoking rights are kaadduser/kadeluser, please refer to their man pages.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3.3-Customize sample preinstall script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Preinstall is executed to prepare the node's disk before the deployment. It's role is to make sure the partitions defined in the database exist and than the common partitions (swap, tmp,...) are correctly formatted.
+
+-------------------
+Further Information
+-------------------
+
+For further information, please contact ka-tools@imag.fr
