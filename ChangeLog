@@ -1,0 +1,50 @@
+2.1.5:
+------
+* deployment of more than 120 nodes works now: no more restrictions on the
+number of nodes (tested on GriD eXplorer on a full 330 nodes deployment
+several times), more reliable deployments
+* taktuk is not used anymore => every parralel command is issued internally
+using the same launcher for all apps (kadeploy, kareboot...) corrects many
+bugs (blocked deployments, all or nothing deployments,...)
+* support for multiple architecture environments on the same cluster: you can
+deploy x86_64 nodes or x86 nodes from a x86/x86_64 server for example
+* verbose mode more verbose, and standard is far less verbose than before
+* new installation method, man pages are now pods
+* addons: karemote and kaaddkeys kaaddkeys is a model for developing addons:
+partly user mode (to read user's files), partly run as deploy user
+* less dependencies for installation, less configuration variables
+
+2.1.2:
+------
+* kaenvironments (environment name by user)
+* kaenvironments (by node)
+* new partitioning format (/etc/kadeploy/clusterpartition.conf &&
+/etc/kadeploy/clustenodes.conf)
+* new parallel command launcher (internal)
+* kasetup to help installing and configuring kadeploy
+* fdisk scripting (kasetup)
+* katftp remove (replaced by kasetup)
+* kadelnode kaadnode remove (replaced by kasetup)
+* kasudowrapper security enancement
+* optsupport desactived
+
+2.1.1:
+-------
+* sudowrapper
+* kaenvironment and karecordenv improved
+* katftp ( fast installation )
+* kadatabase ( fast installation )
+* optimisation support
+* Added Changelog files
+* Added kernel and initrd for 64 bit opteron
+	* Sata support
+	
+2.1:
+----
+* autoconf
+* dd deploy method
+
+
+2:
+--
+* initial release.
