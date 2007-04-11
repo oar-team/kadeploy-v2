@@ -35,6 +35,7 @@ use libkadeploy2::deploy_iolib;
 ## prototypes
 sub check_conf;
 sub check_cmd;
+sub check_nodes_conf;
 sub check_cmd_exist;
 sub check_db_access;
 sub get_conf($);
@@ -49,18 +50,25 @@ my %params;
 ## regex pour une ligne valide du fichier de conf.
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
-if(!(check_conf() == 1)){
-    print "ERROR : configuration file loading failed\n";
-    exit 0;
-}
+my $default_deployconf = "/etc/kadeploy/deploy.conf";
+my $deployconf = "";
+
+#if(!(check_conf() == 1)){
+#    print "ERROR : configuration file loading failed\n";
+#    exit 0;
+#}
 
 ## check_conf
 ## checks the configuration file
 ## parameters : /
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_conf {
-    my $deployconf="/etc/kadeploy/deploy.conf";
     my $deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
+
+    if ($deployconf == "") {
+	print "ERROR: kadeploy configuration file not defined\n";
+	return 0;
+    }
 
     my %critic = (
 		  #######                   legende                    ########
@@ -225,9 +233,48 @@ sub check_cmd{
 	}
     }
     close(DEPLOYCMD);
-    
+
     return %res;
 }
+
+
+sub check_nodes_conf {
+    my $nodes_list_ref = shift;
+    my @nodes_list = @{$nodes_list_ref};
+    my $main_conf_file;
+
+    my %res = check_cmd();
+    if (!$res) { return 0; }
+
+    my $loop_conf_file; 
+    # retrieve main configuration file name
+    foreach my $node (@nodes_list) {
+        if (!exists($res{$node}{"configuration"})) {
+                $loop_conf_file = $default_deployconf;
+        } else {
+                $loop_conf_file = $res{$node}{"configuration"};
+        }
+        if (($main_conf_file != "") && ($loop_conf_file != $main_conf_file )) {
+                print "ERROR: all the node are not from the same cluster, please check again the specified nodes\n";
+                return 0;
+        }
+        $main_conf_file = $loop_conf_file;
+    }
+
+    # assign global module var
+    $deployconf = $main_conf_file;
+
+    # load the right configuration file
+    if(!(check_conf() == 1)){
+    	print "ERROR : configuration file loading failed\n";
+    	exit 0;
+    }
+
+    return 1;
+}
+
+
+
 
 ## check_cmd_exist
 ## checks if the command configuration file exists
