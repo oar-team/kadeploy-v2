@@ -87,18 +87,6 @@ my $verbose;
 my $rambinpath="/mnt/rambin/";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
-my $do_fdisk_on_deploy="no"; # default behaviour
-if (libkadeploy2::conflib::get_conf("do_fdisk_on_deploy")) {$do_fdisk_on_deploy = libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");}
-my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
-my $help;
-my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
-my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
-
-my $defaulttargetpartition="";
-if (libkadeploy2::conflib::get_conf("default_target_partition")) {
-	$defaulttargetpartition = libkadeploy2::conflib::get_conf("default_target_partition");
-}
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -112,8 +100,25 @@ else
 ## in order to correct the database before exiting
 $SIG{INT} = \&tsktsk;
 
-## checks the options
+## checks the options and load configuration file
 if(!check_options()) {     exit 0; }
+
+## continue with variables requiring configuration file
+my $do_fdisk_on_deploy="no"; # default behaviour
+if (libkadeploy2::conflib::get_conf("do_fdisk_on_deploy")) {$do_fdisk_on_deploy = libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");}
+my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
+my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
+my $help;
+my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
+my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
+
+my $defaulttargetpartition="";
+if (libkadeploy2::conflib::get_conf("default_target_partition")) {
+        $defaulttargetpartition = libkadeploy2::conflib::get_conf("default_target_partition");
+}
+
+
+
 
 ## Available variables are :
 ## - $env
@@ -727,12 +732,6 @@ sub check_options(){
 	exit 0;
     }
     
-    ## gets the database login information needed
-    if(!(libkadeploy2::conflib::check_db_access == 1)){
-	print "ERROR : database access failed\n";
-	exit 0;
-    }
-    
     ## gets the options
     GetOptions('e=s'                 => \$env,
 	       'environment=s'       => \$env,
@@ -754,30 +753,35 @@ sub check_options(){
 	       );
 
 
+    ## first read command options    
     if ($help) { usages(); exit(0); }
-    
-    if ($do_fdisk_on_deploy)
-    {
-	if ($do_fdisk_on_deploy eq "no" && 
-	    $partitionfile)
-	{
-	    print "ERROR : you are not allowed to repartition your harddrive.\n";
-	    exit 1;
-	}
 
-	if ($do_fdisk_on_deploy eq "yes")
-	{	
-	    if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
-	    if(! -e $partitionfile)
-	    {
-		print "ERROR : partition file $partitionfile not found.\n";
-		exit 1;
-	    }	   
-	}
+    ## separates device and partition number from $device
+    $dev = substr($device, 0, 3);
+    my @nb = split(/$dev/, $device);
+    $part = $nb[1];
+
+    if ($node_file){
+        if(!(-s $node_file)){
+            print "ERROR : specified node file does not exist or is empty\n";
+            exit 1;
+        }
+        ## goes through the file and get the hostnames
+        my $line;
+        open(NODEFILE,$node_file);
+        while ($line = <NODEFILE>)
+        {
+            if ($line =~ /([a-zA-Z0-9\.\-]+)/) { $line = $1; }
+            chomp($line);
+            push(@host_list, $line);
+        }
     }
 
-    #FIX partitionfile to default
-    if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
+    # load configuration files
+    if (!libkadeploy2::conflib::check_nodes_conf(\@host_list)) {
+	print "ERROR : problem occured loading configuration file\n";
+	exit 1;
+    }
 
     if (!$user) { $user=$username;  }
 
@@ -810,29 +814,38 @@ sub check_options(){
         print"   2     2nd optimized deployment with no 1st, no 2nd reboot\n";
 	exit 1;
     }
-
     
-    
-    ## separates device and partition number from $device
-    $dev = substr($device, 0, 3);
-    my @nb = split(/$dev/, $device);
-    $part = $nb[1];
+    ## perform additional checks, should go elsewhere
 
-    if ($node_file){
-	if(!(-s $node_file)){
-	    print "ERROR : specified node file does not exist or is empty\n";
-	    exit 1;
-	}
-	## goes through the file and get the hostnames
-	my $line;
-	open(NODEFILE,$node_file);
-	while ($line = <NODEFILE>)
-	{
-	    if ($line =~ /([a-zA-Z0-9\.\-]+)/) { $line = $1; }
-	    chomp($line);
-	    push(@host_list, $line);
-	}
+    ## gets the database login information needed
+    if(!(libkadeploy2::conflib::check_db_access == 1)){
+        print "ERROR : database access failed\n";
+        exit 0;
     }
+
+    if ($do_fdisk_on_deploy)
+    {
+        if ($do_fdisk_on_deploy eq "no" &&
+            $partitionfile)
+        {
+            print "ERROR : you are not allowed to repartition your harddrive.\n";
+            exit 1;
+        }
+
+        if ($do_fdisk_on_deploy eq "yes")
+        {
+            if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
+            if(! -e $partitionfile)
+            {
+                print "ERROR : partition file $partitionfile not found.\n";
+                exit 1;
+            }
+        }
+    }
+
+    #FIX partitionfile to default
+    if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
+
     return 1;
 }
 
