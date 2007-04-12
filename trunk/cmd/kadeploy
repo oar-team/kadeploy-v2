@@ -104,11 +104,6 @@ $SIG{INT} = \&tsktsk;
 ## checks the options and load configuration file
 if(!check_options()) {     exit 0; }
 
-$configuration->dump_conf();
-exit(0);
-
-
-
 
 ## continue with variables requiring configuration file
 my $do_fdisk_on_deploy="no"; # default behaviour
@@ -790,9 +785,7 @@ sub check_options(){
     }
     
     # load configuration files
-    print "toto\n";
-    $configuration->check_nodes_conf(\@host_list);
-    if (!$configuration->check_conf()) {
+    if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
 	print "ERROR : problem occured loading configuration file\n";
 	exit 1;
     }
