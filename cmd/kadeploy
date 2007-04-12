@@ -39,6 +39,7 @@ my $environment;            # environment identifier
 
 my $username;               # real user
 
+my $deployment_configuration_file; # configuration file to use for all the deployment
 my $envid=0;		    # environment id
 my @db_checked_hosts = ();  # nodes existing in database
 my $dev;                    # device e.g. hda
@@ -116,7 +117,6 @@ my $defaulttargetpartition="";
 if (libkadeploy2::conflib::get_conf("default_target_partition")) {
         $defaulttargetpartition = libkadeploy2::conflib::get_conf("default_target_partition");
 }
-
 
 
 
@@ -761,6 +761,12 @@ sub check_options(){
     my @nb = split(/$dev/, $device);
     $part = $nb[1];
 
+
+    if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
+        print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
+        exit 1;
+    }
+    
     if ($node_file){
         if(!(-s $node_file)){
             print "ERROR : specified node file does not exist or is empty\n";
@@ -776,9 +782,10 @@ sub check_options(){
             push(@host_list, $line);
         }
     }
-
+    
     # load configuration files
-    if (!libkadeploy2::conflib::check_nodes_conf(\@host_list)) {
+    $deployment_configuration_file = libkadeploy2::conflib::check_nodes_conf(\@host_list);
+    if (!libkadeploy2::conflib::check_conf($deployment_configuration_file)) {
 	print "ERROR : problem occured loading configuration file\n";
 	exit 1;
     }
@@ -788,10 +795,6 @@ sub check_options(){
     ## checks if needed options are defined
     if (!$env){
 	print "ERROR : environment name needed\n";
-	exit 1;
-    }
-    if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
-	print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
 	exit 1;
     }
     if (!$device){
