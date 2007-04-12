@@ -63,9 +63,15 @@ my $deployconf = "";
 ## parameters : /
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_conf {
+    my $conf_file = shift;
+
+    $deployconf = $conf_file;
+    if (!$conf_file) {
+	$deployconf = $default_deployconf;
+    }
     my $deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
 
-    if ($deployconf == "") {
+    if ($deployconf eq "") {
 	print "ERROR: kadeploy configuration file not defined\n";
 	return 0;
     }
@@ -226,7 +232,7 @@ sub check_cmd{
 	       my $size = @info;
 	       for(my $i = 2; $i < $size; $i++){
 		   #print "CMD = $cmd ; info[i] = $info[$i]\n";
-		   $cmd = $cmd.$info[$i]." ";
+		   $cmd = $cmd.$info[$i];
 	       }
 	       $res{$info[0]}{$info[1]} = $cmd;
 	   }
@@ -241,10 +247,9 @@ sub check_cmd{
 sub check_nodes_conf {
     my $nodes_list_ref = shift;
     my @nodes_list = @{$nodes_list_ref};
-    my $main_conf_file;
+    my $main_conf_file = "";
 
     my %res = check_cmd();
-    if (!$res) { return 0; }
 
     my $loop_conf_file; 
     # retrieve main configuration file name
@@ -254,23 +259,14 @@ sub check_nodes_conf {
         } else {
                 $loop_conf_file = $res{$node}{"configuration"};
         }
-        if (($main_conf_file != "") && ($loop_conf_file != $main_conf_file )) {
+	if (($main_conf_file ne "") && ($loop_conf_file ne $main_conf_file )) {
                 print "ERROR: all the node are not from the same cluster, please check again the specified nodes\n";
                 return 0;
         }
         $main_conf_file = $loop_conf_file;
     }
 
-    # assign global module var
-    $deployconf = $main_conf_file;
-
-    # load the right configuration file
-    if(!(check_conf() == 1)){
-    	print "ERROR : configuration file loading failed\n";
-    	exit 0;
-    }
-
-    return 1;
+    return $main_conf_file;
 }
 
 
