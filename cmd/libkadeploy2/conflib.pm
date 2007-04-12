@@ -59,7 +59,7 @@ sub new {
     $self->{deployconf} = $default_deployconf;
     $self->{deploycmdconf} = $default_deploycmdconf;
     $self->{params} = ();
-print "toto" . $self->{deploycmdconf} . "\n";
+    $self->{commands} = ();
     bless ($self, $class);
     return $self;
 }
@@ -212,7 +212,6 @@ sub check_conf {
 sub check_cmd {
     my $config = shift;
     my $undefined = 0;
-    my %res;
 
     if(!(-e $config->{deploycmdconf})){
 	print "ERROR : command configuration file does not exist\n";
@@ -236,13 +235,13 @@ sub check_cmd {
 		   #print "CMD = $cmd ; info[i] = $info[$i]\n";
 		   $cmd = $cmd.$info[$i];
 	       }
-	       $res{$info[0]}{$info[1]} = $cmd;
+	       $config->{commands}{$info[0]}{$info[1]} = $cmd;
 	   }
 	}
     }
     close(DEPLOYCMD);
 
-    return %res;
+    return %{$config->{commands}};
 }
 
 
@@ -252,15 +251,15 @@ sub check_nodes_conf {
     my @nodes_list = @{$nodes_list_ref};
     my $main_conf_file = "";
 
-    my %res = check_cmd();
+    $config->check_cmd();
 
     my $loop_conf_file; 
     # retrieve main configuration file name
     foreach my $node (@nodes_list) {
-        if (!exists($res{$node}{"configuration"})) {
+        if (!exists($config->{commands}{$node}{"configuration"})) {
                 $loop_conf_file = $default_deployconf;
         } else {
-                $loop_conf_file = $res{$node}{"configuration"};
+                $loop_conf_file = $config->{commands}{$node}{"configuration"};
         }
 	if (($main_conf_file ne "") && ($loop_conf_file ne $main_conf_file )) {
                 print "ERROR: all the node are not from the same cluster, please check again the specified nodes\n";
