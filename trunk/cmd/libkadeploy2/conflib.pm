@@ -49,7 +49,7 @@ sub dump_conf;
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
 my $default_deployconf = "/etc/kadeploy/deploy.conf";
-my $default_deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
+my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
 
 
 
@@ -57,8 +57,9 @@ sub new {
     my ($class) = @_;
     my $self = {};
     $self->{deployconf} = $default_deployconf;
-    $self->{deploycmdconf} = $default_deploycmfconf;
-    $self->{params} = %params;
+    $self->{deploycmdconf} = $default_deploycmdconf;
+    $self->{params} = ();
+print "toto" . $self->{deploycmdconf} . "\n";
     bless ($self, $class);
     return $self;
 }
@@ -166,12 +167,12 @@ sub check_conf {
 		    $missing = 1;
 		}
 	    }elsif($type == 4){ # check / fin & pas / debut
-		if (($config->{params){$var} =~ /^\/.*/) || (!($config->{params}{$var} =~ /.*\/$/))){
+		if (($config->{params}{$var} =~ /^\/.*/) || (!($config->{params}{$var} =~ /.*\/$/))){
 		    print "ERROR : $var variable should end with an / and start without\n";
 		    $missing = 1;
 		}
 	    }elsif($type ==5){ # check pas de / ni debut ni fin
-		if (($config->{params}{$var} =~ /^\/.*/) || ($config->{params){$var} =~ /.*\/$/)){
+		if (($config->{params}{$var} =~ /^\/.*/) || ($config->{params}{$var} =~ /.*\/$/)){
 		    print "ERROR : $var variable should not start neither end with an / \n";
 		    $missing = 1;
 		}
@@ -208,7 +209,7 @@ sub check_conf {
 ## checks the command configuration file
 ## parameters : /
 ## return value : hash of hash as follow hostname => cmd_type => cmd 
-sub check_cmd{
+sub check_cmd {
     my $config = shift;
     my $undefined = 0;
     my %res;
@@ -282,9 +283,8 @@ sub check_nodes_conf {
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_cmd_exist {
     my $config = shift;
-    my $undefined = 0;
     
-    if ( !-r $config->{deploycmdconf} ) {
+    if (!-r $config->{deploycmdconf} ) {
 	print "ERROR : command configuration file does not exist\n";
 	exit 0;
     }
@@ -297,7 +297,7 @@ sub check_cmd_exist {
 ## tries to connect to databases 
 ## parameters : /
 ## return value : 1 if ok
-sub check_db_access{
+sub check_db_access {
     return 1;
     print "Checking database access rights...\n";
     my $base = libkadeploy2::deploy_iolib::connect();

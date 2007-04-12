@@ -10,10 +10,10 @@ use libkadeploy2::hexlib;
 # for the reboot...
 use POSIX qw(:signal_h :errno_h :sys_wait_h);
 
-if(!(libkadeploy2::conflib::check_cmd_exist() == 1)){
-    print "ERROR : command configuration file loading failed\n";
-    exit 0;
-}
+#if(!(libkadeploy2::conflib::check_cmd_exist() == 1)){
+#    print "ERROR : command configuration file loading failed\n";
+#    exit 0;
+#}
 
 ## prototypes
 sub setup_grub_pxe($$);
