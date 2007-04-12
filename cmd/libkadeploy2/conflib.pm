@@ -38,38 +38,40 @@ sub check_cmd;
 sub check_nodes_conf;
 sub check_cmd_exist;
 sub check_db_access;
-sub get_conf($);
-sub is_conf($);
-sub dump_conf();
-sub reset_conf();
+sub get_conf;
+sub is_conf;
+sub dump_conf;
 
-## configuration  file
-my $file = undef;
 ## parameters container
-my %params;
+#my %params;
+
 ## regex pour une ligne valide du fichier de conf.
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
 my $default_deployconf = "/etc/kadeploy/deploy.conf";
-my $deployconf = "";
+my $default_deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
 
-#if(!(check_conf() == 1)){
-#    print "ERROR : configuration file loading failed\n";
-#    exit 0;
-#}
+
+
+sub new {
+    my ($class) = @_;
+    my $self = {};
+    $self->{deployconf} = $default_deployconf;
+    $self->{deploycmdconf} = $default_deploycmfconf;
+    $self->{params} = %params;
+    bless ($self, $class);
+    return $self;
+}
+
+
 
 ## check_conf
 ## checks the configuration file
 ## parameters : /
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_conf {
-    my $conf_file = shift;
-
-    $deployconf = $conf_file;
-    if (!$conf_file) {
-	$deployconf = $default_deployconf;
-    }
-    my $deploycmdconf="/etc/kadeploy/deploy_cmd.conf";
+    my $config = shift;
+    my $deployconf = $config->{deployconf};
 
     if ($deployconf eq "") {
 	print "ERROR: kadeploy configuration file not defined\n";
@@ -123,20 +125,19 @@ sub check_conf {
     my $missing = 0;
 
     if(!(-e $deployconf)){
-	print "ERROR : variable configuration file does not exist\n";
+	print "ERROR : variable configuration file: " . $deployconf . " does not exist\n";
 	return 0;
     }
 
     print STDERR "Checking variable definition...\n";
     open(DEPLOYCONF,$deployconf) or die "Can't open $deployconf, maybe you are not allowed to open this file\n";
-    %params = ();
 
     foreach my $line (<DEPLOYCONF>){
 	if ($line =~ $regex) {
 	    my ($key,$val) = ($1,$2);
 	    $val =~ s/\s*$//;
-	    if(!exists($params{$key})){
-                $params{$key}=$val;
+	    if(!exists($config->{params}{$key})){
+                $config->{params}{$key} = $val;
             }else{
                 print "ERROR : variable $key is defined twice \n";
                 $twice = 1;
@@ -147,7 +148,7 @@ sub check_conf {
 
     # checks if the critic variables are defined 
     foreach my $var (keys %critic){
-	if(!exists($params{$var})){
+	if(!exists($config->{params}{$var})){
 	    print "ERROR : critic variable $var is missing\n";
 	    $missing = 1;
 	}else{# critic variable is defined
@@ -155,34 +156,34 @@ sub check_conf {
 	    my $type = $critic{$var};
 	    my $valid = 0;
 	    if ($type == 2) { # check / debut & fin
-		if (!($params{$var} =~ /^\/.*\/$/)){
+		if (!($config->{params}{$var} =~ /^\/.*\/$/)){
 		    print "ERROR : $var variable should start and end with an / \n";
 		    $missing = 1;
 		}
 	    }elsif($type == 3){ # check / debut & pas / fin
-		if ((!($params{$var} =~ /^\/.*/)) || ($params{$var} =~ /.*\/$/)){
+		if ((!($config->{params}{$var} =~ /^\/.*/)) || ($config->{params}{$var} =~ /.*\/$/)){
 		    print "ERROR : $var variable should start with an / and end without\n";
 		    $missing = 1;
 		}
 	    }elsif($type == 4){ # check / fin & pas / debut
-		if (($params{$var} =~ /^\/.*/) || (!($params{$var} =~ /.*\/$/))){
+		if (($config->{params){$var} =~ /^\/.*/) || (!($config->{params}{$var} =~ /.*\/$/))){
 		    print "ERROR : $var variable should end with an / and start without\n";
 		    $missing = 1;
 		}
 	    }elsif($type ==5){ # check pas de / ni debut ni fin
-		if (($params{$var} =~ /^\/.*/) || ($params{$var} =~ /.*\/$/)){
+		if (($config->{params}{$var} =~ /^\/.*/) || ($config->{params){$var} =~ /.*\/$/)){
 		    print "ERROR : $var variable should not start neither end with an / \n";
 		    $missing = 1;
 		}
 	    }elsif($type == 6){ # check / debut & peu importe fin
-		if (!($params{$var} =~ /^\/.*/)){
+		if (!($config->{params}{$var} =~ /^\/.*/)){
 		    print "ERROR : $var variable should start with an /\n";
 		    $missing = 1;
 		}
 	    }elsif($type == 7){
 		if (!(
-		      ($params{$var} =~ /yes/) ||
-		      ($params{$var} =~ /no/)
+		      ($config->{params}{$var} =~ /yes/) ||
+		      ($config->{params}{$var} =~ /no/)
 		      )
 		    )
 		{
@@ -200,7 +201,6 @@ sub check_conf {
 	return 0;
     }
 
-
     return 1;
 }
 
@@ -209,16 +209,17 @@ sub check_conf {
 ## parameters : /
 ## return value : hash of hash as follow hostname => cmd_type => cmd 
 sub check_cmd{
+    my $config = shift;
     my $undefined = 0;
     my %res;
 
-    if(!(-e "/etc/kadeploy/deploy_cmd.conf")){
+    if(!(-e $config->{deploycmdconf})){
 	print "ERROR : command configuration file does not exist\n";
 	return 0;
     }
 
     print "Checking command definition...\n";
-    open(DEPLOYCMD,"/etc/kadeploy/deploy_cmd.conf");
+    open(DEPLOYCMD, $config->{deploycmdconf});
     
     foreach my $line (<DEPLOYCMD>){
 	my $cmd = "";
@@ -245,6 +246,7 @@ sub check_cmd{
 
 
 sub check_nodes_conf {
+    my $config = shift;
     my $nodes_list_ref = shift;
     my @nodes_list = @{$nodes_list_ref};
     my $main_conf_file = "";
@@ -266,7 +268,9 @@ sub check_nodes_conf {
         $main_conf_file = $loop_conf_file;
     }
 
-    return $main_conf_file;
+    $config->{deployconf} = $main_conf_file;
+
+    return 1;
 }
 
 
@@ -277,11 +281,10 @@ sub check_nodes_conf {
 ## parameters : /
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_cmd_exist {
+    my $config = shift;
     my $undefined = 0;
     
-    if ( -r "/etc/kadeploy/deploy_cmd.conf" ) {
-	$file = "/etc/kadeploy/deploy_cmd.conf";
-    } else {
+    if ( !-r $config->{deploycmdconf} ) {
 	print "ERROR : command configuration file does not exist\n";
 	exit 0;
     }
@@ -289,11 +292,13 @@ sub check_cmd_exist {
     return 1;
 }
 
+
 ## check_db_access
 ## tries to connect to databases 
 ## parameters : /
 ## return value : 1 if ok
 sub check_db_access{
+    return 1;
     print "Checking database access rights...\n";
     my $base = libkadeploy2::deploy_iolib::connect();
     libkadeploy2::deploy_iolib::disconnect($base);
@@ -302,32 +307,28 @@ sub check_db_access{
 }    
 
 # recupere un parametre
-sub get_conf ( $ ) {
+sub get_conf {
+  my $config = shift;
   my $key = shift;
   (defined $key) or print "WARNING : get_conf expects a parameter \n";
-  return $params{$key};
+  return $config->{params}{$key};
 }
 
 # teste si un parametre est defini
-sub is_conf ( $ ) {
+sub is_conf {
+  my $config = shift;
   my $key = shift;
   (defined $key) or print "WARNING : is_conf expects a parameter\n";
-  return exists $params{$key};
+  return exists $config->{params}{$key};
 }
 
 # debug: dump les parametres
-sub dump_conf () {
-  print "Config file is: ".$file."\n";
-  while (my ($key,$val) = each %params) {
+sub dump_conf {
+  my $config = shift;
+  print "Config file is: ".$config->{deployconf}."\n";
+  while (my ($key,$val) = each %{$config->{params}}) {
     print " ".$key." = ".$val."\n";
   }
-  return 1;
-}
-
-# reset the module state
-sub reset_conf () {
-  $file = undef;
-  %params = ();
   return 1;
 }
 

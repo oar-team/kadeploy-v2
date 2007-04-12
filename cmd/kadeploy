@@ -39,7 +39,6 @@ my $environment;            # environment identifier
 
 my $username;               # real user
 
-my $deployment_configuration_file; # configuration file to use for all the deployment
 my $envid=0;		    # environment id
 my @db_checked_hosts = ();  # nodes existing in database
 my $dev;                    # device e.g. hda
@@ -70,7 +69,8 @@ my $pre_pipe;
 my $dest_pipe;
 my $post_pipe;
 
-
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
 ## Nodes sets used during deployment process
 my $nodes_set;
 my $deployed_nodes_set;
@@ -106,16 +106,16 @@ if(!check_options()) {     exit 0; }
 
 ## continue with variables requiring configuration file
 my $do_fdisk_on_deploy="no"; # default behaviour
-if (libkadeploy2::conflib::get_conf("do_fdisk_on_deploy")) {$do_fdisk_on_deploy = libkadeploy2::conflib::get_conf("do_fdisk_on_deploy");}
-my $kadeploydir=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
+if ($configuration->get_conf("do_fdisk_on_deploy")) {$do_fdisk_on_deploy = $configuration->get_conf("do_fdisk_on_deploy");}
+my $kadeploydir=$configuration->get_conf("kadeploy2_directory");
+my $deployuser=$configuration->get_conf("deploy_user");
 my $help;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
 
 my $defaulttargetpartition="";
-if (libkadeploy2::conflib::get_conf("default_target_partition")) {
-        $defaulttargetpartition = libkadeploy2::conflib::get_conf("default_target_partition");
+if ($configuration->get_conf("default_target_partition")) {
+        $defaulttargetpartition = $configuration->get_conf("default_target_partition");
 }
 
 
@@ -281,7 +281,7 @@ foreach my $host (@db_checked_hosts){
 libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
 
 # Let start the chronometer
-my $checkTimeout = libkadeploy2::conflib::get_conf("first_check_timeout");
+my $checkTimeout = $configuration->get_conf("first_check_timeout");
 
 # rebooting the nodes
 if ($bootstrap == 0) {
@@ -420,8 +420,8 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     print "Formatting destination partition $destination_partition on the nodes...";
 #    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
     my $mkfs_fs_options = " ";
-    if(libkadeploy2::conflib::get_conf($mkfs_fs . "_options")) {
-	    $mkfs_fs_options = libkadeploy2::conflib::get_conf($mkfs_fs . "_options");
+    if($configuration->get_conf($mkfs_fs . "_options")) {
+	    $mkfs_fs_options = $configuration->get_conf($mkfs_fs . "_options");
     }
     print "using $mkfs_fs file system with options: $mkfs_fs_options \n";
     $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
@@ -538,7 +538,7 @@ $reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 $time_check = 0;
 
 
-$checkTimeout = libkadeploy2::conflib::get_conf("last_check_timeout");
+$checkTimeout = $configuration->get_conf("last_check_timeout");
 if ($checkTimeout <= 0) { # invalid value
         $checkTimeout = 300;
 }
@@ -784,8 +784,8 @@ sub check_options(){
     }
     
     # load configuration files
-    $deployment_configuration_file = libkadeploy2::conflib::check_nodes_conf(\@host_list);
-    if (!libkadeploy2::conflib::check_conf($deployment_configuration_file)) {
+    $configuration->check_nodes_conf(\@host_list);
+    if (!$configuration->check_conf($deployment_configuration_file)) {
 	print "ERROR : problem occured loading configuration file\n";
 	exit 1;
     }
@@ -820,11 +820,12 @@ sub check_options(){
     
     ## perform additional checks, should go elsewhere
 
+# should be done in deployiolib
     ## gets the database login information needed
-    if(!(libkadeploy2::conflib::check_db_access == 1)){
-        print "ERROR : database access failed\n";
-        exit 0;
-    }
+    #if(!(libkadeploy2::conflib::check_db_access == 1)){
+    #    print "ERROR : database access failed\n";
+    #    exit 0;
+    #}
 
     if ($do_fdisk_on_deploy)
     {
@@ -942,7 +943,7 @@ sub check_consistency()
     # pre-install preparation and check
 
     # gets needed stuff from conf file
-    $pre_install_archive =  libkadeploy2::conflib::get_conf("pre_install_archive");
+    $pre_install_archive =  $configuration->get_conf("pre_install_archive");
 
     # checks if it exists
     if(!(-e $pre_install_archive) ){
@@ -957,7 +958,7 @@ sub check_consistency()
 	halt("unknown pre install archive format");
     }
 
-    $pre_install_script =  libkadeploy2::conflib::get_conf("pre_install_script");
+    $pre_install_script =  $configuration->get_conf("pre_install_script");
 
     # checks if it exists
     if(!$pre_install_script){
@@ -995,7 +996,7 @@ sub check_consistency()
 
 
     # gets needed stuff from conf file
-    $post_script =  libkadeploy2::conflib::get_conf("post_install_script");
+    $post_script =  $configuration->get_conf("post_install_script");
 
     # checks if it exists
     if(!$post_script){
@@ -1004,7 +1005,7 @@ sub check_consistency()
 
     # kernel param 
     $kernel_param = '';
-    $kernel_param =  libkadeploy2::conflib::get_conf("kernel_param");
+    $kernel_param =  $configuration->get_conf("kernel_param");
     
     return 1;
 }
