@@ -27,24 +27,37 @@ my $verbose = 0;
 ##
 # Configuration Variables
 ##
+my $configuration;
 
 my $launcherWindowSize = 40; # default window_size
-if (libkadeploy2::conflib::get_conf("window_size")) {
-	$launcherWindowSize = libkadeploy2::conflib::get_conf("launcher_window_size");
-}
-my $nmapCmd = libkadeploy2::conflib::get_conf("nmap_cmd");
-my $useNmapByDefault = libkadeploy2::conflib::get_conf("enable_nmap");
-my $nmapArgs = libkadeploy2::conflib::get_conf("nmap_arguments"); # can add parameters to customize ping request to the site
-my $kadeploy2Directory = libkadeploy2::conflib::get_conf("kadeploy2_directory"); # should be like /home/deploy/kadeploy2
+my $nmapCmd;
+my $useNmapByDefault;
+my $nmapArgs; # can add parameters to customize ping request to the site
+my $kadeploy2Directory; # should be like /home/deploy/kadeploy2
+my %nodes_commands;
 
-my %nodes_commands = (
+sub register_conf {
+    $configuration = shift;
+   
+    if ($configuration->get_conf("window_size")) {
+	$launcherWindowSize = $configuration->get_conf("launcher_window_size");
+    }
+    $nmapCmd = $configuration->get_conf("nmap_cmd");
+    $useNmapByDefault = $configuration->get_conf("enable_nmap");
+    $nmapArgs = $configuration->get_conf("nmap_arguments");
+    $kadeploy2Directory = $configuration->get_conf("kadeploy2_directory");
+
+    %nodes_commands = (
 	deployment => {
-		remote_command => libkadeploy2::conflib::get_conf("deploy_rcmd"),
+		remote_command => $configuration->get_conf("deploy_rcmd"),
 	},
 	production => {
-		remote_command => libkadeploy2::conflib::get_conf("prod_rcmd"),
+		remote_command => $configuration->get_conf("prod_rcmd"),
 	},
-);	
+    );
+    return 1;
+}
+
 
 ##
 # WARNING!!!
@@ -655,8 +668,8 @@ sub runCommandMcat {
     my $server_command = shift;
     my $node_pipe = shift;
     my $nodes="";
-    my $kadeploy2_directory=libkadeploy2::conflib::get_conf("kadeploy2_directory");
-    my $internal_parallel_command = libkadeploy2::conflib::get_conf("use_internal_parallel_command");
+    my $kadeploy2_directory=$configuration->get_conf("kadeploy2_directory");
+    my $internal_parallel_command = $configuration->get_conf("use_internal_parallel_command");
     if (!$internal_parallel_command) { $internal_parallel_command = "no"; }
     my $pid;
     my $timeout=400;
