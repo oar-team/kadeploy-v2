@@ -26,7 +26,6 @@ use strict;
 use warnings;
 require Exporter;
 
-use libkadeploy2::deploy_iolib;
 
 #our (@ISA,@EXPORT,@EXPORT_OK);
 #@ISA = qw(Exporter);
@@ -37,7 +36,6 @@ sub check_conf;
 sub check_cmd;
 sub check_nodes_conf;
 sub check_cmd_exist;
-sub check_db_access;
 sub get_conf;
 sub is_conf;
 sub dump_conf;
@@ -52,7 +50,6 @@ my $default_deployconf = "/etc/kadeploy/deploy.conf";
 my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
 
 
-
 sub new {
     my ($class) = @_;
     my $self = {};
@@ -63,7 +60,6 @@ sub new {
     bless ($self, $class);
     return $self;
 }
-
 
 
 ## check_conf
@@ -205,6 +201,7 @@ sub check_conf {
     return 1;
 }
 
+
 ## check_cmd
 ## checks the command configuration file
 ## parameters : /
@@ -274,8 +271,6 @@ sub check_nodes_conf {
 }
 
 
-
-
 ## check_cmd_exist
 ## checks if the command configuration file exists
 ## parameters : /
@@ -292,19 +287,6 @@ sub check_cmd_exist {
 }
 
 
-## check_db_access
-## tries to connect to databases 
-## parameters : /
-## return value : 1 if ok
-sub check_db_access {
-    return 1;
-    print "Checking database access rights...\n";
-    my $base = libkadeploy2::deploy_iolib::connect();
-    libkadeploy2::deploy_iolib::disconnect($base);
-    
-    return 1;
-}    
-
 # recupere un parametre
 sub get_conf {
   my $config = shift;
@@ -313,6 +295,7 @@ sub get_conf {
   return $config->{params}{$key};
 }
 
+
 # teste si un parametre est defini
 sub is_conf {
   my $config = shift;
@@ -320,6 +303,7 @@ sub is_conf {
   (defined $key) or print "WARNING : is_conf expects a parameter\n";
   return exists $config->{params}{$key};
 }
+
 
 # debug: dump les parametres
 sub dump_conf {
@@ -330,5 +314,6 @@ sub dump_conf {
   }
   return 1;
 }
+
 
 return 1;
