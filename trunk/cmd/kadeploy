@@ -817,16 +817,8 @@ sub check_options(){
         print"   2     2nd optimized deployment with no 1st, no 2nd reboot\n";
 	exit 1;
     }
-    
-    ## perform additional checks, should go elsewhere
-
-# should be done in deployiolib
-    ## gets the database login information needed
-    #if(!(libkadeploy2::conflib::check_db_access == 1)){
-    #    print "ERROR : database access failed\n";
-    #    exit 0;
-    #}
-
+   
+    # additional checks
     if ($do_fdisk_on_deploy)
     {
         if ($do_fdisk_on_deploy eq "no" &&
