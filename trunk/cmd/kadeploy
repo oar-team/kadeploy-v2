@@ -119,7 +119,7 @@ if ($configuration->get_conf("default_target_partition")) {
         $defaulttargetpartition = $configuration->get_conf("default_target_partition");
 }
 
-
+exit 0;
 
 ## Available variables are :
 ## - $env
@@ -817,7 +817,12 @@ sub check_options(){
         print"   2     2nd optimized deployment with no 1st, no 2nd reboot\n";
 	exit 1;
     }
+
+    # register configuration for the different modules
+    libkadeploy2::deploy_iolib::register_conf($configuration);
    
+
+
     # additional checks
     if ($do_fdisk_on_deploy)
     {

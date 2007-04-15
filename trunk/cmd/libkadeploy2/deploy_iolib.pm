@@ -10,8 +10,7 @@
 package libkadeploy2::deploy_iolib;
 
 use DBI;
-#use libkadeploy2::conflib;
-use libkadeploy2::conflib qw(init_conf get_conf is_conf);
+use libkadeploy2::conflib;
 use Time::Local;
 use strict;
 
@@ -107,6 +106,14 @@ sub erase_partition($%);
 # END OF PROTOTYPES #
 #####################
 
+my $configuration;
+
+# Configuration
+sub register_conf {
+	$configuration = shift;
+}
+
+
 ###########################
 ### database connectors ###
 
@@ -117,10 +124,10 @@ sub erase_partition($%);
 sub connect() {
     my $status = 1;
 
-    my $host = libkadeploy2::conflib::get_conf("deploy_db_host");
-    my $name = libkadeploy2::conflib::get_conf("deploy_db_name");
-    my $user = libkadeploy2::conflib::get_conf("deploy_db_login");
-    my $pwd  = libkadeploy2::conflib::get_conf("deploy_db_psswd");
+    my $host = $configuration->get_conf("deploy_db_host");
+    my $name = $configuration->get_conf("deploy_db_name");
+    my $user = $configuration->get_conf("deploy_db_login");
+    my $pwd  = $configuration->get_conf("deploy_db_psswd");
 
     my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0,'InactiveDestroy'=>1}) or $status = 0;
     
@@ -153,7 +160,7 @@ sub disconnect($) {
 # since deployment time should be less than last_check_timeout
 sub clean_previous_deployments ($) {
     my $dbh = shift;
-    my $deployment_validity_timeout = libkadeploy2::conflib::get_conf("deployment_validity_timeout");
+    my $deployment_validity_timeout = $configuration->get_conf("deployment_validity_timeout");
     if ((!$deployment_validity_timeout) || ($deployment_validity_timeout < 400)) {
     	# set default value
     	$deployment_validity_timeout = 1000;
