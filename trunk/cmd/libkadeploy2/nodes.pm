@@ -853,7 +853,7 @@ sub rebootMyNodes {
     my $result;
 
     # get commands for all the nodes
-    my %cmd = libkadeploy2::conflib::check_cmd;
+    my %cmd = $configuration->check_cmd();
 
     my $hostname;
 

@@ -101,6 +101,8 @@ else
 ## in order to correct the database before exiting
 $SIG{INT} = \&tsktsk;
 
+my $defaulttargetpartition="";
+
 ## checks the options and load configuration file
 if(!check_options()) {     exit 0; }
 
@@ -114,12 +116,6 @@ my $help;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
 
-my $defaulttargetpartition="";
-if ($configuration->get_conf("default_target_partition")) {
-        $defaulttargetpartition = $configuration->get_conf("default_target_partition");
-}
-
-exit 0;
 
 ## Available variables are :
 ## - $env
@@ -712,13 +708,6 @@ sub usages()
 
 ";
 
-
-#print "\t[-d 0 | 1] Optimisation support\n"
-
-#    if ($do_fdisk_on_deploy eq "yes")
-#    {
-#	print "\t[-lpf | --loadpartitionfile partitionfile]\n";
-#    }
 }
 
 
@@ -757,11 +746,6 @@ sub check_options(){
     ## first read command options    
     if ($help) { usages(); exit(0); }
 
-    ## separates device and partition number from $device
-    $dev = substr($device, 0, 3);
-    my @nb = split(/$dev/, $device);
-    $part = $nb[1];
-
 
     if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
         print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
@@ -797,6 +781,10 @@ sub check_options(){
 	print "ERROR : environment name needed\n";
 	exit 1;
     }
+
+    if ($configuration->get_conf("default_target_partition")) {
+	    $defaulttargetpartition = $configuration->get_conf("default_target_partition");
+    }	
     if (!$device){
 	if ($defaulttargetpartition eq "") {
 	    print "ERROR : target partition unspecified\n";
@@ -806,6 +794,11 @@ sub check_options(){
 	    print "no target partition specified, using default one: $device\n";
 	}
     }
+    ## separates device and partition number from $device
+    $dev = substr($device, 0, 3);
+    my @nb = split(/$dev/, $device);
+    $part = $nb[1];
+
     if(!$depmethod){
     	# print"No deployment method specified, proceeding with normal deployment\n";
 	$depmethod=0;
@@ -820,9 +813,10 @@ sub check_options(){
 
     # register configuration for the different modules
     libkadeploy2::deploy_iolib::register_conf($configuration);
-   
-
-
+    libkadeploy2::node_bd::register_conf($configuration);
+    libkadeploy2::nodes::register_conf($configuration);
+    libkadeploy2::bootlib::register_conf($configuration);
+    
     # additional checks
     if ($do_fdisk_on_deploy)
     {

@@ -1,7 +1,6 @@
 package libkadeploy2::rights_iolib;
 
 use DBI;
-use libkadeploy2::conflib qw(init_conf get_conf is_conf);
 use strict;
 
 sub add_user($$$$);
