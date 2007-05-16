@@ -129,6 +129,7 @@ sub connect() {
     my $user = $configuration->get_conf("deploy_db_login");
     my $pwd  = $configuration->get_conf("deploy_db_psswd");
 
+    #print "host $host name $name user $user passwd $pwd\n";
     my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0,'InactiveDestroy'=>1}) or $status = 0;
     
     if($status == 0){

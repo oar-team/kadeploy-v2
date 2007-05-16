@@ -13,6 +13,15 @@ use libkadeploy2::deploy_iolib;
 use strict;
 use warnings;
 
+
+my $configuration;
+
+sub register_conf {
+	$configuration = shift;
+	libkadeploy2::deploy_iolib::register_conf($configuration);
+}
+
+
 sub new {
     my ($class,$name,$deploy_id,$env_id,$disk_dev,$part_nb) = @_;
 

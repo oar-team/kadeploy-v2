@@ -23,9 +23,16 @@ sub generate_nogrub_files($$$$$);
 sub setup_pxe($$$);
 sub reboot($$$$);
 
+# module configuration
+my $configuration;
+
+sub register_conf {
+	$configuration = shift;
+}
+
+
+
 ## function definition
-
-
 
 
 ## setup_grub_pxe
@@ -63,16 +70,16 @@ sub manage_grub_pxe($$){
     $env_archive = substr($env_archive,6);
 
     #my $nogrub = 1;
-    my $nogrub = libkadeploy2::conflib::get_conf("use_nogrub");
+    my $nogrub = $configuration->get_conf("use_nogrub");
 
     my %devices = ();
 
     # common parts
     if (! $kernel_param) { # take default parameters if any
 	print "No kernel parameter, taking default ones defined in the configuration file\n";
-	$kernel_param = libkadeploy2::conflib::get_conf("kernel_param");
+	$kernel_param = $configuration->get_conf("kernel_param");
     }
-    my $tftp_destination_folder = libkadeploy2::conflib::get_conf("tftp_repository") . libkadeploy2::conflib::get_conf("tftp_relative_path");
+    my $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
     my $pxe_tftp_relative_folder = "folder_env_" . $env_id; # for PXE generated files
     my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
     my $pxe_kernel_parameters;
@@ -123,7 +130,7 @@ sub manage_grub_pxe($$){
 		
 		libkadeploy2::bootlib::generate_grub_files_chainload($grub_boot_img_name,$grub_menu_file_name,"rebootchainload","$dev$part",$env_fdisktype);
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
-		$tftp_destination_folder = libkadeploy2::conflib::get_conf("tftp_repository") . libkadeploy2::conflib::get_conf("tftp_relative_path");
+		$tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");	       
 	    }
 	    else
@@ -134,7 +141,7 @@ sub manage_grub_pxe($$){
 		if ( $gen_grub_entry ) { # generate with every unknown device
 		    libkadeploy2::bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path,$env_fdisktype);
 		  copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
-		  $tftp_destination_folder = libkadeploy2::conflib::get_conf("tftp_repository") . libkadeploy2::conflib::get_conf("tftp_relative_path");
+		  $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
 		  copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
 		  }
 	    }
@@ -214,13 +221,13 @@ sub generate_grub_files_chainload($$$$){
     #print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
 
     ## "hard-coded" options
-    my $grub_dir = libkadeploy2::conflib::get_conf("kadeploy2_directory") . "/lib/grub/";    
+    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/lib/grub/";    
     my $floppy_blks = 720;
     my $default = 0;
     my $fallback = 1;
     my $timeout = 1;
     my $serial_speed = 38400;
-    my $timeout_conf = libkadeploy2::conflib::get_conf("grub_timeout");
+    my $timeout_conf = $configuration->get_conf("grub_timeout");
     my $hexfdisktype;
 
 
@@ -295,7 +302,7 @@ sub generate_grub_files($$$$$$$$){
     #print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
 
     ## "hard-coded" options
-    my $grub_dir = libkadeploy2::conflib::get_conf("kadeploy2_directory") . "/lib/grub/";    
+    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/lib/grub/";    
     my $floppy_blks = 720;
     my $default = 0;
     my $fallback = 1;
@@ -303,7 +310,7 @@ sub generate_grub_files($$$$$$$$){
     my $serial_speed = 38400;
     my $hexfdisktype;
 
-    my $timeout_conf = libkadeploy2::conflib::get_conf("grub_timeout");
+    my $timeout_conf = $configuration->get_conf("grub_timeout");
     if($timeout_conf){
 	$timeout = $timeout_conf;
     }
@@ -381,9 +388,9 @@ sub setup_pxe($$$){
 
     ## gets appropriate parameters from configuration file
     #my $network = conflibkadeploy2::get_conf("network");
-    my $tftp_repository = libkadeploy2::conflib::get_conf("tftp_repository");
-    my $pxe_rep = $tftp_repository . libkadeploy2::conflib::get_conf("pxe_rep");
-    my $tftp_relative_path = libkadeploy2::conflib::get_conf("tftp_relative_path");
+    my $tftp_repository = $configuration->get_conf("tftp_repository");
+    my $pxe_rep = $tftp_repository . $configuration->get_conf("pxe_rep");
+    my $tftp_relative_path = $configuration->get_conf("tftp_relative_path");
     
     my $images_repository = $tftp_repository . $tftp_relative_path;
     
@@ -454,7 +461,7 @@ sub reboot($$$$){
     ## - @host_list - list of hosts to reboot
     ## - $reboot    - type of reboot
 
-    my %cmd = libkadeploy2::conflib::check_cmd;
+    my %cmd = $configuration->check_cmd();
 
     my $child_pid;
     my %child_pids = ();

@@ -27,9 +27,6 @@ use warnings;
 require Exporter;
 
 
-#our (@ISA,@EXPORT,@EXPORT_OK);
-#@ISA = qw(Exporter);
-#@EXPORT_OK = qw(init_conf get_conf is_conf dump_conf reset_conf);
 
 ## prototypes
 sub check_conf;
@@ -40,14 +37,14 @@ sub get_conf;
 sub is_conf;
 sub dump_conf;
 
-## parameters container
-#my %params;
-
 ## regex pour une ligne valide du fichier de conf.
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
+## default values
 my $default_deployconf = "/etc/kadeploy/deploy.conf";
 my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
+
+
 
 
 sub new {
@@ -55,6 +52,8 @@ sub new {
     my $self = {};
     $self->{deployconf} = $default_deployconf;
     $self->{deploycmdconf} = $default_deploycmdconf;
+    $self->{checked_conf} = 0; # initialy unread
+    $self->{checked_cmd} = 0; # initialy unread
     $self->{params} = ();
     $self->{commands} = ();
     bless ($self, $class);
@@ -68,8 +67,13 @@ sub new {
 ## return value : 1 if conf file actually loaded, else 0.
 sub check_conf {
     my $config = shift;
-    my $deployconf = $config->{deployconf};
 
+    if ($config->{checked_conf} == 1) {
+        return 1;
+    }
+
+    my $deployconf = $config->{deployconf};
+	
     if ($deployconf eq "") {
 	print "ERROR: kadeploy configuration file not defined\n";
 	return 0;
@@ -118,7 +122,6 @@ sub check_conf {
     my %already_defined = ();
 
     my $twice = 0;
-    my $undefined = 0;
     my $missing = 0;
 
     if(!(-e $deployconf)){
@@ -197,6 +200,7 @@ sub check_conf {
 	print "ERROR : please check your configuration file\n";
 	return 0;
     }
+    $config->{checked_conf} = 1;
 
     return 1;
 }
@@ -208,7 +212,9 @@ sub check_conf {
 ## return value : hash of hash as follow hostname => cmd_type => cmd 
 sub check_cmd {
     my $config = shift;
-    my $undefined = 0;
+    if ($config->{checked_cmd} == 1) {
+	return %{$config->{commands}};
+    }
 
     if(!(-e $config->{deploycmdconf})){
 	print "ERROR : command configuration file does not exist\n";
@@ -219,25 +225,21 @@ sub check_cmd {
     open(DEPLOYCMD, $config->{deploycmdconf});
     
     foreach my $line (<DEPLOYCMD>){
-	my $cmd = "";
 	chomp($line);
 	# checks if the line exists
 	if($line){
 	    # checks if it is a commentary
 	    if($line !~ /^\s*#.*/){
-	       # parses line info
-	       my @info = split(/\s+/, $line);
-	       my $size = @info;
-	       for(my $i = 2; $i < $size; $i++){
-		   #print "CMD = $cmd ; info[i] = $info[$i]\n";
-		   $cmd = $cmd.$info[$i];
+	       # parses line infoi
+	       if ($line =~ /^\s*([^\s]+)\s+([^\s]+)\s+(.*)$/) {
+		       $config->{commands}{$1}{$2} = $3;
 	       }
-	       $config->{commands}{$info[0]}{$info[1]} = $cmd;
 	   }
 	}
     }
     close(DEPLOYCMD);
-
+    $config->{checked_cmd} = 1;
+    
     return %{$config->{commands}};
 }
 
@@ -258,6 +260,14 @@ sub check_nodes_conf {
         } else {
                 $loop_conf_file = $config->{commands}{$node}{"configuration"};
         }
+	if (($loop_conf_file ne $default_deployconf ) && (not $loop_conf_file =~ /^\/etc\/kadeploy\/deploy-[^\/]*\.conf$/)) {
+		print "ERROR: configuration file name for node $node is not valid, please refer to deploy.conf man page\n";
+		exit 0;
+	}
+	if ($loop_conf_file eq $default_deploycmdconf) {
+		print "ERROR: configuration file for node $node is not valid: it should not be deploy_cmd.conf configuration file, please refer to deploy.conf man page\n";
+		exit 0;
+	}
 	if (($main_conf_file ne "") && ($loop_conf_file ne $main_conf_file )) {
                 print "ERROR: all the node are not from the same cluster, please check again the specified nodes\n";
                 return 0;
@@ -266,6 +276,7 @@ sub check_nodes_conf {
     }
 
     $config->{deployconf} = $main_conf_file;
+    $config->{checked_conf} = 0;
 
     return 1;
 }
