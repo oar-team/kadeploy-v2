@@ -61,6 +61,33 @@ sub new {
 }
 
 
+## usefull to generate bootfiles
+sub get_clustername {
+    my $self = shift;
+    my $result = "default";
+    if ($self->{deployconf} eq $default_deployconf) { # no default value to avoid bugs
+	return "";
+    }
+    if ($self->{deployconf} =~ /^\/etc\/kadeploy\/deploy-(.*).conf$/) {
+	    $result = $1;
+    }
+    return $result;
+}
+
+# usefull to manage commands without nodes file
+sub set_clustername {
+    my $self = shift;
+    my $clustername = shift;
+    $self->{checked_conf} = 0; # configuration file must be re-read
+    if ($clustername eq "") { # use default configuration file
+	    $self->{deployconf} = $default_deployconf;
+	    return 1;
+    }
+    $self->{deployconf} = "/etc/kadeploy/deploy-" . $clustername . ".conf";
+    return 1;
+}
+
+
 ## check_conf
 ## checks the configuration file
 ## parameters : /
@@ -260,7 +287,7 @@ sub check_nodes_conf {
         } else {
                 $loop_conf_file = $config->{commands}{$node}{"configuration"};
         }
-	if (($loop_conf_file ne $default_deployconf ) && (not $loop_conf_file =~ /^\/etc\/kadeploy\/deploy-[^\/]*\.conf$/)) {
+	if (($loop_conf_file ne $default_deployconf ) && (not $loop_conf_file =~ /^\/etc\/kadeploy\/deploy-[^\/]+\.conf$/)) {
 		print "ERROR: configuration file name for node $node is not valid, please refer to deploy.conf man page\n";
 		exit 0;
 	}
