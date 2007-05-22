@@ -71,7 +71,12 @@ sub manage_grub_pxe($$){
 
     #my $nogrub = 1;
     my $nogrub = $configuration->get_conf("use_nogrub");
-
+    my $clustername = $configuration->get_clustername();
+    my $filename_append = "-" . $clustername;
+    if ($clustername eq "") { # smooth transition from mono to multi cluster names
+	    $filename_append = "";
+    }
+    
     my %devices = ();
 
     # common parts
@@ -124,7 +129,7 @@ sub manage_grub_pxe($$){
 
 #YOYZ
 	    if ($kernel_path =~ /^chainload$/)
-	    {
+	    {	# since deployed bootloader is used, generated file does not depend of clustername
 		$grub_boot_img_name = "grub_img_chainload_env".$env_id."_".$dev.$part;
 		$grub_menu_file_name = "grub_menu_chainload_env".$env_id."_".$dev.$part;
 		
@@ -134,9 +139,9 @@ sub manage_grub_pxe($$){
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");	       
 	    }
 	    else
-	    {	    
-		$grub_boot_img_name = "grub_img_env".$env_id."_".$dev.$part;
-		$grub_menu_file_name = "grub_menu_env".$env_id."_".$dev.$part;
+	    {	# here generated file depends of cluster configuration
+		$grub_boot_img_name = "grub_img_env".$env_id."_".$dev.$part.$filename_append;
+		$grub_menu_file_name = "grub_menu_env".$env_id."_".$dev.$part.$filename_append;
 		
 		if ( $gen_grub_entry ) { # generate with every unknown device
 		    libkadeploy2::bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path,$env_fdisktype);
