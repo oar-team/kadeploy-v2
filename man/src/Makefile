@@ -6,7 +6,7 @@ CENTERBANNER="Kadeploy commands"
 all: $(DESTMAN1) $(DESTHTML)
 
 clean:
-	rm -f ../man1/*.1 ../html/*.html
+	rm -f ../man1/*.1 ../html/*.html ./*.tmp
 
 distclean:
 distdir:
