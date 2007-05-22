@@ -163,10 +163,11 @@ sub check_conf {
 	if ($line =~ $regex) {
 	    my ($key,$val) = ($1,$2);
 	    $val =~ s/\s*$//;
-	    if(!exists($config->{params}{$key})){
+	    if(!exists($already_defined{$key})){
+		$already_defined{$key} = $val;
                 $config->{params}{$key} = $val;
             }else{
-                print "ERROR : variable $key is defined twice \n";
+                print "ERROR : variable $key is defined twice in configuration file:" . $deployconf . "\n";
                 $twice = 1;
             }
 	}

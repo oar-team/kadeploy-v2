@@ -92,7 +92,6 @@ Registers a debian image whose features are explicitly given in parameter
 
 =back
 
-
  $cat > /tmp/myenv << EOF
  name = debian
  id = 7
