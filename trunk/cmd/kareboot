@@ -12,6 +12,9 @@ use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
 use strict;
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
+
 my $soft = 0;
 my $hard = 0;
 my $deploy = 0;
@@ -93,8 +96,21 @@ if (($deploy && $env) || ($deploy && $device) || ($env && $device)){
 }
 
 
+# load configuration files
+if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+    print "ERROR : problem occured loading configuration file\n";
+    exit 1;
+}
+# register configuration for the different modules
+libkadeploy2::deploy_iolib::register_conf($configuration);
+libkadeploy2::node_bd::register_conf($configuration);
+libkadeploy2::nodes::register_conf($configuration);
+libkadeploy2::bootlib::register_conf($configuration);
+
+print "configuring a node from cluster: " . $configuration->get_clustername() . "\n";
+
 # checks if tftp folders exist
-my $tftp = libkadeploy2::conflib::get_conf("tftp_repository") . libkadeploy2::conflib::get_conf("tftp_relative_path");
+my $tftp = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
 if(!(-e $tftp)){
     print "ERROR : unknown tftp folder\n";
     print "ERROR : please check your configuration file\n";
@@ -126,8 +142,8 @@ if ($deploy) {
 ##  OR
 ## - $device - device and partition number
 
-my %cmd = libkadeploy2::conflib::check_cmd;
-my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
+my %cmd = $configuration->check_cmd();
+my $deployuser=$configuration->get_conf("deploy_user");
 my $base = libkadeploy2::deploy_iolib::connect();
 
 
