@@ -1,8 +1,9 @@
 <!doctype linuxdoc system>
 <article>
 <!-- Initially generated from The_LDP_HOWTO_Generator V0.51 -->
-<title>Kadeploy v2
+<title>Kadeploy v2.1.6
 <author>Julien Leduc (<url url="mailto:julien.leduc@imag.fr" name="julien.leduc@imag.fr">), 
+Pierre Lemoine,
 Gaetan Peaquin, 
 Johann Peyrard (<url url="mailto:jpeyrard@imag.fr" name="jpeyrard@imag.fr">)
 <date>V0.02  2005-09-16
@@ -63,7 +64,6 @@ You are strongly recommended to take a backup of your system before major instal
 <!-- =========================== -->
 <sect1>Translations
 <p>
-
 
 
 
@@ -191,95 +191,101 @@ These four directories (two in each tftp directory) should be writtable by the <
 <p>
 The goal of this part is to ease the deployment system installation steps and give information about all the relevant required tools and their configuration.
 
+First, get the kadeploy archive and put it on the your cluster frontend.
 
-
-
-<!-- =========================== -->
-<sect1>Perl
+<sect1>Prerequisites
 <p>
-A decent version of Perl need to be installed on the box. 
-Actually the 5.8 works fine.
+Install mysql (configure it)
+
+Install dhcpd (configure it)
+
+Install tftp  (configure it)
+
+Install sudo
+
+Install dns (optional)
+
+<sect2>For Debian 
 <p>
-Package name : perl, perl-base, perl-mysql, perl-dbi, perl-suid, libterm-readkey-perl.
-<!-- =========================== -->
 
-<sect1>Mysql
+<sect2>For RedHat and Fedora
 <p>
-Kadeploy has been tested with mysql 4.1 and mysql 5.0.
+
+<sect1> Client part
 <p>
-Package name : mysql-server, mysql-client, libmysql, mysql-shared, 
+For all commands you have to be root
 
-<sect1>Sudo
+Optionnaly before starting:
+	The first thing that the Makefile does is to create a user 'deploy' in a group 'deploy' with '/home/deploy' for homedir. 
+	If you want to specify a custom homedir, you have to do that by yourself before make install.
+	The main thing is that you have a 'deploy' user in a 'deploy' group, home directory is not important for kadeploy (but can be for you).
+
+In the current directory do :
+<tt>make install</tt>
+
+then you have to install tftp part. You can use variable by defaut:
+
+<tt>make tftp_install</tt>
+
+or specifies tftp install variables (pxe_rep and image_grub are relative to tftp_repository):
+
+<tt>make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install</tt>
+
+Now you have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
+
+<sect1> DB part
 <p>
-In order to secure the system, you need sudo package.
-It provide ways to grant access to simple users. 
+Before doing DB install, client part has to be finished.
 
-<sect1>dhcpd
-<p>
-PXE boot is provided by ISC dhcpd software.
-Use the package of your distributions.
-A simple <tt>dhcpd.conf</tt> file is provided modify it for your needs <tt>tools/cookbook/conf/</tt>.
+Edit <tt>/etc/kadeploy/deploy.conf</tt> to specify:  deploy_db_host 
 
-<sect1>nmap
-<p>
-Nmap is a tool for scanning remote system.
-Kadeploy use it, because it is fast and scalable.
+If your database is on the same host as Kadeploy: deploy_db_host=localhost
 
-<sect1>Inetd/Xinetd
-<p>
-Daemon launcher use by many linux distribution.
+If not, specify the remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
 
-<sect1>SYSLINUX
-<p>
-It is include in kadeploy package <tt>libboot/pxelinux/</tt>.
-It contains a lot of booloader. 
-<p>pxelinux.0 (pxe bootloader), 
-<p>memdisk (floppy/hard drive image loader ). 
-<p>In our case we use <tt>pxelinux.0</tt> from <url url="http://syslinux.zytor.com" name="syslinux">. 
-This file is downloaded by the client, then launch, finally it download is conf from the pxelinux.cfg 
-directory (see the syslinux doc for more).
+In the current directory do:
 
-<sect1>TFTP server
-<p>
-particulary <em>tftp-hpa</em> server also available under package.
+<tt>make db_install</tt>
 
-<!-- =========================== -->
-<sect1>Network configuration
-<p>
-This Howto will suppose you are building a cluster on a private Ip network.
-The cluster nodes have Ip from 192.168.0.1 to 192.168.0.250.
-The gateway, dns, dhcp, tftp, mysql services are located on the node 192.168.0.254.
+For Remote Host DataBase:
+ 
+	You have to be able to make this command line without error:  
 
+		<tt>mysql -u root -h REMOTE_HOST_ADDRESS -p --database=mysql </tt>
 
+	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
 
-<!-- =========================== -->
-<sect2>How to configure access to databse ?
-<p>
-In order for the deployment system to access to the database, correct information e.g. hostname, database name, login and password should be filled in the configuration file for the database. 
+	So connect to host where database is installed and connect to your database:
 
+	   	<tt>mysql -u root -p</tt>
 
-<sect2>Database creation
-<p>
-The mysql schema are in <tt>share/mysql/</tt>.
-You have to feed mysql with creation files, and patch.
-You have to use kadatabase and kaaddnode command for this see next and man page.
+	And type this command:
+
+		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
+		FLUSH  PRIVILEGES;
+
+	And exit from mysql. Reconnect to host where Kadeploy is installed and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
+
+	    	<tt>./kadeploy_db_init.pl</tt>
+
+For Remote Host DataBase:
+
+	connect to host where database is installed and connect to your database: mysql -u root -p
+
+	And type this command:  DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
+
+	And exit from mysql.
+
+and follow instructions
+
+Note: By default you can connect to deploy database from anywhere. It is not necessary, but you can reduce access to deploy database to your head node. It is more secure.
+
+It's done !!
+
+<sect> Configuration
 
 
-
-
-<!-- =========================== -->
-<sect1><tt>PXE/TFTP</tt>
-<p>
-This part explains how to configure <tt>PXE/TFTP</tt> to control the booting process on the cluster nodes.
-<!-- =========================== -->
-<sect2>Hardware specifications
-<p>
-The nodes' hardware must be <tt>PXE</tt> compliant, this means that the <tt>BIOS/EFI</tt> should allow to boot from the ethernet card. To ensure that, you must verify that the network interface is <tt>PXE</tt> compliant.
-<!-- =========================== -->
-
-
-
-<sect2><label id="dhcpd.conf"> <tt>dhcpd.conf</tt> example
+<sect1><label id="dhcpd.conf"> <tt>dhcpd.conf</tt> example
 <p>
 An example of server configuration.
 <verb>
@@ -325,20 +331,8 @@ tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd
 
 
 
-<!-- =========================== -->
-<sect1>configure && make && makeinstall
-<p>
-<em>kadeploy</em> have to be install somewhere on your system.
-<itemize>
- <item>This can be done by a simple <tt>./configure --prefix=/usr/local/kadeploy --mandir=/usr/share/man && make && make install
- <item>The bin content need to be accessible from the path (symlink or correct your prefix).
-A command <tt>kasetup -sudowrapping</tt> can do the job for you.
- <item>A line like this one must be in your <tt>/etc/kadeploy/deploy.conf</tt>
-  <verb>kadeploy2_directory = /my_path_to_kadeploy_directory/</verb>
- <item>kadeploy need some lib perl, "pm" files.
-This files are located in <tt>$prefix/share/perl/5.8/libkadeploy2/</tt>.
-You can symlink it in <tt>/usr/lib/perl/5.8/</tt> (or a directory included in your local Perl @INC).
-</itemize>
+
+
 
 
 <sect1>Configuration files.
@@ -355,28 +349,6 @@ global variable, database information, and kernel boot parameters.
 Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
 
 
-<!-- =========================== -->
-<sect1>System Requirements
-<p>
-<!-- =========================== -->
-<sect2>Required privileges to execute <em>kadeploy</em>
-<p>
-<em>kadeploy</em> requires to perform some changes on the server, to control the way the nodes are booting. 
-Some other tools like <em>kaconsole</em> or <em>kareboot</em> needs to connect to other computers. 
-The purpose of this part is to define all the required privileges to ensure a smooth execution of <em>kadeploy</em>, and secure it by avoiding unnecessary privileges.
-Kadeploy 2 support sudo wrapper system.
-You can set it up with 
-<tt>kasetup -sudowrapping</tt>
-<tt>kasetup -exportenv</tt>
-<p>
-Then you need to put correct write to your configuration files
-<tt>kasetup -chmodconf
-
-<!-- =========================== -->
-<sect>Using kadeploy 2
-<p>
-The deployment system is composed of several tools or commands whose aim is the execution of all the needed actions to carry out deployments and other administrative tasks.
-Every tool has his own man page.
 
 <!-- =========================== -->
 <sect1>The first time...
@@ -465,9 +437,30 @@ You have to put some right to your user with the command kaaduser.
 Warning, when you change on of this two file you have to recall <tt>kanodes -add</tt>.
 
 
+<sect1>Configure nodes(ajouter capture d'écran)
+<p>
+To make a deployment on node, you have to check its bios.
+<itemize>
+<item>Firstly, node must be able to use PXE boot. Find PXE item in bios and enable it.
+<item>Secondly, search item usually named boot sequence. When you find it, put PXE (network,ethernet0) the first device to boot
+</itemize>
+
+<sect1>Preinstall 
+<p>
+The preinstall is a tarball archive.
+It contains many files AND a <tt>main</tt> scripts.
+They are pushed on the node, extracted, and the <tt>main</tt> script is launched.
+The main script is found with : <tt> pre_install_script </tt> in configuration file.
+(see <tt>/etc/kadeploy/deploy.conf</tt> for setting tarball and script).
+Preinstall contains needed actions in order to deploy the image on the node (fdisk, mkfs, mkswap, bench)...
+Some configuration files are pushed on the node (fdisk_user.txt and preinstall.conf). 
+
 
 <!-- =========================== -->
-<sect1>Deployment
+<sect>Using kadeploy 2.1.6
+
+<!-- =========================== -->
+<sect1>Deployment (ajouter animation flash)
 <p>
 The system has been prepared for deployment. Now what ? To deploy, something to be deployed is needed !
 <p>
@@ -490,17 +483,9 @@ If the deployment fails on some nodes, these are rebooted on a default environme
 <p>
 <!-- =========================== -->
 
-<sect1>Preinstall 
-<p>
-The preinstall is a tarball archive.
-It contains many files AND a <tt>main</tt> scripts.
-They are pushed on the node, extracted, and the <tt>main</tt> script is launched.
-The main script is found with : <tt> pre_install_script </tt> in configuration file.
-(see <tt>/etc/kadeploy/deploy.conf</tt> for setting tarball and script).
-Preinstall contains needed actions in order to deploy the image on the node (fdisk, mkfs, mkswap, bench)...
-Some configuration files are pushed on the node (fdisk_user.txt and preinstall.conf). 
 
 <sect1>Postinstall
+<p>
 The postinstall is a tarball archive.
 It contains many files AND a <tt>main</tt> scripts.
 Postinstall contains actions that can't be put in the preinstall scripts.
@@ -584,7 +569,6 @@ It also enables to hard reboot nodes appropriately equiped.
 <p><tt>kadeploy</tt> - deploys an environment image
 <p><tt>kaconsole</tt> - opens a remote console 
 <p><tt>kareboot</tt> - reboots according to requested reboot type
-<p><tt>katftp</tt> - create the minimum files required for PXE boot.
 <p><tt>kadatabase</tt> - manage mysql schema.
 <p>
 
@@ -707,7 +691,7 @@ for example, by default, many distributions ask the root password before checkin
 
 
 <!-- =========================== -->
-<sect>Configuration Files
+<sect>Example of Complete Configuration for Kadeploy 2.1.6
 <p>
 <em>kadeploy</em> tools suite is configured through two configuration files : <tt>deploy.conf</tt> and <tt>deploy_cmd.conf</tt> in the <tt>/etc/kadeploy/</tt> folder.
 See the manpage for more.
