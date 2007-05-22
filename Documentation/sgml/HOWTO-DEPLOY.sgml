@@ -207,6 +207,7 @@ Install dns (optional)
 
 <sect2>For Debian 
 <p>
+Packages to install: sudo, atftpd, dhcpd, 
 
 <sect2>For RedHat and Fedora
 <p>
@@ -285,7 +286,7 @@ It's done !!
 <sect> Configuration
 
 
-<sect1><label id="dhcpd.conf"> <tt>dhcpd.conf</tt> example
+<sect1> dhcpd.conf example
 <p>
 An example of server configuration.
 <verb>
@@ -328,13 +329,6 @@ An example of inetd.conf
 tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd --tftpd-timeout 300 --retry-timeout 5 --maxthread 100 --verbose=5  /tftpboot
 </verb>
 
-
-
-
-
-
-
-
 <sect1>Configuration files.
 <p>
 It is mandatory to create a <tt>/etc/kadeploy</tt> directory, and put
@@ -346,22 +340,14 @@ global variable, database information, and kernel boot parameters.
  <item><tt>/etc/kadeploy/clusterpartition.conf</tt> contains default partitionment schema.
  <item><tt>/etc/kadeploy/clusternodes.conf</tt> contains the nodes informations.
 </itemize>
-Example of each file can be found in <tt>tools/cookbook/conf/</tt>.
+
 
 
 
 <!-- =========================== -->
-<sect1>The first time...
+<sect1>Adding Nodes
 <p>
-You have to feed mysql with kadeploy schema.
-the <tt>kadatabase</tt> command was created for this.
-<verb>#kadatabase -addmysqlrights -create_db_deploy -create_table_deploy -patch21 -patch211</verb>
-
-<p>
-You can test it with <tt>kaenvironments</tt> command.
-
-<p>
-Then, <ref id="kaanodes" name="kanodes"> is used to register the cluster "hardware" composition. 
+Then, <ref id="kanodes" name="kanodes"> is used to register the cluster "hardware" composition. 
 It needs the description of hosts, disks and partitions in a text file. 
 The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
 
@@ -375,21 +361,10 @@ cls2 00:01:02:02:A7:F5 192.168.0.2
 <p>
 Example of <tt>/etc/kadeploy/clusterpartition.conf</tt> file.
  <verb>
-hda size=80000
-part=1 size=2500  fdisktype=82 label=empty type=primary
-part=2 size=2000  fdisktype=83 label=empty type=primary
-part=3 size=20000  fdisktype=83 label=empty type=primary
-part=4 size=55000  label=empty type=extended
-
-part=5 size=5000   fdisktype=83 label=empty type=logical
-part=6 size=5000   fdisktype=83 label=empty type=logical
-part=7 size=5000   fdisktype=83 label=empty type=logical
-part=8 size=5000   fdisktype=83 label=empty type=logical
-part=9 size=5000   fdisktype=83 label=empty type=logical
-part=10 size=5000   fdisktype=83 label=empty type=logical
-part=11 size=5000   fdisktype=83 label=empty type=logical
-part=12 size=5000   fdisktype=83 label=empty type=logical
-part=13 size=5000   fdisktype=83 label=empty type=logical
+hda size=100000
+part=1 size=2000  fdisktype=82 label=empty type=primary
+part=2 size=20000  fdisktype=83 label=empty type=primary
+part=3 size=88000  fdisktype=83 label=empty type=primary
 </verb>
 
 
@@ -411,15 +386,7 @@ Registring harddisk hda
 Registring part1 empty
 Registring part2 empty
 Registring part3 empty
-Registring part5 empty
-Registring part6 empty
-Registring part7 empty
-Registring part8 empty
-Registring part9 empty
-Registring part10 empty
-Registring part11 empty
-Registring part12 empty
-Registring part13 empty
+
 Register partition done.
 </verb>
 
@@ -439,7 +406,7 @@ Warning, when you change on of this two file you have to recall <tt>kanodes -add
 
 <sect1>Configure nodes(ajouter capture d'écran)
 <p>
-To make a deployment on node, you have to check its bios.
+To make a deployment on node, you have to check it bios.
 <itemize>
 <item>Firstly, node must be able to use PXE boot. Find PXE item in bios and enable it.
 <item>Secondly, search item usually named boot sequence. When you find it, put PXE (network,ethernet0) the first device to boot
@@ -695,7 +662,258 @@ for example, by default, many distributions ask the root password before checkin
 <p>
 <em>kadeploy</em> tools suite is configured through two configuration files : <tt>deploy.conf</tt> and <tt>deploy_cmd.conf</tt> in the <tt>/etc/kadeploy/</tt> folder.
 See the manpage for more.
-<!-- =========================== -->
-<!-- =========================== -->
 
+<sect1>dhcpd.conf
+<p>
+
+ddns-update-style none;
+default-lease-time 600;
+max-lease-time 7200;
+
+option subnet-mask 255.255.255.0;
+
+option routers 192.168.0.110;
+
+option domain-name-servers 192.168.0.110;
+option domain-name "localdomain";
+subnet 192.168.0.0 netmask 255.255.255.0 {
+        range 192.168.0.150 192.168.0.200;
+}
+
+#The NIC with this MAC address will always get the same IP address 192.168.03
+group {
+        use-host-decl-names on;
+
+        host ibm01 {
+                hardware ethernet 00:0d:60:53:50:26;
+                fixed-address 192.168.0.161;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+	host ibm02 {
+	hardware ethernet 00:0d:60:53:50:09;
+	fixed-address 192.168.0.162;
+        filename "/PXEClient/pxelinux.0";
+}
+
+        host ibm03 {
+                hardware ethernet 00:0d:60:53:50:09;
+                fixed-address 192.168.0.163;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+        host ibm04 {
+                hardware ethernet 00:0d:60:53:50:0A;
+                fixed-address 192.168.0.164;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+<sect1> /etc/xinetd.d/tftp
+<p>
+service tftp
+{
+        socket_type             = dgram
+        protocol                = udp
+        wait                    = yes
+        user                    = root
+        server                  = /usr/sbin/in.tftpd
+        server_args             = -s /var/lib/tftpboot
+        disable                 = no
+        per_source              = 11
+        cps                     = 100 2
+        flags                   = IPv4
+}
+
+<sect1>/etc/kadeploy/deploy.conf
+<p>
+# user who launches kadeploy commands
+deploy_user = deploy
+
+# path to the kadeploy2 install directory (structure must remain the same in this folder)
+kadeploy2_directory = /usr/local/kadeploy
+
+
+# Nodes properties #
+# ---------------- #
+
+# target partition on the nodes if no '-p' is passed to kadeploy
+default_target_partition = sda2
+
+# timeout before ordering a hard reboot, after a soft one at the beginning
+first_check_timeout = 210 # 160
+
+# timeout for the last check, when rebooting the nodes on the deployed system
+last_check_timeout = 250
+
+# deployment timeout upper time boundary for a deployment to remain valid
+# if empty: 1000 sec is the default value
+deployment_validity_timeout = 700
+
+## filesystems options
+# for ext2 filesystem
+ext2_options = -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+# for ext3 filesystem
+ext3_options = -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+
+# nmap conf #
+# --------- #
+
+# enables or disables the use of nmap command by default
+enable_nmap = 1
+
+# sets path to nmap command 
+nmap_cmd = /usr/bin/nmap
+
+# deploy remote command
+deploy_rcmd = rsh -l root
+
+# production remote command
+prod_rcmd = ssh -l root
+
+# parallel launcher window size for the cluster
+launcher_window_size = 25
+
+
+# database conf #
+# ------------- #
+
+# deployment database host
+deploy_db_host = localhost              # e.g. localhost
+
+# deployment database name
+deploy_db_name = deploy                 # e.g. deploy
+
+# deployment database login
+deploy_db_login = deploy
+
+# deployment database password
+deploy_db_psswd = deploypass
+
+
+# pre-install #
+# ----------- #
+
+# path to pre-archive
+pre_install_archive = /usr/local/kadeploy/preinstall/preinstall.tgz
+
+# path to pre-install script
+pre_install_script = init.ash
+
+# pre-install script timeout
+pre_install_script_timeout = 50
+
+# post-install #
+# ------------ #
+
+# path to post-install script
+post_install_script = traitement.ash
+
+
+# pxe conf #
+# -------- #
+
+# parameters for the booting kernel after deployment
+kernel_param = console=tty0
+
+# prevent using grub (SCSI problems, Itanium,...) (default is 0)
+use_nogrub = 1
+
+# where the files should be copied
+
+# tftp and pxe repository
+tftp_repository = /var/lib/tftpboot/PXEClient/
+pxe_rep = pxelinux.cfg/
+
+# how to tell it to remote nodes?
+tftp_relative_path = images_grub
+
+
+# labels allow to define shortcuts
+#
+# label... = kernel:initrd
+
+# label for standard nodes of the cluster
+
+label_deploy = duke-vmlinuz.x86_64:duke-initrd.x86_64 ETH_DRV=tg3 ETH_DEV=eth0 console=tty0 
+
+
+<sect1>/etc/kadeploy/deploy_cmd.conf
+<p>
+
+ibm04 softboot ssh root@ibm04 /sbin/reboot
+ibm04 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm04 /sbin/reboot
+ibm04 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.164:label_deploy
+ibm04 hardboot /bin/echo "exec hardboot ibm4"
+ibm04 console telnet kvm 1
+
+ibm03 softboot ssh root@ibm03 /sbin/reboot
+ibm03 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm03 /sbin/reboot
+ibm03 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.163:label_deploy
+ibm03 hardboot /bin/echo "exec hardboot ibm3"
+ibm03 console telnet kvm 1
+
+ibm02 softboot ssh root@ibm02 /sbin/reboot
+ibm02 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm02 /sbin/reboot
+ibm02 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.162:label_deploy
+ibm02 hardboot /bin/echo "exec hardboot ibm2"
+ibm02 console telnet kvm 1
+
+ibm01 softboot ssh root@ibm01 /sbin/reboot
+ibm01 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm01 /sbin/reboot
+ibm01 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.161:label_deploy
+ibm01 hardboot /bin/echo "exec hardboot ibm1"
+ibm01 console telnet kvm 1
+
+<!-- =========================== -->
+<!-- =========================== -->
+<sect1>/etc/kadeploy/clusterpartition.conf
+<p>
+sda size=160000
+part=1 size=10000 fdisktype=82 label=empty type=primary
+part=2 size=20000  fdisktype=83 label=empty type=primary
+part=3 size=130000  fdisktype=83 label=empty type=primary
+
+<sect1>/etc/kadeploy/clusternodes.conf
+<p>
+ibm01 00:0d:60:53:50:26 192.168.0.161
+ibm02 00:0d:60:53:50:09 192.168.0.162
+ibm03 00:0d:60:53:50:09 192.168.0.163
+ibm04 00:0d:60:53:50:0A 192.168.0.164
+
+<sect1>/etc/sudoers
+<p>
+##BEGIN # DO NOT REMOVE, needed by Kadeploy packages
+Defaults>deploy          env_reset,env_keep = "PWD PERL5LIB DISPLAY" # DO NOT REMOVE, needed by Kadeploy packages
+Cmnd_Alias DEPLOYCMDUSER = /usr/local/kadeploy/bin//kaconsole, /usr/local/kadeploy/bin//kadeploy, /usr/local/kadeploy/bin//kaenvironments, /usr/local/kadeploy/bin//kareboot, /usr/local/kadeploy/bin//karecordenv, /usr/local/kadeploy/bin//karemote # DO NOT REMOVE, needed by Kadeploy packages
+ALL ALL=(deploy) NOPASSWD: DEPLOYCMDUSER # DO NOT REMOVE, needed by Kadeploy packages
+##END# DO NOT REMOVE, needed by Kadeploy packages
+<p>
+
+<sect>Frequently Asked Questions
+<p>
+<sect1>Installation
+<sect2>What to do when Kadeploy installation say:"Warning: root-privileges are required to install some files !"
+<p>
+You have to execute installation with root privileges. Use sudo or pass under root user.
+
+<sect1>Utilisation
+<sect2> What to do when at boot,I have the message "cannot find initrd or vmlinuz"
+<p>
+
+<sect2> What to do when deployement failed with message "not there on first check"
+<p>
+There is this message because the node did not reboot fast enought or because node did not reboot all. To fix this problem you can:
+<itemize>
+<item>Reboot node manually and retry another deployement
+<item> Increase waiting time for reboot in deploy.conf (maybe you have a too short time)and retry deployment: <tt>first_check_timeout = 200</tt>
+</itemize>
+
+<sect2> What to do when during deployement, there is following message: "node-X discarded from deployement"
+<sect2> What to do when during deployement, there is following message: "node-X is already in another deployment"
+
+<sect2> What to do when deployement failed with message "preinstall failed"
+<sect2> What to do when deployement failed with message "postinstall failed"
+<sect2> What to do when deployement failed with message "not there on last check"
   </article>
