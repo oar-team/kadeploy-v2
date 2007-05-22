@@ -50,7 +50,7 @@ You are strongly recommended to take a backup of your system before major instal
 
 
 <!-- =========================== -->
-<sect1>News
+<sect1>Changelog
 <p>
 
 
@@ -136,7 +136,7 @@ The nodes are ready to be used on the new and freshly deployed environment.
 
 
 <!-- =========================== -->
-<sect1><label id="TFTP_structure"><tt>TFTP</tt> structure
+<sect1>TFTP structure
 <p>
 Here is an example of a <tt>TFTP</tt> structure:
 <verb>
@@ -174,18 +174,6 @@ These two last directories contain both about the same structure :
 These four directories (two in each tftp directory) should be writtable by the <tt>deploy</tt> user, to allow <em>kadeploy</em> to control the way the nodes are booting. 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 <!-- =========================== -->
 <sect>Installation
 <p>
@@ -207,7 +195,7 @@ Install dns (optional)
 
 <sect2>For Debian 
 <p>
-Packages to install: sudo, atftpd, dhcpd, 
+Packages to install: sudo, tftpd, dhcpd, make, mysql-server
 
 <sect2>For RedHat and Fedora
 <p>
@@ -232,7 +220,10 @@ or specifies tftp install variables (pxe_rep and image_grub are relative to tftp
 
 <tt>make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install</tt>
 
-Now you have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
+Now you should be able to get files from <tt>tftp_repository</tt> with a tftp client.
+
+You have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
+
 
 <sect1> DB part
 <p>
@@ -252,7 +243,7 @@ For Remote Host DataBase:
  
 	You have to be able to make this command line without error:  
 
-		<tt>mysql -u root -h REMOTE_HOST_ADDRESS -p --database=mysql </tt>
+		<tt>mysql -u root -h REMOTE_HOST_ADDRESS -p mysql </tt>
 
 	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
 
@@ -284,7 +275,6 @@ Note: By default you can connect to deploy database from anywhere. It is not nec
 It's done !!
 
 <sect> Configuration
-
 
 <sect1> dhcpd.conf example
 <p>
@@ -427,7 +417,7 @@ Some configuration files are pushed on the node (fdisk_user.txt and preinstall.c
 <sect>Using kadeploy 2.1.6
 
 <!-- =========================== -->
-<sect1>Deployment (ajouter animation flash)
+<sect1>Deployment 
 <p>
 The system has been prepared for deployment. Now what ? To deploy, something to be deployed is needed !
 <p>
@@ -450,27 +440,14 @@ If the deployment fails on some nodes, these are rebooted on a default environme
 <p>
 <!-- =========================== -->
 
-
-<sect1>Postinstall
+<sect1>Make his own image for Kadeploy
 <p>
-The postinstall is a tarball archive.
-It contains many files AND a <tt>main</tt> scripts.
-Postinstall contains actions that can't be put in the preinstall scripts.
-Manage the ssh services, and the ldap what you think important for a node...
+First, install a linux system on node. 
 
-
-<!-- =========================== -->
-<sect1>Cluster BootStrap
-<p>
-We will install a node named cls2, with ip 192.168.0.2.
-You need a tarball of a linux box.
-This tarball need a ssh server and a user deploy.
-something like <tt>myLinux.tgz</tt> that can be created simply like this:
+On Frontend, do:
 <verb>
-#cd /
-#tar czvlf /pathToAnotherFileSystem/myLinux.tgz /
+ssh root@node-x "tar --posix --numeric-owner --one-file-system -zcf - /" > myLinux.tgz 
 </verb> 
-<p>
 You now need to record this environement in kadeploy database.
 <verb>
 #karecordenv 
@@ -484,6 +461,13 @@ You now need to record this environement in kadeploy database.
             -i /boot/initrd.img-2.6.8-1-686-smp 
             -k /boot/vmlinuz-2.6.8-1-686-smp
 </verb>
+
+<sect1>Postinstall
+<p>
+The postinstall is a tarball archive.
+It contains many files AND a <tt>main</tt> scripts.
+Postinstall contains actions that can't be put in the preinstall scripts.
+Manage the ssh services, and the ldap what you think important for a node...
 
 <p>
 Now you got, an environnement, you have to watch for a preinstall, postinstall archive.
@@ -504,9 +488,6 @@ A simple solution, is
 <p>
 When this step is succefully done, you can ssh the node, and kadeploy a new environnement.
 Your training is completed.
-
-
-
 
 <!-- =========================== -->
 <sect1>Other tools for remote management
@@ -909,11 +890,47 @@ There is this message because the node did not reboot fast enought or because no
 <item>Reboot node manually and retry another deployement
 <item> Increase waiting time for reboot in deploy.conf (maybe you have a too short time)and retry deployment: <tt>first_check_timeout = 200</tt>
 </itemize>
+<sect2> What to do when during deployement, there is following message: "Kadeploy not launched from a tty"
+<p>
+This means that you are trying to launch kadeploy 2.1.5 from a non pseudo tty terminal/command launcher for example in a passive oar job. There is an issue depending of the tty context kadeploy is launched from, due to a rsh bug. So since 2.1.5 version, kadeploy explicitely tests its launching environment: if not from a tty, then it creates one for him in a detached screen. This screen session lasts only during the deployment time. This can occur if you are launching kadeploy with ssh used as a command launcher:
+<verb>
+jleduc@idpot:~$ ssh oar.orsay.grid5000.fr "/usr/local/bin/kadeploy -f ~/nodes.txt -e debianMin -p sda3"
+Kadeploy not launched from a tty
+Detached in a screen
+</verb>
 
+If you really need kadeploy stdout, for example to demonstrate many deployments from a single place, you have to force ssh to associate a pseudo tty for the remote command by adding -t option:
+<verb>
+jleduc@idpot:~$ ssh oar.orsay.grid5000.fr -t "/usr/local/bin/kadeploy -f ~/nodes.txt -e debianMin -p sda3"
+</verb>
+You should prefer to use tools, built on top of kadeploy, to manage your deployments sessions across the grid: please refer to katapult for additional details.
+<sect2> What to do when during deployement, there is following message: " Image file not found!"
+<p>
+This means that kadeploy is not able to read your environment's main archive. This can be caused by many reasons:
+<itemize>
+<item>registered filename is wrong, this can be verified retriving the registered information with kaenvironments -e environment_name
+<item>extension is not right (for example .tar.gz does not work, whereas .tgz is OK)
+<item>the directory rights are not good: kadeploy reads this file as the deploy user, so it has not the same access permission as yours: everyone should be able to read the files implied in an environment (ie: main archive and postinstall). 
+</itemize>
+<sect2> What to do when during deployement, there is following message: "node-X discarded from deployement"
 <sect2> What to do when during deployement, there is following message: "node-X discarded from deployement"
 <sect2> What to do when during deployement, there is following message: "node-X is already in another deployment"
+<p>
+This error occurs when 2 concurrent deployments are attempted on the same node.
+
+<itemize>
+<item>Soluce: If you have 2 simultaneus deployments, make sure you have 2 distinct sets of nodes. 
+</itemize>
+
+It can also occur if there is a problem in the database: typically a deployment ended in a strange way could lead to that.
+
+<itemize>
+<item>Soluce: wait for about 15 minutes and retry the deployment: kadeploy can correct its database automatically.
+</itemize>
 
 <sect2> What to do when deployement failed with message "preinstall failed"
+<sect2> What to do when deployement failed with message "poll: protocol failure in circuit setup"
+It mean there is too many rsh connection on server. If you can kill all rsh process.
 <sect2> What to do when deployement failed with message "postinstall failed"
 <sect2> What to do when deployement failed with message "not there on last check"
   </article>
