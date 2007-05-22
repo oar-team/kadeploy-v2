@@ -52,7 +52,10 @@ my $spoofuser;
 my $host;
 my @hostlist;
 my $hostfile;
-my $deploy_user=libkadeploy2::conflib::get_conf("deploy_user");
+my $clustername;
+my $deploy_user;
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -65,6 +68,8 @@ GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
 	   'd=s'               => \@envToDelete,
 	   'l=s'               => \@users,
+	   'c=s'	       => \$clustername,
+	   'cluster=s'         => \$clustername,
 	   'm=s'               => \@hostlist,
 	   'f=s'               => \$hostfile,
 	   'login=s'           => \@users,
@@ -78,8 +83,20 @@ $spoofuser=$users[$#users]; #get last -l
 if ($spoofuser) { $user=$spoofuser; }
 else { $spoofuser=$username; }
 
+if (!$clustername eq "") {
+	$configuration->set_clustername($clustername);
+	print "using settings for cluster" . $clustername . "\n";
+} else {
+	print "using settings for default cluster\n";
+}
+# load configuration files this part is overwritten by any specified nodelist
+if (!$configuration->check_conf()) {
+        print "ERROR : problem occured loading configuration file\n";
+        exit 1;
+}
+libkadeploy2::deploy_iolib::register_conf($configuration);
 
-			 
+
 if ($display_help) {
     print_usage();
     exit 0;
@@ -101,13 +118,18 @@ if ($hostfile)
 
 if (@hostlist)
 {
+    # load configuration files
+    if (!$configuration->check_nodes_conf(\@hostlist) || !$configuration->check_conf()) {
+	   print "ERROR : problem occured loading configuration file\n";
+	   exit 1; 
+    }
+    libkadeploy2::deploy_iolib::register_conf($configuration);
     my $envid;
     my $envname;
     my $host;
     my $nodeid;
     $base = libkadeploy2::deploy_iolib::connect();
-    if (@hostlist) 
-    {
+    if (@hostlist) {
 	print STDERR "Environment name for node\n";
 	print STDERR "-------------------------\n";	
     }
@@ -184,6 +206,8 @@ if (@envToDelete)
     exit(0);
 }
 
+# now we need deploy_user for the current cluster 
+$deploy_user = $configuration->get_conf("deploy_user");
 if (@env_list)
     {
 	if (!($spoofuser eq $deploy_user))
@@ -298,6 +322,7 @@ sub print_usage() {
     print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
     print "            -l | --login  login         - list environment from user 'login'\n";
     print "            --listlogin                 - list all 'login' recorded\n";
+    print "            -c | --cluster clustername  - gives information according to the named cluster\n";
     print "            -m            host          - give last environment deployed on the host\n";
     print "            -f            nodesfile     - give last environment deployed on the nodesfile\n";
     print "            -h | --help                 - this help\n";

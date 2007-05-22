@@ -4,9 +4,9 @@ kaenvironments - list and remove an environment.
 
 =head1 SYNOPSIS
 
-B<kaenvironments>  B<-e|--environment> environment_name [B<-l> username]
+B<kaenvironments>  B<-e|--environment> environment_name [B<-l> username] [B<-c|--cluster> clustername]
 
-B<kaenvironments>  B<-d> environment_name
+B<kaenvironments>  B<-d> environment_name [B<-c|--cluster> clustername]
 
 B<kaenvironments>  B<-m|--machine> hostname
 
@@ -27,6 +27,10 @@ Specifies the name of the environment to display.
 =item B<-l> username
 
 Specifies the environment's owner, by defaut the user issuing kaenvironments command.
+
+=item B<-c|--cluster> clustername
+
+For I<some> multicluster installation: specifies the cluster, by default it uses the default cluster. B<In most of the cases useless>. Necessary, for example, for a single kadeploy installation targetting multiple clusters with different CPUs architecture.
 
 =item B<-m|--machine> hostname
 
