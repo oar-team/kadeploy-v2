@@ -12,9 +12,12 @@ sub check_dev($$);
 sub check_partition($$$);
 
 if (!@ARGV){
-   print "Usage : kaadduser [-l|--login login] [-m|--machine hostname] [-p|--partition partition]\n";
+    print "Usage : kaadduser [-l|--login login] [-m|--machine hostname] [-p|--partition partition]\n";
     exit 0;
 }
+
+## Configuration
+my $configuration = libkadeploy2::conflib->new(); 
 
 ## declares the options
 my @user_list = ();
@@ -24,37 +27,44 @@ my @part_list = ();
 my @checked_hosts = ();
 
 ## gets the options
-GetOptions('l=s' => \@user_list,
-	   'login=s' => \@user_list,
-	   'm=s' => \@host_list,
-	   'machine=s' => \@host_list,
-	   'p=s' => \@part_list,
-	   'partition=s' => \@part_list
+GetOptions('l=s'               => \@user_list,
+	   'login=s'           => \@user_list,
+	   'm=s'               => \@host_list,
+	   'machine=s'         => \@host_list,
+	   'p=s'               => \@part_list,
+	   'partition=s'       => \@part_list
 	   );
 
-if (!@user_list)
-{
+## sets default values if needed
+if (!@user_list) {
     print STDERR "ERROR : no user specified\n";
     exit 1;
 }
-
-my $base = libkadeploy2::deploy_iolib::connect();
-
-## sets default values if needed
 if (!@host_list){
     print STDERR "ERROR : no host specified\n";
     exit 1;
 }
-else
-{
-    ## checks if specified nodes are registered
-    @checked_hosts = check_nodes($base,\@host_list);
-    if(!scalar(@checked_hosts)){ 
-	print STDERR "ERROR : none of the specified nodes is registered\n";
-	libkadeploy2::deploy_iolib::disconnect($base);
-	exit 1;
-      }
+
+# load configuration files
+if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+    print STDERR "ERROR : problem occured loading configuration file\n";
+    exit 1;
 }
+# register configuration file
+libkadeploy2::deploy_iolib::register_conf($configuration);
+
+
+my $base = libkadeploy2::deploy_iolib::connect();
+
+## checks if specified nodes are registered
+@checked_hosts = check_nodes($base,\@host_list);
+if(!scalar(@checked_hosts)){ 
+    print STDERR "ERROR : none of the specified nodes is registered\n";
+    libkadeploy2::deploy_iolib::disconnect($base);
+    exit 1;
+}
+
+
 if (!@part_list){
     print "WARNING : no partition specified ; rights granted for all partitions\n";
     @part_list = ("*");
