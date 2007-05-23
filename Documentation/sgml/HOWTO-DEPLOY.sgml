@@ -50,7 +50,7 @@ You are strongly recommended to take a backup of your system before major instal
 
 
 <!-- =========================== -->
-<sect1>Changelog
+<sect1>Changelogs
 <p>
 
 
@@ -179,7 +179,7 @@ These four directories (two in each tftp directory) should be writtable by the <
 <p>
 The goal of this part is to ease the deployment system installation steps and give information about all the relevant required tools and their configuration.
 
-First, get the kadeploy archive and put it on the your cluster frontend.
+First, get the kadeploy archive and put it on your cluster frontend.
 
 <sect1>Prerequisites
 <p>
@@ -190,6 +190,8 @@ Install dhcpd (configure it)
 Install tftp  (configure it)
 
 Install sudo
+
+Install perl
 
 Install dns (optional)
 
@@ -212,16 +214,13 @@ Optionnaly before starting:
 In the current directory do :
 <tt>make install</tt>
 
-then you have to install tftp part. You can use variable by defaut:
-
-<tt>make tftp_install</tt>
+then you have to install tftp part. You can use variable by defaut: <tt>make tftp_install</tt>
 
 or specifies tftp install variables (pxe_rep and image_grub are relative to tftp_repository):
 
 <tt>make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install</tt>
 
 Now you should be able to get files from <tt>tftp_repository</tt> with a tftp client.
-
 You have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
 
 
@@ -240,12 +239,13 @@ In the current directory do:
 <tt>make db_install</tt>
 
 For Remote Host DataBase:
+
  
-	You have to be able to make this command line without error:  
+You have to be able to make this command line without error:  
 
-		<tt>mysql -u root -h REMOTE_HOST_ADDRESS -p mysql </tt>
+        <tt>mysql -u root -h REMOTE_HOST_ADDRESS -p mysql </tt>
 
-	If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
+        If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
 
 	So connect to host where database is installed and connect to your database:
 
@@ -253,8 +253,8 @@ For Remote Host DataBase:
 
 	And type this command:
 
-		GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;
-		FLUSH  PRIVILEGES;
+	<tt>	GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;</tt>
+	<tt>	FLUSH  PRIVILEGES;</tt>
 
 	And exit from mysql. Reconnect to host where Kadeploy is installed and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
 
@@ -264,21 +264,25 @@ For Remote Host DataBase:
 
 	connect to host where database is installed and connect to your database: mysql -u root -p
 
-	And type this command:  DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
+	And type this command:  
 
-	And exit from mysql.
+	DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
 
-and follow instructions
+	And exit from mysql and follow instructions
 
 Note: By default you can connect to deploy database from anywhere. It is not necessary, but you can reduce access to deploy database to your head node. It is more secure.
 
 It's done !!
 
 <sect> Configuration
+<p>
+Kadeploy use a several number of files to function. In this part, we will describe them as more simple as possible
 
 <sect1> dhcpd.conf example
 <p>
-An example of server configuration.
+Kadeploy use PXE boot. It's necessary to configure dhcp server in a certain way.
+In dhcpd.conf, you must have description of all mac adress and corresponding ip for each node.
+ 
 <verb>
 allow booting;
 allow bootp;
@@ -312,53 +316,47 @@ host cls2 {
 </verb>
 
 <!-- =========================== -->
-<sect2><label id="inetd.conf"> <tt>inetd.conf</tt> example
+<sect1>Tftp Configuration
 <p>
-An example of inetd.conf
+At startup, node boot using PXE and get a kernel with tftp. So, you have to configure your tftp with the right tftp_root_directory (here it is /tftpboot)
+Here is an example of inetd.conf
 <verb>
 tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd --tftpd-timeout 300 --retry-timeout 5 --maxthread 100 --verbose=5  /tftpboot
 </verb>
 
 <sect1>Configuration files.
 <p>
-It is mandatory to create a <tt>/etc/kadeploy</tt> directory, and put
-the four configuration file in it.
+Kadeploy has 4 configuration files located in /etc/kadeploy.
 <itemize>
  <item><tt>/etc/kadeploy/deploy.conf</tt> contain tools and directory path, 
 global variable, database information, and kernel boot parameters.
  <item><tt>/etc/kadeploy/deploy_cmd.conf</tt> contain the command to be exectuted for each node.
  <item><tt>/etc/kadeploy/clusterpartition.conf</tt> contains default partitionment schema.
- <item><tt>/etc/kadeploy/clusternodes.conf</tt> contains the nodes informations.
-</itemize>
-
-
-
-
-<!-- =========================== -->
-<sect1>Adding Nodes
-<p>
-Then, <ref id="kanodes" name="kanodes"> is used to register the cluster "hardware" composition. 
-It needs the description of hosts, disks and partitions in a text file. 
-The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
-
-<p>
-Example of <tt>/etc/kadeploy/clusternodes.conf</tt> file.
  <verb>
-cls1 00:01:02:04:73:DA 192.168.0.1
-cls2 00:01:02:02:A7:F5 192.168.0.2
-</verb>
-
-<p>
-Example of <tt>/etc/kadeploy/clusterpartition.conf</tt> file.
- <verb>
+#Example of /etc/kadeploy/clusterpartition.conf file.
 hda size=100000
 part=1 size=2000  fdisktype=82 label=empty type=primary
 part=2 size=20000  fdisktype=83 label=empty type=primary
 part=3 size=88000  fdisktype=83 label=empty type=primary
 </verb>
+ <item><tt>/etc/kadeploy/clusternodes.conf</tt> contains the nodes informations.
+<verb>
+#Example of /etc/kadeploy/clusternodes.conf file. 
+#name mac              ip
+cls1 00:01:02:04:73:DA 192.168.0.1
+cls2 00:01:02:02:A7:F5 192.168.0.2
+</verb>
+</itemize>
+
+A longer explication located at the end of the document in the section "Example of a complet configuration for Kadeploy"
 
 
-
+<!-- =========================== -->
+<sect1>Adding Nodes
+<p>
+Once you have fill all the files, you have to use kanodes. It is used to register the cluster "hardware" composition. 
+It needs the description of hosts, disks and partitions in a text file. 
+The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
 <p>
 You need to execute the command:
 <verb>
@@ -382,9 +380,10 @@ Register partition done.
 
 <p>
 If you want to check if the db is correct, you can do:
+<verb>
 #kanodes -listnode
 #kanodes -listpartition
-
+</verb>
 <p>
 Once these operations completed, the system is almost ready for deployments.
 You have to put some right to your user with the command kaaduser.
@@ -394,7 +393,7 @@ You have to put some right to your user with the command kaaduser.
 Warning, when you change on of this two file you have to recall <tt>kanodes -add</tt>.
 
 
-<sect1>Configure nodes(ajouter capture d'écran)
+<sect1>Configure nodes
 <p>
 To make a deployment on node, you have to check it bios.
 <itemize>
@@ -412,6 +411,8 @@ The main script is found with : <tt> pre_install_script </tt> in configuration f
 Preinstall contains needed actions in order to deploy the image on the node (fdisk, mkfs, mkswap, bench)...
 Some configuration files are pushed on the node (fdisk_user.txt and preinstall.conf). 
 
+You can find an example of preinstall script in tool/pre_post_script/pre_install.tgz
+
 
 <!-- =========================== -->
 <sect>Using kadeploy 2.1.6
@@ -423,7 +424,7 @@ The system has been prepared for deployment. Now what ? To deploy, something to 
 <p>
 The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. 
 The first case is the simplest since nothing has to be done prior to the deployment itself. 
-In the other cases, <ref id="karecordenv" name="karecordenv">) are used to create and register (create/register) an environment in the database 
+In the other cases,karecordenv are used to create and register (create/register) an environment in the database 
 <p>
 The deployment itself i.e. of a given environment on target partitions of a set of cluster nodes is done using the <ref id="kadeploy" name="kadeploy"> tool.
 <p>
@@ -448,7 +449,11 @@ On Frontend, do:
 <verb>
 ssh root@node-x "tar --posix --numeric-owner --one-file-system -zcf - /" > myLinux.tgz 
 </verb> 
-You now need to record this environement in kadeploy database.
+Now, you have a system image but you have to get a postinstall. You can find an example of it in <tt>tools/pre_post_script/post_install.tgz</tt>. You will find in section "About Customization Script", an explication of how to customize this file.
+
+It is time to record this environement in kadeploy database. We will use karecordenv. 
+You must have the location of initrd and vmlinuz currently use in your system image.
+Type the following command:
 <verb>
 #karecordenv 
             -n "myLinux" 
@@ -462,17 +467,10 @@ You now need to record this environement in kadeploy database.
             -k /boot/vmlinuz-2.6.8-1-686-smp
 </verb>
 
-<sect1>Postinstall
-<p>
-The postinstall is a tarball archive.
-It contains many files AND a <tt>main</tt> scripts.
-Postinstall contains actions that can't be put in the preinstall scripts.
-Manage the ssh services, and the ldap what you think important for a node...
+You can verify that your environment have been recorded with th following command:
+<verb>kaencironments -e myLinux</verb>
 
-<p>
-Now you got, an environnement, you have to watch for a preinstall, postinstall archive.
-An example is given in <tt>lib/pre_post_script</tt> in the "$prefix" directory.
-
+<sect1>Section a definir
 <p>
 The cluster need a reference environnement to boot up properly.
 You can boot up the deployment system, if your node isn't installed.
@@ -494,10 +492,10 @@ Your training is completed.
 <p>
 Two remote management tools are available to diagnostic and if possible take control of cluster nodes that would be for instance in an unstable or undefined state further to a deployment failure. 
 <p>
-The <ref id="kaconsole" name="kaconsole"> tool enables to open a console on a remote node. 
+The kaconsole tool enables to open a console on a remote node. 
 It needs special hardware equipment and special command configuration. 
 <p>
-The <ref id="kareboot" name="kareboot"> tool enables to do various reboot types on cluster nodes. 
+The kareboot tool enables to do various reboot types on cluster nodes. 
 The possibilities are numerous : the reboot on a given (already installed) environment or 
 on a given partition or 
 even on the deployment kernel for instance. 
@@ -506,7 +504,7 @@ It also enables to hard reboot nodes appropriately equiped.
 
 <sect1>What if the cluster hardware composition changes ?
 <p>
-<ref id="kaaddnode" name="kaaddnode"> and <ref id="kadelnode" name="kadelnode"> enable to add and remove nodes from the deployment system if the cluster composition changes.
+<tt>kaaddnode</tt> and <tt>kadelnode</tt> enable to add and remove nodes from the deployment system if the cluster composition changes.
 <!-- =========================== -->
 <sect1>Command summary 
 <p>
