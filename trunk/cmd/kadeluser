@@ -12,6 +12,9 @@ if (!@ARGV){
     exit 0;
 }
 
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
+
 ## declares the options
 my @user_list = ();
 my @host_list = ();
@@ -39,6 +42,14 @@ if (!@part_list){
     print "WARNING : no partition specified, rights revoked for all partitions\n";
     @part_list = ("*");
 }
+
+# load configuration files
+if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+    print STDERR "ERROR : problem occured loading configuration file\n";
+    exit 1;
+}
+# register configuration
+libkadeploy2::deploy_iolib::register_conf($configuration);
 
 ## time to revoke rights
 my $base = libkadeploy2::deploy_iolib::connect();
