@@ -245,8 +245,12 @@ sub check_cmd {
     }
 
     if(!(-e $config->{deploycmdconf})){
-	print "ERROR : command configuration file does not exist\n";
-	return 0;
+	print STDERR "ERROR : command configuration file does not exist\n";
+	exit 1;
+    }
+    if(!(-r $config->{deploycmdconf})){
+        print STDERR "ERROR : command configuration file cannot be read\n";
+        exit 1;
     }
 
     print "Checking command definition...\n";

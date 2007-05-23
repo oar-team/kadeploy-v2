@@ -1,23 +1,22 @@
 #!/usr/bin/perl
 
 # needs a configuration file that should be found at /etc/kadeploy/deploy_cmd.conf
+use strict;
+use warnings;
 
 use Getopt::Long;
 use libkadeploy2::conflib;
-use strict;
+use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
 
 my @host_list = ();
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
+
 if (!@ARGV){
     print "Usage : kaconsole -m|--machine hostname\n";
-    exit 0;
-}
-
-## checks if the command configuration file exist
-if(!(libkadeploy2::conflib::check_cmd_exist() == 1)){
-    print "ERROR : command configuration file loading failed\n";
     exit 0;
 }
 
@@ -32,10 +31,17 @@ if (!@host_list){
     exit 0;
 }
 
+# load configuration files
+if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+    print STDERR "ERROR : problem occured loading configuration file\n";
+    exit 1;
+}
+my %cmd = $configuration->check_cmd();
+
+libkadeploy2::deploy_iolib::register_conf($configuration);
+
 ## Available variables are :
 ## - @host_list - list of hosts to reboot
-
-my %cmd = libkadeploy2::conflib::check_cmd;
 
 #Check rights on DB
 my $base = libkadeploy2::deploy_iolib::connect();
