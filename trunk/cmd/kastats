@@ -7,10 +7,43 @@ use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
 
+# local functions declaration
+sub usage;
+
+# Options
+my $help;
+my $clustername;
 
 # Globals
 my $deployment_number;
 
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
+
+GetOptions('c=s'            => \$clustername,
+           'cluster=s'      => \$clustername,
+           'h!'             => \$help,
+           );
+
+if ($help) {
+    usage();
+    exit 0;
+}
+
+
+if (!$clustername eq "") {
+        $configuration->set_clustername($clustername);
+        print "using settings for cluster " . $clustername . "\n";
+} else {
+        print "using settings for default cluster\n";
+}
+# load configuration files this part is overwritten by any specified nodelist
+if (!$configuration->check_conf()) {
+        print "ERROR : problem occured loading configuration file\n";
+        exit 1;
+}
+# register configuration
+libkadeploy2::deploy_iolib::register_conf($configuration);
 
 
 # Returns all environments that match the given name
@@ -65,3 +98,12 @@ get_deployment_stats($base);
 print "\nnumber of deployments:", $deployment_number, "\n"; 
 
 libkadeploy2::deploy_iolib::disconnect($base);
+
+
+sub usage {
+    print "$0
+\t-c | --cluster        cluster name about which statistics should be returned
+\t-h                    this help
+
+";
+}
