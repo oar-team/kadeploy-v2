@@ -85,7 +85,7 @@ else { $spoofuser=$username; }
 
 if (!$clustername eq "") {
 	$configuration->set_clustername($clustername);
-	print "using settings for cluster" . $clustername . "\n";
+	print "using settings for cluster " . $clustername . "\n";
 } else {
 	print "using settings for default cluster\n";
 }
@@ -94,6 +94,7 @@ if (!$configuration->check_conf()) {
         print "ERROR : problem occured loading configuration file\n";
         exit 1;
 }
+# register configuration
 libkadeploy2::deploy_iolib::register_conf($configuration);
 
 

@@ -6,7 +6,6 @@
 use Getopt::Long;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::conflib;
-#use libkadeploy2::envlib qw(init_env get_env is_env dump_env);
 use libkadeploy2::envlib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
@@ -38,6 +37,9 @@ my $successful = 0;
 my $username;
 my $user;
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
+my $clustername; # name of the targetted cluster for the environment
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -50,39 +52,56 @@ if (!@ARGV){
 }
 
 # gets the options
-GetOptions('n=s' => \$name,
-	   'name=s' => \$name,
-           'v=i' => \$version,
-	   'version=i' => \$version,
-           'd=s' => \$description,
-	   'description=s' => \$description,
-           'a=s' => \$author,
-	   'author=s' => \$author,
-           's=i' => \$size,
-	   'size=i' => \$size,
-	   'i=s' => \$initrd_path,
-	   'initrdpath=s' => \$initrd_path,
-           'k=s' => \$kernel_path,
-	   'kernelpath=s' => \$kernel_path,
-           'p=s' => \$kernel_param,
-	   'kernelparam=s' => \$kernel_param,
-           'fb=s' => \$filebase_url,
-	   'filebase=s' => \$filebase_url,
-           'ft=s' => \$filesite_url,
-	   'filesite=s' => \$filesite_url,
-           'fd=s' => \$fdisk_type,
-	   'fdisktype=s' => \$fdisk_type,
-           'fs=s' => \$file_system,
-	   'filesystem=s' => \$file_system,
-	   'fe=s' => \$file_environment,
+GetOptions('c=s'                => \$clustername,
+           'cluster=s'          => \$clustername,
+           'n=s'                => \$name,
+	   'name=s'             => \$name,
+           'v=i'                => \$version,
+	   'version=i'          => \$version,
+           'd=s'                => \$description,
+	   'description=s'      => \$description,
+           'a=s'                => \$author,
+	   'author=s'           => \$author,
+           's=i'                => \$size,
+	   'size=i'             => \$size,
+	   'i=s'                => \$initrd_path,
+	   'initrdpath=s'       => \$initrd_path,
+           'k=s'                => \$kernel_path,
+	   'kernelpath=s'       => \$kernel_path,
+           'p=s'                => \$kernel_param,
+	   'kernelparam=s'      => \$kernel_param,
+           'fb=s'               => \$filebase_url,
+	   'filebase=s'         => \$filebase_url,
+           'ft=s'               => \$filesite_url,
+	   'filesite=s'         => \$filesite_url,
+           'fd=s'               => \$fdisk_type,
+	   'fdisktype=s'        => \$fdisk_type,
+           'fs=s'               => \$file_system,
+	   'filesystem=s'       => \$file_system,
+	   'fe=s'               => \$file_environment,
 	   'file_environment=s' => \$file_environment,
-	   'optsupport=s' => \$optsupport,
-	   'o=s'          => \$optsupport,	
-	   'h!'           => \$help,
+	   'optsupport=s'       => \$optsupport,
+	   'o=s'                => \$optsupport,	
+	   'h!'                 => \$help,
 	   );
 
 $user=$username;
 
+if (!$clustername eq "") {
+        $configuration->set_clustername($clustername);
+        print "using settings for cluster " . $clustername . "\n";
+} else {
+        print "using settings for default cluster\n";
+}
+# load configuration files this part is overwritten by any specified nodelist
+if (!$configuration->check_conf()) {
+        print "ERROR : problem occured loading configuration file\n";
+        exit 1;
+}
+# register configuration
+libkadeploy2::deploy_iolib::register_conf($configuration);
+libkadeploy2::node_bd::register_conf($configuration);
+libkadeploy2::nodes::register_conf($configuration);
 
 if ($help)
 {
@@ -211,6 +230,7 @@ if ($successful){
 sub help() {
     print "
 Usage : karecordenv\n
+\t-c  | --cluster          clustername          (default is defaut cluster)
 \t-n  | --name             environmentname
 \t-v  | --version          version              (default is 1)
 \t-d  | --description      description

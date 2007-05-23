@@ -12,6 +12,9 @@ use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
 use strict;
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
+
 my @host_list = ();
 my $host;
 my $verbose = 0;
@@ -62,7 +65,19 @@ if ($remote_command eq "") {
 }
 
 
-my $deployuser=libkadeploy2::conflib::get_conf("deploy_user");
+# load configuration files
+if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+    print "ERROR : problem occured loading configuration file\n";
+    exit 1;
+}
+# register configuration for the different modules
+libkadeploy2::deploy_iolib::register_conf($configuration);
+libkadeploy2::node_bd::register_conf($configuration);
+libkadeploy2::nodes::register_conf($configuration);
+libkadeploy2::bootlib::register_conf($configuration);
+
+
+my $deployuser = $configuration->get_conf("deploy_user");
 my $base = libkadeploy2::deploy_iolib::connect();
 
 my $right_string;
@@ -75,7 +90,7 @@ my $nodes_set = libkadeploy2::nodes->new("production", $verbose);
 my $tmp_node;
 my $nodeIP;
 
-my $connector = libkadeploy2::conflib::get_conf("prod_rcmd");
+my $connector = $configuration->get_conf("prod_rcmd");
 
 foreach $host (@host_list) {
     $tmp_node = libkadeploy2::node_bd->new($host, 0, 0, 0, 0);
