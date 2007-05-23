@@ -24,7 +24,7 @@ Specifies the authorized partition on the target nodes, can be used more than on
 
 =item B<-m|--machine> hostname
 
-Specifies a target host. This option can be used more than once to specify several target hosts.
+Specifies a target host. This option can be used more than once to specify several target hosts. All the hosts specified in a single command should belong to the same cluster.
 
 =back
 
