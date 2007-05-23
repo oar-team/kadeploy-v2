@@ -4,17 +4,21 @@ kanodes - registers and remove nodes, disk, partition.
 
 =head1 SYNOPSIS
 
-B<kanodes>  B<[-add]>  [B<-del> hostname]  [B<-listnode>]  [B<-listpartition>]  [B<-h>]
+B<kanodes>  [B<-c|--cluster> clustername] B<[-add]>  [B<-del> hostname]  [B<-listnode>]  [B<-listpartition>]  [B<-h>]
 
 =head1 DESCRIPTION
 
-kanodes  registers nodes and their disk and partition features for them to be available to the deployment system. It is used at the very begining to describe a whole cluster (after having completed the installation  for  instance)  or  later  when  new nodes are added to a cluster already managed by the deployment system.
+kanodes registers nodes and their disk and partition features for them to be available to the deployment system on a given cluster. It is used at the very begining to describe a whole cluster (after having completed the installation for instance) or later when new nodes are added to a cluster already managed by the deployment system. For multiclusters sites, with multiple databases, kanodes does not deduce the target cluster according to the nodes' name, because B</etc/kadeploy/deploy_cmd.conf> can still be unfinished or incoherent with the site configuration I<it only rely on -c option for cluster definition>.
 
 It use two files named B</etc/kadeploy/clusternodes.conf>  B</etc/kadeploy/clusterpartition.conf>.
 
 =head1 OPTIONS
 
 =over
+
+=item B<-c|--cluster> clustername
+
+Perform operation on the specified cluster: if a set of nodes has to be registered to a specific cluster, with a dedicated database, it should be specified here. This information is very important for sites with multiple clusters with different architectures, or multiple independant clusters with different databases. In most of the cases, the default configuration is enough.
 
 =item B<-add>
 
@@ -40,7 +44,7 @@ Prints help screen.
 
 =head1 SEE ALSO
 
-clusterpartition.conf(1), clusternodes.conf(1)
+clusterpartition.conf(1), clusternodes.conf(1), deploy_cmd.conf(1)
 
 =head1 COPYRIGHTS
 
