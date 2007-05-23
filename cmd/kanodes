@@ -25,7 +25,14 @@ my $help;
 my $listnode;
 my $listpartition;
 my $iwanthelp=1;
-GetOptions('add!'           => \$add,
+my $clustername;
+
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
+
+GetOptions('c=s'            => \$clustername,
+	   'cluster=s'      => \$clustername,
+	   'add!'           => \$add,
 	   'del=s'          => \@nodestodel,
 	   'h!'             => \$help,
 	   'listnode!'      => \$listnode,
@@ -39,6 +46,22 @@ my @part_env_id_list = ();
 my $ok=1;
 
 if ($help) { usage(); $iwanthelp=0; }
+
+
+if (!$clustername eq "") {
+        $configuration->set_clustername($clustername);
+        print "using settings for cluster " . $clustername . "\n";
+} else {
+        print "using settings for default cluster\n";
+}
+# load configuration files this part is overwritten by any specified nodelist
+if (!$configuration->check_conf()) {
+        print "ERROR : problem occured loading configuration file\n";
+        exit 1;
+}
+# register configuration
+libkadeploy2::deploy_iolib::register_conf($configuration);
+
 
 if ($add)
 {
@@ -103,11 +126,14 @@ if ($iwanthelp)
 sub usage()
 {
     print "$0
+\t-c | --cluster        cluster name to which nodes should be added (by default added to default cluster)
 \t-add                  add nodes from $nodesfile $nodespartitionfile
 \t-del [myhostname]     delete specified hostname
 \t-listnode             list node from db
 \t-listpartition        list partition from db 
 \t-h                    this help
+
+-c option is IMPORTANT in the case of multicluster, to register the nodes to cluster specific databases. If there is only one database for all the site's clusters the default configuration is based on /etc/kadeploy/deploy.conf configuration file. Please refer to man page for additional information.
 ";
 }
 
