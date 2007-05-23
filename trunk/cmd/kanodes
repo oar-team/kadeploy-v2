@@ -6,8 +6,6 @@ use Getopt::Long;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::conflib;
  
-use libkadeploy2::node_bd;
-use libkadeploy2::nodes;
 use strict;
 use warnings;
 
