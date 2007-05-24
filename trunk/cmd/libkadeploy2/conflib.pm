@@ -33,6 +33,7 @@ sub check_conf;
 sub check_cmd;
 sub check_nodes_conf;
 sub check_cmd_exist;
+sub set_conf;
 sub get_conf;
 sub is_conf;
 sub dump_conf;
@@ -327,6 +328,18 @@ sub check_cmd_exist {
     }
     
     return 1;
+}
+
+
+# set a parameter to currently loaded configuration
+# to overwrite a defaut value, or add a new one
+sub set_conf {
+  my $config = shift;
+  my $key = shift;
+  my $value = shift;
+  (defined $key) or print "WARNING : set_conf expects a parameter \n";
+   $config->{params}{$key} = $value;
+   return 1;
 }
 
 

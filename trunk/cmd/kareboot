@@ -25,12 +25,13 @@ my $env = "";
 my $device="";
 my $reboot = "";
 my $query = "";
+my $kernel_parameters = "";
 my @hosts_to_reboot = (); # list of nodes to reboot
 my $verbose = 0;
 my $debug = 1;
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
-my $kareboot_usage = "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] [-m|--machine hostname] -f nodefile [-e|--environment name] [-p|--partition partition]\n";
+my $kareboot_usage = "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] [-m|--machine hostname] -f nodefile [-e|--environment name] [-p|--partition partition] [-kp|--kernel-parameters \"kernel parameters\"]\n";
 
 if (!@ARGV){
     print $kareboot_usage;
@@ -53,6 +54,8 @@ GetOptions('m=s'           => \@host_list,
 	   'noreboot'      => \$noreboot,
 	   'p=s'           => \$device,
 	   'partition=s'   => \$device,
+	   'kp=s'	   => \$kernel_parameters,
+	   'kernel-parameters=s' => \$kernel_parameters,
 	   'verbose'       => \$verbose,
 	   'v'             => \$verbose
 	   );
@@ -100,6 +103,11 @@ if (($deploy && $env) || ($deploy && $device) || ($env && $device)){
 if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
     print "ERROR : problem occured loading configuration file\n";
     exit 1;
+}
+# add custom kernel parameters to configuration
+if (!$kernel_parameters eq "") {
+    $configuration->set_conf("custom_kernel_parameters", $kernel_parameters);
+    print "nodes will be rebooted using custom kernel parameters\n";
 }
 # register configuration for the different modules
 libkadeploy2::deploy_iolib::register_conf($configuration);
