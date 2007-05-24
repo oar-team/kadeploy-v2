@@ -4,7 +4,7 @@ kareboot - reboot a set of nodes.
 
 =head1 SYNOPSIS
 
-B<kareboot>  [[B<-n|--noreboot>] | [B<-s|--soft>] | [B<-h|--hard>] | [B<-d|--deploy>]] [[B<-e|--environment> environment_name] | [B<-p|--partition> partition]]  [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+B<kareboot>  [[B<-n|--noreboot>] | [B<-s|--soft>] | [B<-h|--hard>] | [B<-d|--deploy>]] [[B<-e|--environment> environment_name] | [B<-p|--partition> partition]] [B<-kp|--kernel-parameters> "kernel parameters"] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
@@ -38,6 +38,10 @@ Specifies the environment the target nodes should reboot on.
 
 Specifies the partition the target nodes should reboot on.
 
+=item B<-kp|--kernel-parameters> "kernel parameters"
+
+Specifies custom kernel parameters for the selected nodes.
+
 =item B<-m|--machine> hostname
 
 Specifies a target host. This option can be used more than once to specify several target hosts.
@@ -67,6 +71,10 @@ Reboot node6 and node7 on the first partition where the environement debian4all 
 =item kareboot -s -p sda3 -m node3
 
 Reboot node3 on the environment deployed on partition sda3.
+
+=item kareboot -s -p sda3 -m node3 -kp "console=tty0 console=ttyS0,38400n8 param=foo"
+
+Reboot node3 on the environment deployed on partition sda3 with specific kernel parameter.
 
 =back
 

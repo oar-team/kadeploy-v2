@@ -69,6 +69,7 @@ sub manage_grub_pxe($$){
     my $env_fdisktype = $env_info[6];
     $env_archive = substr($env_archive,6);
 
+    my $custom_kernel_parameters = $configuration->get_conf("custom_kernel_parameters");
     #my $nogrub = 1;
     my $nogrub = $configuration->get_conf("use_nogrub");
     my $clustername = $configuration->get_clustername();
@@ -84,6 +85,19 @@ sub manage_grub_pxe($$){
 	print "No kernel parameter, taking default ones defined in the configuration file\n";
 	$kernel_param = $configuration->get_conf("kernel_param");
     }
+    if (!$custom_kernel_parameters eq "") { # user customized kernel parameters
+	print "using custom kernel parameters: " . $custom_kernel_parameters . "\n";
+	# compute basic checksum
+	my $checksum = 0;
+	my $ascval;
+	foreach $ascval (unpack("C*", $custom_kernel_parameters)) {
+            $checksum += $ascval;
+	}
+	$filename_append = $filename_append . $checksum;
+	#print "->appending to filename " . $filename_append . "\n";
+	$kernel_param = $custom_kernel_parameters;
+    }
+    
     my $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
     my $pxe_tftp_relative_folder = "folder_env_" . $env_id; # for PXE generated files
     my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
