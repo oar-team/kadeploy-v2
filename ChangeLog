@@ -1,3 +1,13 @@
+2.1.6:
+------
+* kadeploy is multicluster: possibility to define several deploy.conf
+configuration files 1 per cluster. This new possibility allows to use kadeploy
+on 2 clusters of the same site having different default partition, different
+default kernel parameters to pass, but also different timings for boot time,
+or even different databases (if environments for one cluster cannot be
+deployed on the other one).
+* custom parameters can be passed with kareboot to the deployed nodes.
+
 2.1.5:
 ------
 * deployment of more than 120 nodes works now: no more restrictions on the
