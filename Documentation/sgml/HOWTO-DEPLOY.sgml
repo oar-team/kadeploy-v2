@@ -1,12 +1,12 @@
 <!doctype linuxdoc system>
 <article>
 <!-- Initially generated from The_LDP_HOWTO_Generator V0.51 -->
-<title>Kadeploy v2.1.6
+<title>Kadeploy v2
 <author>Julien Leduc (<url url="mailto:julien.leduc@imag.fr" name="julien.leduc@imag.fr">), 
 Pierre Lemoine,
 Gaetan Peaquin, 
 Johann Peyrard (<url url="mailto:jpeyrard@imag.fr" name="jpeyrard@imag.fr">)
-<date>V0.02  2005-09-16
+<date>V0.02  2007-05-23
 <!-- Primary category: 2.3. {Clustering} -->
 <!-- Keywords: cluster,  deployment, kadeploy, perl, mysql, on demand, computing environment -->
 <!-- Oneliner: Explains howto use kadeploy deploying system -->
@@ -415,7 +415,7 @@ You can find an example of preinstall script in tool/pre_post_script/pre_install
 
 
 <!-- =========================== -->
-<sect>Using kadeploy 2.1.6
+<sect>Using kadeploy
 
 <!-- =========================== -->
 <sect1>Deployment 
@@ -558,11 +558,11 @@ Originally, these two scripts are written in <em>ash</em>, which is a lightweigh
 <!-- =========================== -->
 <sect1>Preinstallation script
 <p>
-This script is common to all environments, its goal is to prepare the system to the hardware specification and the target hard disk drive for the deployment. It can load a specific IDE controller driver, improve deployment performance or make every kind of checks needed. This script is defined in the configuration file as <ref id="pre_install_script" name="pre_install_script"> and the associated archive as <ref id="pre_install_archive" name="pre_install_archive">.
+This script is common to all environments, its goal is to prepare the system to the hardware specification and the target hard disk drive for the deployment. It can load a specific IDE controller driver, improve deployment performance or make every kind of checks needed. This script is defined in the configuration file as pre_install_script and the associated archive as pre_install_archive.
 <!-- =========================== -->
 <sect2>Preinstallation archive structure
 <p>
-The preinstallation archive is a gzipped tar archive, containing the <ref id="pre_install_script" name="pre_install_script"> in its root directory.
+The preinstallation archive is a gzipped tar archive, containing the pre_install_script in its root directory.
 Here is an example of a preinstallation archive structure:
 <verb>
 /
@@ -582,14 +582,21 @@ The directory structure allows to custom the tasks to your needs. In this exampl
    <item><verb>lib/</verb> is a directory where you can add custom libraries for your binaries. I suggest you to compile static binaries, to prevent conflicts/version problems due to the presence of the system's shared libraries.
 </itemize>
 
+<sect2>init.ash
+<p>
+<sect2>partition.ash
+<p>
+<sect2>preinstalldisk.conf
+<p>
+
 <!-- =========================== -->
 <sect1>Postinstallation script
 <p>
-This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable system. It is composed of a gunzipped tar archive that contains all the sites files and a script <em>traitement.ash</em> in the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the <tt>post_install_script</tt> is executed on every node. The script name is defined in the configuration file as <ref id="post_install_script" name="post_install_script">.
+This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable system. It is composed of a gunzipped tar archive that contains all the sites files and a script <em>traitement.ash</em> in the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the <tt>post_install_script</tt> is executed on every node. The script name is defined in the configuration file as post_install_script.
 <!-- =========================== -->
 <sect2>Postinstallation archive structure
 <p>
-The postinstallation archive is a gzipped tar archive, containing the <ref id="post_install_script" name="post_install_script"> in its root directory.
+The postinstallation archive is a gzipped tar archive, containing the post_install_script in its root directory.
 Here is an example of a postinstallation archive structure:
 <verb>
 /
