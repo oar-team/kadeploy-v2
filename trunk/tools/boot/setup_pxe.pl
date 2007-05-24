@@ -1,6 +1,16 @@
 #!/usr/bin/perl
 
+use Getopt::Long;
+
 use libkadeploy2::conflib;
+use libkadeploy2::deploy_iolib;
+
+my @host_list; # machine name is prefered since it allows to change only the configuration directive to pass a node from one cluster to another, in the deploy_cmd.conf file otherwise 2 lines would have been required
+
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
+
+my $usage = "Usage : setup_pxe.pl range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\twhere range can be a hostname declared in kadeploy database (should be prefered for multi cluster sites with several databases), a single IP adress e.g. '192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
 
 $PROMPT = 1;
 $DISPLAY = "messages";
@@ -8,16 +18,21 @@ $TIMEOUT = 50;
 $BAUDRATE = 38400;
 
 if (!@ARGV){
-    print "Usage : setup_pxe.pl range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\twhere range can be a single IP adress e.g. '192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
-	exit 0;
+    print $usage;
+    exit 0;
 }
 
 
+if (!$configuration->check_conf()) {
+    print "ERROR : problem occured loading configuration file\n";
+    exit 1;
+}
+
 ## gets appropriate parameters from configuration file
-$network = libkadeploy2::conflib::get_conf("network");
-$tftp_repository = libkadeploy2::conflib::get_conf("tftp_repository");
-$pxe_rep = $tftp_repository . libkadeploy2::conflib::get_conf("pxe_rep");
-$tftp_relative_path = libkadeploy2::conflib::get_conf("tftp_relative_path");
+$network = $configuration->get_conf("network");
+$tftp_repository = $configuration->get_conf("tftp_repository");
+$pxe_rep = $tftp_repository . $configuration->get_conf("pxe_rep");
+$tftp_relative_path = $configuration->get_conf("tftp_relative_path");
 
 $images_repository = $tftp_repository . $tftp_relative_path;
 
@@ -33,9 +48,38 @@ my @ranges1;
 my @ranges2;
 my @kernels;
 my @initrds;
+my $addr;
 
 (@args) = @ARGV;
 
+sub rangeify {
+    my $thing = shift; # range, IP or hostname 
+
+    if (($thing =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/) || ($thing =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)-(\d+)$/)) {
+        # $thing is a valid range
+	return $thing;
+    } else { # thing should be a name
+	push (@host_list, $thing);
+	if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
+		print "ERROR : problem occured loading configuration file\n";
+		exit 1;
+	}
+	# update settings for the rest
+	$network = $configuration->get_conf("network");
+	$tftp_repository = $configuration->get_conf("tftp_repository");
+	$pxe_rep = $tftp_repository . $configuration->get_conf("pxe_rep");
+	$tftp_relative_path = $configuration->get_conf("tftp_relative_path");
+	libkadeploy2::deploy_iolib::register_conf($configuration);
+	my $base = libkadeploy2::deploy_iolib::connect();
+	$addr = libkadeploy2::deploy_iolib::node_name_to_ip($base,$thing);
+	libkadeploy2::deploy_iolib::disconnect($base);
+	if(!$addr) {
+		print STDERR "ERROR : cannot retrive ipadress for " . $thing . "\n";
+		exit 1;
+	}
+	return $addr;
+    }
+}
 
 sub hexalize {
     $number = shift;
@@ -110,31 +154,15 @@ sub test {
 
 
 
-# copy grub_file to grub repositories
-#-f $grub_file or die "grub image file does not exist!";
-
 
 
 $template_default_content="PROMPT $PROMPT\nSERIAL 0 $BAUDRATE\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
 
 
-# compute network hex address
-#if ($network=~/(\d+)\.(\d+)\.(\d+)\.(\d+)/) {
-#    @t=($1, $2, $3, $4);
-#    $IP_hex="";
-#    for ($i=0; $i<3; $i++) {
-#	$network_hex.=hexalize($t[$i]);
-#    }
-#}
-#else {
-#    die "wrong network adress format";
-#}
-
-
 # perform tests on arguments and fill arrays
 ARG: foreach $argument (@args) {
     if ($argument =~ /^(.*)\:(.*)\:(.*)$/) {
-	$range = $1;
+	$range = rangeify($1);
 	$kernel = $2;
 	$initrd = $3;
 	test($range, $kernel, $initrd) and print "OK\n" and next ARG;
@@ -142,11 +170,11 @@ ARG: foreach $argument (@args) {
 	die "error: $error";
     }
     elsif ($argument =~ /^(.*)\:(.*)$/) { # we use a shortcut here
-	    $range = $1;
+	    $range = rangeify($1);
 	    $label = $2; # label to get from configuration
 	    $label =~ /^label/ or die "wrong label syntax: should begin with the prefix \'label\'";
-	    if (libkadeploy2::conflib::is_conf($label)) {
-		    $argument = libkadeploy2::conflib::get_conf($label);
+	    if ($configuration->is_conf($label)) {
+		    $argument = $configuration->get_conf($label);
 		    if ($argument =~ /^(.*)\:(.*)$/) {
 			     $kernel = $1;
 			     $initrd = $2;
