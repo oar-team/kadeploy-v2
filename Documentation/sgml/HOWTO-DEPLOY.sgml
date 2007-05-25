@@ -584,10 +584,132 @@ The directory structure allows to custom the tasks to your needs. In this exampl
 
 <sect2>init.ash
 <p>
-<sect2>partition.ash
-<p>
+Example of init.ash
+<verb>
+  #!/bin/ash
+  ./rambin/preinstalldisk.conf
+
+  MODULES=""             # specify modules needed to be load (Ex: sata_svw, sata_sil, sata_nv)
+
+  echo "Loading modules"
+  for m in $MODULES ; do modprobe $m ; done
+
+  # thanks to the use of devfs
+  if [ -e /dev/hda ]; then
+        echo "you have an IDE hard drive"
+  fi
+
+  if [ -e /dev/sda ]; then
+        echo "you have a SCSI or SATA hard drive"
+  fi
+
+  echo "Partitioning..."
+  /rambin/partition.ash
+
+  echo "Preinstall done\n"
+
+  # Duke
+</verb>
+
 <sect2>preinstalldisk.conf
 <p>
+Example of Preinstalldisk.conf
+<verb>
+  HARDDRIVE="/dev/hda" # specify device location
+  DO_FDISK=1
+
+  SWAP_DEV="/dev/hda1"    # specify swap partition
+  SWAP_FORMAT=1           # 1 if you want preinstall format swap partition, 0 either
+
+  TMP_DEV="/dev/hda3"     # specify tmp partition
+  TMP_FS="ext2"           # specify tmp type
+  TMP_FORMAT=0            # 1 if you want preinstall format tmp partition, 0 either
+
+  SCRATCH_DEV="/dev/hda4"
+  SCRATCH_FS="ext2"       # specify scratch type
+  SCRATCH_FORMAT=0        # 1 if you want preinstall format scratch partition, 0 either
+</verb>
+
+<sect2>partition.ash
+<p>
+Example
+<verb>
+  #!/bin/ash
+  ./rambin/preinstalldisk.conf
+
+  FDISKFILEADMIN="/rambin/fdisk.txt"                # specify location of fdisk.txt
+  FDISKFILEUSER="/rambin/fdisk_user.txt"
+
+
+  if [ $DO_FDISK ] ; then                           
+        cat  $FDISKFILEUSER  | fdisk $HARDDRIVE     # rebuild the partition table using FDISKFILEUSER
+  fi
+
+  #if $FDISKFILEADMIN exist launch it
+  cat  $FDISKFILEADMIN | fdisk $HARDDRIVE
+
+  #cat  $FDISKFILE | fdisk $HARDDRIVE
+  #cat  $FDISKFILEUSER  | fdisk $HARDDRIVE
+
+  if  [ $SWAP_FORMAT ]; then
+    mkswap $SWAP_DEV                                # create swap partition
+  fi
+
+  if [ $TMP_FORMAT ]; then                          
+     mkfs -t $TMP_FS $TMP_DEV                       # create tmp partition
+  fi
+
+  if [ $SCRATCH_FORMAT ]; then
+      mkfs -t $SCRATCH_FS $SCRATCH_DEV              # create swap partion
+  fi
+</verb>
+
+<sect2> fdisk.txt (optionnal)
+<p>
+<verb>
+  d
+  1
+  d
+  2
+  d 
+  3
+  d
+  4
+  n
+  p
+  1
+
+  +4000M
+  t
+  82
+  n
+  p
+  2
+
+  +6000M
+  t
+  2
+  83
+  n
+  p
+  3
+
+  +6000M
+  t
+  3
+  83
+  n
+  e
+
+  n
+
+
+  t
+  5
+  83
+  p
+  w
+</verb>
 
 <!-- =========================== -->
 <sect1>Postinstallation script
