@@ -2,7 +2,7 @@
 @item 2.1.6
 @itemize @bullet
 @item
-kadeploy is multicluster possibility to define several deploy.conf
+kadeploy is multicluster: possibility to define several @file{deploy.conf}
 configuration files 1 per cluster. This new possibility allows to use kadeploy
 on 2 clusters of the same site having different default partition, different
 default kernel parameters to pass, but also different timings for boot time,
@@ -51,8 +51,8 @@ kaenvironments (environment name by user).
 kaenvironments (by node)
 
 @item
-new partitioning format (/etc/kadeploy/clusterpartition.conf &&
-/etc/kadeploy/clustenodes.conf).
+new partitioning format (@file{/etc/kadeploy/clusterpartition.conf} &&
+@file{/etc/kadeploy/clustenodes.conf}).
 
 @item
 new parallel command launcher (internal).
