@@ -1,0 +1,162 @@
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@setfilename kadeploy.info
+@include version.texi
+@settitle Kadeploy @value{KADEPLOYVERSION} documentation version @value{DOCVERSION}
+@c Unify all our little indices for now.
+@syncodeindex fn cp
+@syncodeindex vr cp
+@syncodeindex ky cp
+@syncodeindex pg cp
+@syncodeindex tp cp
+@c %**end of header
+
+@footnotestyle separate
+@paragraphindent 3
+@finalout
+
+@copying
+Copyright @copyright{} 2007 Julien Leduc <julien.leduc@@gmail.com>
+
+@quotation
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided also that
+the entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified
+versions.
+@end quotation
+@end copying
+
+@dircategory Kernel
+@direntry
+* Multiboot Specification: (multiboot).		Multiboot Specification.
+@end direntry
+
+@titlepage
+@sp 10
+@title The kadeploy documentation version @value{DOCVERSION}
+@author Julien Leduc
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@finalout
+@headings double
+
+@ifnottex
+@node Top
+@top Kadeploy Documentation
+
+This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment system aimed at HPC facilities.
+
+@insertcopying
+@end ifnottex
+
+@menu
+* Overview::                    
+* Terminology::                            
+* Examples::                    
+* History::                     
+* Index::                       
+@end menu
+
+
+@node Overview
+@chapter Introduction to Kadeploy deployment system
+
+This chapter describes some rough information on the Kadeploy deployment system.
+
+@menu
+* Motivation::                  
+* Architecture::                
+* Operating systems::           
+@end menu
+
+
+@node Motivation
+@section The background of Kadeploy design
+
+Every HPC facility needs a system to efficiently install and upgrade the @abbr{OS, operating system} deployed on the nodes.
+The first version of Kadeploy was designed to deploy efficiently a large set of nodes at once:
+the cluster's system  administrator was able to deploy one OS on a set of nodes, 
+this system is then homogeneous on all the nodes for users and users can submit 
+jobs on parts of the cluster. For upgrades, and global software installation, the system 
+administrator proceeds this way:
+@table @b
+@item isolate a node
+take a compute node out of reach of users to let them work on the rest of the cluster 
+nodes, this node is often called the golden node.
+@item install/upgrade the node OS
+at the end of this step, the node OS should be the desired OS for all the cluster nodes
+@item isolate another node and update it
+deploy the new version of the OS on a single node to test the deployment procedure, 
+if something goes wrong, adapt consequently the OS on the golden node and retry deployment
+@item isolate all the nodes and update them
+deploy the new version of the OS on all the nodes of the cluster at once
+@item test and give the nodes back
+test if users can use the nodes and let them use the nodes back, by registering 
+them as free in the cluster batch scheduler, for example.
+@end table
+
+This method of deployment, is a taken as a specific case: single user (only one user deploys here: administrator), single cluster (only one cluster targetted by the OS upgrade), single operating system deployment (there is only one OS per node).
+
+Kadeploy 2 was developped to be able to deal with all the other cases, from this simple 
+classic one to multi-users, multi-clusters, multi-OS including all the possible mixes.
+
+@node Architecture
+@section The target architecture
+
+Kadeploy is primarily targeted at x86 and x86_64 CPUs architectures, 
+since they are the most common and have the largest variety of operating 
+systems. However, to the extent that certain other architectures comply
+with some network boot technologies described further, kadeploy can be 
+adapted for those needs (there is a IA64 version for kadeploy). Please let 
+me know if you are interested in specific versions.
+
+@node Operating systems
+@section The target operating systems
+
+The targeted operating systems are the ones running on the architectures 
+defined in @ref{Architecture}, and mainly the ones often used in HPC world.
+Kadeploy was primarily designed to deploy Linux and then FreeBSD, NetBSD and Solaris.
+
+
+@node Terminology
+@chapter The definitions of terms used through the documentation
+
+@table @dfn
+@item environment
+We use the term @dfn{environment}, as an entity that can be deployed using kadeploy, 
+or something that is deployed on a hard drive partition.
+
+@item shared partition
+We use the term @dfn{shared partition}, when a partition defined on the node's 
+local hard driver can be shared between several environments deployed 
+on different partitions of the node.
+@end table
+
+@node Examples
+@chapter Examples
+
+Here will be some examples of kadeploy usages?
+
+@node History
+@chapter The change log of kadeploy
+
+@include changelog.texi
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@contents
+@bye
