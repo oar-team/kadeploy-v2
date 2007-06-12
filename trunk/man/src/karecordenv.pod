@@ -17,15 +17,15 @@ B<karecordenv> [B<-n  | --name> registration_name]
     B<[-fd | --fdisktype> fdisk_type]         # default is 82
     B<[-fs | --filesystem> file_system]        # default is ext2
     B<[-fe | file_environment> file_environment]
-    
+
 Name, kernel_path, environment_image_path and post-installation_file_path must be defined.
-  
+
 =head1 DESCRIPTION
 
 karecordenv registers an environment for the current user in order to be able to use it with the deployment system.
-      
+
 =head1 OPTIONS
-    
+
 =over
 
 =item B<-n|--name> registration_name
