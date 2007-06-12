@@ -1,0 +1,84 @@
+@ifclear full_documentation
+
+@include version.texi
+
+@ifnottex
+@node Top
+@top Configuring Kadeploy @value{KADEPLOYVERSION}
+
+This documentation is provided to document kadeploy configuration.
+
+@menu
+* Configuration::
+@end menu
+
+@node Configuration
+@chapter Configuring Kadeploy
+
+@end ifnottex
+
+@end ifclear
+
+
+@menu
+* PXE configuration::
+* kadeploy configuration::
+@end menu
+
+
+
+@node PXE configuration
+@section PXE boot configuration required by kadeploy
+@cindex PXE boot configuration
+@cindex configure PXE boot
+
+Kadeploy uses @i{PXE boot} to control the way the nodes are booting, this part tries to describe some 
+basic configuration to help you to configure PXE boot on your cluster. The main idea is that kadeploy 
+generates a bootloader that the nodes use at boottime. To do so, kadeploy copy this boot loader on the 
+tftp server that resides on the deployment server, and it is downloaded by the nodes at boottime, 
+thanks to the dhcp server: its role is only to tell the nodes from which tftp server they should 
+download their bootloader. Kadeploy is responsible for the synchronization of those parts.
+
+@menu
+* dhcp configuration::
+* tftp configuration::
+@end menu
+
+
+@node dhcp configuration
+@subsection DHCP server configuration
+@cindex DHCP configuration
+@cindex configure DHCP
+
+The dhcp server configuration is @emph{static}: kadeploy does not need to change it during the deployment process, 
+since its purpose is only to let the nodes know that they must download their bootloader from the deployment 
+server, nothing more.
+In @file{dhcpd.conf}, you must have a description of all mac adress and corresponding ip for each node, so that the 
+dhcp server won't allocate adresses dynamically.
+
+@menu
+* dhcpd.conf sample::
+@end menu
+
+@node dhcpd.conf sample
+@subsubsection Sample dhcpd.conf file
+@cindex dhcpd.conf sample file
+
+@example
+@verbatiminclude ../../tools/cookbook/conf/dhcpd.conf 
+@end example
+
+@node tftp configuration
+@subsection tftp server configuration
+@cindex tftp configuration
+@cindex configure tftp
+
+TODO...
+
+
+@node kadeploy configuration
+@section kadeploy configuration
+@cindex kadeploy configuration
+@cindex configure kadeploy
+
+TODO...

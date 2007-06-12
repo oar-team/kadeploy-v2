@@ -12,6 +12,8 @@ MAN="man/man1"
 
 #Making mans pages before
 make -C man/src/
+#Making Documentation pages
+make -C Documentation/texi/
 #Setting execution rights to installation scripts
 chmod 755 tools/cookbook/install_scripts/*
 #Create archive

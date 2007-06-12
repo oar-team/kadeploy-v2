@@ -1,0 +1,213 @@
+@ifclear full_documentation
+
+@include version.texi
+
+@ifnottex
+@node Top
+@top Installing Kadeploy @value{KADEPLOYVERSION}
+
+This documentation is provided to document kadeploy installation, nothing more: when all the steps described in this file are completed you should configure kadeploy @emph{before} thrying to use it. Some documentation can be found on @uref{http://kadeploy.gforge.inria.fr, kadeploy web site}. 
+
+@menu
+* Installation::
+@end menu
+
+@node Installation
+@chapter Installing Kadeploy
+
+@end ifnottex
+
+@end ifclear
+
+
+@menu
+* Installation requirements::                 
+* Installation from scratch::
+* Upgrading from 2.1.2::                    
+@end menu
+
+@node Installation requirements
+@section Requirements on the deployment server
+@cindex installation requirements
+@cindex nmap
+@cindex rsh client
+@cindex perl
+
+Here is a list of required system tools on the server side, all those programs should be installed 
+on your future deployment server before beginning kadeploy installation procedure:
+@table @command 
+@item perl
+kadeploy is mainly written in perl.
+@item nmap
+kadeploy uses it to check the target nodes states during the deployment process.
+@item rsh
+client, a true @command{rsh} client should be installed: in many Linux distributions, the default 
+@command{rsh} is often a simple alias to @command{ssh}.
+@item screen
+for deployments initiated from a non tty shell, this requirement is due to a bug in rsh.
+@end table
+
+
+
+@node Installation from scratch
+@section Installation from scratch
+
+@menu
+* Install deployment server::
+* DB installation::                    
+@end menu
+
+
+
+@node Install deployment server
+@subsection On the deployment server
+
+You should install those programs on the deployment server:
+@table @command
+@item mysql
+install it and confgure it, the client part should be installed on the deployment server, 
+the server can reside on another server.
+@item dhcp-server
+it is used to configure the PXE boot process used by @command{kadeploy} to control the way the nodes are rebooting, 
+it can reside on another server on the same ethernet VLAN as the target nodes.
+@item tftp-server
+a tftp server compatible with the PXE boot process should be installed on the deployment server, the @command{tftp-hpa} 
+server is a good choice.
+@item sudo
+is used for users right management.
+@end table
+
+Optionally, before starting the installation process, @command{kadeploy} installation process creates a @i{deploy} user in the @i{deploy} group, with @file{/home/deploy} home directory. If you want to specify a custom home directory, you have to do that by yourself before make install. The main thing is that you have a @i{deploy} user in a @i{deploy} group, home directory is not important for kadeploy, but it can be for you to store additional scripts used in the deployment system.
+
+In the current directory do:
+@table @samp
+@item make install
+it will create the deploy user, configure sudo and copy all the required programs under the @file{/usr/local} directory.
+@end table
+
+Then you have to install tftp part, you can use variable by defaut:
+@table @samp
+@item make tftp_install
+to use the default variables.
+@item make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install
+to specify the tftp install variables suiting your tftp installation (@dfn{pxe_rep} and @dfn{image_grub} are relative to @dfn{tftp_repository}).
+@end table
+
+@strong{Caution:} By default the target architecture is @emph{x86_64}, so if you plan to deploy some 32 bits nodes please specify @samp{ARCH=x86}, you should read the default parameters provided in the @file{Makfile}.
+
+Now you have finished to install kadeploy client and you can edit kadeploy configuration file in @file{/etc/kadeploy/deploy.conf}.
+
+
+@node DB installation
+@subsection Database configuration
+
+@command{kadeploy} manages all the information about the nodes in a dedicated database. 
+It uses the opensource @command{mysql} server, that can run on the deployment server or another server.
+The @xref{Install deployment server, previous section}, should be completed before going through this one.
+Edit @file{/etc/kadeploy/deploy.conf} to specify:  @dfn{deploy_db_host}: if your database is 
+on the same host as Kadeploy: @samp{deploy_db_host=localhost}, if not, specify the remote host 
+address: for example, @samp{deploy_db_host=192.168.1.10}.
+
+In the current directory do:
+@table @samp
+@item make db_install
+to copy all the database installation scripts to @file{/usr/local/kadeploy} directory.
+@end table
+
+Now, the database creation scripts are there, they will run as root on the mysql server because those database scripts need to create a @i{deploy} user in the database.
+
+The rest of the installation process for the database part consists in creating a @i{deploy} user in the database and then create a dedicated database, with dedicated tables, belonging to @i{deploy}.
+The script that manages database initialisation is run from the deployment server, if the database is installed on the deployment server, it should be ok.
+If you have a separate database server:
+@enumerate
+@item you have to be able to make this command line without error: @samp{mysql -u root -h DATABASE_HOST_ADDRESS -p --database=mysql}, if you cannot do that logon the server hosting the mysql server:
+@enumerate a
+@item check your @file{/etc/mysql/my.cnf} to see there is a line like this: @samp{bind-address=...} and remove it, then
+@item allow a mysql client to connect from the deployment server as the database administrator: @samp{mysql -u root -p} and then type this command: @samp{GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;} and finally, validate those newly created privileges: @samp{FLUSH  PRIVILEGES;}
+@end enumerate
+@end enumerate
+
+Now you should be able to run the database initialisation script from the deployment server: from the @file{/usr/local/kadeploy} type: @samp{./kadeploy_db_init.pl}
+
+Now, you are finished, but if you have a remote database, and want to revoke the rights created for remote database initialisation, you can do this:
+@enumerate
+@item connect to host where database is installed and connect to your database: @samp{mysql -u root -p}
+@item type this command:  @samp{DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';}
+@item exit from mysql
+@end enumerate
+
+@strong{Please notice:} By default you can connect to @i{deploy} database from @emph{anywhere}: it is not necessary, but you can reduce access to @i{deploy} database to your head node if you prefer.
+
+@node Upgrading from 2.1.2
+@section Upgrading from kadeploy 2.1.2
+
+Since previous versions of @samp{kadeploy} where mainly prototypes, all the uninstallation process should be conducted manually.
+
+@enumerate
+@item locate your kadeploy home directory and remove it: usually it is @file{/usr/local/kadeploy} or @file{/opt/kadeploy} or @file{/opt/kadeploy2}
+@item edit your @file{/etc/sudoers} file to remove old references to kadeploy rights
+@item remove all the links and programs:
+@file{kaconsole}
+@file{kadeploy}
+@file{kaenvironments}
+@file{kareboot}
+@file{karecordenv}
+@file{mcatseg}
+@file{migratenv}
+@file{kaadduser}
+@file{kadatabase}
+@file{kadeluser}
+@file{kanodes}
+@file{kasetup}
+@file{sentinelle}
+@file{dksentinelle}
+@file{mcat}
+@file{mput}
+@file{DKsentinelle-i686}
+@file{mcat_ssh.pl}
+@file{sentinelle.pl}
+@file{DKsentinelle-x86_64}
+@file{kasudowrapper.sh}  
+@file{mcatseg}      
+@file{mcat_rsh.pl} 
+@item remove all the man pages in @file{/usr/local/share/man/man1}:
+@file{/usr/share/man/man1/clusternodes.conf.1}
+@file{/usr/share/man/man1/clusterpartition.conf.1}
+@file{/usr/share/man/man1/deploy_cmd.conf.1}
+@file{/usr/share/man/man1/deploy.conf.1}
+@file{/usr/share/man/man1/kaadduser.1}
+@file{/usr/share/man/man1/kaarchive.1}
+@file{/usr/share/man/man1/kaconsole.1}
+@file{/usr/share/man/man1/kacreateenv.1}
+@file{/usr/share/man/man1/kadatabase.1}
+@file{/usr/share/man/man1/kadeluser.1}
+@file{/usr/share/man/man1/kadeploy.1}
+@file{/usr/share/man/man1/kaenvironments.1}
+@file{/usr/share/man/man1/kanodes.1}
+@file{/usr/share/man/man1/kareboot.1}
+@file{/usr/share/man/man1/karecordenv.1}
+@file{/usr/share/man/man1/kasetup.1}
+@item finally save all your configuration files located in @file{/etc/kadeploy/}:
+@file{clusternodes.conf}
+@file{clusterpartition.conf}
+@file{deploy_cmd.conf}
+@file{deploy.conf}
+@end enumerate
+
+@strong{Please notice:} there is no need to touch to the databae part of kadeploy since there is @emph{no change} in the database structure.
+
+@menu
+* Upgrade deployment server::
+* Upgrade DB::                    
+@end menu
+
+@node Upgrade deployment server
+@subsection On the deployment server
+
+@strong{Please refer} to @ref{Install deployment server} to install all the required programs, and  update the tftp part. Indeed, you have to upgrade the deployment kernel since the previous version is not compatible with kadeploy 2.1.5.
+After that, you can merge your saved files with the default configuration files installed in @file{/etc/kadeploy} directory.
+
+@node Upgrade DB
+@subsection Database configuration
+
+Nothing to do for this section. Everything should work as before for you. If you want to configure new features of kadeploy @value{KADEPLOYVERSION}, please refer to the corresponding chapters.
