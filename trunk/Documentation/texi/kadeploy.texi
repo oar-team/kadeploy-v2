@@ -78,7 +78,7 @@ This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment
 @cindex Overview of Kadeploy
 @cindex Kadeploy overview
 
-This chapter describes some rough information on the Kadeploy deployment system.
+This chapter describes some rough information about the Kadeploy deployment system.
 
 @menu
 * Motivation::                  
