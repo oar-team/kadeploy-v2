@@ -1,6 +1,7 @@
 \input texinfo @c -*-texinfo-*-
 @c %**start of header
 @setfilename kadeploy.info
+@set full_documentation
 @include version.texi
 @settitle Kadeploy @value{KADEPLOYVERSION} documentation version @value{DOCVERSION}
 @c Unify all our little indices for now.
@@ -62,11 +63,14 @@ This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment
 
 @menu
 * Overview::                    
-* Terminology::                            
+* Terminology::
+* Installation::
+* Configuration::                            
 * Examples::                    
 * History::                     
 * Index::                       
 @end menu
+
 
 
 @node Overview
@@ -79,7 +83,8 @@ This chapter describes some rough information on the Kadeploy deployment system.
 @menu
 * Motivation::                  
 * Architecture::                
-* Operating systems::           
+* Operating systems::
+* Why a database::
 @end menu
 
 
@@ -111,7 +116,8 @@ them as free in the cluster batch scheduler, for example.
 This method of deployment, is a taken as a specific case: single user (only one user deploys here: administrator), single cluster (only one cluster targetted by the OS upgrade), single operating system deployment (there is only one OS per node).
 
 Kadeploy 2 was developped to be able to deal with all the other cases, from this simple 
-classic one to multi-users, multi-clusters, multi-OS including all the possible mixes.
+classic one to multi-users, multi-clusters, multi-OS including all possible mixes.
+
 
 @node Architecture
 @section The target architecture
@@ -123,6 +129,7 @@ with some network boot technologies described further, kadeploy can be
 adapted for those needs (there is a IA64 version for kadeploy). Please let 
 me know if you are interested in specific versions.
 
+
 @node Operating systems
 @section The target operating systems
 
@@ -130,16 +137,66 @@ The targeted operating systems are the ones running on the architectures
 defined in @ref{Architecture}, and mainly the ones often used in HPC world.
 Kadeploy was primarily designed to deploy Linux and then FreeBSD, NetBSD and Solaris.
 
+@node Why a database
+@section Why does kadeploy use a database?
+
+kadeploy uses a database to maintain the persistance of the information about the 
+cluster composition and current state.
+The cluster composition is described via :
+@itemize
+@item the nodes and their features (name, mac address and ip address)
+@item the type of hard disk drive (size and device name) and their partitions (size and number)
+@item the environments available (registered) for deployment with all the relative needed information (path to image, kernel path, etc.)
+@end itemize
+
+The cluster state is described via :
+@itemize
+@item a snapshot of the cluster state that describes for each partition of each disk and on each node, the partition state, the environment installed on (if any), the number of the last deployment done on it and a brief error description about this deployment (if any)
+@item the history of the ordered deployment with their start and end dates and their state
+@end itemize
+
+During every single deployment occuring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster (a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure ratio on the nodes can help to track hardware failures on the nodes.
+
+
+
+@node Installation
+@chapter Installing Kadeploy
+@cindex Installation of Kadeploy
+@cindex Kadeploy installation
+
+This chapter describes the path to a complete kadeploy installation
+
+@include installation.texi
+
+
+
+@node Configuration
+@chapter Configure kadeploy
+@cindex configuration of Kadeploy
+@cindex Kadeploy configuration
+
+This chapter describes how to configure different services used by kadeploy, and the 
+configuration of kadeploy itself.
+
+@include configuration.texi
+
+
 
 @node Terminology
 @chapter The definitions of terms used through the documentation
 
 @table @dfn
+@item deployment server
+@cindex deployment server
+We use the term @dfn{deployment server}, as the server that hosts all the commands of the kadeploy suite. This server hosts the @command{tftp} server to control the PXE boot of the nodes.
+
 @item environment
+@cindex environment
 We use the term @dfn{environment}, as an entity that can be deployed using kadeploy, 
 or something that is deployed on a hard drive partition.
 
 @item shared partition
+@cindex shared partition
 We use the term @dfn{shared partition}, when a partition defined on the node's 
 local hard driver can be shared between several environments deployed 
 on different partitions of the node.
