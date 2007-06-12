@@ -4,7 +4,7 @@ karecordenv - registers an environment.
 
 =head1 SYNOPSIS
  
-B<karecordenv> B<[-n  | --name> registration_name]
+B<karecordenv> [B<-n  | --name> registration_name]
     B<[-v  | --version> version]            # default is 1
     B<[-d  | --description> description]
     B<[-a  | --author> author_email]
@@ -18,7 +18,7 @@ B<karecordenv> B<[-n  | --name> registration_name]
     B<[-fs | --filesystem> file_system]        # default is ext2
     B<[-fe | file_environment> file_environment]
     
-Name, kernel_path, environment_image_path and post-installation_file_path must be defined
+Name, kernel_path, environment_image_path and post-installation_file_path must be defined.
   
 =head1 DESCRIPTION
 
@@ -34,7 +34,7 @@ the registration name for the environment
 
 =item B<-v|--version> version
 
-the version number of the environment (if needed) ; default is 1
+the version number of the environment (if needed) ; I<default is 1>
 
 =item B<-d|--description> "description"
 
@@ -62,7 +62,7 @@ the complete initrd path in the environment (including intrd name)
 
 =item B<-k|--kernelpath> kernel_path
 
-the complete kernel path in the environment (including kernel name). You have to use "chainload" keyword, when deploying a "dd" image.
+the complete kernel path in the environment (including kernel name). You have to use "chainload" keyword, when deploying a "dd" image
 
 =item B<-p|--param> kernel_parameters
 
@@ -78,7 +78,7 @@ the file system type ; I<default is ext2>
 
 =item B<-fe|--file_environment> file_environment
 
-record and environment from file.
+records an environment from file
 
 =back
 
@@ -92,23 +92,21 @@ Registers a debian image whose features are explicitly given in parameter
 
 =back
 
- $cat > /tmp/myenv << EOF
- name = debian
- id = 7
- version = 2
- description = none
- author = @
- filebase = file://usr/local/grid5000/image/rootfs.tgz
- filesite = file://usr/local/grid5000/image/postinstall.tgz
- size = 100
+ $cat > /home/deploy/environments/debianMin/image.dsc << EOF
+ name = debianMin
+ description = debian minimal environment
+ author = Julien Leduc
+ filebase = file://home/deploy/environments/debianMin/image.tgz
+ filesite = file://home/deploy/environments/debianMin/postinstall.tgz
+ size = 400
  initrdpath = /boot/initrd.img-2.6.8-1-686-smp
  kernelpath = /boot/vmlinuz-2.6.8-1-686-smp
  kernelparam =
  EOF	
 
- $karecordenv -fe /tmp/myenv
+ $karecordenv -fe /home/deploy/environments/debianMin/image.dsc
 
-Registers a debian from file
+Registers a debianMin environment from a file.
 
 =head1 SEE ALSO
 
