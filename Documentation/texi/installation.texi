@@ -69,10 +69,9 @@ install it and confgure it, the client part should be installed on the deploymen
 the server can reside on another server.
 @item dhcp-server
 it is used to configure the PXE boot process used by @command{kadeploy} to control the way the nodes are rebooting, 
-it can reside on another server on the same ethernet VLAN as the target nodes.
+it can reside on another server on the same ethernet @acronym{VLAN} as the target nodes. The easiest is to use the one developed by @uref{http://www.isc.org/index.pl?/sw/dhcp/, ISC} in its third version.
 @item tftp-server
-a tftp server compatible with the PXE boot process should be installed on the deployment server, the @command{tftp-hpa} 
-server is a good choice.
+a tftp server @emph{compatible with} the @acronym{PXE} boot process should be installed on the deployment server, the @command{tftp-hpa} server is a good choice.
 @item sudo
 is used for users right management.
 @end table
