@@ -66,7 +66,7 @@ Deletes environment myenvironment.
 
 =head1 SEE ALSO
 
-karecordenv(1)
+L<karecordenv(1)>
 
 =head1 COPYRIGHTS
 

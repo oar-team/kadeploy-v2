@@ -50,7 +50,7 @@ Echo coucou as root on all the nodes:
 
 =head1 SEE ALSO
 
-kaaddkeys(1)
+L<kaaddkeys(1)>
 
 =head1 COPYRIGHTS
 

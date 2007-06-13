@@ -58,7 +58,7 @@ Deploys the debian4jul environment user jleduc on partition sda3 of a set of nod
 
 =head1 SEE ALSO
 
-kaenvironments(1), karecordenv(1)
+L<kaenvironments(1)>, L<karecordenv(1)>
 
 =head1 COPYRIGHTS
 

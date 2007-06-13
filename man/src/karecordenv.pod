@@ -110,7 +110,7 @@ Registers a debianMin environment from a file.
 
 =head1 SEE ALSO
 
-kaenvironments(1)
+L<kaenvironments(1)>
 
 =head1 COPYRIGHTS
 

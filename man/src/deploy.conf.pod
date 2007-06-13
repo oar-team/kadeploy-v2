@@ -164,7 +164,7 @@ This label tells kadeploy to boot duke-vmlinuz.x86_64 kernel with duke-initrd.x8
 
 =head1 SEE ALSO
 
-deploy_cmd.conf(1)
+L<deploy_cmd.conf(1)>
 
 =head1 COPYRIGHTS
 
