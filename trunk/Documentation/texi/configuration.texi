@@ -94,15 +94,6 @@ tftp           dgram   udp     wait.max=4500    root  /usr/sbin/in.tftpd /usr/sb
 
 @strong{Caution:} Some options are very important here: since all the nodes involved in a deployment reboot @emph{at the same time}, we need a pretty high value for @option{wait.max}, this value @emph{must be at least} 12 times the number of nodes in your cluster.
 
-@menu
-* TFTP structure::
-@end menu
-
-
-@node TFTP structure
-@subsubsection TFTP structure
-@cindex TFTP file structure
-
 @example
 @verbatim
 /var/lib/tftpboot/PXEClient/
