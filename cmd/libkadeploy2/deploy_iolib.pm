@@ -218,12 +218,8 @@ sub prepare_deployment($){
 	# create new deployment, set state to waiting and start_date to current mysql server date
 	$sth = $dbh->do("INSERT deployment (state, startdate, enddate)
                          VALUES ('waiting', NOW(), NOW())");
-
-	$sth = $dbh->prepare("SELECT deployment.id FROM deployment WHERE deployment.state = 'waiting'");
-	$sth->execute();
-	my $deploy_id = $sth->fetchrow_hashref();
-	$deploy_id = $deploy_id->{'id'};
-	$sth->finish();
+	# retrieve inserted auto_increment value (deployment.id)
+	my $deploy_id = $dbh->{'mysql_insertid'};
 	
 	$dbh->do("UNLOCK TABLES");
 	return $deploy_id;
@@ -237,6 +233,7 @@ sub prepare_deployment($){
     else
     {
 	print "ERROR : unexpected number of waiting deployment \"$nb\"\n";
+	$dbh->do("UNLOCK TABLES");
 	return 0;
     }
 }
