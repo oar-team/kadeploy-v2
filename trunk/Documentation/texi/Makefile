@@ -6,7 +6,7 @@ OUTDIR=documentation
 
 all: documentation changelog.txt INSTALL
 
-documentation: configuration.texi changelog.texi installation.texi kadeploy.texi version.texi
+documentation: configuration.texi changelog.texi installation.texi kadeploy.texi man.texi version.texi
 	./gendocs.sh -o $(OUTDIR) kadeploy $(DOCUMENTATIONTITLE)
 
 changelog.txt: changelog.texi

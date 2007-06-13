@@ -66,6 +66,7 @@ This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment
 * Terminology::
 * Installation::
 * Configuration::                            
+* Man pages::
 * Examples::                    
 * History::                     
 * Index::                       
@@ -180,6 +181,14 @@ configuration of kadeploy itself.
 
 @include configuration.texi
 
+
+@node Man pages
+@chapter Kadeploy man pages
+@cindex man pages
+
+This chapter gives access to all the man pages available with the @acronym{UNIX} @command{man} command.
+
+@include man.texi
 
 
 @node Terminology
