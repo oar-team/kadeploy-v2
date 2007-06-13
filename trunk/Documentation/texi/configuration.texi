@@ -94,6 +94,42 @@ tftp           dgram   udp     wait.max=4500    root  /usr/sbin/in.tftpd /usr/sb
 
 @strong{Caution:} Some options are very important here: since all the nodes involved in a deployment reboot @emph{at the same time}, we need a pretty high value for @option{wait.max}, this value @emph{must be at least} 12 times the number of nodes in your cluster.
 
+@menu
+* TFTP structure::
+@end menu
+
+
+@node TFTP structure
+@subsubsection TFTP structure
+@cindex TFTP file structure
+
+@example
+@verbatim
+/var/lib/tftpboot/PXEClient/
+      	pxelinux.cfg/
+	image_grub/
+	memdisk
+      	pxelinux.0
+@end verbatim
+@end example
+
+This directory structure allows to respond to different @acronym{PXE} request schemes. The slight differences are not our business here, you should refer to the different @acronym{PXE} standards for this part.@*
+Let's have a short look at this structure :
+@table @file
+@item /var/lib/tftpboot/
+is @acronym{TFTP} root directory, it is the directory served by the tftp server (often in a @command{chroot}, as it appears in @ref{tftp configuration}).
+@item /var/lib/tftpboot/PXEClient/
+is the root tftp directory @emph{at boot time} during the @acronym{PXE} requests of the booting node (that is mainly why your tftp server should be @acronym{PXE} compliant).
+@item /var/lib/tftpboot/PXEClient/pxelinux.cfg/
+contains all the files that link every node to its kernel/initrd pair to load and boot from network, and ensure that we can remotely control the way the nodes are booting.
+@item /var/lib/tftpboot/PXEClient/image_grub/
+will contain all the kadeploy generated grub bootloaders or kernel/initrd paris to allow the nodes to boot on the deployed system image.
+@item /var/lib/tftpboot/PXEClient/memdisk
+is @file{memdisk} from the @uref{http://syslinux.zytor.com, syslinux} project.
+@item /var/lib/tftpboot/PXEClient/pxelinux.0
+is @file{pxelinux} from the @uref{http://syslinux.zytor.com, syslinux} project.
+@end table
+
 
 @node kadeploy configuration
 @section kadeploy configuration
