@@ -1,12 +1,13 @@
 SRCS=$(wildcard *.pod)
 DESTMAN1=$(SRCS:.pod=.1)
 DESTHTML=$(SRCS:.pod=.html)
+DESTTEXI=$(SRCS:.pod=.texi)
 CENTERBANNER="Kadeploy commands"
 
-all: $(DESTMAN1) $(DESTHTML)
+all: $(DESTMAN1) $(DESTHTML) $(DESTTEXI)
 
 clean:
-	rm -f ../man1/*.1 ../html/*.html ./*.tmp
+	rm -f ../man1/*.1 ../html/*.html ../texi/* ./*.tmp
 
 distclean:
 distdir:
@@ -22,3 +23,6 @@ distdir:
 
 %.html: %.pod
 	@if ! test -f ../html/$@ ; then pod2html $< > ../html/$@ ; fi
+
+%.texi: %.pod
+	@if ! test -f ../texi/$@ ; then cat $< | sed -f pod2texi.sed > ../texi/$@ ; fi
