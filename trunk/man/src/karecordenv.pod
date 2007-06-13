@@ -84,13 +84,10 @@ records an environment from file
 
 =head1 EXAMPLE
 
-=over
 
-=item karecordenv -n debian -v 2 -d "debian maison" -a katools@imag.fr -fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current.tgz -ft file://home/nis/jleduc/Boulot/postinstall/traitement.tgz -size 650 -k /boot/vmlinuz -i /initrd -p "console=ttyS0,38400n8 ETH_DRV=tg3" -fd 83 -fs ext2
+ karecordenv -n debian -v 2 -d "debian maison" -a katools@imag.fr -fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current.tgz -ft file://home/nis/jleduc/Boulot/postinstall/traitement.tgz -size 650 -k /boot/vmlinuz -i /initrd -p "console=ttyS0,38400n8 ETH_DRV=tg3" -fd 83 -fs ext2
 
 Registers a debian image whose features are explicitly given in parameter
-
-=back
 
  $cat > /home/deploy/environments/debianMin/image.dsc << EOF
  name = debianMin
