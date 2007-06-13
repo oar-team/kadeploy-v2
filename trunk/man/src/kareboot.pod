@@ -80,7 +80,7 @@ Reboot node3 on the environment deployed on partition sda3 with specific kernel 
 
 =head1 SEE ALSO
 
-kaenvironments(1), karecordenv(1), kadeploy(1)
+L<kaenvironments(1)>, L<karecordenv(1)>, L<kadeploy(1)>
 
 =head1 COPYRIGHTS
 

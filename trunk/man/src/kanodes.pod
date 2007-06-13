@@ -44,7 +44,7 @@ Prints help screen.
 
 =head1 SEE ALSO
 
-clusterpartition.conf(1), clusternodes.conf(1), deploy_cmd.conf(1)
+L<clusterpartition.conf(1)>, L<clusternodes.conf(1)>, L<deploy_cmd.conf(1)>
 
 =head1 COPYRIGHTS
 

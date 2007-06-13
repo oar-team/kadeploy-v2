@@ -44,7 +44,7 @@ grants rights to user titi on node "node1" on partition hda3.
 
 =head1 SEE ALSO
 
-kadeluser(1)
+L<kadeluser(1)>
 
 =head1 COPYRIGHTS
 
