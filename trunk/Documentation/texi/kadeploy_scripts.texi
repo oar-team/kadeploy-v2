@@ -1,0 +1,52 @@
+@ifclear full_documentation
+
+@include version.texi
+
+@ifnottex
+@node Top
+@top Customize scripts for Kadeploy @value{KADEPLOYVERSION}
+
+This documentation is provided to document kadeploy specfic scripts.
+
+@menu
+* Customization scripts::
+@end menu
+
+@node Customization scripts
+@chapter Customization scripts
+
+@end ifnottex
+
+@end ifclear
+
+
+@menu
+* Preinstallation script::
+* Postinstallation script::
+@end menu
+
+
+
+@node Preinstallation script
+@section Preinstallation script
+@cindex preinstallation script
+
+This script is common to all environments, its goal is to prepare the system to the hardware specification 
+and the target hard disk drive for the deployment process. It can load a specific disk controler driver, tune
+hard drive performances, create partitions and format some of them and make every kind of checks needed.
+This script is defined in the configuration file as @option{pre_install_script} and the associated archive as 
+@option{pre_install_archive} @ref{deploy.conf man}.
+
+@subsection Preinstallation archive structure
+
+The preinstallation archive is a gzipped tar archive, containing the pre_install_script in its root directory. 
+Here is an example of a preinstallation archive structure:
+
+@node Postinstallation script
+@section Postinstallation script
+@cindex postinstallation script
+
+This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable 
+system. It is composed of a gunzipped tar archive that contains all the sites files and a script traitement.ash in 
+the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the 
+post_install_script is executed on every node. The script name is defined in the configuration file as post_install_script.
