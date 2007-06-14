@@ -66,6 +66,7 @@ This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment
 * Terminology::
 * Installation::
 * Configuration::                            
+* Customizing scripts::
 * Man pages::
 * Examples::                    
 * History::                     
@@ -180,6 +181,16 @@ This chapter describes how to configure different services used by kadeploy, and
 configuration of kadeploy itself.
 
 @include configuration.texi
+
+
+
+@node Customizing scripts
+@chapter Customize scripts for your cluster
+
+This chapter describes how to customize the scripts used by kadeploy.
+
+@include kadeploy_scripts.texi
+
 
 
 @node Man pages
