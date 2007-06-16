@@ -42,11 +42,14 @@ This script is defined in the configuration file as @option{pre_install_script} 
 The preinstallation archive is a gzipped tar archive, containing the @option{pre_install_script} in its root 
 directory, this archive is decompressed in the @file{/rambin} directory at execution time, @emph{be carefull about that 
 for adressing the files}.
-A preinstallation template is provided in the @file{tools/preinstallation} directory, and the @file{tools/preinstallation/README.txt} file contains all the explanations to generate the preinstallation archive.
+A preinstallation template is provided in the @file{tools/preinstallation} directory, and the 
+@file{tools/preinstallation/README.txt} file contains all the explanations to generate the 
+preinstallation archive from the raw files.
 
 
 @subsubsection @command{init.ash}
 @cindex @command{init.ash}
+@cindex preinstallation @command{init.ash}
 
 In the given template, the first executed script, handles every step during the preinstallation:
 @enumerate
@@ -62,12 +65,13 @@ In the given template, the first executed script, handles every step during the 
 
 @subsubsection @command{partition.ash}
 @cindex @command{partition.ash}
+@cindex preinstallation @command{partition.ash}
 
 In the given template, its role is to partition and format the harddrive according to your needs:
 @enumerate
 @item it checks if you required to partition the harddrive, if so, it applies a fdisk script, @file{/rambin/fdisk.txt}, to your harddrive
 @item it formats all the shared partitions if requested:
-@enumerate b
+@enumerate a
 @item @file{swap} partition, with mkswap
 @item @file{tmp} parition, with the selected filesystem
 @end enumerate
@@ -93,7 +97,71 @@ it later.
 @section Postinstallation script
 @cindex postinstallation script
 
-This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable 
-system. It is composed of a gunzipped tar archive that contains all the sites files and a script traitement.ash in 
-the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the 
-post_install_script is executed on every node. The script name is defined in the configuration file as post_install_script.
+This script is associated to the environment to deploy. Its goal is to adapt the raw system content, transfered 
+on the target partition during the transfert phase, to a bootable system. 
+As the preinstallation script, it is a gzipped tar archive that contains all the configuration files and 
+a launching script @file{traitement.ash} in the archive's root directory. This archive is sent to the nodes, 
+decompressed and then the @option{post_install_script} is executed on every node. This script name is defined in 
+the configuration file @file{deploy.conf} as @option{post_install_script} variable @ref{deploy.conf man}.
+
+A postinstallation template is provided in the @file{tools/postinstallation} directory, and the 
+@file{tools/postinstallation/README.txt} file contains all the explanations to generate the preinstallation 
+archive from the raw files.
+
+
+@subsection @command{traitement.ash}
+@cindex @command{traitement.ash}
+@cindex postinstallation @command{traitement.ash}
+
+In the given template, the first executed script, handles every step during the postinstallation:
+@enumerate
+@item configures all the required variables during the postinstallation process: @var{TAR_REPOSITORY} and 
+@var{DEST_DIR} thoses variables permit to deduce much more information later 
+@item adapt the @file{/etc/fstab} on the deployed system, from a basic one containing all the shared partitions 
+that should be mounted on the deployed system
+@item adapt @command{ssh} configuration to your needs, and kadeploy:
+@enumerate a
+@item copy a set of @file{authorized_keys}, in @file{/root/.ssh} directory, this file should contain the 
+administrators public keys and the public key of the @dfn{deploy} user, so that kadeploy can reboot the nodes 
+with @command{ssh} without using password @footnote{if you choose to use @samp{ssh root@@node /sbin/reboot} as the @option{softboot} directive in @file{deploy_cmd.conf} @ref{deploy_cmd.conf man}}
+@item copy the ssh host keys of the node, to ensure that after every deployment, the host keys are constant on 
+the nodes
+@end enumerate
+@item adapt the deployed system to avoid some annoying interactive checks at boottime: this is pretty important 
+that your system boots as fast as possible, and do not get stuck in a phase asking for a password
+@end enumerate
+
+@example
+@verbatiminclude ../../tools/postinstallation/traitement.ash
+@end example
+
+@subsection adapting @file{fstab}
+@cindex @command{fstab}
+
+The @emph{modt important} step during postintallation, is to adapt the fstab on the deployed system, this is 
+pretty important if you created your environment on a different partition than the target partition for deployment, 
+or if you intend to deploy your environment on more than one partition on your target nodes.
+To determine the root partition, you just have to figure out which device is mounted on the @file{/mnt/dest} mount 
+point when the postinstallation phase is initiated, determining the filesystem allows you to fill all the 
+information you need to adapt the full @file{/etc/fstab}.
+You cannot guess additional information about the other partitions during postinstallation, so you should use a 
+template containing all the remaining information: for @dfn{swap} and @file{/tmp} for example or any partition your system will need at boottime (maybe @file{/proc}, or a @dfn{tmpfs}?), it depends of your environment@footnote{that is why the postinstall is related to the environment}.
+
+@example
+@verbatiminclude ../../tools/postinstallation/fstab
+@end example
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
