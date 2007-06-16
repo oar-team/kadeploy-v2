@@ -140,7 +140,7 @@ Now, you are finished, but if you have a remote database, and want to revoke the
 @node Upgrading from 2.1.2
 @section Upgrading from kadeploy 2.1.2
 
-Since previous versions of @samp{kadeploy} where mainly prototypes, all the uninstallation process should be conducted manually.
+Since previous versions of kadeploy was a @i{stable proof of concept}, all the uninstallation process should be conducted manuallyn, sorry about that @footnote{uninstallation process is automatic starting from kadeploy 2.1.5}.
 
 @enumerate
 @item locate your kadeploy home directory and remove it: usually it is @file{/usr/local/kadeploy} or @file{/opt/kadeploy} or @file{/opt/kadeploy2}
@@ -195,18 +195,13 @@ Since previous versions of @samp{kadeploy} where mainly prototypes, all the unin
 
 @strong{Please notice:} there is no need to touch to the databae part of kadeploy since there is @emph{no change} in the database structure.
 
-@menu
-* Upgrade deployment server::
-* Upgrade DB::                    
-@end menu
 
-@node Upgrade deployment server
 @subsection On the deployment server
 
 @strong{Please refer} to @ref{Install deployment server} to install all the required programs, and  update the tftp part. Indeed, you have to upgrade the deployment kernel since the previous version is not compatible with kadeploy 2.1.5.
 After that, you can merge your saved files with the default configuration files installed in @file{/etc/kadeploy} directory.
 
-@node Upgrade DB
+
 @subsection Database configuration
 
 Nothing to do for this section. Everything should work as before for you. If you want to configure new features of kadeploy @value{KADEPLOYVERSION}, please refer to the corresponding chapters.

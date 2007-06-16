@@ -203,7 +203,7 @@ This chapter gives access to all the man pages available with the @acronym{UNIX}
 
 
 @node Terminology
-@chapter The definitions of terms used through the documentation
+@chapter Definitions of terms used through the documentation
 
 @table @dfn
 @item deployment server
