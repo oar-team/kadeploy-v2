@@ -39,8 +39,55 @@ This script is defined in the configuration file as @option{pre_install_script} 
 
 @subsection Preinstallation archive structure
 
-The preinstallation archive is a gzipped tar archive, containing the pre_install_script in its root directory. 
-Here is an example of a preinstallation archive structure:
+The preinstallation archive is a gzipped tar archive, containing the @option{pre_install_script} in its root 
+directory, this archive is decompressed in the @file{/rambin} directory at execution time, @emph{be carefull about that 
+for adressing the files}.
+A preinstallation template is provided in the @file{tools/preinstallation} directory, and the @file{tools/preinstallation/README.txt} file contains all the explanations to generate the preinstallation archive.
+
+
+@subsubsection @command{init.ash}
+@cindex @command{init.ash}
+
+In the given template, the first executed script, handles every step during the preinstallation:
+@enumerate
+@item reads the configuration file @file{/rambin/preinstall.conf}, specific to your cluster, to know everything for harddrive preparation
+@item loads the required modules so that the deployment kernel can handle your harddrive efficiently, if some optimization has to be done, it should be done just after loading the modules
+@item launches the script @file{/rambin/partition.ash} that creates the partitions on the harddrive and format them
+@end enumerate
+
+@example
+@verbatiminclude ../../tools/preinstallation/init.ash
+@end example
+
+
+@subsubsection @command{partition.ash}
+@cindex @command{partition.ash}
+
+In the given template, its role is to partition and format the harddrive according to your needs:
+@enumerate
+@item it checks if you required to partition the harddrive, if so, it applies a fdisk script, @file{/rambin/fdisk.txt}, to your harddrive
+@item it formats all the shared partitions if requested:
+@enumerate b
+@item @file{swap} partition, with mkswap
+@item @file{tmp} parition, with the selected filesystem
+@end enumerate
+@end enumerate
+@*
+@strong{Tips}
+@itemize
+@item Formatting the @file{tmp} partition can take a lot of time with the default @command{mkfs} options for your filesystem 
+(more than 2 minutes 30 seconds with default options for a 60 Gb partition, while basic tuning provided in the template 
+achieves the same task in less than 30 seconds).
+@item @command{fdisk} program can change from one deployment kernel to the next one, and @emph{the syntax may differ}, so 
+please check your preinstall if upgrading from kadeploy 2.1.2 to 2.1.5 or later: the only known difference is that for the last 
+@option{d} directive, to delete the last partition, @command{fdisk} guesses its number in kadeploy 2.1.2 while you have to specify 
+it later.
+@end itemize
+
+@example
+@verbatiminclude ../../tools/preinstallation/partition.ash
+@end example
+
 
 @node Postinstallation script
 @section Postinstallation script
