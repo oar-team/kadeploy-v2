@@ -40,106 +40,106 @@ This documentation is provided to document kadeploy commands and is available th
 
 
 @node clusternodes.conf man
-@section clusternodes.conf man page
-@cindex clusternodes.conf man
+@section @file{clusternodes.conf} man page
+@cindex @file{clusternodes.conf} man
 
 @include ../../man/texi/clusternodes.conf.texi
 @page
 
 @node clusterpartition.conf man
-@section clusterpartition.conf man page
-@cindex clusterpartition.conf man
+@section @file{clusterpartition.conf} man page
+@cindex @file{clusterpartition.conf} man
 
 @include ../../man/texi/clusterpartition.conf.texi
 @page
 
 @node deploy.conf man
-@section deploy.conf man page
-@cindex deploy.conf man
+@section @file{deploy.conf} man page
+@cindex @file{deploy.conf} man
 
 @include ../../man/texi/deploy.conf.texi
 @page
 
 @node deploy_cmd.conf man
-@section deploy_cmd.conf man page
-@cindex deploy_cmd.conf man
+@section @file{deploy_cmd.conf} man page
+@cindex @file{deploy_cmd.conf} man
 
 @include ../../man/texi/deploy_cmd.conf.texi
 @page
 
 @node duke-vmlinuz man
-@section duke-vmlinuz man page
-@cindex duke-vmlinuz man
+@section @file{duke-vmlinuz} man page
+@cindex @file{duke-vmlinuz} man
 
 @include ../../man/texi/duke-vmlinuz.texi
 @page
 
 @node kaaddkeys man
-@section kaaddkeys man page
-@cindex kaaddkeys man
+@section @command{kaaddkeys} man page
+@cindex @command{kaaddkeys} man
 
 @include ../../man/texi/kaaddkeys.texi
 @page
 
 @node kaadduser man
-@section kaadduser man page
-@cindex kaadduser man
+@section @command{kaadduser} man page
+@cindex @command{kaadduser} man
 
 @include ../../man/texi/kaadduser.texi
 @page
 
 @node kaconsole man
-@section kaconsole man page
-@cindex kaconsole man
+@section @command{kaconsole} man page
+@cindex @command{kaconsole} man
 
 @include ../../man/texi/kaconsole.texi
 @page
 
 @node kadeluser man
-@section kadeluser man page
-@cindex kadeluser man
+@section @command{kadeluser} man page
+@cindex @command{kadeluser} man
 
 @include ../../man/texi/kadeluser.texi
 @page
 
 @node kadeploy man
-@section kadeploy man page
-@cindex kadeploy man
+@section @command{kadeploy} man page
+@cindex @command{kadeploy} man
 
 @include ../../man/texi/kadeploy.texi
 @page
 
 @node kaenvironments man
-@section kaenvironments man page
-@cindex kaenvironments man
+@section @command{kaenvironments} man page
+@cindex @command{kaenvironments} man
 
 @include ../../man/texi/kaenvironments.texi
 @page
 
 @node kanodes man
-@section kanodes man page
-@cindex kanodes man
+@section @command{kanodes} man page
+@cindex @command{kanodes} man
 
 @include ../../man/texi/kanodes.texi
 @page
 
 @node kareboot man
-@section kareboot man page
-@cindex kareboot man
+@section @command{kareboot} man page
+@cindex @command{kareboot} man
 
 @include ../../man/texi/kareboot.texi
 @page
 
 @node karecordenv man
-@section karecordenv man page
-@cindex karecordenv man
+@section @command{karecordenv} man page
+@cindex @command{karecordenv} man
 
 @include ../../man/texi/karecordenv.texi
 @page
 
 @node karemote man
-@section karemote man page
-@cindex karemote man
+@section @command{karemote} man page
+@cindex @command{karemote} man
 
 @include ../../man/texi/karemote.texi
 @page
