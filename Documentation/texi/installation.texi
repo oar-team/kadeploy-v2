@@ -29,9 +29,9 @@ This documentation is provided to document kadeploy installation, nothing more: 
 @node Installation requirements
 @section Requirements on the deployment server
 @cindex installation requirements
-@cindex nmap
-@cindex rsh client
-@cindex perl
+@cindex @command{nmap}
+@cindex @command{rsh} client
+@cindex @command{perl}
 
 Here is a list of required system tools on the server side, all those programs should be installed 
 on your future deployment server before beginning kadeploy installation procedure:

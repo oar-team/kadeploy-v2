@@ -30,7 +30,7 @@ This documentation is provided to document kadeploy configuration.
 
 @node Nodes configuration
 @section Configuring network boot on the nodes
-@cindex BIOS configuration
+@cindex @acronym{BIOS} configuration
 
 To make a deployment on the nodes, you have to check their @acronym{BIOS}.
 
@@ -45,9 +45,9 @@ consider that after 3 failures at boottime, the BIOS settings should be reset to
 of your entire system, if your manufacturer consider that the default setting for booting is not from the network...
 
 @node PXE configuration
-@section PXE boot configuration required by kadeploy
-@cindex PXE boot configuration
-@cindex configure PXE boot
+@section @acronym{PXE} boot configuration required by kadeploy
+@cindex @acronym{PXE} boot configuration
+@cindex configure @acronym{PXE} boot
 
 Kadeploy uses @i{PXE boot} to control the way the nodes are booting, this part tries to describe some 
 basic configuration to help you to configure PXE boot on your cluster. The main idea is that kadeploy 
@@ -63,9 +63,9 @@ download their bootloader. Kadeploy is responsible for the synchronization of th
 
 
 @node dhcp configuration
-@subsection DHCP server configuration
-@cindex DHCP configuration
-@cindex configure DHCP
+@subsection @acronym{DHCP} server configuration
+@cindex @acronym{DHCP} configuration
+@cindex configure @acronym{DHCP}
 
 The dhcp server configuration is @emph{static}: kadeploy does not need to change it during the deployment process, 
 since its purpose is only to let the nodes know that they must download their bootloader from the deployment 
@@ -79,9 +79,9 @@ Here is a sample @file{dhcpd.conf} file, @option{next-server} option is the IP a
 
 
 @node tftp configuration
-@subsection tftp server configuration
-@cindex tftp configuration
-@cindex configure tftp
+@subsection @acronym{TFTP} server configuration
+@cindex @acronym{TFTP} configuration
+@cindex configure @acronym{TFTP}
 
 The tftp configuration evolves during the deployment process to permit kadeploy to control the way the nodes are booting.
 Since all the commands of the kadeploy deployment system are run as the @i{deploy} user on the deployment server 
