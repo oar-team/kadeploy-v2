@@ -42,6 +42,8 @@ sub dump_conf;
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
 ## default values
+my $default_clusterconf = "/etc/kadeploy/deploy_cluster.conf";
+my $default_clustername = "default"; # reserved name for default configuration files
 my $default_deployconf = "/etc/kadeploy/deploy.conf";
 my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
 
@@ -51,10 +53,12 @@ my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
 sub new {
     my ($class) = @_;
     my $self = {};
+    $self->{clusterconf} = $default_clusterconf;
     $self->{deployconf} = $default_deployconf;
     $self->{deploycmdconf} = $default_deploycmdconf;
     $self->{checked_conf} = 0; # initialy unread
     $self->{checked_cmd} = 0; # initialy unread
+    $self->{cluster} =();
     $self->{params} = ();
     $self->{commands} = ();
     bless ($self, $class);
@@ -79,12 +83,16 @@ sub get_clustername {
 sub set_clustername {
     my $self = shift;
     my $clustername = shift;
-    $self->{checked_conf} = 0; # configuration file must be re-read
-    if ($clustername eq "") { # use default configuration file
+    # configuration files must be re-read 
+    $self->{checked_conf} = 0;
+    $self->{checked_cmd} = 0;
+    if (($clustername eq "") || ($clustername eq $default_clustername)) { # use default configuration file
 	    $self->{deployconf} = $default_deployconf;
+            $self->{deploycmdconf} = $default_deploycmdconf;
 	    return 1;
     }
     $self->{deployconf} = "/etc/kadeploy/deploy-" . $clustername . ".conf";
+    $self->{deploycmdconf} = "/etc/kadeploy/deploy_cmd-" . $clustername . ".conf";
     return 1;
 }
 
@@ -234,6 +242,45 @@ sub check_conf {
     return 1;
 }
 
+##
+#  check_clusterconf
+#  checks the cluster configuration file
+#  parameters : /
+#  return value: 1 or 
+##
+sub check_clusterconf {
+    my $config = shift;
+    if(!(-e $config->{clusterconf})){
+        return 1;
+    }
+    if(!(-r $config->{clusterconf})){
+        print STDERR "ERROR : cluster configuration file cannot be read\n";
+        exit 1;
+    }
+
+    print "Checking clusters definitions...\n";
+    open(CLUSTERCONF, $config->{clusterconf});
+
+    foreach my $line (<CLUSTERCONF>){
+        chomp($line);
+        # checks if the line exists
+        if($line){
+            # checks if it is a commentary
+            if($line !~ /^\s*#.*/){
+               # parses line info
+               if ($line =~ /^\s*([^\s]+)\s+([^\s]+)\s*$/) {
+                       $config->{cluster}{$1} = $2;
+               }
+           }
+        }
+    }
+    close(CLUSTERCONF);
+    
+    return 1;
+}
+
+
+
 
 ## check_cmd
 ## checks the command configuration file
@@ -281,35 +328,26 @@ sub check_nodes_conf {
     my $config = shift;
     my $nodes_list_ref = shift;
     my @nodes_list = @{$nodes_list_ref};
-    my $main_conf_file = "";
+    my $main_cluster = "";
 
-    $config->check_cmd();
+    $config->check_clusterconf();
 
-    my $loop_conf_file; 
+    my $loop_cluster; 
     # retrieve main configuration file name
     foreach my $node (@nodes_list) {
-        if (!exists($config->{commands}{$node}{"configuration"})) {
-                $loop_conf_file = $default_deployconf;
+        if (!exists($config->{cluster}{$node})) {
+                $loop_cluster = $default_clustername;
         } else {
-                $loop_conf_file = $config->{commands}{$node}{"configuration"};
+                $loop_cluster = $config->{cluster}{$node};
         }
-	if (($loop_conf_file ne $default_deployconf ) && (not $loop_conf_file =~ /^\/etc\/kadeploy\/deploy-[^\/]+\.conf$/)) {
-		print "ERROR: configuration file name for node $node is not valid, please refer to deploy.conf man page\n";
-		exit 0;
-	}
-	if ($loop_conf_file eq $default_deploycmdconf) {
-		print "ERROR: configuration file for node $node is not valid: it should not be deploy_cmd.conf configuration file, please refer to deploy.conf man page\n";
-		exit 0;
-	}
-	if (($main_conf_file ne "") && ($loop_conf_file ne $main_conf_file )) {
+	if (($main_cluster ne "") && ($loop_cluster ne $main_cluster )) {
                 print "ERROR: all the node are not from the same cluster, please check again the specified nodes\n";
                 return 0;
         }
-        $main_conf_file = $loop_conf_file;
+        $main_cluster = $loop_cluster;
     }
 
-    $config->{deployconf} = $main_conf_file;
-    $config->{checked_conf} = 0;
+    $config->set_clustername($main_cluster);
 
     return 1;
 }
