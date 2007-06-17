@@ -4,7 +4,7 @@
 # svn export svn://scm.gforge.inria.fr/svn/kadeploy/<branch>
 
 ROOT=" AUTHORS COPYING changelog.txt INSTALL Makefile README "
-FILES="cmd/ tools/kasudowrapper/ tools/libboot/ tools/boot tools/cookbook/install_scripts/ share/mysql/ tools/cookbook/install_scripts/ tools/cookbook/uninstall_scripts/ tools/cookbook/install_scripts/ tools/cookbook/conf/"
+FILES="cmd/ tools/kasudowrapper/ tools/libboot/ tools/boot tools/cookbook/install_scripts/ share/mysql/ tools/cookbook/install_scripts/ tools/cookbook/uninstall_scripts/ tools/preinstallation/ tools/postinstallation/ tools/cookbook/conf/"
 
 TOOLS="tools/kasudowrapper/kasudowrapper.sh tools/libboot"
 
@@ -20,4 +20,4 @@ cp Documentation/texi/INSTALL INSTALL
 #Setting execution rights to installation scripts
 chmod 755 tools/cookbook/install_scripts/*
 #Create archive
-tar czf kadeploy-2.1.5.tgz $ROOT $FILES $TOOLS $MAN
+tar czf kadeploy-2.1.6.tgz $ROOT $FILES $TOOLS $MAN
