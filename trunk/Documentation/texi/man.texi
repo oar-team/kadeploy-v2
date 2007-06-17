@@ -25,6 +25,7 @@ This documentation is provided to document kadeploy commands and is available th
 * clusterpartition.conf man::
 * deploy.conf man::
 * deploy_cmd.conf man::
+* deploy_cluster.conf man::
 * duke-vmlinuz man::
 * kaaddkeys man::
 * kaadduser man::
@@ -65,6 +66,13 @@ This documentation is provided to document kadeploy commands and is available th
 @cindex @file{deploy_cmd.conf} man
 
 @include ../../man/texi/deploy_cmd.conf.texi
+@page
+
+@node deploy_cluster.conf man
+@section @file{deploy_cluster.conf} man page
+@cindex @file{deploy_cluster.conf} man
+
+@include ../../man/texi/deploy_cluster.conf.texi
 @page
 
 @node duke-vmlinuz man
