@@ -8,6 +8,7 @@ PREFIX=/usr/local
 
 KADEPLOYHOMEDIR=$(PREFIX)/kadeploy
 MANDIR=$(PREFIX)/man
+INFODIR=$(PREFIX)/info
 BINDIR=$(KADEPLOYHOMEDIR)/bin
 SBINDIR=$(KADEPLOYHOMEDIR)/sbin
 LIBDIR=$(KADEPLOYHOMEDIR)/lib
@@ -111,9 +112,13 @@ sudo_install:
 
 #Install and creation of mans
 install_man:
-#	make -C man/src/
 	mkdir -p $(MANDIR)/man1
 	install -m 755 man/man1/* $(MANDIR)/man1/
+
+#Install info documentation
+install_info:
+	mkdir -p $(INFODIR)
+	install -m 755 Documentation/info/*  $(INFODIR)/
 
 #Installation of ftp part
 tftp_install:
@@ -161,6 +166,8 @@ remove_installation:
 	rm -f $(MANDIR)/karemote.1
 	rm -f $(MANDIR)/deploy_cmd.conf.1
 
+	rm -f $(INFODIR)/kadeploy-info.info.gz
+
 	rm -rf $(KADEPLOYCONFDIR)/
 
 	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
@@ -176,7 +183,7 @@ db_uninstall:
 
 
 #Main part of the installation
-install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
+install: root_check checks_user_and_group_deploy kadeploy_install links_install sudo_install install_man install_info
 
 #Installation cleaning
 uninstall: root_check remove_installation
