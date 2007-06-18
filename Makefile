@@ -77,6 +77,8 @@ kadeploy_install:
 	install -m 755 cmd/karemote $(BINDIR)/
 	install -m 755 tools/kasudowrapper/kasudowrapper.sh $(BINDIR)/	
 
+	install -m 755 tools/addons/kaaddkeys $(PREFIX)/bin/kaaddkeys
+
 	install -m 755 tools/libboot/deployment_kernel/x86/* $(LIBDIR)/deployment_kernel/x86/
 	install -m 755 tools/libboot/deployment_kernel/x86_64/* $(LIBDIR)/deployment_kernel/x86_64/
 	install -m 755 tools/libboot/grub/* $(LIBDIR)/grub/

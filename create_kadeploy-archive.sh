@@ -4,7 +4,7 @@
 # svn export svn://scm.gforge.inria.fr/svn/kadeploy/<branch>
 
 ROOT=" AUTHORS COPYING changelog.txt INSTALL Makefile README "
-FILES="cmd/ tools/kasudowrapper/ tools/libboot/ tools/boot tools/cookbook/install_scripts/ share/mysql/ tools/cookbook/install_scripts/ tools/cookbook/uninstall_scripts/ tools/preinstallation/ tools/postinstallation/ tools/cookbook/conf/"
+FILES="cmd/ tools/kasudowrapper/ tools/libboot/ tools/boot tools/cookbook/install_scripts/ share/mysql/ tools/cookbook/install_scripts/ tools/cookbook/uninstall_scripts/ tools/preinstallation/ tools/postinstallation/ tools/cookbook/conf/ tools/addons/"
 
 TOOLS="tools/kasudowrapper/kasudowrapper.sh tools/libboot"
 
