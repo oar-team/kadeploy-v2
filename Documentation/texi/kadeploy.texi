@@ -68,7 +68,6 @@ This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment
 * Configuration::                            
 * Customizing scripts::
 * Man pages::
-* Examples::                    
 * History::                     
 * Index::                       
 @end menu
@@ -222,10 +221,6 @@ local hard driver can be shared between several environments deployed
 on different partitions of the node.
 @end table
 
-@node Examples
-@chapter Examples
-
-Here will be some examples of kadeploy usages?
 
 @node History
 @chapter The change log of kadeploy
