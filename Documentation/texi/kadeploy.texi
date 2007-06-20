@@ -115,9 +115,9 @@ test if users can use the nodes and let them use the nodes back, by registering
 them as free in the cluster batch scheduler, for example.
 @end table
 
-This method of deployment, is a taken as a specific case: single user (only one user deploys here: administrator), single cluster (only one cluster targetted by the OS upgrade), single operating system deployment (there is only one OS per node).
+This method of deployment, is a taken as a specific case: single user (only one user deploys here: administrator), single cluster (only one cluster targeted by the OS upgrade), single operating system deployment (there is only one OS per node).
 
-Kadeploy 2 was developped to be able to deal with all the other cases, from this simple 
+Kadeploy 2 was developed to be able to deal with all the other cases, from this simple 
 classic one to multi-users, multi-clusters, multi-OS including all possible mixes.
 
 
@@ -142,7 +142,7 @@ Kadeploy was primarily designed to deploy Linux and then FreeBSD, NetBSD and Sol
 @node Why a database
 @section Why does kadeploy use a database?
 
-kadeploy uses a database to maintain the persistance of the information about the 
+kadeploy uses a database to maintain the persistence of the information about the 
 cluster composition and current state.
 The cluster composition is described via :
 @itemize
@@ -157,7 +157,7 @@ The cluster state is described via :
 @item the history of the ordered deployment with their start and end dates and their state
 @end itemize
 
-During every single deployment occuring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster (a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure ratio on the nodes can help to track hardware failures on the nodes.
+During every single deployment occurring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster (a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure ratio on the nodes can help to track hardware failures on the nodes.
 
 
 
