@@ -86,6 +86,7 @@ This chapter describes some rough information about the Kadeploy deployment syst
 * Architecture::                
 * Operating systems::
 * Why a database::
+* Deployment steps::
 @end menu
 
 
@@ -123,11 +124,11 @@ classic one to multi-users, multi-clusters, multi-OS including all possible mixe
 @node Architecture
 @section The target architecture
 
-Kadeploy is primarily targeted at x86 and x86_64 CPUs architectures, 
+Kadeploy is primarily targeted at @samp{x86} and @samp{x86_64} CPUs architectures, 
 since they are the most common and have the largest variety of operating 
 systems. However, to the extent that certain other architectures comply
 with some network boot technologies described further, kadeploy can be 
-adapted for those needs (there is a IA64 version for kadeploy). Please let 
+adapted for those needs (there is a @samp{IA64} version for kadeploy). Please let 
 me know if you are interested in specific versions.
 
 
@@ -156,7 +157,30 @@ The cluster state is described via :
 @item the history of the ordered deployment with their start and end dates and their state
 @end itemize
 
-During every single deployment occurring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster (a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure ratio on the nodes can help to track hardware failures on the nodes.
+During every single deployment occurring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster 
+(a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure 
+ratio on the nodes can help to track hardware failures on the nodes.
+
+@node Deployment steps
+@section What are the different steps of a deployment?
+
+This section explains briefly the different steps of a deployment process, all the different steps 
+
+@enumerate 
+@item All implied nodes are rebooted on a minimal OS, @dfn{duke-vmlinuz}
+@item the deployment server then launches all the different steps in the deployment process, once it has detected that 
+all the nodes are rebooted on the minimal system:
+@enumerate a
+@item preinstallation is launched on every node to prepare the disk for the deployment, this preinstallation script depends of the cluster it 
+@emph{is prepared by the cluster administrator}
+@item the raw system image is transferred on the nodes target partition
+@item postinstallation is executed on all the nodes, to prepare the nodes for the reboot (SSH keys, @file{fstab}, network, @acronym{LDAP} ...), 
+this postinstallation script depends of the deployed environment it is prepared by the @emph{environment's maintainer}
+@item reboot implied nodes on the deployed environment
+@end enumerate
+@item the deployment server waits for the implied nodes to reboot on the deployed system
+@item @i{Voila!}
+@end enumerate
 
 
 
@@ -213,6 +237,11 @@ We use the term @dfn{deployment server}, as the server that hosts all the comman
 @cindex environment
 We use the term @dfn{environment}, as an entity that can be deployed using kadeploy, 
 or something that is deployed on a hard drive partition.
+
+@item environment maintainer
+@cindex environment maintainer
+@cindex maintainer
+An environment maintainer is the person responsible for the environment on a platform. His role is to prepare a @dfn{postinstallation} archive associated to the environment, and make sure his environment deploys on all the nodes of the platform. His email address should appear when the properties of the environment are listed with @command{kaenvironments}.
 
 @item shared partition
 @cindex shared partition
