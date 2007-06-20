@@ -10,7 +10,7 @@ all: documentation changelog.txt INSTALL
 documentation: configuration.texi changelog.texi installation.texi kadeploy.texi kadeploy_scripts.texi man.texi version.texi
 	./gendocs.sh -o $(OUTDIR) kadeploy $(DOCUMENTATIONTITLE)
 	makeinfo -o kadeploy-info.info kadeploy.texi
-	gzip kadeploy-info.info
+	gzip -f kadeploy-info.info
 
 orange_documentation: configuration.texi changelog.texi installation.texi kadeploy.texi kadeploy_scripts.texi man.texi version.texi
 	install -d orange_documentation
