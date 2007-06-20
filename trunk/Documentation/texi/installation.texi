@@ -6,7 +6,7 @@
 @node Top
 @top Installing Kadeploy @value{KADEPLOYVERSION}
 
-This documentation is provided to document kadeploy installation, nothing more: when all the steps described in this file are completed you should configure kadeploy @emph{before} thrying to use it. Some documentation can be found on @uref{http://kadeploy.gforge.inria.fr, kadeploy web site}. 
+This documentation is provided to document kadeploy installation, nothing more: when all the steps described in this file are completed you should configure kadeploy @emph{before} trying to use it. Some documentation can be found on @uref{http://kadeploy.gforge.inria.fr, kadeploy web site}. 
 
 @menu
 * Installation::
@@ -37,7 +37,7 @@ Here is a list of required system tools on the server side, all those programs s
 on your future deployment server before beginning kadeploy installation procedure:
 @table @command 
 @item perl
-kadeploy is mainly written in perl.
+kadeploy is mainly written in Perl.
 @item nmap
 kadeploy uses it to check the target nodes states during the deployment process.
 @item rsh
@@ -65,11 +65,11 @@ for deployments initiated from a non tty shell, this requirement is due to a bug
 You should install those programs on the deployment server:
 @table @command
 @item mysql
-install it and confgure it, the client part should be installed on the deployment server, 
+install it and configure it, the client part should be installed on the deployment server, 
 the server can reside on another server.
 @item dhcp-server
 it is used to configure the PXE boot process used by @command{kadeploy} to control the way the nodes are rebooting, 
-it can reside on another server on the same ethernet @acronym{VLAN} as the target nodes. The easiest is to use the one developed by @uref{http://www.isc.org/index.pl?/sw/dhcp/, ISC} in its third version.
+it can reside on another server on the same Ethernet @acronym{VLAN} as the target nodes. The easiest is to use the one developed by @uref{http://www.isc.org/index.pl?/sw/dhcp/, ISC} in its third version.
 @item tftp-server
 a tftp server @emph{compatible with} the @acronym{PXE} boot process should be installed on the deployment server, the @command{tftp-hpa} server is a good choice.
 @item sudo
@@ -84,7 +84,7 @@ In the current directory do:
 it will create the deploy user, configure sudo and copy all the required programs under the @file{/usr/local} directory.
 @end table
 
-Then you have to install tftp part, you can use variable by defaut:
+Then you have to install tftp part, you can use variable by default:
 @table @samp
 @item make tftp_install
 to use the default variables.
@@ -101,7 +101,7 @@ Now you have finished to install kadeploy client and you can edit kadeploy confi
 @subsection Database configuration
 
 @command{kadeploy} manages all the information about the nodes in a dedicated database. 
-It uses the opensource @command{mysql} server, that can run on the deployment server or another server.
+It uses the open-source @command{mysql} server, that can run on the deployment server or another server.
 The @xref{Install deployment server, previous section}, should be completed before going through this one.
 Edit @file{/etc/kadeploy/deploy.conf} to specify:  @dfn{deploy_db_host}: if your database is 
 on the same host as Kadeploy: @samp{deploy_db_host=localhost}, if not, specify the remote host 
@@ -119,7 +119,7 @@ The rest of the installation process for the database part consists in creating 
 The script that manages database initialisation is run from the deployment server, if the database is installed on the deployment server, it should be ok.
 If you have a separate database server:
 @enumerate
-@item you have to be able to make this command line without error: @samp{mysql -u root -h DATABASE_HOST_ADDRESS -p --database=mysql}, if you cannot do that logon the server hosting the mysql server:
+@item you have to be able to make this command line without error: @samp{mysql -u root -h DATABASE_HOST_ADDRESS -p --database=mysql}, if you cannot do that log on the server hosting the mysql server:
 @enumerate a
 @item check your @file{/etc/mysql/my.cnf} to see there is a line like this: @samp{bind-address=...} and remove it, then
 @item allow a mysql client to connect from the deployment server as the database administrator: @samp{mysql -u root -p} and then type this command: @samp{GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;} and finally, validate those newly created privileges: @samp{FLUSH  PRIVILEGES;}
@@ -140,7 +140,7 @@ Now, you are finished, but if you have a remote database, and want to revoke the
 @node Upgrading from 2.1.2
 @section Upgrading from kadeploy 2.1.2
 
-Since previous versions of kadeploy was a @i{stable proof of concept}, all the uninstallation process should be conducted manuallyn, sorry about that @footnote{uninstallation process is automatic starting from kadeploy 2.1.5}.
+Since previous versions of kadeploy was a @i{stable proof of concept}, all the uninstallation process should be conducted manually, sorry about that @footnote{uninstallation process is automatic starting from kadeploy 2.1.5}.
 
 @enumerate
 @item locate your kadeploy home directory and remove it: usually it is @file{/usr/local/kadeploy} or @file{/opt/kadeploy} or @file{/opt/kadeploy2}
@@ -193,7 +193,7 @@ Since previous versions of kadeploy was a @i{stable proof of concept}, all the u
 @file{deploy.conf}
 @end enumerate
 
-@strong{Please notice:} there is no need to touch to the databae part of kadeploy since there is @emph{no change} in the database structure.
+@strong{Please notice:} there is no need to touch to the database part of kadeploy since there is @emph{no change} in the database structure.
 
 
 @subsection On the deployment server

@@ -20,7 +20,7 @@ number of nodes (tested on GriD eXplorer on a full 330 nodes deployment
 several times), more reliable deployments
 
 @item
-taktuk is not used anymore => every parralel command is issued internally
+taktuk is not used anymore => every parallel command is issued internally
 using the same launcher for all apps (kadeploy, kareboot...) corrects many
 bugs (blocked deployments, all or nothing deployments,...).
 
@@ -67,13 +67,13 @@ fdisk scripting (kasetup).
 katftp removed (replaced by kasetup).
 
 @item
-kadelnode kaadnode remove (replaced by kasetup).
+kadelnode kaaddnode remove (replaced by kasetup).
 
 @item
-kasudowrapper security enancement.
+kasudowrapper security enhancement.
 
 @item
-optsupport desactived.
+optsupport deactivated.
 @end itemize
 
 @item 2.1.1
