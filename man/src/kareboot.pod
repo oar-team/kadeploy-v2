@@ -4,7 +4,7 @@ kareboot - reboot a set of nodes.
 
 =head1 SYNOPSIS
 
-B<kareboot>  [[B<-n|--noreboot>] | [B<-s|--soft>] | [B<-h|--hard>] | [B<-d|--deploy>]] [[B<-e|--environment> environment_name] | [B<-p|--partition> partition]]  [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+B<kareboot>  [[B<-n|--noreboot>] | [B<-s|--soft>] | [B<-h|--hard>] | [B<-d|--deploy>]] [[B<-e|--environment> environment_name] | [B<-p|--partition> partition]] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
 
 =head1 DESCRIPTION
 
@@ -68,11 +68,15 @@ Reboot node6 and node7 on the first partition where the environement debian4all 
 
 Reboot node3 on the environment deployed on partition sda3.
 
+=item kareboot -s -p sda3 -m node3 -kp "console=tty0 console=ttyS0,38400n8 param=foo"
+
+Reboot node3 on the environment deployed on partition sda3 with specific kernel parameter.
+
 =back
 
 =head1 SEE ALSO
 
-kaenvironments(1), karecordenv(1), kadeploy(1)
+L<kaenvironments(1)>, L<karecordenv(1)>, L<kadeploy(1)>
 
 =head1 COPYRIGHTS
 
