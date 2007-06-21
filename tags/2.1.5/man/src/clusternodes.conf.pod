@@ -21,7 +21,7 @@ N.B. : each node is described on a separate line; fields on each line are separa
 
 =head1 SEE ALSO
 
-kanodes(1), clusterpartition.conf(1)
+L<kanodes(1)>, L<clusterpartition.conf(1)>
 
 =head1 COPYRIGHTS
 

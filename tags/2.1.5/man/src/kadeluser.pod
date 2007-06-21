@@ -48,7 +48,7 @@ revokes rights to user toto on node1 and node2 partition hda1
 
 =head1 SEE ALSO
 
-kaadduser(1)
+L<kaadduser(1)>
 
 =head1 COPYRIGHTS
 

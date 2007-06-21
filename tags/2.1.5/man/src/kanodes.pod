@@ -8,7 +8,7 @@ B<kanodes>  B<[-add]>  [B<-del> hostname]  [B<-listnode>]  [B<-listpartition>]  
 
 =head1 DESCRIPTION
 
-kanodes  registers nodes and their disk and partition features for them to be available to the deployment system. It is used at the very begining to describe a whole cluster (after having completed the installation  for  instance)  or  later  when  new nodes are added to a cluster already managed by the deployment system.
+kanodes registers nodes and their disk and partition features for them to be available to the deployment system on a given cluster. It is used at the very begining to describe a whole cluster (after having completed the installation for instance) or later when new nodes are added to a cluster already managed by the deployment system. 
 
 It use two files named B</etc/kadeploy/clusternodes.conf>  B</etc/kadeploy/clusterpartition.conf>.
 
@@ -40,7 +40,7 @@ Prints help screen.
 
 =head1 SEE ALSO
 
-clusterpartition.conf(1), clusternodes.conf(1)
+L<clusterpartition.conf(1)>, L<clusternodes.conf(1)>, L<deploy_cmd.conf(1)>
 
 =head1 COPYRIGHTS
 

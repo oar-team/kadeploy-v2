@@ -60,7 +60,7 @@ This configuration tells the deployment kernel to use I<eth1> of the hardware co
 
 =head1 SEE ALSO
 
-deploy_cmd.conf(1), deploy.conf(1)
+L<deploy_cmd.conf(1)>, L<deploy.conf(1)>
 
 =head1 COPYRIGHTS
 

@@ -42,7 +42,7 @@ In this schema, you have TWO primary partitions on a 8GB IDE harddrive and Three
 
 =head1 SEE ALSO
 
-kanodes(1), clusternodes.conf(1)
+L<kanodes(1)>, L<clusternodes.conf(1)>
 
 =head1 COPYRIGHTS
 

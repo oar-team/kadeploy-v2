@@ -41,7 +41,7 @@ For example with telnet based KVM:
 
 =head1 SEE ALSO
 
-deploy.conf(1)
+L<deploy.conf(1)>
 
 =head1 COPYRIGHTS
 
