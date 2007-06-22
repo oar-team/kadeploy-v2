@@ -8,6 +8,7 @@ PREFIX=/usr/local
 
 KADEPLOYHOMEDIR=$(PREFIX)/kadeploy
 MANDIR=$(PREFIX)/man
+INFODIR=$(PREFIX)/info
 BINDIR=$(KADEPLOYHOMEDIR)/bin
 SBINDIR=$(KADEPLOYHOMEDIR)/sbin
 LIBDIR=$(KADEPLOYHOMEDIR)/lib
@@ -31,13 +32,11 @@ root_check:
 #Add the "proxy" user/group to /etc/passwd if needed.
 checks_user_and_group_deploy: 
 
-#	@grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
 	@grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy 
 
 #Links Installation in /usr/local/bin
 links_install:
 #Users_Tools
-#	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaaddkeys
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaconsole
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaenvironments
 	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karecordenv
@@ -77,6 +76,8 @@ kadeploy_install:
 	install -m 755 cmd/karemote $(BINDIR)/
 	install -m 755 tools/kasudowrapper/kasudowrapper.sh $(BINDIR)/	
 
+	install -m 755 tools/addons/kaaddkeys $(PREFIX)/bin/kaaddkeys
+
 	install -m 755 tools/libboot/deployment_kernel/x86/* $(LIBDIR)/deployment_kernel/x86/
 	install -m 755 tools/libboot/deployment_kernel/x86_64/* $(LIBDIR)/deployment_kernel/x86_64/
 	install -m 755 tools/libboot/grub/* $(LIBDIR)/grub/
@@ -109,9 +110,13 @@ sudo_install:
 
 #Install and creation of mans
 install_man:
-#	make -C man/src/
 	mkdir -p $(MANDIR)/man1
 	install -m 755 man/man1/* $(MANDIR)/man1/
+
+#Install info documentation
+install_info:
+	mkdir -p $(INFODIR)
+	install -m 755 Documentation/info/*  $(INFODIR)/
 
 #Installation of ftp part
 tftp_install:
@@ -159,12 +164,13 @@ remove_installation:
 	rm -f $(MANDIR)/karemote.1
 	rm -f $(MANDIR)/deploy_cmd.conf.1
 
+	rm -f $(INFODIR)/kadeploy-info.info.gz
+
 	rm -rf $(KADEPLOYCONFDIR)/
 
 	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 
 	userdel -r $(DEPLOYUSER)
-#	groupdel $(DEPLOYGROUP)
 
 #Database scripts installation
 db_uninstall:
@@ -174,7 +180,7 @@ db_uninstall:
 
 
 #Main part of the installation
-install: root_check checks_user_and_group_deploy kadeploy_install links_install install_man sudo_install
+install: root_check checks_user_and_group_deploy kadeploy_install links_install sudo_install install_man install_info
 
 #Installation cleaning
 uninstall: root_check remove_installation
