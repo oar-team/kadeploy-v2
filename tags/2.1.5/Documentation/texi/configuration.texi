@@ -77,6 +77,9 @@ Here is a sample @file{dhcpd.conf} file, @option{next-server} option is the IP a
 @verbatiminclude ../../tools/cookbook/conf/dhcpd.conf 
 @end example
 
+@strong{Caution:} the dhcp server configures the network on the nodes, @emph{DO NOT FORGET} that the nodes need to be 
+able to communicate between each others, and with the deployment server, during the deployment process, so the 
+@option{subnet} option is particularly important.
 
 @node tftp configuration
 @subsection @acronym{TFTP} server configuration
