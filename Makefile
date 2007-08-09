@@ -129,7 +129,7 @@ tftp_install:
 	chown $(DEPLOYUSER)  $(tftp_repository)$(pxe_rep)
 
 	install -m 644 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
-	install -m 644 tools/libboot/pxelinux/memdisk $(tftp_repository)
+	install -m 644 tools/libboot/pxelinux/memdisk $(tftp_repository)$(tftp_relative_path)
 	install -m 644 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
 
 	sed -i "s%^tftp_repository[\ |\t]*=.*%tftp_repository = $(tftp_repository)%" $(KADEPLOYCONFDIR)/deploy.conf
