@@ -10,8 +10,8 @@ fi
 
 # Manage swap partition
 if  [ $SWAP_FORMAT ]; then
-	echo "Formating swap on device ${SWAP_DEV}" > ${TTYS}
-	mkswap ${SWAP_DEV}
+	echo "Formating swap on partition ${SWAP_PART}" > ${TTYS}
+	mkswap ${SWAP_PART}
 fi
 
 # Manage /tmp
