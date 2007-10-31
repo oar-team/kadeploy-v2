@@ -1,0 +1,48 @@
+=head1 NAME
+
+deploy_cmd.conf - kadeploy configuration file.
+
+=head1 DESCRIPTION
+
+This file contains the appropriate reboot and remote console opening commands. kadeploy, kareboot and kaconsole tools use those commands definition to execute the command according to the specified nodes.
+All those commands are issued as the I<deploy> user to ease administrator efforts.
+
+The syntax is I<host_name> I<command_type> I<command> where possible command types are B<softboot>, B<hardboot>, B<deployboot> or B<console>.
+Every command is described in further sections.
+
+=head1 SOFTBOOT COMMAND
+
+The softboot command is the command issued by kadeploy and kareboot as a first attempt to reboot the node cleanly. If this command fails the hardboot command will be issued.
+Typically, the line looks like:
+ node.cluster.domain softboot ssh root@node.cluster.domain /sbin/reboot
+
+deploy user should be able to execute remote commands as root on the cluster's nodes without password using ssh.
+
+=head1 DEPLOYBOOT COMMAND
+
+The deployboot command is the command issued by kadeploy to configure the node's bootloader so that the next boot will be on the deployment kernel e.g. using B<setup_pxe.pl> utility distributed with kadeploy.
+This command is not responsible for rebooting the node, this task is left to softboot or hardboot command according to the node's reluctancy to the reboot order.
+Typically the line looks like this:
+ node.cluster.domain deployboot /usr/local/kadeploy/sbin/setup_pxe.pl node_IP:label_deploy
+
+I<label_deploy> is defined in the deploy.conf file to keep the deploy_cmd.conf file human readable.
+
+=head1 HARDBOOT COMMAND
+
+The hardboot command is the command issued by kadeploy and kareboot as the last chance to reboot the node. It is a custom command, because there are so many different hardwares for reboot (IPMI, controlled PSU, proprietary protocols...) that kadeploy cannot include any of those. Please refer to your hardware reboot documentation to implement a small script to fullfill this task.
+For example with IPMI (and coherently configured IPMI remote hardware):
+ node.cluster.domain hardboot ipmitool -A NONE -U USER -H ipmi_node_IP chassis power cycle
+
+=head1 CONSOLE COMMAND
+
+The console command is the command issued by kaconsole to give an user the ability to connect on remote console. Console redirection hardware can be of many different kinds relying on network connection or serial connections... 
+For example with telnet based KVM:
+ node.cluster.domain console telnet kvm1 node_telnetport_on_kvm
+
+=head1 SEE ALSO
+
+L<deploy.conf(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
