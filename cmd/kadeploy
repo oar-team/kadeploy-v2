@@ -8,6 +8,7 @@ use libkadeploy2::conflib;
 use libkadeploy2::bootlib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
+use libkadeploy2::debug;
 use warnings;
 use strict;
 
@@ -68,6 +69,12 @@ my $usetar=0;
 my $pre_pipe;			
 my $dest_pipe;
 my $post_pipe;
+
+
+
+#Debug stuff
+my $debug_level=4;            # no debug by default
+
 
 ## Configuration
 my $configuration = libkadeploy2::conflib->new();
@@ -132,16 +139,20 @@ if (!check_consistency())
 }
 
 ## checks if the user has appropriate rights
-print "Checking user deployment rights...\n";
+#print "Checking user deployment rights...\n";
+libkadeploy2::debug::debugl(1, "Checking user deployment rights...\n");
 if(!( libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@db_checked_hosts,$device)))
 {
     halt("user does not have appropriate rights on some nodes/partitions");
 }
 
+
+libkadeploy2::debug::debugl(3, "### Start the deployement\n");
+
+
 ## new deployment creation
 $deployment =  libkadeploy2::deploy_iolib::prepare_deployment($base);
 if (!$deployment) { libkadeploy2::deploy_iolib::disconnect($base); exit 0; }
-
 
 if($depmethod != 0)
 {#optimisation method
@@ -260,7 +271,8 @@ my $tmp_node;
 #
 
 
-print "registering environment: " . $envid . "for this deployment:" . $deployment . "\n";
+#print "registering environment: " . $envid . "for this deployment:" . $deployment . "\n";
+libkadeploy2::debug::debugl(1, "registering environment: " . $envid . "for this deployment:" . $deployment . "\n");
 foreach my $host (@db_checked_hosts){
     $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $envid, $dev, $part);
     if ($tmp_node) 
@@ -269,7 +281,8 @@ foreach my $host (@db_checked_hosts){
     }
     else 
     {
-	print "node $host not included in current deployment\n";
+        #print "node $host not included in current deployment\n";
+	libkadeploy2::debug::debugl(1,"node $host not included in current deployment\n");
     }
 }
 
@@ -280,6 +293,12 @@ libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
 # Let start the chronometer
 my $checkTimeout = $configuration->get_conf("first_check_timeout");
 
+
+
+libkadeploy2::debug::debugl(3, "### Reboot the nodes on the deployment environnement\n");
+
+
+
 # rebooting the nodes
 if ($bootstrap == 0) {
     $nodes_set->rebootMyNodes("deployboot");
@@ -289,20 +308,21 @@ if ($bootstrap == 0) {
     }
 } 
 
-
 ## waits for all the nodes to be ready
 # first check is important before ready to ensure
 # node state coherancy
 if ($checkTimeout <= 0) { # invalid value
 	$checkTimeout = 200;
 }
-print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
+#print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
+libkadeploy2::debug::debugl(1, "Waiting for all the nodes to reboot during $checkTimeout seconds\n");
 
 my $reference_time_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 my $time_check = 0;
 
 
-print "<BootInit 0>\n";
+#print "<BootInit 0>\n";
+libkadeploy2::debug::debugl(1, "<BootInit 0>\n");
 $nodes_set->initCheck();
 
 while((!$nodes_set->ready()) and ($time_check < $checkTimeout)) 
@@ -313,11 +333,13 @@ while((!$nodes_set->ready()) and ($time_check < $checkTimeout))
 }
 
 if ($nodes_set->ready()) {
-    print "All nodes are ready!\n";
+    #print "All nodes are ready!\n";
+    libkadeploy2::debug::debugl(1,"All nodes are ready!\n");
 } else {
     if($depmethod==0) {
         if ($bootstrap==0) {
-	    print "There are some missing nodes, rebooting them hard!\n";
+	    #print "There are some missing nodes, rebooting them hard!\n";
+	    libkadeploy2::debug::debugl(1, "There are some missing nodes, rebooting them hard!\n");
 	    $nodes_set->rebootMyNodes("failednodes");
 	}
         # let's wait for another timeout
@@ -332,11 +354,13 @@ if ($nodes_set->ready()) {
         }
         if ($nodes_set->ready())
         {
-            print "All nodes are ready!\n";
+            #print "All nodes are ready!\n";
+	    libkadeploy2::debug::debugl(1, "All nodes are ready!\n");
         }
         else
         {
-            print "There are some missing nodes, pursuing deploy process!\n";
+	    #print "There are some missing nodes, pursuing deploy process!\n";
+            libkadeploy2::debug::debugl(1, "There are some missing nodes, pursuing deploy process!\n");
         }
     }
 }
@@ -345,7 +369,10 @@ if ($nodes_set->ready()) {
 # time bench
 my $time_first_check = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
-print "First Check: " . $time_first_check . "\n";
+#print "First Check: " . $time_first_check . "\n";
+libkadeploy2::debug::debugl(1, "First Check: " . $time_first_check . "\n");
+
+
 
 #
 # Let's go!
@@ -377,10 +404,12 @@ if($depmethod!=0)
 #umount the destination partition ( if a kadeploy has canceled before )
 $nodes_set->runRemoteCommand("\" umount /mnt/dest \"");
 
-print "<PreInstall>\n";
+#print "<PreInstall>\n";
+libkadeploy2::debug::debugl(1, "<PreInstall>\n");
 # pre-installation
 # mount rambin to perform hd optimizations and benches,...
-print "Retrieving preinstall\n";
+#print "Retrieving preinstall\n";
+libkadeploy2::debug::debugl(1, "Retrieving preinstall\n");
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe);
 
@@ -390,76 +419,110 @@ if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
     $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file");
 }
 
-print "Executing preinstall...";
+#print "Executing preinstall...";
+libkadeploy2::debug::debugl(1, "Executing preinstall...");
+
+
 
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
 $nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script", "preinstall", "Preinstall failed on node");
-print "Done\n";
+#print "Done\n";
+libkadeploy2::debug::debugl(1, "Done\n");
 
 # time bench
 $time_preinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-print "Preinstall: " . $time_preinstall . "\n";
+#print "Preinstall: " . $time_preinstall . "\n";
+libkadeploy2::debug::debugl(1, "Preinstall: " . $time_preinstall . "\n");
 
 
 
 
-print "<Transfert>\n";
+#print "<Transfert>\n";
+libkadeploy2::debug::debugl(1, "<Transfert>\n");
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 
 
-print "filebase: $filebase\n";
+#print "filebase: $filebase\n";
+libkadeploy2::debug::debugl(1, "filebase: $filebase\n");
 if ($filebase =~ /^.+\.tar\.gz$/ ||
     $filebase =~ /^.+\.tgz$/     )
 {
     $usetar=1;
 # format desired partition and mount it
-    print "Formatting destination partition $destination_partition on the nodes...";
+    #print "Formatting destination partition $destination_partition on the nodes...";
+    libkadeploy2::debug::debugl(1, "Formatting destination partition $destination_partition on the nodes...");
 #    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
     my $mkfs_fs_options = " ";
     if($configuration->get_conf($mkfs_fs . "_options")) {
 	    $mkfs_fs_options = $configuration->get_conf($mkfs_fs . "_options");
     }
-    print "using $mkfs_fs file system with options: $mkfs_fs_options \n";
+    #print "using $mkfs_fs file system with options: $mkfs_fs_options \n";
+    libkadeploy2::debug::debugl(1, "using $mkfs_fs file system with options: $mkfs_fs_options \n");
+
+
+    libkadeploy2::debug::debugl(3, "### Formatting the deployment partition on the nodes\n");
+
+
     $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
     $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
-    print "Done\n";
-
+    #print "Done\n";
+    libkadeploy2::debug::debugl(1, "Done\n");
     
-    print "<tar Transfert>\n";
+    #print "<tar Transfert>\n";
+    libkadeploy2::debug::debugl(1, "<tar Transfert>\n");
 # send the environment!!
-    print "Sending Computing environment to the nodes...\n";
+    #print "Sending Computing environment to the nodes...\n";
+    libkadeploy2::debug::debugl(1,"Sending Computing environment to the nodes...\n");
+
+
+    libkadeploy2::debug::debugl(3, "### Copy user's environnement to the nodes\n");
+
+
     $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
-    print "Done\n";
+    #print "Done\n";
+    libkadeploy2::debug::debugl(1, "Done\n");
 }
 if ($filebase =~ /^.+\.dd\.gz$/)
 {
-    print "<dd Transfert>\n";
-    print "Sending Computing environment to the nodes...\n";
+    #print "<dd Transfert>\n";
+    libkadeploy2::debug::debugl(1, "<dd Transfert>\n");
+    #print "Sending Computing environment to the nodes...\n";
+    libkadeploy2::debug::debugl(1, "Sending Computing environment to the nodes...\n");
     $nodes_set->runRemoteCommand("\" ln -sf $destination_partition /dest_part \"");
     $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe");
     #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port); 
-    print "Done\n";
+    #print "Done\n";
+    libkadeploy2::debug::debugl(1, "Done\n");
 }
 
 $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-print "Transfert: " . $time_transfert . "\n";
+#print "Transfert: " . $time_transfert . "\n";
+libkadeploy2::debug::debugl(1, "Transfert: " . $time_transfert . "\n");
 
 
 if ($usetar)
 {
-    print "<PostInstall>\n";
+    #print "<PostInstall>\n";
+    libkadeploy2::debug::debugl(1, "<PostInstall>\n");
     libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # post-installation
-    print "Executing postinstall...";
+    #print "Executing postinstall...";
+    libkadeploy2::debug::debugl(1, "Executing postinstall...");
+
+
+    libkadeploy2::debug::debugl(3, "### Execute post-install on the nodes\n");
+
     $nodes_set->runCommandMcat("cat $filesite", $post_pipe);
     $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
-    print "Done\n";
+    #print "Done\n";
+    libkadeploy2::debug::debugl(1, "Done\n");
 
 # time bench
 
     my $time_postinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-    print "Postinstall: " . $time_postinstall . "\n";
+    #print "Postinstall: " . $time_postinstall . "\n";
+    libkadeploy2::debug::debugl(1, "Postinstall: " . $time_postinstall . "\n");
     
     my @to_reboot = @db_checked_hosts;
 }
@@ -470,7 +533,8 @@ my @to_reboot = @db_checked_hosts;
 #problems to be resolved: mysql ...
 if($depmethod==2)
 {
-    print "Proceeding with pivot-deployment method...";
+    #print "Proceeding with pivot-deployment method...";
+    libkadeploy2::debug::debugl(1, "Proceeding with pivot-deployment method...");
     $nodes_set->runRemoteCommand("\" mkdir /mnt/dest/old_root \"");
     $nodes_set->runRemoteCommand("\" rm -f /mnt/dest/etc/mtab \"");
     $nodes_set->runRemoteCommand("\" mkdir /new_root \"");
@@ -479,20 +543,27 @@ if($depmethod==2)
     $nodes_set->runRemoteCommand("\" mount $destination_partition /new_root \"");
     $nodes_set->runCommandSimplessh("/rambin/pivot");
     sleep(13);	
-    print "Pivot-deployment method finished.";
+    #print "Pivot-deployment method finished.";
+    libkadeploy2::debug::debugl(1, "Pivot-deployment method finished.");
 }
 else{
 if ($usetar)
 {
-    print "Umounting fs... ";
+    #print "Umounting fs... ";
+    libkadeploy2::debug::debugl(1, "Umounting fs... ");
     $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
     sleep(1);
-    print "Done\n";
+    #print "Done\n";
+    libkadeploy2::debug::debugl(1, "Done\n");
 }
 
 
 # grub and pxe
 libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
+
+
+libkadeploy2::debug::debugl(3, "### Reboot the nodes on the deployed environnment\n");
+
 
 if($depmethod==0)
 {
@@ -501,7 +572,8 @@ else
 {
     $nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
 }
-print "rebooting the nodes...\n";
+#print "rebooting the nodes...\n";
+libkadeploy2::debug::debugl(1, "rebooting the nodes...\n");
 }
 
 # time transfert
@@ -539,7 +611,8 @@ $checkTimeout = $configuration->get_conf("last_check_timeout");
 if ($checkTimeout <= 0) { # invalid value
         $checkTimeout = 300;
 }
-print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
+#print "Waiting for all the nodes to reboot during $checkTimeout seconds\n";
+libkadeploy2::debug::debugl(1, "Waiting for all the nodes to reboot during $checkTimeout seconds\n");
 
 $deployed_nodes_set->lastCheck();
 while((!$deployed_nodes_set->ready()) and ($time_check < $checkTimeout)) 
@@ -554,14 +627,18 @@ while((!$deployed_nodes_set->ready()) and ($time_check < $checkTimeout))
 #    $deployed_nodes_set->check();
 #}
 #print "All nodes are deployed!\n";
-print "Deployment finished!\n";
+#print "Deployment finished!\n";
+libkadeploy2::debug::debugl(3, "### Deployment finished!\n");
 
-print "<Completed>\n";
+#print "<Completed>\n";
+libkadeploy2::debug::debugl(1, "<Completed>\n");
+
 
 # time end
 my $time_end = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
-print "Last Reboot: " . $time_end . "\n";
+#print "Last Reboot: " . $time_end . "\n";
+libkadeploy2::debug::debugl(1, "Last Reboot: " . $time_end . "\n");
 
 ## error if a node failed then checks which node has failed
 ## and turns the others to 'deployed' state
@@ -569,7 +646,8 @@ my $exit_value = libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
 libkadeploy2::deploy_iolib::debug_print($base,$deployment);
 libkadeploy2::deploy_iolib::disconnect($base);
 
-print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
+#print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
+libkadeploy2::debug::debugl(1, "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n");
 
 # exits with a shell compatible status
 exit (1-$exit_value);
@@ -605,8 +683,10 @@ sub check_nodes($$){
 	if(! libkadeploy2::deploy_iolib::node_name_to_name($dbh,$host)){
 	    my $hostname =  libkadeploy2::deploy_iolib::node_ip_to_name($dbh,$host);
 	    if(!$hostname){
-		print "WARNING : node $host does not exist in the database\n";
-		print "WARNING : it is excluded from deployment\n";
+		#print "WARNING : node $host does not exist in the database\n";
+		libkadeploy2::debug::debugl(2, "WARNING : node $host does not exist in the database\n");
+		#print "WARNING : it is excluded from deployment\n";
+		libkadeploy2::debug::debugl(2,  "WARNING : it is excluded from deployment\n");
 	    }else{
 		push(@checked,$hostname);
 	    }
@@ -705,6 +785,7 @@ sub usages()
 \t[-p   | --partition   partition]
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
+\t[--debug_level        level]                     0 : show all ...  4 : hide all
 
 ";
 
@@ -740,8 +821,11 @@ sub check_options(){
 	       'verbose'             => \$verbose,
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
+	       'debug_level=i'       => \$debug_level,
 	       );
 
+    #Crappy
+    $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
 
     ## first read command options    
     if ($help) { usages(); exit(0); }
@@ -852,7 +936,8 @@ sub check_consistency()
 {
     my $dopostinstall=1;
     ## check partitioning schema
-    if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
+    #if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
+    if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && libkadeploy2::debug::system_wrapper("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
 	halt("ERROR : partition check failed\n");
     }

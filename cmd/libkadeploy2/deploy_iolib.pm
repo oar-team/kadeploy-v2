@@ -11,6 +11,7 @@ package libkadeploy2::deploy_iolib;
 
 use DBI;
 use libkadeploy2::conflib;
+use libkadeploy2::debug;
 use Time::Local;
 use strict;
 
@@ -166,7 +167,8 @@ sub clean_previous_deployments ($) {
     	# set default value
     	$deployment_validity_timeout = 1000;
     }
-print "invalidating deployments older than $deployment_validity_timeout\n";
+    #print "invalidating deployments older than $deployment_validity_timeout\n";
+    libkadeploy2::debug::debugl(1, "invalidating deployments older than $deployment_validity_timeout\n");
 
     my $rows_affected = $dbh->do("UPDATE deployment
                                   SET deployment.state = 'error', deployment.enddate=deployment.startdate
@@ -1765,7 +1767,7 @@ sub list_node($) {
 }
 
 # debug_print
-# prints database state 
+# prints database state and generate 2 files : 
 # parameters : base, deploy_id
 # return value : /
 sub debug_print($$){
@@ -1793,20 +1795,56 @@ sub debug_print($$){
     my @depl = ($ref->{'id'},$ref->{'state'});
     $sth->finish();
 
-    # prints information
-    print "\nDeploy\tState\n";
-    print "------\t-----\n";
-    print "$depl[0]\t$depl[1]\n";
+    my $username;
+    if ($ENV{SUDO_USER}) {
+	$username=$ENV{SUDO_USER};
+    }
+    else {
+	$username=$ENV{USER};
+    }
+    my $ret_nodes_ok;
+    $ret_nodes_ok=open(NODES_OK,">/tmp/kadeploy-".$username."_nodes_ok.out");
+    if (!$ret_nodes_ok) {
+	print "Can't create /tmp/kadeploy-".$username."_nodes_ok.out";
+    }
+    my $ret_nodes_nok;
+    $ret_nodes_nok=open(NODES_NOK,">/tmp/kadeploy-".$username."_nodes_nok.out");
+    if (!$ret_nodes_ok) {
+	print "Can't create /tmp/kadeploy-".$username."_nodes_nok.out";
+    }
 
-    print "\nNode\tState\t\tError Description (if any)\n";
-    print "----\t-----\t\t--------------------------\n";
+    # prints information
+    #print "\nDeploy\tState\n";
+    libkadeploy2::debug::debugl(1, "\nDeploy\tState\n");
+    #print "------\t-----\n";
+    libkadeploy2::debug::debugl(1, "------\t-----\n");
+    #print "$depl[0]\t$depl[1]\n";
+    libkadeploy2::debug::debugl(1, "$depl[0]\t$depl[1]\n");
+
+    #print "\nNode\tState\t\tError Description (if any)\n";
+    libkadeploy2::debug::debugl(4, "\nNode\tState\t\tError Description (if any)\n");
+    #print "----\t-----\t\t--------------------------\n";
+    libkadeploy2::debug::debugl(4, "----\t-----\t\t--------------------------\n");
+
     foreach my $res (keys %res){
 	if ($res{$res}[0] eq 'error'){
-	    print "$res\t$res{$res}[0]\t\t$res{$res}[1]\n";
+	    #print "$res\t$res{$res}[0]\t\t$res{$res}[1]\n";
+	    libkadeploy2::debug::debugl(4, "$res\t$res{$res}[0]\t\t$res{$res}[1]\n");
+	    if ($ret_nodes_nok) {
+		print NODES_NOK "$res\n";
+	    }
 	}else{
-	    print "$res\t$res{$res}[0]\t\n";
+	    #print "$res\t$res{$res}[0]\t\n";
+	    libkadeploy2::debug::debugl(4, "$res\t$res{$res}[0]\t\n");
+	    if ($ret_nodes_nok) {
+		print NODES_OK "$res\n";
+	    }
 	}
     }
+    #pb : the files kadeploy-username_nodes_*.out are owner by deploy, so they 
+    #     can't be deleted by a normal user (sticky bit pb).
+    close(NODES_OK);
+    close(NODES_NOK);
     print "\n";
 }
 
