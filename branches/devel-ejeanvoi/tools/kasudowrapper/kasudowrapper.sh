@@ -19,7 +19,21 @@ if [ $(basename $0) = "kadeploy" ]
 	fi
 fi
 
-if [ -x $DEPLOYDIR/bin/`basename $0` ] ; then exec ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; $OK=1 ;  fi
-if [ -x $DEPLOYDIR/sbin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
-if [ ! $OK ] ; then echo "kasudowrapper.sh badly configured, use (prefix)/sbin/kasetup -exportenv" ; fi
+#if [ -x $DEPLOYDIR/bin/`basename $0` ] ; then exec ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; $OK=1 ;  fi
+#if [ -x $DEPLOYDIR/sbin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
+#if [ ! $OK ] ; then echo "kasudowrapper.sh badly configured, use (prefix)/sbin/kasetup -exportenv" ; fi
+
+if [ -x $DEPLOYDIR/bin/`basename $0` ]
+then 
+    ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
+    if [ "`basename $0`" == "kadeploy" ]
+    then
+	cp /tmp/kadeploy-$USER*.out .
+	sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy -rmnodefilesintmp $USER
+    fi
+fi
+if [ -x $DEPLOYDIR/sbin/`basename $0` ]
+then
+    sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" 
+fi
 
