@@ -14,9 +14,14 @@ use warnings;
 #
 # We use KADEPLOY_DEBUG_LEVEL to propagate the debug level value (should use Exporter)
 
+my $current_debug_level;
 
 sub debugl($$) {
-    my $current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
+	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    } else {
+	$current_debug_level = 1;
+    }
     my $msg_debug_level = shift;
     my $msg = shift;
 
@@ -26,7 +31,11 @@ sub debugl($$) {
 }
 
 sub system_wrapper($) {
-    my $current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
+	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    } else {
+	$current_debug_level = 1;
+    }
     my $cmd = shift;
     my $ret;
 
@@ -39,7 +48,11 @@ sub system_wrapper($) {
 }
 
 sub exec_wrapper($) {
-    my $current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
+	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    } else {
+	$current_debug_level = 1;
+    }
     my $cmd = shift;
 
     if ($current_debug_level <= 1) {
