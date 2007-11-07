@@ -69,7 +69,7 @@ my $usetar=0;
 my $pre_pipe;			
 my $dest_pipe;
 my $post_pipe;
-
+my $rmnodefilesintmp;
 
 
 #Debug stuff
@@ -822,9 +822,14 @@ sub check_options(){
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
 	       'debug_level=i'       => \$debug_level,
+	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
 	       );
-
-    #Crappy
+    #crappy
+    if ($rmnodefilesintmp) {
+	my $cmd="rm -f /tmp/kadeploy-".$username."*";
+	system($cmd);
+	exit(0);
+    }
     $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
 
     ## first read command options    
@@ -1125,3 +1130,4 @@ sub tsktsk {
     }
     exit 0;
 }
+
