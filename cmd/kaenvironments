@@ -67,6 +67,7 @@ else
 GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
 	   'd=s'               => \@envToDelete,
+	   'delete=s'          => \@envToDelete,
 	   'l=s'               => \@users,
 	   'c=s'	       => \$clustername,
 	   'cluster=s'         => \$clustername,
