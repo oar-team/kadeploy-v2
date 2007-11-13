@@ -28,8 +28,13 @@ then
     ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
     if [ "`basename $0`" == "kadeploy" ]
     then
+	#copy nodes files in the current directory
 	cp /tmp/kadeploy-$USER*.out .
+	#remove nodes files in /tmp
 	sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy -rmnodefilesintmp $USER
+	#copy ssh keys in root's autorized_keys
+	[ -e ~/.ssh/id_rsa.pub ] && kaaddkeys -f "kadeploy-"$USER"_nodes_ok.out" -k ~/.ssh/id_rsa.pub
+	[ -e ~/.ssh/id_dsa.pub ] && kaaddkeys -f "kadeploy-"$USER"_nodes_ok.out" -k ~/.ssh/id_dsa.pub
     fi
 fi
 if [ -x $DEPLOYDIR/sbin/`basename $0` ]
