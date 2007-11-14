@@ -1,0 +1,51 @@
+=head1 NAME
+
+kaadduser - grants deployment rights to the specified user on the given partition
+
+=head1 SYNOPSIS
+
+B<kaadduser>  [B<-l|--login> username] [B<-p|--partition> partition] [B<-m|--machine> hostname]
+
+=head1 DESCRIPTION
+
+kaadduser grants deployment rights to the specified user on the given partition
+
+=head1 OPTIONS
+
+=over
+
+=item B<-l|--login> username
+
+Specifies the granted user, can be used more than once to grant deployment rights to multiple users.
+
+=item B<-p|--partition> partition
+
+Specifies the authorized partition on the target nodes, can be used more than once to grant deployment rights on multiple partitions.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts. All the hosts specified in a single command should belong to the same cluster.
+
+=back
+
+=head1 RETURN VALUE
+
+kaadduser returns 0 if it fails. Otherwise, it returns 1.
+
+=head1 EXAMPLE
+
+=over
+
+=item kaadduser -l titi -p hda3 -m node1
+
+grants rights to user titi on node "node1" on partition hda3.
+
+=back
+
+=head1 SEE ALSO
+
+L<kadeluser(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

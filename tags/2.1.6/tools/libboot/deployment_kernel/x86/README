@@ -1,0 +1,2 @@
+deployment kernel for 2.1.5 no support for previous versions of kadeploy (missing mput, DKsentinelle, mcatseg).
+based on a 2.6.18-4 kernel

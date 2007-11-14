@@ -1,0 +1,65 @@
+=head1 NAME
+
+kadeploy - deploys an environment on the given nodes.
+
+=head1 SYNOPSIS
+
+B<kadeploy>  B<-e|--environment> environment_name [B<-l> username] B<-p|--partition> partition [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+
+=head1 DESCRIPTION
+
+This command deploys the specified environment on a specific parition of the target nodes. When successfully over, the nodes are available under the new and freshly installed environment.
+
+Kadeploy can deploy another user's environment.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-e|--environment> environment_name
+
+Specifies the name of the environment to deploy.
+
+=item B<-l> username
+
+Specifies the environment's owner, by defaut the user issuing kadeploy command.
+
+=item B<-p|--partition> partition
+
+Specifies the partition to use for deployment on the target nodes.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts.
+
+=item B<-f> nodefile
+
+Specifies a file containing a set of target nodes.
+
+=item B<-v, --verbose>
+
+verbose mode.
+
+=back
+
+=head1 EXAMPLE
+
+=over
+
+=item kadeploy -e debian4all -p sda3 -m node7
+
+Deploys the debian4all environment on partition sda3 of node7.
+
+=item kadeploy -e debian4jul -l jleduc -p sda3 -f $OAR_NODEFILE
+
+Deploys the debian4jul environment user jleduc on partition sda3 of a set of nodes reserved with OAR in the deploy queue.
+
+=back
+
+=head1 SEE ALSO
+
+L<kaenvironments(1)>, L<karecordenv(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

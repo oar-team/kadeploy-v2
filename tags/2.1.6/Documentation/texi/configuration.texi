@@ -1,0 +1,194 @@
+@ifclear full_documentation
+
+@include version.texi
+
+@ifnottex
+@node Top
+@top Configuring Kadeploy @value{KADEPLOYVERSION}
+
+This documentation is provided to document kadeploy configuration.
+
+@menu
+* Configuration::
+@end menu
+
+@node Configuration
+@chapter Configuring Kadeploy
+
+@end ifnottex
+
+@end ifclear
+
+
+@menu
+* Nodes configuration::
+* PXE configuration::
+* kadeploy configuration::
+@end menu
+
+
+
+@node Nodes configuration
+@section Configuring network boot on the nodes
+@cindex @acronym{BIOS} configuration
+
+To make a deployment on the nodes, you have to check their @acronym{BIOS}.
+
+@enumerate
+@item node must be able to use @acronym{PXE} boot. Find PXE item in bios and enable it.
+@item search item usually named boot sequence. When you find it, put PXE @samp{network,ethernet0} as the first device to boot
+@end enumerate
+
+@strong{Caution:} automating the intallation process of your nodes though any deployment system, like kadeploy, 
+is often over the default limits configured in your @acronym{BIOS} by your node's manufacturer: for example, some manufacturer 
+consider that after 3 failures at boottime, the BIOS settings should be reset to defaults, this can lead to a @emph{major failure} 
+of your entire system, if your manufacturer consider that the default setting for booting is not from the network...
+
+@node PXE configuration
+@section @acronym{PXE} boot configuration required by kadeploy
+@cindex @acronym{PXE} boot configuration
+@cindex configure @acronym{PXE} boot
+
+Kadeploy uses @i{PXE boot} to control the way the nodes are booting, this part tries to describe some 
+basic configuration to help you to configure PXE boot on your cluster. The main idea is that kadeploy 
+generates a bootloader that the nodes use at boottime. To do so, kadeploy copy this boot loader on the 
+tftp server that resides on the deployment server, and it is downloaded by the nodes at boottime, 
+thanks to the dhcp server: its role is only to tell the nodes from which tftp server they should 
+download their bootloader. Kadeploy is responsible for the synchronization of those parts.
+
+@menu
+* dhcp configuration::
+* tftp configuration::
+@end menu
+
+
+@node dhcp configuration
+@subsection @acronym{DHCP} server configuration
+@cindex @acronym{DHCP} configuration
+@cindex configure @acronym{DHCP}
+
+The dhcp server configuration is @emph{static}: kadeploy does not need to change it during the deployment process, 
+since its purpose is only to let the nodes know that they must download their bootloader from the deployment 
+server, nothing more.
+In @file{dhcpd.conf}, you must have a description of all mac adress and corresponding ip for each node, so that the 
+dhcp server won't allocate adresses dynamically.@*
+Here is a sample @file{dhcpd.conf} file, @option{next-server} option is the IP address of the deployment server:
+@example
+@verbatiminclude ../../tools/cookbook/conf/dhcpd.conf 
+@end example
+
+@strong{Caution:} the dhcp server configures the network on the nodes, @emph{DO NOT FORGET} that the nodes need to be 
+able to communicate between each others, and with the deployment server, during the deployment process, so the 
+@option{subnet} option is particularly important.
+
+@node tftp configuration
+@subsection @acronym{TFTP} server configuration
+@cindex @acronym{TFTP} configuration
+@cindex configure @acronym{TFTP}
+
+The tftp configuration evolves during the deployment process to permit kadeploy to control the way the nodes are booting.
+Since all the commands of the kadeploy deployment system are run as the @i{deploy} user on the deployment server 
+@ref{sudo configuration}.@* 
+Here is a sample @file{/etc/inetd.conf}, used for a 342 nodes cluster using kadeploy, file to launch @command{tftp-hpa} 
+server:
+@example
+tftp           dgram   udp     wait.max=4500    root  /usr/sbin/in.tftpd /usr/sbin/in.tftpd -vv -s /var/lib/tftpboot
+@end example
+
+@strong{Caution:} Some options are very important here: since all the nodes involved in a deployment reboot @emph{at the same time}, we need a pretty high value for @option{wait.max}, this value @emph{must be at least} 12 times the number of nodes in your cluster.
+
+@example
+@verbatim
+/var/lib/tftpboot/PXEClient/
+      	pxelinux.cfg/
+	image_grub/
+	memdisk
+      	pxelinux.0
+@end verbatim
+@end example
+
+This directory structure allows to respond to different @acronym{PXE} request schemes. The slight differences are not our business here, you should refer to the different @acronym{PXE} standards for this part.@*
+Let's have a short look at this structure :
+@table @file
+@item /var/lib/tftpboot/
+is @acronym{TFTP} root directory, it is the directory served by the tftp server (often in a @command{chroot}, as it appears in @ref{tftp configuration}).
+@item /var/lib/tftpboot/PXEClient/
+is the root tftp directory @emph{at boot time} during the @acronym{PXE} requests of the booting node (that is mainly why your tftp server should be @acronym{PXE} compliant).
+@item /var/lib/tftpboot/PXEClient/pxelinux.cfg/
+contains all the files that link every node to its kernel/initrd pair to load and boot from network, and ensure that we can remotely control the way the nodes are booting.
+@item /var/lib/tftpboot/PXEClient/image_grub/
+will contain all the kadeploy generated grub bootloaders or kernel/initrd paris to allow the nodes to boot on the deployed system image.
+@item /var/lib/tftpboot/PXEClient/memdisk
+is @file{memdisk} from the @uref{http://syslinux.zytor.com, syslinux} project.
+@item /var/lib/tftpboot/PXEClient/pxelinux.0
+is @file{pxelinux} from the @uref{http://syslinux.zytor.com, syslinux} project.
+@end table
+
+
+@node kadeploy configuration
+@section kadeploy configuration
+@cindex kadeploy configuration
+@cindex configure kadeploy
+
+Kadeploy has 4 default configuration files located in @file{/etc/kadeploy} directory:
+@table @file
+@item /etc/kadeploy/deploy.conf
+contains tools and directory path, global variables, database information, and kernel boot parameters.
+@item /etc/kadeploy/deploy_cmd.conf
+contains custom commands to be executed for each node.
+@item /etc/kadeploy/clusterpartition.conf
+contains default partitionment scheme.
+@item /etc/kadeploy/clusternodes.conf
+contains the nodes informations.
+@end table
+
+@menu
+* sudo configuration::
+* add nodes::
+* add an user::
+@end menu
+
+
+@node sudo configuration
+@subsection sudo configuration
+@cindex sudo configuration
+@cindex configure sudo
+
+Sudo configuration is @emph{done automatically} through the @xref{Install deployment server, installation process}, this
+section's purpose is solely to explain the role of @command{sudo}. All the commands in kadeploy are run as the @i{deploy}
+user through a sudo. Thanks to that, kadeploy is multiuser: it can verify the rights of the user who wants to issue one of
+kadeploy's commands, while maintaining a strong rights isolation on the deployment server: users cannot read kadeploy
+configuration files, cannot write in the tftp tree, cannot bypass kadeploy's right management system.
+
+
+@node add nodes
+@subsection adding nodes to kadeploy
+@cindex adding nodes
+
+Once you have fill all the files, you have to use @command{kanodes}: it is used to register the cluster @i{hardware} composition. 
+It needs the description of the hosts, disks and partitions in a text file. The tool reads it and registers the information (name 
+and addresses of nodes, disk type and size, partition number and size etc.) in the database.@*
+Here is a sample @file{clusternodes.conf} file (available in @file{tools/cookbook/conf/clusternodes.conf}):
+@example
+@verbatiminclude ../../tools/cookbook/conf/clusternodes.conf
+@end example
+@*
+and @file{clusterpartition.conf} file (available in @file{tools/cookbook/conf/clusterpartition.conf}):
+
+@example
+@verbatiminclude ../../tools/cookbook/conf/clusterpartition.conf
+@end example
+@*
+If you want to check if the db is correct, you can do: @samp{kanodes -listnode} and @samp{kanodes -listpartition}.
+@*
+Once these operations completed, the system is @emph{almost} ready for deployments: for the moment, it only nows about the nodes 
+it should manage.
+
+
+@node add an user
+@subsection granting rights to users in kadeploy
+@cindex user right
+
+Now, you have to grant some rights to your user with the command @command{kaadduser}: 
+@samp{kaaddnodes -l root -m cls1.localdomain -m cls2.localdomain} grants the @option{root} user the right to manage all the partitions 
+of node @option{cls1.localdomain} and node @option{cls1.localdomain}.
