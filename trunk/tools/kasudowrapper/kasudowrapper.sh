@@ -19,7 +19,26 @@ if [ $(basename $0) = "kadeploy" ]
 	fi
 fi
 
-if [ -x $DEPLOYDIR/bin/`basename $0` ] ; then exec ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; $OK=1 ;  fi
-if [ -x $DEPLOYDIR/sbin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
-if [ ! $OK ] ; then echo "kasudowrapper.sh badly configured, use (prefix)/sbin/kasetup -exportenv" ; fi
+#if [ -x $DEPLOYDIR/bin/`basename $0` ] ; then exec ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ; $OK=1 ;  fi
+#if [ -x $DEPLOYDIR/sbin/`basename $0` ] ; then exec sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ; $OK=1 ;  fi
+#if [ ! $OK ] ; then echo "kasudowrapper.sh badly configured, use (prefix)/sbin/kasetup -exportenv" ; fi
+
+if [ -x $DEPLOYDIR/bin/`basename $0` ]
+then 
+    ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
+    if [ "`basename $0`" == "kadeploy" ]
+    then
+	#copy nodes files in the current directory
+	cp /tmp/kadeploy-$USER*.out .
+	#remove nodes files in /tmp
+	sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy -rmnodefilesintmp $USER
+	#copy ssh keys in root's autorized_keys
+	[ -e ~/.ssh/id_rsa.pub ] && kaaddkeys -f "kadeploy-"$USER"_nodes_ok.out" -k ~/.ssh/id_rsa.pub
+	[ -e ~/.ssh/id_dsa.pub ] && kaaddkeys -f "kadeploy-"$USER"_nodes_ok.out" -k ~/.ssh/id_dsa.pub
+    fi
+fi
+if [ -x $DEPLOYDIR/sbin/`basename $0` ]
+then
+    sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" 
+fi
 

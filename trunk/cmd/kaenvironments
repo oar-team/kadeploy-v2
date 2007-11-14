@@ -38,6 +38,7 @@ sub get_environments_by_user($$);
 # Name of the environments the user wants to display. If empty, we list a summary
 my @env_list;
 my @envToDelete;
+my @envToAdd;
 		      
 # True if the user wants help
 my $display_help;
@@ -66,7 +67,10 @@ else
 # get the command-line options
 GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
+	   'a=s'               => \@envToAdd,
+	   'add=s'             => \@envToAdd,
 	   'd=s'               => \@envToDelete,
+	   'delete=s'          => \@envToDelete,
 	   'l=s'               => \@users,
 	   'c=s'	       => \$clustername,
 	   'cluster=s'         => \$clustername,
@@ -109,7 +113,7 @@ if ($hostfile)
     open(NODEFILE,$hostfile);
     while ($line = <NODEFILE>)
     {
-	if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+	if ($line =~ /([a-zA-Z0-9\.-]+)/) { $line = $1; }
 	chomp($line);
 	push(@hostlist, $line);
     }
@@ -178,6 +182,16 @@ foreach $i (@listuser)
 print STDERR "user selected : $spoofuser\n\n";
 print_user();   
 libkadeploy2::deploy_iolib::disconnect($base);
+
+
+if (@envToAdd)
+{
+    foreach $i (@envToAdd)
+    {
+	system("/usr/local/kadeploy/bin/karecordenv -fe $i")
+    }
+    exit(0);
+}
 
 
 if (@envToDelete)
@@ -320,6 +334,7 @@ sub print_usage() {
     print "Usage: \t$0 \n";
     print "                                        - lists my recorded environments\n";
     print "            -e | --environment env1 ... - lists a given environment\n";
+    print "            -a | --add env1 ...         - add this environment (it must be yours)\n";
     print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
     print "            -l | --login  login         - list environment from user 'login'\n";
     print "            --listlogin                 - list all 'login' recorded\n";
