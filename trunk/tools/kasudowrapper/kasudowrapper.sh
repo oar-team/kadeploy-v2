@@ -59,7 +59,7 @@ then
 		"-f") state="filename";;
 		"--file") state="filename";;
 		"-k") keys=1 ; state="";;
-		"--key") keys=1 ; state="";;
+		"--keys") keys=1 ; state="";;
 		*) state="";;
 	    esac
 	done
