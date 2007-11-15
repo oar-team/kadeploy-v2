@@ -12,8 +12,6 @@ use libkadeploy2::debug;
 use warnings;
 use strict;
 
-
-
 ## flush stdout
 $| = 1;
 
@@ -70,6 +68,7 @@ my $pre_pipe;
 my $dest_pipe;
 my $post_pipe;
 my $rmnodefilesintmp;
+my $cluster;
 
 
 #Debug stuff
@@ -643,7 +642,7 @@ libkadeploy2::debug::debugl(1, "Last Reboot: " . $time_end . "\n");
 ## error if a node failed then checks which node has failed
 ## and turns the others to 'deployed' state
 my $exit_value = libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
-libkadeploy2::deploy_iolib::debug_print($base,$deployment);
+libkadeploy2::deploy_iolib::debug_print($base,$deployment,$cluster);
 libkadeploy2::deploy_iolib::disconnect($base);
 
 #print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
@@ -785,6 +784,7 @@ sub usages()
 \t[-p   | --partition   partition]
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
+\t[-k   | --keys]                                  Add ssh keys at the end of the deployment
 \t[--debug_level        level]                     0 : show all ...  4 : hide all
 
 ";
@@ -822,13 +822,14 @@ sub check_options(){
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
 	       'debug_level=i'       => \$debug_level,
+	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
 	       );
     #crappy
     if ($rmnodefilesintmp) {
 	my $cmd="rm -f /tmp/kadeploy-".$username."*";
 	system($cmd);
-	exit(0);
+	exit 1;
     }
     $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
 
