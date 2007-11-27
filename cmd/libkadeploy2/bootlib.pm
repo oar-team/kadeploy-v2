@@ -20,7 +20,7 @@ use POSIX qw(:signal_h :errno_h :sys_wait_h);
 sub setup_grub_pxe($$);
 sub manage_grub_pxe($$);
 sub generate_grub_files($$$$$$$$);
-sub generate_nogrub_files($$$$$);
+sub generate_nogrub_files($$$$$$);
 sub setup_pxe($$$);
 sub reboot($$$$);
 
@@ -102,10 +102,8 @@ sub manage_grub_pxe($$){
     }
     
     my $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
-    my $pxe_tftp_relative_folder = "folder_env_" . $env_id; # for PXE generated files
-    my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
+    
     my $pxe_kernel_parameters;
-
     my @pxe_ips;
     my @pxe_kernels;
     my @pxe_initrds;
@@ -115,7 +113,10 @@ sub manage_grub_pxe($$){
 
     my $grub_boot_img_name;
     my $grub_menu_file_name;
-
+    my $firstipx;
+    my $firstnode = 1;
+    my $iphexalized = "AABBCCDD";
+    
     ## global loop in case differents node would be associated to different devices and partitions
     ## (it should be the case in futur development steps)
     foreach my $ip (keys %node_info){
@@ -128,28 +129,46 @@ sub manage_grub_pxe($$){
 	    $gen_grub_entry = 1;
 	    $devices{$dev.$part} = 1;
 	}
-	
-	if ( $nogrub ) { # use classic pxe
+
+	$iphexalized = libkadeploy2::hexlib::gethostipx($ip);
+	# generate PXE relative folder for the current node
+	if ( $nogrub ) 
+	{ # use classic pxe
+	    my $pxe_tftp_relative_folder = $iphexalized . "/"; # for PXE generated files
+	    my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
+
 	    if ( $gen_pxe_entry ) {
-		#print "generating pxe\n";
-		libkadeploy2::debug::debugl(1, "generating pxe\n");
+		libkadeploy2::debug::debugl(1, "generating PXE : first node : $ip\n");		
+		$firstipx=$iphexalized;
+		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 		$gen_pxe_entry = 0; # generated once
-		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $env_id, $pxe_dest_folder );
+		$firstnode = 0;     # next processing different as for 1st node
+	    }
+	    else {
+		libkadeploy2::debug::debugl(1, "generating PXE : other nodes : $ip\n"); 
+		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 	    }
 
-	    $pxe_kernel_parameters = " root=/dev/" . $dev . $part ." " . $kernel_param;
+	    $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
 
+	    # Strip leading directories from kernel and initrd filenames for PXE setup configuration
+	    my $current_kernel = $kernel_path;
+	    $current_kernel =~ s/.*\/([^\/]*)$/$1/;
+	    my $current_initrd = $initrd_path;
+	    $current_initrd =~ s/.*\/([^\/]*)$/$1/;
+	    # Prepare the PXE setup
 	    push(@pxe_ips, $ip);
-	    push(@pxe_kernels, $pxe_tftp_relative_folder . $kernel_path );
-	    push(@pxe_initrds, $pxe_tftp_relative_folder . $initrd_path . $pxe_kernel_parameters );
+	    push(@pxe_kernels, $pxe_tftp_relative_folder . $current_kernel );
+	    push(@pxe_initrds, $pxe_tftp_relative_folder . $current_initrd . $pxe_kernel_parameters );
 
-	} else { # generate everything for grub
-
-#YOYZ
+	} 
+	else 
+	{ # generate everything for grub
+	    # YOYZ
 	    if ($kernel_path =~ /^chainload$/)
 	    {	# since deployed bootloader is used, generated file does not depend of clustername
-		$grub_boot_img_name = "grub_img_chainload_env".$env_id."_".$dev.$part;
-		$grub_menu_file_name = "grub_menu_chainload_env".$env_id."_".$dev.$part;
+		$grub_boot_img_name = "grub_img_chainload_env".$iphexalized."_".$dev.$part;
+		$grub_menu_file_name = "grub_menu_chainload_env".$iphexalized."_".$dev.$part;
 		
 		libkadeploy2::bootlib::generate_grub_files_chainload($grub_boot_img_name,$grub_menu_file_name,"rebootchainload","$dev$part",$env_fdisktype);
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
@@ -186,48 +205,55 @@ sub manage_grub_pxe($$){
 
 ## generate_nogrub_files
 ## generate_nogrub_files generates required files for a nogrub boot
-## parameters : env_archive, kernel_path, initrd_path, env_id
+## parameters : env_archive, kernel_path, initrd_path, destination folder, 
+## first IP of the deployment, boolean value on first node
 ## return value : 1 if successful
-sub generate_nogrub_files($$$$$){
+sub generate_nogrub_files($$$$$$){
     my $env_archive = shift;
     my $kernel_path = shift;
-    my $initrd_path =shift;
-    my $env_id = shift;
+    my $initrd_path = shift;
     my $dest_folder = shift;
+    my $firstipx     = shift;
+    my $firstnode    = shift;
 
-    if (-e $dest_folder ) { # already created, check archive modification
-	my $date_archive = -M $env_archive;
-	my $date_folder = -M $dest_folder;
-	if ( $date_archive > $date_folder) { # folder extracted after the archive update
-		return 1;
-	}
+    if (-e $dest_folder ) {
 	# discard last folder content
-	#system ("rm -fr $dest_folder");
-	libkadeploy2::debug::system_wrapper("rm -fr $dest_folder");
+	libkadeploy2::debug::system_wrapper("/bin/rm -rf $dest_folder");
     } 
     # create $dest_folder
-    #print "Archive updated... Upgrading boot directory \n";
-    libkadeploy2::debug::debugl(1, "Archive updated... Upgrading boot directory \n");
-    mkdir $dest_folder;
+    libkadeploy2::debug::system_wrapper("/bin/mkdir $dest_folder");
     my $files;
     my $file1 = $kernel_path;
     my $file2 = "";
     if ($initrd_path) { $file2 = $initrd_path; }
-    my $islink = 1;
-    
-    while ($islink) {
-        $file1 =~ s/^\///;
-        $file2 =~ s/^\///;
-        $files = $file1 . " " . $file2;
-        #system ("cd $dest_folder; tar -zxf $env_archive $files");
-	libkadeploy2::debug::system_wrapper("cd $dest_folder; tar -zxf $env_archive $files");
-        $file1 = readlink $dest_folder."/".$file1;
-        $file2 = readlink $dest_folder."/".$file2;
-        if ($file1 or $file2) { $islink = 1 }
 
-        else { $islink = 0 }
-    }
-    return 1;
+    if ($firstnode) {
+	# For 1st node of the deployment : extract kernel and initrd from image archive
+	my $islink = 1;
+	while ($islink) {
+	    $file1 =~ s/^\///;
+	    $file2 =~ s/^\///;
+	    $files = $file1 . " " . $file2;
+	    libkadeploy2::debug::system_wrapper("tar -C $dest_folder --strip 1 -xzf $env_archive $files");
+	    $file1 = readlink $dest_folder."/".$file1;
+	    $file2 = readlink $dest_folder."/".$file2;
+	    if (!$file1 and !$file2) { $islink = 0; }
+	}
+   }
+   else {
+       # For other nodes of the deployment : make symbolic links to the previously extracted kernel + initrd
+       # Strip current machine directory from TFTP path
+       my $tftp_dir = $dest_folder;
+       $tftp_dir =~ s/\/[^\/]+\/??$//;
+       # Strip leading directories from kernel and initrd filenames
+       $file1 =~ s/.*\/([^\/]*)$/$1/;
+       $file2 =~ s/.*\/([^\/]*)$/$1/;
+       # Make link to original kernel file
+       libkadeploy2::debug::system_wrapper("cd $dest_folder ; ln -s ../$firstipx/$file1 $file1");
+       # Make link to original initrd file
+       libkadeploy2::debug::system_wrapper("cd $dest_folder ; ln -s ../$firstipx/$file2 $file2");
+   }
+   return 1;
 }
 
 
@@ -419,7 +445,7 @@ sub setup_pxe($$$){
     my $TIMEOUT = 50;
 
     ## gets appropriate parameters from configuration file
-    #my $network = conflibkadeploy2::get_conf("network");
+    # my $network = conflibkadeploy2::get_conf("network");
     my $tftp_repository = $configuration->get_conf("tftp_repository");
     my $pxe_rep = $tftp_repository . $configuration->get_conf("pxe_rep");
     my $tftp_relative_path = $configuration->get_conf("tftp_relative_path");
@@ -427,35 +453,35 @@ sub setup_pxe($$$){
     my $images_repository = $tftp_repository . $tftp_relative_path;
     
     # debug print
-    # print "1. network\n2. $tftp_repository\n3. $pxe_rep\n4. $tftp_relative_path\n5. $images_repository\n";
+    print "1. network\n2. $tftp_repository\n3. $pxe_rep\n4. $tftp_relative_path\n5. $images_repository\n";
     
     my @hexnetworks;
     
     my $template_default_content="PROMPT $PROMPT\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
     
     # generate files in pxe directories and overwrite old ones
-    for (my $i=0; $i<scalar(@kernels); $i++) {
-	#print "kernel $kernels[$i], initrd $initrds[$i] from ",hexalize($ranges1[$i])," to ", hexalize($ranges2[$i]) ,"\n";
+    for (my $i=0; $i<scalar(@kernels); $i++) 
+    {
+	my $current_kernel = $kernels[$i];
+	$current_kernel    =~ s/.*\/([^\/]*)$/$1/;
+	my $current_initrd = $initrds[$i];
+	$current_initrd    =~ s/^[a-fA-F0-9]{8}\/(.*)$/$1/;
 	
-	my $kernel = $tftp_relative_path . "/" . $kernels[$i];
-	my $initrd = $initrds[$i];
-	
-	my $append = "initrd=$tftp_relative_path/$initrd";
-	
-	foreach my $ip (@to_reboot){
-
-	    my $hex_ip;
-
-	    if ($ip =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) {
-		$hex_ip = libkadeploy2::hexlib::hexalize($1) . libkadeploy2::hexlib::hexalize($2) . libkadeploy2::hexlib::hexalize($3) . libkadeploy2::hexlib::hexalize($4);
-	    }else{
-		print "ERROR : wrong ip syntax ($ip) - this sould not happen\n";
-	    }
-	    
+	foreach my $ip (@to_reboot)
+	{
+	    my $hex_ip = libkadeploy2::hexlib::gethostipx($ip);
 	    my $destination=$pxe_rep.$hex_ip;
+
+	    my $kernel = $tftp_relative_path . "/" . $hex_ip . "/" . $current_kernel;
+	    my $append = "initrd=" . $tftp_relative_path . "/" . $hex_ip . "/" . $current_initrd;
 	    
-	    open(DEST, "> $destination")
-		or die "Couldn't open $destination for writing: $!\n";
+	    ## Debug
+	    print "destination = " . $pxe_rep . " + " . $hex_ip . "\n";
+	    print "tftp_relative_path = " . $tftp_relative_path . "\n";
+	    print "current_kernel = " . $current_kernel . "\n";
+	    print "append : " . $tftp_relative_path . " + " . $current_initrd . "\n";
+	    
+	    open(DEST, "> $destination") or die "Couldn't open $destination for writing: $!\n";
 	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
 	    close(DEST);
 	}
