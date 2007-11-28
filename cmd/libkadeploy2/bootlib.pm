@@ -475,12 +475,6 @@ sub setup_pxe($$$){
 	    my $kernel = $tftp_relative_path . "/" . $hex_ip . "/" . $current_kernel;
 	    my $append = "initrd=" . $tftp_relative_path . "/" . $hex_ip . "/" . $current_initrd;
 	    
-	    ## Debug
-	    print "destination = " . $pxe_rep . " + " . $hex_ip . "\n";
-	    print "tftp_relative_path = " . $tftp_relative_path . "\n";
-	    print "current_kernel = " . $current_kernel . "\n";
-	    print "append : " . $tftp_relative_path . " + " . $current_initrd . "\n";
-	    
 	    open(DEST, "> $destination") or die "Couldn't open $destination for writing: $!\n";
 	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
 	    close(DEST);
