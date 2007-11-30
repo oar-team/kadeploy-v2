@@ -19,4 +19,6 @@ File systems  ---> <*> Second extended fs support
 File systems  ---> <*> ROM file system support 
 File systems  ---> Miscellaneous filesystems  ---> Compressed ROM file system support (cramfs)
 
+Don't forget to edit the label_deploy line of the deploy.conf file in order to adjust the ramdisk_size. For instance: label_deploy = mykernel:myinitrd ETH_DRV=tg3 ETH_DEV=eth0 DISK_DRV=mptsas console=tty1 console=ttyS1,57600 ramdisk_size=60000 root=/dev/ram0 init=/linuxrc rw
+
 For information, root_fs.tar.bz2 is a minimal filesystem used to generate initrd.
