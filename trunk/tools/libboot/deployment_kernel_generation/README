@@ -1,0 +1,22 @@
+Here is a script designed to generate a deployment kernel for kadeploy 2.1.6.
+
+Before launching, you must customize it by setting the following values:
+-KERNEL_CONFIG : absolute path to a kernel config file
+-KERNEL_VERSION : version of the kernel (eg. 2.6.21.2)
+-OUTPUT_KERNEL : name of the generated kernel (absolute path)
+-OUTPUT_INITRD : name of the generated initrd (absolute path)
+
+You can also customize INITRD_SIZE (if your kernel is bigger or smaller than 35Mo) and NUMBER_OF_CPU.
+
+Then, with root rights just execute: ./generate_deployment_kernel.sh
+
+Normally, the script will download the kernel on kernel.org. If you want, it is possible to stop the execution in order to configure the downloaded kernel (for instance if you think that your config file is not good) by runing something like "make config" or "make menuconfig". When the script will be relaunched, it won't download again the kernel.
+
+In your config file don't forget to add support for RAM disk, ext2 and cramfs:
+Device Drivers  ---> Block devices  ---> <*> RAM disk support
+Device Drivers  ---> Block devices  ---> [*] Initial RAM filesystem and RAM disk (initramfs/initrd) support
+File systems  ---> <*> Second extended fs support
+File systems  ---> <*> ROM file system support 
+File systems  ---> Miscellaneous filesystems  ---> Compressed ROM file system support (cramfs)
+
+For information, root_fs.tar.bz2 is a minimal filesystem used to generate initrd.
