@@ -100,6 +100,11 @@ if ($ENV{SUDO_USER})
 else
 { $username=$ENV{USER}; }
 
+
+#Start syslog
+libkadeploy2::debug::start_syslog();
+
+
 ## to prevent zombie processes
 ## SIGCHLD is ignored and when the child dies, his father does not care...
 #$SIG{CHLD} = 'IGNORE';
@@ -647,6 +652,11 @@ libkadeploy2::deploy_iolib::disconnect($base);
 
 #print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
 libkadeploy2::debug::debugl(1, "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n");
+
+
+#Stop syslog
+libkadeploy2::debug::stop_syslog();
+
 
 # exits with a shell compatible status
 exit (1-$exit_value);

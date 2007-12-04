@@ -3,7 +3,7 @@ package libkadeploy2::debug;
 
 use strict;
 use warnings;
-
+use Sys::Syslog;
 
 # Debug level
 # 0 : extreme verbose debug
@@ -27,6 +27,7 @@ sub debugl($$) {
 
     if ($msg_debug_level >= $current_debug_level) {
 	print($msg);
+	syslog("info",$msg);
     }
 }
 
@@ -60,6 +61,14 @@ sub exec_wrapper($) {
     } else {
 	exec($cmd." &>/dev/null");
     }
+}
+
+sub start_syslog() {
+    openlog("kadeploy", "pid", "user");
+}
+
+sub stop_syslog() {
+    closelog();
 }
 
 #End of the module
