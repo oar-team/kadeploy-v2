@@ -13,8 +13,10 @@ use Sys::Syslog;
 # 4 : no debug
 #
 # We use KADEPLOY_DEBUG_LEVEL to propagate the debug level value (should use Exporter)
+# idem with KADEPLOY_CLUSTER to propagate the cluster value (should use Exporter)
 
 my $current_debug_level;
+my $cluster;
 
 sub debugl($$) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
@@ -22,12 +24,17 @@ sub debugl($$) {
     } else {
 	$current_debug_level = 1;
     }
+    if ($ENV{KADEPLOY_CLUSTER}) {
+	$cluster = $ENV{KADEPLOY_CLUSTER};
+    } else {
+	$cluster = ""
+    }
     my $msg_debug_level = shift;
     my $msg = shift;
 
     if ($msg_debug_level >= $current_debug_level) {
-	print($msg);
-	syslog("info",$msg);
+	print("Cluster: ".$cluster." |".$msg);
+	syslog("info", "Cluster: ".$cluster." |".$msg);
     }
 }
 
