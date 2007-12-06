@@ -842,6 +842,7 @@ sub check_options(){
 	exit 1;
     }
     $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
+    $ENV{KADEPLOY_CLUSTER}  = $cluster;
 
     ## first read command options    
     if ($help) { usages(); exit(0); }
