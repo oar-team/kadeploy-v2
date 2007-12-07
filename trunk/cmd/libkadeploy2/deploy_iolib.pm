@@ -1816,27 +1816,27 @@ sub debug_print($$$){
 
     # prints information
     #print "\nDeploy\tState\n";
-    libkadeploy2::debug::debugl(1, "\nDeploy\tState\n");
+    libkadeploy2::debug::debugl_light(1, "\nDeploy\tState\n");
     #print "------\t-----\n";
-    libkadeploy2::debug::debugl(1, "------\t-----\n");
+    libkadeploy2::debug::debugl_light(1, "------\t-----\n");
     #print "$depl[0]\t$depl[1]\n";
-    libkadeploy2::debug::debugl(1, "$depl[0]\t$depl[1]\n");
+    libkadeploy2::debug::debugl_light(1, "$depl[0]\t$depl[1]\n");
 
     #print "\nNode\tState\t\tError Description (if any)\n";
-    libkadeploy2::debug::debugl(4, "\nNode\tState\t\tError Description (if any)\n");
+    libkadeploy2::debug::debugl_light(4, "\nNode\tState\t\tError Description (if any)\n");
     #print "----\t-----\t\t--------------------------\n";
-    libkadeploy2::debug::debugl(4, "----\t-----\t\t--------------------------\n");
+    libkadeploy2::debug::debugl_light(4, "----\t-----\t\t--------------------------\n");
 
     foreach my $res (keys %res){
 	if ($res{$res}[0] eq 'error'){
 	    #print "$res\t$res{$res}[0]\t\t$res{$res}[1]\n";
-	    libkadeploy2::debug::debugl(4, "$res\t$res{$res}[0]\t\t$res{$res}[1]\n");
+	    libkadeploy2::debug::debugl_light(4, "$res\t$res{$res}[0]\t\t$res{$res}[1]\n");
 	    if ($ret_nodes_nok) {
 		print NODES_NOK "$res\n";
 	    }
 	}else{
 	    #print "$res\t$res{$res}[0]\t\n";
-	    libkadeploy2::debug::debugl(4, "$res\t$res{$res}[0]\t\n");
+	    libkadeploy2::debug::debugl_light(4, "$res\t$res{$res}[0]\t\n");
 	    if ($ret_nodes_nok) {
 		print NODES_OK "$res\n";
 	    }
