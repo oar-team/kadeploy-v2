@@ -651,7 +651,7 @@ libkadeploy2::deploy_iolib::debug_print($base,$deployment,$cluster);
 libkadeploy2::deploy_iolib::disconnect($base);
 
 #print "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n";
-libkadeploy2::debug::debugl(1, "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n");
+libkadeploy2::debug::debugl_light(1, "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n");
 
 
 #Stop syslog

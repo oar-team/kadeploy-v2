@@ -38,6 +38,26 @@ sub debugl($$) {
     }
 }
 
+sub debugl_light($$) {
+    if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
+	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
+    } else {
+	$current_debug_level = 1;
+    }
+    if ($ENV{KADEPLOY_CLUSTER}) {
+	$cluster = $ENV{KADEPLOY_CLUSTER};
+    } else {
+	$cluster = ""
+    }
+    my $msg_debug_level = shift;
+    my $msg = shift;
+
+    if ($msg_debug_level >= $current_debug_level) {
+	print($msg);
+	syslog("info", $msg);
+    }
+}
+
 sub system_wrapper($) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
 	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
