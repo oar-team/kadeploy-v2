@@ -406,7 +406,7 @@ if($depmethod!=0)
 }
 
 #umount the destination partition ( if a kadeploy has canceled before )
-$nodes_set->runRemoteCommand("\" umount /mnt/dest \"");
+$nodes_set->runRemoteCommand("\" umount /mnt/dest 2>/dev/null\"");
 
 #print "<PreInstall>\n";
 libkadeploy2::debug::debugl(1, "<PreInstall>\n");
