@@ -95,6 +95,9 @@ my $rambinpath="/mnt/rambin/";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 
+
+my $reformattmp=0; #by default, we don't reformat the /tmp partition
+
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
 else
@@ -224,7 +227,8 @@ if ($depmethod==0)
     $pre_pipe="/pre_pipe";
     $dest_pipe="/dest_pipe";
     $post_pipe="/post_pipe";        
-    $pre_install_script="$pre_install_script fdisk";
+# I don't understand that ...
+#    $pre_install_script="$pre_install_script fdisk"; 
 }
 else{
 	$pre_pipe="/tmp/pre_pipe";
@@ -427,9 +431,9 @@ if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 libkadeploy2::debug::debugl(1, "Executing preinstall...");
 
 
-
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
-$nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script", "preinstall", "Preinstall failed on node");
+$nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script $reformattmp", "preinstall", "Preinstall failed on node");
+
 #print "Done\n";
 libkadeploy2::debug::debugl(1, "Done\n");
 
@@ -795,8 +799,8 @@ sub usages()
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
-\t[--debug_level        level]                     0 : show all ...  4 : hide all
-
+\t[-d   | --debug_level level]                     0 : show all ...  4 : hide all
+\t[-r   | --reformat_tmp]                          Re-format the /tmp partition
 ";
 
 }
@@ -834,6 +838,8 @@ sub check_options(){
 	       'debug_level=i'       => \$debug_level,
 	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
+	       'reformat_tmp'        => \$reformattmp,
+	       'r'                   => \$reformattmp,
 	       );
     #crappy
     if ($rmnodefilesintmp) {
@@ -841,12 +847,9 @@ sub check_options(){
 	system($cmd);
 	exit 1;
     }
-    $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
-    $ENV{KADEPLOY_CLUSTER}  = $cluster;
 
     ## first read command options    
     if ($help) { usages(); exit(0); }
-
 
     if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
         print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
@@ -941,6 +944,9 @@ sub check_options(){
 
     #FIX partitionfile to default
     if (!$partitionfile) { $partitionfile=$defaultpartitionfile; }
+
+    $ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
+    $ENV{KADEPLOY_CLUSTER}  = $cluster;
 
     return 1;
 }

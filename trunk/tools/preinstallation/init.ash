@@ -1,5 +1,7 @@
 #!/bin/ash
 
+REFORMAT_TMP=$1
+
 # source generic variables
 . /rambin/preinstall.conf
 
