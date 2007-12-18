@@ -7,11 +7,12 @@ use File::Copy;
 use libkadeploy2::conflib;
 use libkadeploy2::hexlib;
 use libkadeploy2::debug;
+use libkadeploy2::cache;
 
 # for the reboot...
 use POSIX qw(:signal_h :errno_h :sys_wait_h);
 
-#if(!(libkadeploy2::conflib::check_cmd_exist() == 1)){
+# if(!(libkadeploy2::conflib::check_cmd_exist() == 1)){
 #    print "ERROR : command configuration file loading failed\n";
 #    exit 0;
 #}
@@ -24,7 +25,10 @@ sub generate_nogrub_files($$$$$$);
 sub setup_pxe($$$);
 sub reboot($$$$);
 
-# module configuration
+## global variables declaration
+my $cachedir = "/var/cache/kadeploy";
+
+## module configuration
 my $configuration;
 
 sub register_conf {
@@ -208,7 +212,8 @@ sub manage_grub_pxe($$){
 ## parameters : env_archive, kernel_path, initrd_path, destination folder, 
 ## first IP of the deployment, boolean value on first node
 ## return value : 1 if successful
-sub generate_nogrub_files($$$$$$){
+sub generate_nogrub_files($$$$$$)
+{
     my $env_archive = shift;
     my $kernel_path = shift;
     my $initrd_path = shift;
@@ -216,7 +221,8 @@ sub generate_nogrub_files($$$$$$){
     my $firstipx     = shift;
     my $firstnode    = shift;
 
-    if (-e $dest_folder ) {
+    if (-d $dest_folder ) 
+    {
 	# discard last folder content
 	libkadeploy2::debug::system_wrapper("/bin/rm -rf $dest_folder");
     } 
@@ -225,22 +231,32 @@ sub generate_nogrub_files($$$$$$){
     my $files;
     my $file1 = $kernel_path;
     my $file2 = "";
-    if ($initrd_path) { $file2 = $initrd_path; }
 
-    if ($firstnode) {
-	# For 1st node of the deployment : extract kernel and initrd from image archive
-	my $islink = 1;
-	while ($islink) {
-	    $file1 =~ s/^\///;
-	    $file2 =~ s/^\///;
-	    $files = $file1 . " " . $file2;
-	    libkadeploy2::debug::system_wrapper("tar -C $dest_folder --strip 1 -xzf $env_archive $files");
-	    $file1 = readlink $dest_folder."/".$file1;
-	    $file2 = readlink $dest_folder."/".$file2;
-	    if (!$file1 and !$file2) { $islink = 0; }
-	}
+    if ($initrd_path) 
+    { 
+	$file2 = $initrd_path; 
+    }
+
+    if ($firstnode) 
+    {
+	## For 1st node of the deployment
+	## 1. Put securely files in cache
+	## 1.1 If files are already in, they're not extracted again.
+	## 2. Make links on these files in cache
+	$file1 =~ s/^\///;
+	$file2 =~ s/^\///;
+	my @files = ($file1, $file2);
+	libkadeploy2::cache::put_in_cache_from_archive(\@files, $env_archive, 1);
+        ## Retrieve relative path to cache from PXE destinatation directory
+	my $tftprelative = libkadeploy2::cache::get_cache_directory_tftprelative(1);
+	## Strip leading directories from filenames
+	$file1 =~ s/.*\/([^\/]*)$/$1/;
+	$file2 =~ s/.*\/([^\/]*)$/$1/;
+        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file1 $file1");
+        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file2 $file2");
    }
-   else {
+   else 
+   {
        # For other nodes of the deployment : make symbolic links to the previously extracted kernel + initrd
        # Strip current machine directory from TFTP path
        my $tftp_dir = $dest_folder;
@@ -450,10 +466,7 @@ sub setup_pxe($$$){
     my $pxe_rep = $tftp_repository . $configuration->get_conf("pxe_rep");
     my $tftp_relative_path = $configuration->get_conf("tftp_relative_path");
     
-    my $images_repository = $tftp_repository . $tftp_relative_path;
-    
-    # debug print
-    print "1. network\n2. $tftp_repository\n3. $pxe_rep\n4. $tftp_relative_path\n5. $images_repository\n";
+    my $images_repository = $tftp_repository . $tftp_relative_path;    
     
     my @hexnetworks;
     
