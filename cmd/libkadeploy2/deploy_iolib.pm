@@ -46,6 +46,7 @@ sub env_id_to_name($$);
 sub env_id_to_size($$);
 sub env_id_to_version($$);
 sub env_id_to_kernel($$);
+sub env_id_to_initrd($$);
 sub env_id_to_filebase($$);
 sub env_id_to_filesite($$);
 sub env_id_to_filesystem($$);
@@ -783,6 +784,29 @@ sub env_id_to_kernel($$){
 	return 0;
     }
     return $kernelpath;
+}
+
+
+# env_id_to_initrd
+# gets the initrd path matching the id environment
+# parameters : base, environment id
+# return value : initrd path
+sub env_id_to_initrd($$){
+    my $dbh = shift;
+    my $id = shift;
+
+    my $sth = $dbh->prepare("SELECT environment.initrdpath FROM environment WHERE environment.id=\"$id\"");
+
+    $sth->execute();
+    my $ref = $sth->fetchrow_hashref();
+    my $initrdpath = $ref->{'initrdpath'};
+    $sth->finish();
+    
+    if (!$sth){
+	print "WARNING : there is no environment of id $id\n";
+	return 0;
+    }
+    return $initrdpath;
 }
 
 

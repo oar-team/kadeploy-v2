@@ -59,6 +59,7 @@ my $post_script;            # name of the post-install script
 my $tftp_destination_folder;# tftp destination folder
 my $kernel_path;            # path to kernel in env image
 my $kernel_param;           # boot kernel parameter
+my $initrd_path;            # path to initrd in env image
 my @to_check = ();          # deployed nodes to check
 my @ready = ();             # deployed nodes that are ready 
 my $time_preinstall;        # used for time bench
@@ -97,6 +98,8 @@ my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 
 
 my $reformattmp=0; #by default, we don't reformat the /tmp partition
+my $fastkernelreboot=0; #by default, we dont't use kexec to perform fast reboot on deployed environment
+
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -428,7 +431,7 @@ if ($depmethod==0 && $do_fdisk_on_deploy eq "yes")
 }
 
 #print "Executing preinstall...";
-libkadeploy2::debug::debugl(1, "Executing preinstall...");
+libkadeploy2::debug::debugl(1, "Executing preinstall...\n");
 
 
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
@@ -459,7 +462,7 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $usetar=1;
 # format desired partition and mount it
     #print "Formatting destination partition $destination_partition on the nodes...";
-    libkadeploy2::debug::debugl(1, "Formatting destination partition $destination_partition on the nodes...");
+    libkadeploy2::debug::debugl(1, "Formatting destination partition $destination_partition on the nodes...\n");
 #    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
     my $mkfs_fs_options = " ";
     if($configuration->get_conf($mkfs_fs . "_options")) {
@@ -516,7 +519,7 @@ if ($usetar)
     libkadeploy2::deploy_iolib::set_time($base,$deployment);
 # post-installation
     #print "Executing postinstall...";
-    libkadeploy2::debug::debugl(1, "Executing postinstall...");
+    libkadeploy2::debug::debugl(1, "Executing postinstall...\n");
 
 
     libkadeploy2::debug::debugl(3, "### Execute post-install on the nodes\n");
@@ -554,34 +557,38 @@ if($depmethod==2)
     #print "Pivot-deployment method finished.";
     libkadeploy2::debug::debugl(1, "Pivot-deployment method finished.");
 }
-else{
-if ($usetar)
-{
-    #print "Umounting fs... ";
-    libkadeploy2::debug::debugl(1, "Umounting fs... ");
-    $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-    sleep(1);
-    #print "Done\n";
-    libkadeploy2::debug::debugl(1, "Done\n");
-}
-
-
-# grub and pxe
-libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
-
-
-libkadeploy2::debug::debugl(3, "### Reboot the nodes on the deployed environnment\n");
-
-
-if($depmethod==0)
-{
-    $nodes_set->rebootThoseNodes();}
 else
 {
-    $nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
-}
-#print "rebooting the nodes...\n";
-libkadeploy2::debug::debugl(1, "rebooting the nodes...\n");
+    # grub and pxe
+    libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
+    libkadeploy2::debug::debugl(3, "### Reboot the nodes on the deployed environnment\n");
+
+    if ($fastkernelreboot) #We use kexec to reboot faster
+    {
+	libkadeploy2::debug::debugl(1, "Let's use kexec to perform a fast reboot on the deployed environment\n");
+	$nodes_set->runKexecReboot("/mnt/dest/$kernel_path", "/mnt/dest/$initrd_path", $destination_partition, $kernel_param);
+    }
+    else
+    {
+	if ($usetar)
+	{
+	    #print "Umounting fs... ";
+	    libkadeploy2::debug::debugl(1, "Umounting fs... ");
+	    $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
+	    sleep(1);
+	    #print "Done\n";
+	    libkadeploy2::debug::debugl(1, "Done\n");
+	}
+	if($depmethod==0)
+	{
+	    $nodes_set->rebootThoseNodes();}
+	else
+	{
+	    $nodes_set->runRemoteSystemCommand("\"reboot -f >/dev/null 2>&1 &\"");
+	}
+    }
+    #print "rebooting the nodes...\n";
+    libkadeploy2::debug::debugl(1, "rebooting the nodes...\n");
 }
 
 # time transfert
@@ -801,6 +808,7 @@ sub usages()
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
 \t[-d   | --debug_level level]                     0 : show all ...  4 : hide all
 \t[-r   | --reformat_tmp]                          Re-format the /tmp partition
+\t[--fast_kernel_reboot]                           Use kexec to reboot quickly (only works with Linux env
 ";
 
 }
@@ -840,6 +848,7 @@ sub check_options(){
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
 	       'reformat_tmp'        => \$reformattmp,
 	       'r'                   => \$reformattmp,
+	       'fast_kernel_reboot'  => \$fastkernelreboot,
 	       );
     #crappy
     if ($rmnodefilesintmp) {
@@ -1021,12 +1030,15 @@ sub check_consistency()
     }
     
     # gets kernel path
-    $kernel_path =  libkadeploy2::deploy_iolib::env_id_to_kernel($base,$envid);
+    $kernel_path = libkadeploy2::deploy_iolib::env_id_to_kernel($base,$envid);
 
     # checks if kernel path is specified
     if(!$kernel_path){
 	halt("no kernel path specified in the database !");
     }
+
+    # gets initrd path
+    $initrd_path = libkadeploy2::deploy_iolib::env_id_to_initrd($base,$envid);
     
     # gets filesystem
     $filesystem =  libkadeploy2::deploy_iolib::env_id_to_filesystem($base,$envid);
