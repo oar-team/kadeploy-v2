@@ -837,9 +837,29 @@ sub runLocalRemote($$$$) {
 
 }
 
+sub runKexecReboot {
+    my $self = shift;
+    my $kernelPath = shift;
+    my $initrdPath = shift;
+    my $destPart = shift;
+    my $kernelParam = shift;
+    
+    my $connector = "rsh -l root";
+    my $remoteCommand = "\"/sbin/kexec -l $kernelPath --initrd=$initrdPath --append=\"root=$destPart $kernelParam\" ; kexec -e\"&";
 
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
 
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+        $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
+    }
+
+    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Kexec failed on node", 0);
+}
 
 
 sub rebootThoseNodes 
