@@ -837,16 +837,36 @@ sub runLocalRemote($$$$) {
 
 }
 
+
+sub runDetachedCommand {
+    my $self = shift;
+    my $command = shift;
+    my $connector = $nodes_commands{$environment}{remote_command};
+    my $remoteCommand = "\"$command\"&";
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
+
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+        $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
+    }
+
+    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Detached command failed on node", 0);
+}
+
+
 sub runKexecReboot {
     my $self = shift;
+    my $useprodenvtodeploy = shift;
     my $kernelPath = shift;
     my $initrdPath = shift;
     my $destPart = shift;
     my $kernelParam = shift;
-    
-    my $connector = "rsh -l root";
+    my $connector = $nodes_commands{$environment}{remote_command};
     my $remoteCommand = "\"/sbin/kexec -l $kernelPath --initrd=$initrdPath --append=\"root=$destPart $kernelParam\" ; kexec -e\"&";
-
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
@@ -862,10 +882,30 @@ sub runKexecReboot {
 }
 
 
+sub runSimpleReboot {
+    my $self = shift;
+    my $connector = $nodes_commands{$environment}{remote_command};
+    my $remoteCommand = "\"/sbin/reboot\"&";
+
+    my %executedCommands;
+    my $nodesReadyNumber = $self->syncNodesReadyOrNot();
+
+    if($nodesReadyNumber == 0) { # no node is ready, so why get any further?
+        return 1;
+    }
+
+    foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
+        $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
+    }
+
+    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
+}
+
+
 sub rebootThoseNodes 
 {
     my $self = shift;
-    my $connector = "rsh -l root";
+    my $connector = $nodes_commands{$environment}{remote_command};
     my $remoteCommand = "reboot_detach";
 
     my %executedCommands;
@@ -887,6 +927,7 @@ sub rebootThoseNodes
 sub rebootMyNodes {
     my $self = shift;
     my $method = shift; # method can be "deployboot" "softboot" "hardboot" "deployreboot" "failednodes"
+    my $connector = $nodes_commands{$environment}{remote_command};
 
     my $use_next_method = 1;
     my $next_method = "hardboot"; # can be "deployreboot" if a reboot from deploy environment should be tryied before the hard one
@@ -966,7 +1007,7 @@ sub rebootMyNodes {
 		}
 	        if ($next_method eq "deployreboot") {
 		    $nbmethod_nodes++;
-		    $nextExecutedCommands{$nodeIP} = "rsh -l root " . $nodeIP . " reboot_detach";
+		    $nextExecutedCommands{$nodeIP} = $connector . " " . $nodeIP . " reboot_detach";
 		} 
 	    }
         }
