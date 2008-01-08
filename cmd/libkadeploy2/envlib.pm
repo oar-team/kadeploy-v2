@@ -67,9 +67,33 @@ sub init_env ($){
   foreach my $line (<ENV>) {
       if ($line =~ $regex) {
           my ($key,$val) = ($1,$2);
-        $val =~ s/\s*$//;
-        $params{$key}=$val;
-        }
+	  $val =~ s/\s*$//;
+	  $params{$key}=$val;
+	  if ($key eq "filebase")
+	  {
+	      my $v = $val;
+	      $v =~ s/file:\/\///;
+	      unless ( -e $v ) {
+		  print "WARINING: filebase $v not found\n";
+	      } else {
+		  unless ( -r $v ) {
+		      print "WARNING: filebase $v not readable\n";
+		  }
+	      }
+	  }
+	  if ($key eq "filesite")
+	  {
+	      my $v = $val;
+	      $v =~ s/file:\/\///;
+	      unless ( -e $v ) {
+		  print "WARINING: filesite $v not found\n";
+	      } else {
+		  unless ( -r $v ) {
+		      print "WARNING: filesite $v not readable\n";
+		  }
+	      }
+	  }
+      }
   }
   close ENV;
   return 1;
