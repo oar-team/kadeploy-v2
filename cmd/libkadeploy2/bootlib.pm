@@ -87,12 +87,10 @@ sub manage_grub_pxe($$){
 
     # common parts
     if (! $kernel_param) { # take default parameters if any
-	#print "No kernel parameter, taking default ones defined in the configuration file\n";
 	libkadeploy2::debug::debugl(1, "No kernel parameter, taking default ones defined in the configuration file\n");
 	$kernel_param = $configuration->get_conf("kernel_param");
     }
     if (!$custom_kernel_parameters eq "") { # user customized kernel parameters
-	#print "using custom kernel parameters: " . $custom_kernel_parameters . "\n";
 	libkadeploy2::debug::debugl(1, "using custom kernel parameters: " . $custom_kernel_parameters . "\n");
 	# compute basic checksum
 	my $checksum = 0;
@@ -309,7 +307,6 @@ sub generate_grub_files_chainload($$$$){
 	       
     my $base_grub_image="$grub_dir/grub.img"; # a grub 360ko floppy image
     if (!-e $base_grub_image) {
-	#print "ERROR : file $base_grub_image does not exist or path is incorrect\n";
 	halt("ERROR : file $base_grub_image does not exist or path is incorrect\n");
     }
     my $menu_len=2;
@@ -341,15 +338,10 @@ sub generate_grub_files_chainload($$$$){
     
     close MENU;
 	       
-    #print "* Copying grub base image\n";
     libkadeploy2::debug::debugl(1, "* Copying grub base image\n");
-    #system("cp $base_grub_image $output");
     libkadeploy2::debug::system_wrapper("cp $base_grub_image $output");
-    #print "* Modifying grub menu at block $menu_offset\n";
     libkadeploy2::debug::debugl(1, "* Modifying grub menu at block $menu_offset\n");
-    #system("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
     libkadeploy2::debug::system_wrapper("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
-    #print "$output has been generated.\n";
     libkadeploy2::debug::debugl(1, "$output has been generated.\n");
     return 1;
 }
@@ -396,7 +388,6 @@ sub generate_grub_files($$$$$$$$){
 	       
     my $base_grub_image="$grub_dir/grub.img"; # a grub 360ko floppy image
     if (!-e $base_grub_image) {
-	#print "ERROR : file $base_grub_image does not exist or path is incorrect\n";
 	halt("ERROR : file $base_grub_image does not exist or path is incorrect\n");
     }
     my $menu_len=2;
@@ -428,15 +419,10 @@ sub generate_grub_files($$$$$$$$){
     }
     close MENU;
 
-    #print "* Copying grub base image\n";
     libkadeploy2::debug::debugl(1, "* Copying grub base image\n");
-    #system("cp $base_grub_image $output");
     libkadeploy2::debug::system_wrapper("cp $base_grub_image $output");
-    #print "* Modifying grub menu at block $menu_offset\n";
     libkadeploy2::debug::debugl(1, "* Modifying grub menu at block $menu_offset\n");
-    #system("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
     libkadeploy2::debug::system_wrapper("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
-    #print "$output has been generated.\n";
     libkadeploy2::debug::debugl(1, "$output has been generated.\n");
 
     return 1;
@@ -548,18 +534,14 @@ sub reboot($$$$){
                 print "child\n";
 		# set the deployboot if necessary
 		if ($deploy) {
-		    #system("$cmd{$host}{$reboot}");
 		    libkadeploy2::debug::system_wrapper("$cmd{$host}{$reboot}");
 		}
 		if ($hard) 
-		{
-		    
-		    #exec ("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute hardboot $host $cmd{$host}{\"hardboot\"}: $!\n";
+		{		    
 		    libkadeploy2::debug::exec_wrapper("$cmd{$host}{\"hardboot\"}") or die "Couldn't execute hardboot $host $cmd{$host}{\"hardboot\"}: $!\n";
 		} 
 		else 
 		{
-		    #exec ("$cmd{$host}{\"softboot\"}") or die "Couldn't execute softboot $host $cmd{$host}{\"softboot\"}: $!\n";
 		    libkadeploy2::debug::exec_wrapper("$cmd{$host}{\"softboot\"}") or die "Couldn't execute softboot $host $cmd{$host}{\"softboot\"}: $!\n";
 		}
 	    }
@@ -572,7 +554,6 @@ sub reboot($$$$){
 	my $test = kill(9, $jobtokill);
 	if ($test == 1) { # means that kill effectively signaled 1 job
 	    if ($hard) {
-		#print "Warning: node $key did not hard reboot properly\n";
 		libkadeploy2::debug::debugl(1, "Warning: node $key did not hard reboot properly\n");
 	    } 
 #	    else {
