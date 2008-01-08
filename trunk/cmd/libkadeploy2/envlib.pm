@@ -46,14 +46,19 @@ my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 # param: environment file pathname
 # Result: 0 if env was already loaded
 #         1 if env was actually loaded
-#         2 if env was not found
+#         2 if env was not found or not readable
 sub init_env ($){
   # If file already loaded, exit immediately
   (defined $file) and return 0;
   $file = shift;
   (defined $file) or return 2;
+  unless ( -e $file ) {
+      warn "Environment configuration file not found.";
+      $file = undef;
+      return 2
+  }
   unless ( -r $file ) {
-      warn "Enviguration file not found.";
+      warn "Environment configuration file not readable.";
       $file = undef;
       return 2;
   }
