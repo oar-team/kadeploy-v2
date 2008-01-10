@@ -234,8 +234,9 @@ sub loadpartitionfile($)
 	if($line)
 	{
 	    #check line
-	    #hda size=8000
-	    if($line =~ /^([sh]d[a-z])[\t\s]+size=([0-9]+)[\t\s]*$/)
+	    #block_device=hda size=8000
+            #block_device=cciss/c0d0 size=8000
+	    if ($line =~ /^block_device=([a-zA-Z0-9\/]+)[\t\s]+size=([0-9]+)[\t\s]*$/)
 	    {		
 		# disk description
 		my ($harddisk,$sizeMB);
@@ -246,7 +247,8 @@ sub loadpartitionfile($)
 	    }
 	    #check line
 	    #hda part=1 size=500  fdisktype=82 label=swap type=logical
-	    if ($line =~ /^part=([0-9]+)[\t\s]+size=([0-9]+)[\t\s]+fdisktype=[0-9a-zA-Z]+[\t\s]+label=([a-zA-Z]+)[\t\s]+type=[a-zA-Z]+[\t\s]*$/)
+	    #hda part=p1 size=500  fdisktype=82 label=swap type=logical
+	    if ($line =~ /^part=([a-zA-Z0-9]+)[\t\s]+size=([0-9]+)[\t\s]+fdisktype=[0-9a-zA-Z]+[\t\s]+label=([a-zA-Z]+)[\t\s]+type=[a-zA-Z]+[\t\s]*$/)
 	    {
 		my ($id,$sizeMB,$label);		
 		($id,$sizeMB,$label)=($1,$2,$3);

@@ -28,7 +28,6 @@ sub halt($);
 ## declares the options
 my $env = '';               # env name to be deployed
 my @host_list = ();         # host list to deploy on
-my $device = '';            # device & partition number
 my $node_file = '';         # file describing nodes to be deployed
 
 ## declares other global variables
@@ -114,6 +113,7 @@ libkadeploy2::debug::start_syslog();
 ## in order to correct the database before exiting
 $SIG{INT} = \&tsktsk;
 
+my $defaulttargetdevice="";
 my $defaulttargetpartition="";
 
 ## checks the options and load configuration file
@@ -146,7 +146,7 @@ if (!check_consistency())
 
 ## checks if the user has appropriate rights
 libkadeploy2::debug::debugl(1, "Checking user deployment rights...\n");
-if(!( libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@db_checked_hosts,$device)))
+if(!( libkadeploy2::rights_iolib::check_rights_kadeploy($base,$username,\@db_checked_hosts,$dev.$part)))
 {
     halt("user does not have appropriate rights on some nodes/partitions");
 }
@@ -698,7 +698,7 @@ sub usages()
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
-\t[-d   | --debug_level level]                     0 : show all ...  4 : hide all
+\t[-dl   | --debug_level level]                     0 : show all ...  4 : hide all
 \t[-r   | --reformat_tmp]                          Re-format the /tmp partition
 \t[--fast_kernel_reboot]                           Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use_prod_env]                          Use the production environment to deploy
@@ -725,8 +725,10 @@ sub check_options(){
 	       'machine=s'           => \@host_list,
 	       'f=s'                 => \$node_file,
 	       'file=s'              => \$node_file,
-	       'p=s'                 => \$device,
-	       'partition=s'         => \$device,
+	       'p=s'                 => \$part,
+	       'partition=s'         => \$part,
+	       'd=s'                 => \$dev,
+	       'device=s'            => \$dev,
 	       'l=s'                 => \$user,
 	       'loadpartitionfile=s' => \$partitionfile,
 	       'lpf=s'               => \$partitionfile,
@@ -734,6 +736,7 @@ sub check_options(){
 	       'verbose'             => \$verbose,
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
+	       'dl=i'                => \$debug_level,
 	       'debug_level=i'       => \$debug_level,
 	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
@@ -741,7 +744,7 @@ sub check_options(){
 	       'r'                   => \$reformattmp,
 	       'fast_kernel_reboot'  => \$fastkernelreboot,
 	       'u'                   => \$useprodenvtodeploy,
-	       'use_prod_env'         => \$useprodenvtodeploy,
+	       'use_prod_env'        => \$useprodenvtodeploy,
 	       );
     #crappy
     if ($rmnodefilesintmp) {
@@ -787,23 +790,30 @@ sub check_options(){
 	print "ERROR : environment name needed\n";
 	exit 1;
     }
-
+    if ($configuration->get_conf("default_target_device")) {
+	    $defaulttargetdevice = $configuration->get_conf("default_target_device");
+    }
     if ($configuration->get_conf("default_target_partition")) {
 	    $defaulttargetpartition = $configuration->get_conf("default_target_partition");
-    }	
-    if (!$device){
+    }
+    if (!$dev){
+	if ($defaulttargetdevice eq "") {
+	    print "ERROR : target device unspecified\n";
+	    exit 1;
+        } else {
+            $dev = $defaulttargetdevice;
+	    print "no target device specified, using default one: $dev\n";
+	}
+    }
+    if (!$part){
 	if ($defaulttargetpartition eq "") {
 	    print "ERROR : target partition unspecified\n";
 	    exit 1;
         } else {
-            $device = $defaulttargetpartition;
-	    print "no target partition specified, using default one: $device\n";
+            $part = $defaulttargetpartition;
+	    print "no target partition specified, using default one: $part\n";
 	}
     }
-    ## separates device and partition number from $device
-    $dev = substr($device, 0, 3);
-    my @nb = split(/$dev/, $device);
-    $part = $nb[1];
 
     # register configuration for the different modules
     libkadeploy2::deploy_iolib::register_conf($configuration);
@@ -1041,4 +1051,3 @@ sub tsktsk {
     }
     exit 0;
 }
-

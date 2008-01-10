@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `deployment` (
 CREATE TABLE IF NOT EXISTS `disk` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `size` int(10) unsigned NOT NULL default '0',
-  `device` char(3) NOT NULL default '',
+  `device` varchar(255) NOT NULL default '',
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM AUTO_INCREMENT=1 ;
 
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS `node` (
 
 CREATE TABLE IF NOT EXISTS `partition` (
   `id` int(10) unsigned NOT NULL auto_increment,
-  `pnumber` int(10) unsigned NOT NULL default '0',
+  `pnumber` varchar(10) unsigned NOT NULL default '0',
   `size` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM AUTO_INCREMENT=1 ;
