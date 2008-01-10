@@ -1277,21 +1277,21 @@ sub node_last_dep_env_optsupport($$){
                             FROM deployed, node
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
- 												           $sth->execute();
-       my $max_id = $sth->fetchrow_hashref();
-       $max_id = $max_id->{'maxid'};
-       $sth->finish();
-       my $sth = $dbh->prepare("SELECT environment.optsupport
-                                FROM environment, deployed, node 
-                                WHERE environment.id = deployed.envid 
-                                AND deployed.nodeid = node.id
-                                AND deployed.deployid = \"$max_id\"");
-  
-       $sth->execute();
-       my $ref = $sth->fetchrow_hashref();
-       my $pn = $ref->{'optsupport'};
-       $sth->finish();
-
+   $sth->execute();
+   my $max_id = $sth->fetchrow_hashref();
+   $max_id = $max_id->{'maxid'};
+   $sth->finish();
+   my $sth = $dbh->prepare("SELECT environment.optsupport
+                             FROM environment, deployed, node 
+                             WHERE environment.id = deployed.envid 
+                             AND deployed.nodeid = node.id
+                             AND deployed.deployid = \"$max_id\"");
+   
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'optsupport'};
+   $sth->finish();
+   
    return $pn;
 }
 
@@ -1317,10 +1317,10 @@ sub node_last_dep_env($$){
                                  WHERE environment.id = deployed.envid 
                                  AND deployed.nodeid = node.id
                                  AND deployed.deployid = \"$max_id\"");
-                                                                                                                    $sth->execute();
-         my $ref = $sth->fetchrow_hashref();
-         my $pn = $ref->{'name'};
-         $sth->finish();
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'name'};
+   $sth->finish();
    return $pn;
 }                                                       
 
@@ -1337,20 +1337,20 @@ sub node_last_dep_dev($$){
                             WHERE deployed.nodeid = node.id
                             AND node.name = \"$hostname\"");
 
-	$sth->execute();
-	my $max_id = $sth->fetchrow_hashref();
-	$max_id = $max_id->{'maxid'};
-	$sth->finish();
-	
-	my $sth = $dbh->prepare("SELECT disk.device
-	                         FROM disk, deployed, node 
-	                         WHERE disk.id = deployed.diskid 
-	                         AND deployed.nodeid = node.id
-	                         AND deployed.deployid = \"$max_id\"");
-	                                                                                                            $sth->execute();
-	 my $ref = $sth->fetchrow_hashref();
-	 my $pn = $ref->{'device'};
-	 $sth->finish();
+   $sth->execute();
+   my $max_id = $sth->fetchrow_hashref();
+   $max_id = $max_id->{'maxid'};
+   $sth->finish();
+   
+   my $sth = $dbh->prepare("SELECT disk.device
+	                    FROM disk, deployed, node 
+	                    WHERE disk.id = deployed.diskid 
+	                    AND deployed.nodeid = node.id
+	                    AND deployed.deployid = \"$max_id\"");
+   $sth->execute();
+   my $ref = $sth->fetchrow_hashref();
+   my $pn = $ref->{'device'};
+   $sth->finish();
    return $pn;
    
 }                    
@@ -1373,11 +1373,9 @@ sub node_last_envid($$){
    $max_id = $max_id->{'maxid'};
    $sth->finish();
    
-   my $sth = $dbh->prepare("
-SELECT MAX(envid) as envid 
-FROM deployed 
-WHERE deployid=\"$max_id\"
-	                        ");
+   my $sth = $dbh->prepare("SELECT MAX(envid) as envid 
+                            FROM deployed 
+                            WHERE deployid=\"$max_id\"");
    $sth->execute();
    my $ref = $sth->fetchrow_hashref();
    my $pn = $ref->{'envid'};
