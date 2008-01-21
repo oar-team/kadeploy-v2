@@ -9,17 +9,26 @@ use libkadeploy2::debug;
 ## Global variables
 ## ================
 ## Tftp chroot
-my $_tftpdirectory  = "/var/lib/tftpboot/boot";
+my $_tftpdirectory;
 ## Directory path of Kadeploy environment files cache
-my $_cachedirectory = "$_tftpdirectory/cache";
+my $_cachedirectory;
 ## days count after which files are removed from cache
 my $_expirydelay    = 30;
 ## Array of files in cache
 my @_filesincache   = ();
 
+
 ## =========
 ## Functions
 ## =========
+
+## Returns true if cache is empty
+sub empty_cache()
+{
+   if ( ! @_filesincache ) { return 1; }
+   else { return 0; }
+}
+
 ## Returns the directory path used for cached files
 sub get_cache_directory()
 {
@@ -41,9 +50,21 @@ sub get_cache_directory_tftprelative($)
     return $relativepath;
 }
 
+## Initialize the cache : get TFTP root path + check cache directory
+sub init_cache($)
+{
+    $_tftpdirectory = shift;
+    ## Strip tailing /
+    $_tftpdirectory =~ s/\/$//;
+    $_cachedirectory = $_tftpdirectory . "/" . "cache";
+    
+    if ( ! libkadeploy2::cache::test_cache_directory() ) { return 0; }
+    return 1;
+}
+
 ## Test if cache directory exists 
 ## and create it if needed
-sub test_cache()
+sub test_cache_directory()
 {
     if (! -d $_cachedirectory) 
     { 
@@ -87,7 +108,7 @@ sub read_files_in_cache()
 ## Search a file in cache
 sub already_in_cache($)
 {
-    if ( ! @_filesincache ) { return 0; }
+    if ( empty_cache() ) { return 0; }
     
     my $searchedfile = shift;
     # print "cache::already_in_cache : _filesincache = @_filesincache\n";
@@ -105,10 +126,7 @@ sub put_in_cache_from_archive($$$)
     my $strip   = shift;
     my $cachemodified = 0;
 
-    ## Test if cache directory is available
-    if ( ! test_cache() ) { return 0; }
-
-    if ( ! @_filesincache ) { read_files_in_cache(); }
+    if ( empty_cache() ) { read_files_in_cache(); }
     
     ## Clean cache from oldest files
     libkadeploy2::cache::clean_cache();

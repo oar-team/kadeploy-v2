@@ -104,6 +104,7 @@ sub manage_grub_pxe($$){
     }
     
     my $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
+    libkadeploy2::cache::init_cache($tftp_destination_folder);
     
     my $pxe_kernel_parameters;
     my @pxe_ips;
@@ -151,8 +152,9 @@ sub manage_grub_pxe($$){
 		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 	    }
 
-	    $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
-
+	    # $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
+	    $pxe_kernel_parameters = " root=" . $dev . $part . " " . $kernel_param;
+	    
 	    # Strip leading directories from kernel and initrd filenames for PXE setup configuration
 	    my $current_kernel = $kernel_path;
 	    $current_kernel =~ s/.*\/([^\/]*)$/$1/;
@@ -216,9 +218,9 @@ sub generate_nogrub_files($$$$$$)
     my $kernel_path = shift;
     my $initrd_path = shift;
     my $dest_folder = shift;
-    my $firstipx     = shift;
-    my $firstnode    = shift;
-
+    my $firstipx    = shift;
+    my $firstnode   = shift;
+    
     if (-d $dest_folder ) 
     {
 	# discard last folder content
