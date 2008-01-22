@@ -694,6 +694,7 @@ sub usages()
 \t[-m   | --machine     hostname] 
 \t[-f   | --file        node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
+\t[-d   | --device   device]
 \t[-p   | --partition   partition]
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
@@ -859,7 +860,6 @@ sub check_consistency()
 {
     my $dopostinstall=1;
     ## check partitioning schema
-    #if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && system("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     if ($do_fdisk_on_deploy && $do_fdisk_on_deploy eq "yes" && libkadeploy2::debug::system_wrapper("$kadeploydir/sbin/kasetup -loadpartitionfile=$partitionfile -printvalidfdisk >/dev/null")!=0)
     {
 	halt("ERROR : partition check failed\n");
