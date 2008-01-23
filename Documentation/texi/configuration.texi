@@ -190,5 +190,5 @@ it should manage.
 @cindex user right
 
 Now, you have to grant some rights to your user with the command @command{kaadduser}: 
-@samp{kaaddnodes -l root -m cls1.localdomain -m cls2.localdomain} grants the @option{root} user the right to manage all the partitions 
+@samp{kaadduser -l root -m cls1.localdomain -m cls2.localdomain} grants the @option{root} user the right to manage all the partitions 
 of node @option{cls1.localdomain} and node @option{cls1.localdomain}.
