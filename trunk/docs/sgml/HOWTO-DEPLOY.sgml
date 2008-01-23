@@ -1,0 +1,1063 @@
+<!doctype linuxdoc system>
+<article>
+<!-- Initially generated from The_LDP_HOWTO_Generator V0.51 -->
+<title>Kadeploy v2
+<author>Julien Leduc (<url url="mailto:julien.leduc@imag.fr" name="julien.leduc@imag.fr">), 
+Pierre Lemoine,
+Gaetan Peaquin, 
+Johann Peyrard (<url url="mailto:jpeyrard@imag.fr" name="jpeyrard@imag.fr">)
+<date>V0.02  2007-05-23
+<!-- Primary category: 2.3. {Clustering} -->
+<!-- Keywords: cluster,  deployment, kadeploy, perl, mysql, on demand, computing environment -->
+<!-- Oneliner: Explains howto use kadeploy deploying system -->
+
+<abstract>
+<nidx>kadeploy</nidx>
+The purpose of this HOWTO is to provide all the necessary steps to install and use kadeploy on demand deploying system in its second version.</abstract>
+<toc>  <!-- generate a table of contents here -->
+<!-- Space inserted for revision history (using RCS etc.)
+
+     End of revision history -->
+
+<sect>Introduction
+<p>
+<nidx>kadeploy!introduction</nidx>
+Deploying multiple computing environment on clusters or grids cannot be easily handled with current tools that are often designed to deploy a single system on each node. An extension to this system is to allow the deployment of multiple computing environment on every node, without compromising the original system/boot sector.
+
+<sect1>Copyright
+<p>
+Copyright &copy; 2004-07-20 by Julien Leduc, Gaetan Peaquin, Peyrard Johann.
+You are free:
+<itemize><item>to copy, distribute, display, and perform the work
+<item>to make derivative works
+<item>to make commercial use of the work
+</itemize>Under the following conditions:
+ Attribution. You must give the original author credit.
+ Share Alike. If you alter, transform, or build upon this work, you may distribute the resulting work only under a license identical to this one.
+<itemize><item>For any reuse or distribution, you must make clear to others the license terms of this work.
+<item>Any of these conditions can be waived if you get permission from the author.</itemize>
+
+
+<sect1>Disclaimer
+<p>
+Use the information in this document at your own risk. I disavow any potential liability for the contents of this document. Use of the concepts, examples, and/or other content of this document is entirely at your own risk.
+
+All copyrights are owned by their owners, unless specifically noted otherwise. Use of a term in this document should not be regarded as affecting the validity of any trademark or service mark.
+
+Naming of particular products or brands should not be seen as endorsements.
+
+You are strongly recommended to take a backup of your system before major installation and backups at regular intervals.
+
+
+<!-- =========================== -->
+<sect1>Changelogs
+<p>
+
+
+
+<!-- =========================== -->
+<sect1>Credits
+<p>
+
+
+
+<!-- =========================== -->
+<sect1>Translations
+<p>
+
+
+
+<!-- =========================== -->
+<sect>Overview
+<p>
+Kadeploy is a deployment system suite written in perl/shell/c.
+It use a mysql databases for nodes information storing, and 
+dhcp/tftp for pxe booting.
+The package include kadeploy scripts, mysql schema, 
+tools for pxe, deployment kernel (linux 2.4).
+
+
+<sect1>Why use a database ?
+<p>
+kadeploy uses a database to maintain the persistance of the information about the cluster composition and current state.
+<p>
+The cluster composition is described via :
+<itemize>
+  <item> the nodes and their features (name, mac address and ip address)
+  <item> the type of hard disk drive (size and device name) and their partitions (size and number)
+  <item> the environments available (registered) for deployment with all the relative needed information (path to image, kernel path, etc.)
+</itemize>
+<p>
+The cluster state is described via :
+<itemize>
+  <item> a snapshot of the cluster state that describes for each partition of each disk and on each node, the partition state, the environment installed on (if any), the number of the last deployment done on it and a brief error description about this deployment (if any)
+  <item> the history of the ordered deployment with their start and end dates and their state
+</itemize>
+<!-- =========================== -->
+<sect1>How does the database evolve during a deployment execution ?
+<p>
+During a deployment execution, its state and the one of the partition involved changes in the database.
+<p>
+A deployment can be in one of the following states :
+<itemize>
+  <item> waiting (for the nodes)
+  <item> deploying
+  <item> terminated
+  <item> error
+</itemize>
+<p>
+By convention, there cannot be more than one deployment waiting for nodes. 
+<p>
+A partition can be in one of the following states :
+<itemize>
+  <item> to deploy
+  <item> deploying
+  <item> rebooting
+  <item> deployed
+  <item> error
+</itemize>
+<p>
+By convention, a node involved in a running deployment cannot take part in another deployment.
+<p> 
+The two conventions above guarantee that a node cannot be involved in two different deployments at the same time even on different disks and/or partitions.
+<p>
+When a deployment ends :
+<itemize>
+  <item> if it has failed on (at least) one node, it is changed to error state. 
+When possible, a brief description of what (or when it) happened is associated to the matching partition ; 
+the ones for which the deployment ended successfully are switched to the 'deployed' state. 
+Thus, during a same deployment, two failures that would occur on two different partitions for different reasons would have different error messages. 
+This enables to know if a failure is due to a global problem or to different local ones.
+  <item> on the contrary, if the deployment ended successfully on all the nodes, it is changed to the 'terminated' state. 
+The nodes are ready to be used on the new and freshly deployed environment.
+</itemize>
+
+
+
+
+<!-- =========================== -->
+<sect1>TFTP structure
+<p>
+Here is an example of a <tt>TFTP</tt> structure:
+<verb>
+/tftpboot/
+   PXEClient/
+      images_grub/
+      pxelinux.cfg/
+      pxelinux.0
+      messages
+      help.txt
+   X86PC/
+      linux/
+         images_grub/
+	 pxelinux.cfg/
+	 linux.0
+	 nbplinux.0
+	 messages
+	 help.txt
+</verb>
+
+This directory structure and allow to respond to different <tt>PXE</tt> request schemes. 
+The slight differences are not our business here, you should refer to the different <tt>PXE</tt> standards for this part. 
+Let's have a short look at this structure :
+<itemize>
+   <item><verb>/tftpboot/</verb> is <tt>TFTP</tt> root directory ; it is the directory served by the tftp server
+   <item><verb>/tftpboot/PXEClient/</verb> is the tftp directory for non Intel NICs (set by <ref id="tftp_repository" name="tftp_repository"> in the configuration file)
+   <item><verb>/tftpboot/X86PC/linux/</verb> is the tftp directory for Intel NICs (set by <ref id="tftp_repository_intel" name="tftp_repository_intel"> in the configuration file)
+</itemize>
+These two last directories contain both about the same structure :
+<itemize>
+   <item><verb>images_grub/</verb> that will contain <em>kadeploy</em> generated grub bootloaders, to allow the nodes to boot on the deployed system image (set by <ref id="tftp_relative_path" name="tftp_relative_path"> in the configuration file)
+   <item><verb>pxelinux.cfg/</verb> that links every node to its kernel/initrd pair to load and boot from network, an ensure that we can remotely control the way the nodes are booting (set by <ref id="pxe_rep" name="pxe_rep"> and <ref id="pxe_rep_intel" name="pxe_rep_intel"> in the configuration file)
+</itemize>
+
+These four directories (two in each tftp directory) should be writtable by the <tt>deploy</tt> user, to allow <em>kadeploy</em> to control the way the nodes are booting. 
+
+
+<!-- =========================== -->
+<sect>Installation
+<p>
+The goal of this part is to ease the deployment system installation steps and give information about all the relevant required tools and their configuration.
+
+First, get the kadeploy archive and put it on your cluster frontend.
+
+<sect1>Prerequisites
+<p>
+Install mysql (configure it)
+
+Install dhcpd (configure it)
+
+Install tftp  (configure it)
+
+Install sudo
+
+Install perl
+
+Install dns (optional)
+
+<sect2>For Debian 
+<p>
+Packages to install: sudo, tftpd, dhcpd, make, mysql-server
+
+<sect2>For RedHat and Fedora
+<p>
+
+<sect1> Client part
+<p>
+For all commands you have to be root
+
+Optionnaly before starting:
+	The first thing that the Makefile does is to create a user 'deploy' in a group 'deploy' with '/home/deploy' for homedir. 
+	If you want to specify a custom homedir, you have to do that by yourself before make install.
+	The main thing is that you have a 'deploy' user in a 'deploy' group, home directory is not important for kadeploy (but can be for you).
+
+In the current directory do :
+<tt>make install</tt>
+
+then you have to install tftp part. You can use variable by defaut: <tt>make tftp_install</tt>
+
+or specifies tftp install variables (pxe_rep and image_grub are relative to tftp_repository):
+
+<tt>make ARCH=x86_64 tftp_repository=/var/lib/tftpboot/PXEClient/ pxe_rep=pxelinux.cfg/ tftp_relative_path=images_grub tftp_install</tt>
+
+Now you should be able to get files from <tt>tftp_repository</tt> with a tftp client.
+You have finished to install kadeploy client and you can edit kadeploy configuration file in /etc/kadeploy/deploy.conf
+
+
+<sect1> DB part
+<p>
+Before doing DB install, client part has to be finished.
+
+Edit <tt>/etc/kadeploy/deploy.conf</tt> to specify:  deploy_db_host 
+
+If your database is on the same host as Kadeploy: deploy_db_host=localhost
+
+If not, specify the remote host address: deploy_db_host=REMOTE_HOST_ADDRESS. For example, 192.168.1.10
+
+In the current directory do:
+
+<tt>make db_install</tt>
+
+For Remote Host DataBase:
+
+ 
+You have to be able to make this command line without error:  
+
+        <tt>mysql -u root -h REMOTE_HOST_ADDRESS -p mysql </tt>
+
+        If you cannot do that, check your /etc/mysql/my.cnf to see there is no line like this: bind-address= . If yes, remove this line.
+
+	So connect to host where database is installed and connect to your database:
+
+	   	<tt>mysql -u root -p</tt>
+
+	And type this command:
+
+	<tt>	GRANT ALL PRIVILEGES ON *.* TO 'root'@'KADEPLOY_HOST_ADDRESS' IDENTIFIED BY '' WITH GRANT OPTION;</tt>
+	<tt>	FLUSH  PRIVILEGES;</tt>
+
+	And exit from mysql. Reconnect to host where Kadeploy is installed and in the KADEPLOY HOME DIRECTORY (/usr/local/kadeploy by default) do:
+
+	    	<tt>./kadeploy_db_init.pl</tt>
+
+For Remote Host DataBase:
+
+	connect to host where database is installed and connect to your database: mysql -u root -p
+
+	And type this command:  
+
+	DELETE FROM user WHERE user='root' && host='KADEPLOY_HOST_ADDRESS';
+
+	And exit from mysql and follow instructions
+
+Note: By default you can connect to deploy database from anywhere. It is not necessary, but you can reduce access to deploy database to your head node. It is more secure.
+
+It's done !!
+
+<sect> Configuration
+<p>
+Kadeploy use a several number of files to function. In this part, we will describe them as more simple as possible
+
+<sect1> dhcpd.conf example
+<p>
+Kadeploy use PXE boot. It's necessary to configure dhcp server in a certain way.
+In dhcpd.conf, you must have description of all mac adress and corresponding ip for each node.
+ 
+<verb>
+allow booting;
+allow bootp;
+deny unknown-clients;
+
+option domain-name "mycluster.net";
+option domain-name-servers 192.168.0.254;
+
+option subnet-mask 255.255.255.0;
+default-lease-time 600;
+max-lease-time 7200;
+
+subnet 192.168.0.0 netmask 255.255.255.0 {
+  range 192.168.0.0 192.168.0.250;
+  option broadcast-address 192.168.0.255;
+  option routers 192.168.0.254;
+}
+
+
+host cls1 {
+  hardware ethernet 00:01:02:04:73:da;
+  fixed-address 192.168.0.1;
+  filename "pxelinux.0";
+}
+
+host cls2 {
+  hardware ethernet 00:01:02:02:a7:f5;
+  fixed-address 192.168.0.2;
+  filename "pxelinux.0";
+}
+</verb>
+
+<!-- =========================== -->
+<sect1>Tftp Configuration
+<p>
+At startup, node boot using PXE and get a kernel with tftp. So, you have to configure your tftp with the right tftp_root_directory (here it is /tftpboot)
+Here is an example of inetd.conf
+<verb>
+tftp            dgram   udp     wait    nobody /usr/sbin/tcpd /usr/sbin/in.tftpd --tftpd-timeout 300 --retry-timeout 5 --maxthread 100 --verbose=5  /tftpboot
+</verb>
+
+<sect1>Configuration files.
+<p>
+Kadeploy has 4 configuration files located in /etc/kadeploy.
+<itemize>
+ <item><tt>/etc/kadeploy/deploy.conf</tt> contain tools and directory path, 
+global variable, database information, and kernel boot parameters.
+ <item><tt>/etc/kadeploy/deploy_cmd.conf</tt> contain the command to be exectuted for each node.
+ <item><tt>/etc/kadeploy/clusterpartition.conf</tt> contains default partitionment schema.
+ <verb>
+#Example of /etc/kadeploy/clusterpartition.conf file.
+hda size=100000
+part=1 size=2000  fdisktype=82 label=empty type=primary
+part=2 size=20000  fdisktype=83 label=empty type=primary
+part=3 size=88000  fdisktype=83 label=empty type=primary
+</verb>
+ <item><tt>/etc/kadeploy/clusternodes.conf</tt> contains the nodes informations.
+<verb>
+#Example of /etc/kadeploy/clusternodes.conf file. 
+#name mac              ip
+cls1 00:01:02:04:73:DA 192.168.0.1
+cls2 00:01:02:02:A7:F5 192.168.0.2
+</verb>
+</itemize>
+
+A longer explication located at the end of the document in the section "Example of a complet configuration for Kadeploy"
+
+
+<!-- =========================== -->
+<sect1>Adding Nodes
+<p>
+Once you have fill all the files, you have to use kanodes. It is used to register the cluster "hardware" composition. 
+It needs the description of hosts, disks and partitions in a text file. 
+The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.
+<p>
+You need to execute the command:
+<verb>
+#kanodes -add
+Checking variable definition...
+
+Deleting partition table
+Checking /etc/kadeploy/clusternodes.conf
+Registring cls1
+Registring cls2
+Nodes Registration completed.
+
+Checking /etc/kadeploy/clusterpartition.conf
+Registring harddisk hda
+Registring part1 empty
+Registring part2 empty
+Registring part3 empty
+
+Register partition done.
+</verb>
+
+<p>
+If you want to check if the db is correct, you can do:
+<verb>
+#kanodes -listnode
+#kanodes -listpartition
+</verb>
+<p>
+Once these operations completed, the system is almost ready for deployments.
+You have to put some right to your user with the command kaaduser.
+<verb>#kaadduser -l root -m cls2 -p hda2</verb>
+
+<p>
+Warning, when you change on of this two file you have to recall <tt>kanodes -add</tt>.
+
+
+<sect1>Configure nodes
+<p>
+To make a deployment on node, you have to check it bios.
+<itemize>
+<item>Firstly, node must be able to use PXE boot. Find PXE item in bios and enable it.
+<item>Secondly, search item usually named boot sequence. When you find it, put PXE (network,ethernet0) the first device to boot
+</itemize>
+
+<sect1>Preinstall 
+<p>
+The preinstall is a tarball archive.
+It contains many files AND a <tt>main</tt> scripts.
+They are pushed on the node, extracted, and the <tt>main</tt> script is launched.
+The main script is found with : <tt> pre_install_script </tt> in configuration file.
+(see <tt>/etc/kadeploy/deploy.conf</tt> for setting tarball and script).
+Preinstall contains needed actions in order to deploy the image on the node (fdisk, mkfs, mkswap, bench)...
+Some configuration files are pushed on the node (fdisk_user.txt and preinstall.conf). 
+
+You can find an example of preinstall script in tool/pre_post_script/pre_install.tgz
+
+
+<!-- =========================== -->
+<sect>Using kadeploy
+
+<!-- =========================== -->
+<sect1>Deployment 
+<p>
+The system has been prepared for deployment. Now what ? To deploy, something to be deployed is needed !
+<p>
+The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. 
+The first case is the simplest since nothing has to be done prior to the deployment itself. 
+In the other cases,karecordenv are used to create and register (create/register) an environment in the database 
+<p>
+The deployment itself i.e. of a given environment on target partitions of a set of cluster nodes is done using the <ref id="kadeploy" name="kadeploy"> tool.
+<p>
+A complete deployment is composed of the following steps :
+<itemize>
+  <item>reboot on the deployment kernel via pxe protocol
+  <item>pre-installation actions (partitionning and/or file system building if needed etc.)
+  <item>environment copy
+  <item>post-installation script sending and execution
+  <item>reboot on the freshly installed environment
+</itemize>
+<p>
+If the deployment fails on some nodes, these are rebooted on a default environment.
+<p>
+<!-- =========================== -->
+
+<sect1>Make his own image for Kadeploy
+<p>
+First, install a linux system on node. 
+
+On Frontend, do:
+<verb>
+ssh root@node-x "tar --posix --numeric-owner --one-file-system -zcf - /" > myLinux.tgz 
+</verb> 
+Now, you have a system image but you have to get a postinstall. You can find an example of it in <tt>tools/pre_post_script/post_install.tgz</tt>. You will find in section "About Customization Script", an explication of how to customize this file.
+
+It is time to record this environement in kadeploy database. We will use karecordenv. 
+You must have the location of initrd and vmlinuz currently use in your system image.
+Type the following command:
+<verb>
+#karecordenv 
+            -n "myLinux" 
+            -v 2 
+            -d "Newbie testing" 
+            -a noobs@mycluster.net 
+            -fb file://home/noobs/myLinux.tgz 
+            -ft file://home/noobs/traitement.tgz  
+            -s 900 
+            -i /boot/initrd.img-2.6.8-1-686-smp 
+            -k /boot/vmlinuz-2.6.8-1-686-smp
+</verb>
+
+You can verify that your environment have been recorded with th following command:
+<verb>kaencironments -e myLinux</verb>
+
+<sect1>Section a definir
+<p>
+The cluster need a reference environnement to boot up properly.
+You can boot up the deployment system, if your node isn't installed.
+A simple solution, is 
+<itemize>
+<item>Set the nodes in deployement state with the <tt>setup_pxe.pl</tt> tools (grep label in deploy.conf).
+ <verb>#setup_pxe.pl 192.168.0.2:label_deploy_x86 </verb>
+<item>reboot the node whith what you want.
+<item>When the node is reachable with ping and <tt>rsh -l root cls2 ls</tt> you can bootstrap the node kadeploy.
+ <verb>kadeploy -e myLinux -p hda2 -m cls2</verb>
+</itemize>
+
+<p>
+When this step is succefully done, you can ssh the node, and kadeploy a new environnement.
+Your training is completed.
+
+<!-- =========================== -->
+<sect1>Other tools for remote management
+<p>
+Two remote management tools are available to diagnostic and if possible take control of cluster nodes that would be for instance in an unstable or undefined state further to a deployment failure. 
+<p>
+The kaconsole tool enables to open a console on a remote node. 
+It needs special hardware equipment and special command configuration. 
+<p>
+The kareboot tool enables to do various reboot types on cluster nodes. 
+The possibilities are numerous : the reboot on a given (already installed) environment or 
+on a given partition or 
+even on the deployment kernel for instance. 
+It also enables to hard reboot nodes appropriately equiped.
+<!-- =========================== -->
+
+<sect1>What if the cluster hardware composition changes ?
+<p>
+<tt>kaaddnode</tt> and <tt>kadelnode</tt> enable to add and remove nodes from the deployment system if the cluster composition changes.
+<!-- =========================== -->
+<sect1>Command summary 
+<p>
+<sect2>Functionalities summary
+<p><tt>kanodes</tt> - registers nodes in deployment system
+<p><tt>karecordenv</tt> - registers an environment image in deployment system
+<p><tt>kaenvironments</tt> - list existing registered environment.
+<p><tt>kadeploy</tt> - deploys an environment image
+<p><tt>kaconsole</tt> - opens a remote console 
+<p><tt>kareboot</tt> - reboots according to requested reboot type
+<p><tt>kadatabase</tt> - manage mysql schema.
+<p>
+
+<sect2>Use summary
+<p>The first time...
+<itemize>
+  <item<tt>karecordenv</tt> - to register environments already installed (if any)
+  <item><tt>kanodes</tt> - to register the cluster hardware composition
+</itemize>
+<p>Deployment
+<itemize>
+  <item><tt>karecordenv</tt> - to create and/or register an environment and make it available for deployment
+  <item><tt>kadeploy</tt> - to deploy a registered environment
+</itemize>
+<p>Other tools
+<itemize>
+  <item><tt>kaconsole</tt> - to open a console on a remote node
+  <item><tt>kareboot</tt> - to reboot a cluster node
+</itemize>
+<sect2>Examples
+<p>
+<verb>
+# karecordenv -n debian -d "custom debian" -fb file://home/toto/images/custom_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz -size 750 -k /boot/vmlinuz 
+# kaanode -add
+# karecordenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz
+# kadeploy -e new_debian -m node1 -m node2 -p hda7
+# kaconsole -m node2
+# kareboot -s -e custom_debian -m node2
+</verb>
+
+<!-- =========================== -->
+<sect>About the customization scripts<label id="About_the_customization_scripts">
+<p>
+Kadeploy allows the customization of each node by 2 means:
+<itemize>
+  <item>preinstallation script, executed before sending the system image
+  <item>postinstallation, executed after having sent the system image
+</itemize>
+Originally, these two scripts are written in <em>ash</em>, which is a lightweight bash, but the way these scripts are designed could allow to add any script language.
+
+<!-- =========================== -->
+<sect1>Preinstallation script
+<p>
+This script is common to all environments, its goal is to prepare the system to the hardware specification and the target hard disk drive for the deployment. It can load a specific IDE controller driver, improve deployment performance or make every kind of checks needed. This script is defined in the configuration file as pre_install_script and the associated archive as pre_install_archive.
+<!-- =========================== -->
+<sect2>Preinstallation archive structure
+<p>
+The preinstallation archive is a gzipped tar archive, containing the pre_install_script in its root directory.
+Here is an example of a preinstallation archive structure:
+<verb>
+/
+   init.ash
+   lib/
+   bin/
+      awk
+      df
+      du
+      xargs
+</verb>
+
+The directory structure allows to custom the tasks to your needs. In this example, the pre_install_script is <em>init.ash</em>. Let's have a short look at this structure :
+<itemize>
+   <item><verb>init.ash</verb> is my pre_install_script, so it needs to be there
+   <item><verb>bin/</verb> is a directory where you can add custom binaries, here, I needed <em>awk</em>, <em>df</em>, <em>du</em> and <em>xargs</em>.
+   <item><verb>lib/</verb> is a directory where you can add custom libraries for your binaries. I suggest you to compile static binaries, to prevent conflicts/version problems due to the presence of the system's shared libraries.
+</itemize>
+
+<sect2>init.ash
+<p>
+Example of init.ash
+<verb>
+  #!/bin/ash
+  ./rambin/preinstalldisk.conf
+
+  MODULES=""             # specify modules needed to be load (Ex: sata_svw, sata_sil, sata_nv)
+
+  echo "Loading modules"
+  for m in $MODULES ; do modprobe $m ; done
+
+  # thanks to the use of devfs
+  if [ -e /dev/hda ]; then
+        echo "you have an IDE hard drive"
+  fi
+
+  if [ -e /dev/sda ]; then
+        echo "you have a SCSI or SATA hard drive"
+  fi
+
+  echo "Partitioning..."
+  /rambin/partition.ash
+
+  echo "Preinstall done\n"
+
+  # Duke
+</verb>
+
+<sect2>preinstalldisk.conf
+<p>
+Example of Preinstalldisk.conf
+<verb>
+  HARDDRIVE="/dev/hda" # specify device location
+  DO_FDISK=1
+
+  SWAP_DEV="/dev/hda1"    # specify swap partition
+  SWAP_FORMAT=1           # 1 if you want preinstall format swap partition, 0 either
+
+  TMP_DEV="/dev/hda3"     # specify tmp partition
+  TMP_FS="ext2"           # specify tmp type
+  TMP_FORMAT=0            # 1 if you want preinstall format tmp partition, 0 either
+
+  SCRATCH_DEV="/dev/hda4"
+  SCRATCH_FS="ext2"       # specify scratch type
+  SCRATCH_FORMAT=0        # 1 if you want preinstall format scratch partition, 0 either
+</verb>
+
+<sect2>partition.ash
+<p>
+Example
+<verb>
+  #!/bin/ash
+  ./rambin/preinstalldisk.conf
+
+  FDISKFILEADMIN="/rambin/fdisk.txt"                # specify location of fdisk.txt
+  FDISKFILEUSER="/rambin/fdisk_user.txt"
+
+
+  if [ $DO_FDISK ] ; then                           
+        cat  $FDISKFILEUSER  | fdisk $HARDDRIVE     # rebuild the partition table using FDISKFILEUSER
+  fi
+
+  #if $FDISKFILEADMIN exist launch it
+  cat  $FDISKFILEADMIN | fdisk $HARDDRIVE
+
+  #cat  $FDISKFILE | fdisk $HARDDRIVE
+  #cat  $FDISKFILEUSER  | fdisk $HARDDRIVE
+
+  if  [ $SWAP_FORMAT ]; then
+    mkswap $SWAP_DEV                                # create swap partition
+  fi
+
+  if [ $TMP_FORMAT ]; then                          
+     mkfs -t $TMP_FS $TMP_DEV                       # create tmp partition
+  fi
+
+  if [ $SCRATCH_FORMAT ]; then
+      mkfs -t $SCRATCH_FS $SCRATCH_DEV              # create swap partion
+  fi
+</verb>
+
+<sect2> fdisk.txt (optionnal)
+<p>
+<verb>
+  d
+  1
+  d
+  2
+  d 
+  3
+  d
+  4
+  n
+  p
+  1
+
+  +4000M
+  t
+  82
+  n
+  p
+  2
+
+  +6000M
+  t
+  2
+  83
+  n
+  p
+  3
+
+  +6000M
+  t
+  3
+  83
+  n
+  e
+
+  n
+
+
+  t
+  5
+  83
+  p
+  w
+</verb>
+
+<!-- =========================== -->
+<sect1>Postinstallation script
+<p>
+This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable system. It is composed of a gunzipped tar archive that contains all the sites files and a script <em>traitement.ash</em> in the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the <tt>post_install_script</tt> is executed on every node. The script name is defined in the configuration file as post_install_script.
+<!-- =========================== -->
+<sect2>Postinstallation archive structure
+<p>
+The postinstallation archive is a gzipped tar archive, containing the post_install_script in its root directory.
+Here is an example of a postinstallation archive structure:
+<verb>
+/
+   traitement.ash
+   etc/
+      fstab
+      hosts
+      hosts.allow
+      hosts.deny
+      ntpdate
+   authorized_keys
+</verb>
+
+The directory structure allows to custom the configuration script to your needs. Let's have a short look at this structure :
+<itemize>
+   <item><verb>traitement.ash</verb> is my post_install_script.
+   <item><verb>etc/</verb> is a directory where I decided to put all the files I wanted to replace on my system, this is an arbitrary choice, but allows to keep a clean structure.
+   <item><verb>authorized_keys</verb> is the root's authorized_keys file I decided to put it in the root directory to be sure to have a look at it everytime I update my postinstallation archive.
+</itemize>
+
+<!-- =========================== -->
+<sect2>System modifications
+<p>
+<enum>
+   <item><verb>/etc/fstab</verb> a site base file should be copied in the postinstall archive so that nfs mounts can be preserved and other site modifications could be preserved
+   <item><verb>/tmp</verb> should have its rights modified
+</enum>
+<!-- =========================== -->
+<sect2>Administrative aspects
+<p>
+Many other basic files can be handled by putting them in the archive and replace the existing ones. 
+They are not all listed here but only the most important ones :
+<enum>
+   <item><verb>/root/.ssh/authorized_keys</verb> should contain the administrator's public key and also the public key of user <tt>deploy</tt>, 
+to allow him to get a root shell on every node to reboot those. 
+In order to do that this authorized_keys file has to be built and put in the archive's root directory
+   <item><verb>/etc/hosts /etc/hosts.allow /etc/hosts.deny</verb> should be set to fit the cluster's configuration, 
+and ensure network connection within the cluster's network
+</enum>
+
+Numerous modifications can be done here, from authentification server to tailored modification depending on the node's IP. 
+A good idea should be to modify <tt>rc</tt> scripts to prevent the first boot hard disk drive verification, 
+because it is just a waste of time here, and avoid all the manual intervention that could occur on system boot : 
+for example, by default, many distributions ask the root password before checking a filesystem on boot time.
+
+
+<!-- =========================== -->
+<sect>Example of Complete Configuration for Kadeploy 2.1.6
+<p>
+<em>kadeploy</em> tools suite is configured through two configuration files : <tt>deploy.conf</tt> and <tt>deploy_cmd.conf</tt> in the <tt>/etc/kadeploy/</tt> folder.
+See the manpage for more.
+
+<sect1>dhcpd.conf
+<p>
+
+ddns-update-style none;
+default-lease-time 600;
+max-lease-time 7200;
+
+option subnet-mask 255.255.255.0;
+
+option routers 192.168.0.110;
+
+option domain-name-servers 192.168.0.110;
+option domain-name "localdomain";
+subnet 192.168.0.0 netmask 255.255.255.0 {
+        range 192.168.0.150 192.168.0.200;
+}
+
+#The NIC with this MAC address will always get the same IP address 192.168.03
+group {
+        use-host-decl-names on;
+
+        host ibm01 {
+                hardware ethernet 00:0d:60:53:50:26;
+                fixed-address 192.168.0.161;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+	host ibm02 {
+	hardware ethernet 00:0d:60:53:50:09;
+	fixed-address 192.168.0.162;
+        filename "/PXEClient/pxelinux.0";
+}
+
+        host ibm03 {
+                hardware ethernet 00:0d:60:53:50:09;
+                fixed-address 192.168.0.163;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+        host ibm04 {
+                hardware ethernet 00:0d:60:53:50:0A;
+                fixed-address 192.168.0.164;
+                filename "/PXEClient/pxelinux.0";
+        }
+
+<sect1> /etc/xinetd.d/tftp
+<p>
+service tftp
+{
+        socket_type             = dgram
+        protocol                = udp
+        wait                    = yes
+        user                    = root
+        server                  = /usr/sbin/in.tftpd
+        server_args             = -s /var/lib/tftpboot
+        disable                 = no
+        per_source              = 11
+        cps                     = 100 2
+        flags                   = IPv4
+}
+
+<sect1>/etc/kadeploy/deploy.conf
+<p>
+# user who launches kadeploy commands
+deploy_user = deploy
+
+# path to the kadeploy2 install directory (structure must remain the same in this folder)
+kadeploy2_directory = /usr/local/kadeploy
+
+
+# Nodes properties #
+# ---------------- #
+
+# target partition on the nodes if no '-p' is passed to kadeploy
+default_target_partition = sda2
+
+# timeout before ordering a hard reboot, after a soft one at the beginning
+first_check_timeout = 210 # 160
+
+# timeout for the last check, when rebooting the nodes on the deployed system
+last_check_timeout = 250
+
+# deployment timeout upper time boundary for a deployment to remain valid
+# if empty: 1000 sec is the default value
+deployment_validity_timeout = 700
+
+## filesystems options
+# for ext2 filesystem
+ext2_options = -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+# for ext3 filesystem
+ext3_options = -b 4096 -O sparse_super,filetype,resize_inode,dir_index
+
+
+# nmap conf #
+# --------- #
+
+# enables or disables the use of nmap command by default
+enable_nmap = 1
+
+# sets path to nmap command 
+nmap_cmd = /usr/bin/nmap
+
+# deploy remote command
+deploy_rcmd = rsh -l root
+
+# production remote command
+prod_rcmd = ssh -l root
+
+# parallel launcher window size for the cluster
+launcher_window_size = 25
+
+
+# database conf #
+# ------------- #
+
+# deployment database host
+deploy_db_host = localhost              # e.g. localhost
+
+# deployment database name
+deploy_db_name = deploy                 # e.g. deploy
+
+# deployment database login
+deploy_db_login = deploy
+
+# deployment database password
+deploy_db_psswd = deploypass
+
+
+# pre-install #
+# ----------- #
+
+# path to pre-archive
+pre_install_archive = /usr/local/kadeploy/preinstall/preinstall.tgz
+
+# path to pre-install script
+pre_install_script = init.ash
+
+# pre-install script timeout
+pre_install_script_timeout = 50
+
+# post-install #
+# ------------ #
+
+# path to post-install script
+post_install_script = traitement.ash
+
+
+# pxe conf #
+# -------- #
+
+# parameters for the booting kernel after deployment
+kernel_param = console=tty0
+
+# prevent using grub (SCSI problems, Itanium,...) (default is 0)
+use_nogrub = 1
+
+# where the files should be copied
+
+# tftp and pxe repository
+tftp_repository = /var/lib/tftpboot/PXEClient/
+pxe_rep = pxelinux.cfg/
+
+# how to tell it to remote nodes?
+tftp_relative_path = images_grub
+
+
+# labels allow to define shortcuts
+#
+# label... = kernel:initrd
+
+# label for standard nodes of the cluster
+
+label_deploy = duke-vmlinuz.x86_64:duke-initrd.x86_64 ETH_DRV=tg3 ETH_DEV=eth0 console=tty0 
+
+
+<sect1>/etc/kadeploy/deploy_cmd.conf
+<p>
+
+ibm04 softboot ssh root@ibm04 /sbin/reboot
+ibm04 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm04 /sbin/reboot
+ibm04 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.164:label_deploy
+ibm04 hardboot /bin/echo "exec hardboot ibm4"
+ibm04 console telnet kvm 1
+
+ibm03 softboot ssh root@ibm03 /sbin/reboot
+ibm03 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm03 /sbin/reboot
+ibm03 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.163:label_deploy
+ibm03 hardboot /bin/echo "exec hardboot ibm3"
+ibm03 console telnet kvm 1
+
+ibm02 softboot ssh root@ibm02 /sbin/reboot
+ibm02 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm02 /sbin/reboot
+ibm02 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.162:label_deploy
+ibm02 hardboot /bin/echo "exec hardboot ibm2"
+ibm02 console telnet kvm 1
+
+ibm01 softboot ssh root@ibm01 /sbin/reboot
+ibm01 softboot ssh -q -o ConnectTimeout=2 -o StrictHostKeyChecking=no root@ibm01 /sbin/reboot
+ibm01 deployboot  /usr/local/kadeploy/sbin/setup_pxe.pl 192.168.0.161:label_deploy
+ibm01 hardboot /bin/echo "exec hardboot ibm1"
+ibm01 console telnet kvm 1
+
+<!-- =========================== -->
+<!-- =========================== -->
+<sect1>/etc/kadeploy/clusterpartition.conf
+<p>
+sda size=160000
+part=1 size=10000 fdisktype=82 label=empty type=primary
+part=2 size=20000  fdisktype=83 label=empty type=primary
+part=3 size=130000  fdisktype=83 label=empty type=primary
+
+<sect1>/etc/kadeploy/clusternodes.conf
+<p>
+ibm01 00:0d:60:53:50:26 192.168.0.161
+ibm02 00:0d:60:53:50:09 192.168.0.162
+ibm03 00:0d:60:53:50:09 192.168.0.163
+ibm04 00:0d:60:53:50:0A 192.168.0.164
+
+<sect1>/etc/sudoers
+<p>
+##BEGIN # DO NOT REMOVE, needed by Kadeploy packages
+Defaults>deploy          env_reset,env_keep = "PWD PERL5LIB DISPLAY" # DO NOT REMOVE, needed by Kadeploy packages
+Cmnd_Alias DEPLOYCMDUSER = /usr/local/kadeploy/bin//kaconsole, /usr/local/kadeploy/bin//kadeploy, /usr/local/kadeploy/bin//kaenvironments, /usr/local/kadeploy/bin//kareboot, /usr/local/kadeploy/bin//karecordenv, /usr/local/kadeploy/bin//karemote # DO NOT REMOVE, needed by Kadeploy packages
+ALL ALL=(deploy) NOPASSWD: DEPLOYCMDUSER # DO NOT REMOVE, needed by Kadeploy packages
+##END# DO NOT REMOVE, needed by Kadeploy packages
+<p>
+
+<sect>Frequently Asked Questions
+<p>
+<sect1>Installation
+<sect2>What to do when Kadeploy installation say:"Warning: root-privileges are required to install some files !"
+<p>
+You have to execute installation with root privileges. Use sudo or pass under root user.
+
+<sect1>Utilisation
+<sect2> What to do when at boot,I have the message "cannot find initrd or vmlinuz"
+<p>
+
+<sect2> What to do when deployement failed with message "not there on first check"
+<p>
+There is this message because the node did not reboot fast enought or because node did not reboot all. To fix this problem you can:
+<itemize>
+<item>Reboot node manually and retry another deployement
+<item> Increase waiting time for reboot in deploy.conf (maybe you have a too short time)and retry deployment: <tt>first_check_timeout = 200</tt>
+</itemize>
+<sect2> What to do when during deployement, there is following message: "Kadeploy not launched from a tty"
+<p>
+This means that you are trying to launch kadeploy 2.1.5 from a non pseudo tty terminal/command launcher for example in a passive oar job. There is an issue depending of the tty context kadeploy is launched from, due to a rsh bug. So since 2.1.5 version, kadeploy explicitely tests its launching environment: if not from a tty, then it creates one for him in a detached screen. This screen session lasts only during the deployment time. This can occur if you are launching kadeploy with ssh used as a command launcher:
+<verb>
+jleduc@idpot:~$ ssh oar.orsay.grid5000.fr "/usr/local/bin/kadeploy -f ~/nodes.txt -e debianMin -p sda3"
+Kadeploy not launched from a tty
+Detached in a screen
+</verb>
+
+If you really need kadeploy stdout, for example to demonstrate many deployments from a single place, you have to force ssh to associate a pseudo tty for the remote command by adding -t option:
+<verb>
+jleduc@idpot:~$ ssh oar.orsay.grid5000.fr -t "/usr/local/bin/kadeploy -f ~/nodes.txt -e debianMin -p sda3"
+</verb>
+You should prefer to use tools, built on top of kadeploy, to manage your deployments sessions across the grid: please refer to katapult for additional details.
+<sect2> What to do when during deployement, there is following message: " Image file not found!"
+<p>
+This means that kadeploy is not able to read your environment's main archive. This can be caused by many reasons:
+<itemize>
+<item>registered filename is wrong, this can be verified retriving the registered information with kaenvironments -e environment_name
+<item>extension is not right (for example .tar.gz does not work, whereas .tgz is OK)
+<item>the directory rights are not good: kadeploy reads this file as the deploy user, so it has not the same access permission as yours: everyone should be able to read the files implied in an environment (ie: main archive and postinstall). 
+</itemize>
+<sect2> What to do when during deployement, there is following message: "node-X discarded from deployement"
+<sect2> What to do when during deployement, there is following message: "node-X discarded from deployement"
+<sect2> What to do when during deployement, there is following message: "node-X is already in another deployment"
+<p>
+This error occurs when 2 concurrent deployments are attempted on the same node.
+
+<itemize>
+<item>Soluce: If you have 2 simultaneus deployments, make sure you have 2 distinct sets of nodes. 
+</itemize>
+
+It can also occur if there is a problem in the database: typically a deployment ended in a strange way could lead to that.
+
+<itemize>
+<item>Soluce: wait for about 15 minutes and retry the deployment: kadeploy can correct its database automatically.
+</itemize>
+
+<sect2> What to do when deployement failed with message "preinstall failed"
+<sect2> What to do when deployement failed with message "poll: protocol failure in circuit setup"
+It mean there is too many rsh connection on server. If you can kill all rsh process.
+<sect2> What to do when deployement failed with message "postinstall failed"
+<sect2> What to do when deployement failed with message "not there on last check"
+  </article>

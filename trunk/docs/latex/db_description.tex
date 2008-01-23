@@ -1,0 +1,219 @@
+%\documentclass[a4paper,10pt]{report}
+\documentclass[a4paper,10pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english,francais]{babel}
+\usepackage{epsfig,shadow}
+
+\newcommand{\afaire}{$\Box$ A COMPLETER $\Box$}
+\newcommand{\gvk}{\textsf{G5K}}
+
+\title{Proposition de gestion de déploiement dans le cadre de \gvk}
+\author{Julien Leduc}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+Ce document décrit une proposition de gestion des données permettant de gérer le processus de déploiement pour la grille expérimentale \gvk.
+\end{abstract}
+
+\tableofcontents
+
+%\section*{}
+
+%\chapter{Introduction}
+\section{Introduction}
+
+Cette partie va poser les problématiques auxquelles doivent répondre les mécanismes de gestion du déploiement.
+
+\subsection{Les contraintes \gvk}
+Voici une liste des principales contraintes de la gestion du déploiement des machines de \gvk:
+\begin{enumerate}
+\item elle doit permettre de gérer le boot des machines au niveau du cluster, avec les informations disponibles localement.
+\item elle doit permettre de connaître en permanence l'état de déploiement des images système sur chacune des machines constituant \gvk.
+\end{enumerate}
+
+\section{architecture des données relatives à la gestion du partitionement des machines}
+
+\subsection{les données nécessaires au partitionement}
+Dans cette partie, nous allons proposer un schéma de base de données permettant de gérer le partitionement des machines. Ces tables vont permettre de proposer une structure logique de stockage de ces données, mais aucunement de gérer le contenu des partitions des machines, qui sera abordé dans la partie suivante.
+
+\subsubsection{Données relatives aux disques locaux}
+Dans cette partie, nous allons tout d'abord recenser les disques locaux ainsi que les propriétés qui vont nous intéresser par la suite dans le cadre des outils de déploiement.
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{DiskID} & integer & référence du disque\\
+Size & integer & taille du disque en \texttt{Mo}\\
+Device & char(3) & nom \texttt{linux} du disque (hd[a-z], sd[a-z])\\
+\hline
+\end{tabular}
+\caption{Table Disk}
+\end{figure}
+
+Cetta table va nous permettre de gérer les données relatives aux disques des machines \gvk, ainsi, on pourra décider d'un partitionnement adapté à la topologie des disques de chaque machine. Cette table pourra également logguer des données relatives au matériel (alertes en cas de performances disques insuffisantes, dates de remplacement des disques, échéances de garantie...), mais également des données plus essentielles relatives à ses performances (nom du pilote à charger pour optimiser les performances, ...). 
+
+\subsubsection{Données relatives aux partitions}
+
+Cette partie va nous permettre de recenser les partitions à créer au sein de chaque schéma de disque ; je parle ici de schéma de disque et non de disque physique, car, au gré des remplacements des disques physiques, nous serons amenés à procéder à des partitionnements identiques pour des disques avec des capacités très dissemblables.
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{PartitionID} & integer & référence du schéma de partitionement\\
+PNumber & integer & numéro de la partition sur le disque\\
+Size & integer & taille de la partition en \texttt{Mo}\\
+\hline
+\end{tabular}
+\caption{Table Partition}
+\end{figure}
+
+La dernière partition peut être de taille nulle, elle occupera alors le reste de la place disponible sur le disque (cette dernière partition sera généralement du scratch utile pour des tests IO sur des systèmes de fichiers par exemple). Elle permet également de partitionner de manière identique (à une partition près) deux disques dont les capacités sont différentes. D'autre part, ce schéma permet de détecter les disques non partitionnés (ou disques de scratch), dans ce cas, on utilisera une seule partition de taille nulle pour le schéma de partitionnement associé au disque.
+
+
+\section{architecture des données relatives à la gestion du contenu de chaque n\oe ud}
+
+\subsection{gestion du partitionnement des n\oe uds}
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{NodeID} & integer & référence du n\oe ud\\
+Name & char & nom du n\oe ud\\
+MacAddr & char & adresse MAC de l'interface \texttt{DHCP} du n\oe ud\\
+IpAddr & char(16) & adresse IP de la machine\\
+\hline
+\end{tabular}
+\caption{Table Node}
+\end{figure}
+
+Cette table permet d'associer les entités précédemment décrites en attribuant des schémas de partitionnement de disques aux n\oe uds physiques, tout en autorisant la gestion de plusieurs disques.\\
+D'autre part, elle va également nous permettre de gérer des services vitaux pour un cluster, notamment, le service \texttt{DHCP}, qui associe automatiquement les adresses IP aux machines d'un cluster.\\
+Remarque : l'adresse MAC, bien qu'unique, ne peut pas se substituer à un identifiant pour le n\oe ud étant donné qu'elle reste avant tout une information susceptible de varier indépendamment du n\oe ud (panne adaptateur réseau notamment).
+
+\subsection{description du contenu des partitions des n\oe uds}
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{EnvironmentID} & integer & référence de l'environnement\\
+Name & char & nom de l'environnement\\
+Version & integer & numéro de version de l'environnement\\
+Description & char & description de l'image\\
+Author & char & adresse email de l'auteur de l'image\\
+FileBase & char & url de récupération du fichier de base\\
+FileSite & char &  url de récupération du fichier de spécialisation\\
+Size & integer & taille de l'environnement en \texttt{Mo}\\
+KernelPath & char & chemin absolu du noyau dans l'environnement\\
+FdiskType & integer & numéro du type fdisk associé à l'environnement (si nécessaire)\\
+FileSystem & char & système de fichiers associé à l'environnement\\
+SiteID & char & site de référence de l'image\\
+\hline
+\end{tabular}
+\caption{Table Environment}
+\end{figure}
+
+Cette table va nous permettre de gérer les images disponibles, pour leur exploitation dans \gvk, avec notamment les contraintes au niveau des partitions, et une possibilité de spécialisation pour chaque site.
+
+\subsection{gestion du contenu des partitions des n\oe uds}
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{EnvironmentID} & integer & référence de l'environnement\\
+\underline{DiskID} & integer & référence du disque\\
+\underline{PartitionID} & integer & référence du schéma de partitionnement\\
+\underline{PNumber} & integer & numéro de la partition concernée\\
+\underline{NodeID} & integer & référence du n\oe ud\\
+\underline{DeploymentID} & integer & référence du déploiement associé à l'état\\
+State & integer & état de déploiement de cette partition (deploying, deployed, error)\\
+ErrorDescription & char & description de l'erreur survenue au cours du deploiement\\
+\hline
+\end{tabular}
+\caption{Table Deployed}
+\end{figure}
+
+
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{DeploymentID} & integer & référence du déploiement\\
+State & integer & état du déploiement (waiting, running, terminated, error)\\
+StartDate & date & date de début du déploiement\\
+EndDate & date & date de fin du déploiement\\
+\hline
+\end{tabular}
+\caption{Table Deployment}
+\end{figure}
+
+
+Ces tables permettent de gérer le contenu des partitions des n\oe uds, ainsi que l'état dans lequel se trouve ces partitions.\\
+Elles permettent également de tracer un historique des déploiements sur les différents n\oe uds, ainsi que l'état actuel de déploiement.\\
+\\
+Ces 2 tables sont en fait le coeur du système de gestion des n\oe uds : ce sont en fait les seules tables qui vont nous permettre d'associer chaque noeud avec son état, que ce soit au niveau des partitions ou du déploiement.\\
+La manière de les gérer sera donc primordiale, car ces tables vont être soumises à des écritures concurrentes lors d'un processus de déploiement.\\
+Je vais donc fixer ici les règles d'écriture sur ces tables.
+
+\subsubsection{création d'un nouveau déploiement}
+Un nouveau déploiement est créé à l'état \texttt{WAITING}. Les conditions pour créer un nouveau déploiement sont:
+\begin{itemize}
+\item aucun autre déploiement à l'état \texttt{WAITING} sur le cluster
+\end{itemize}
+
+\subsubsection{ajout de nouveaux n\oe uds à un déploiement}
+L'ajout de nouveaux n\oe uds à une entrée déploiement:
+\begin{itemize}
+\item le déploiement que l'on veut associer aux n\oe uds doit être à l'état \texttt{WAITING}, dit autrement, on ne peut ajouter des n\oe uds qu'à un déploiement à l'état \texttt{WAITING}.
+\item on ne peut pas associer un nouveau déploiement à des n\oe uds déjà associés à un déploiement à l'état \texttt{RUNNING}\footnote{on est sûr qu'aucun autre déploiement n'est à l'état \texttt{WAITING}}
+\end{itemize}
+Une fois les n\oe uds ajoutés, le déploiement passe a l'état \texttt{RUNNING}. Plus aucun n\oe ud ne peut désormais être ajouté à ce déploiement.
+
+\subsubsection{fin d'un déploiement}
+Au cours d'un déploiement, les n\oe uds vont changer d'état sans que l'on ait à se soucier du moindre verrou sur la base, qui va rester cohérente compte tenu des conditions décrites précédemment.\\
+On n'aura donc qu'à valider le déploiement:
+\begin{itemize}
+\item si tous les n\oe uds du déploiement sont à l'état \texttt{DEPLOYING}, ils passent à l'état \texttt{DEPLOYED} et le déploiement passe à l'état \texttt{TERMINATED}
+\item sinon, le déploiement passe de l'état \texttt{RUNNING}, à l'état \texttt{ERROR}
+\end{itemize}
+
+
+
+\subsection{gestion du contenu relatif au site}
+
+\begin{figure}
+\begin{tabular}{|c|c|c|}
+\hline
+Attribut & Type & Signification \\
+\hline
+\underline{SiteID} & integer & référence du site\\
+Name & char & nom du site\\
+%SiteFilePath & char & chemin vers le fichier de spécialisation relatif au site\\
+%RootPublicKey & char & clef publique root\\
+\hline
+\end{tabular}
+\caption{Table Site}
+\end{figure}
+
+La table Site rassemble les informations propres à un site. 
+
+\end{document}
