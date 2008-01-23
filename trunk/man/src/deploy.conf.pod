@@ -12,7 +12,11 @@ This section is dedicated to the cluster specifics optimizations, all the timeou
 
 =over
 
-=item B<default_target_partition> sda3
+=item B<default_target_device> sda
+
+Default target device on the nodes if no '-d' is passed to kadeploy.
+
+=item B<default_target_partition> 3
 
 Default target partition on the nodes if no '-p' is passed to kadeploy.
 
