@@ -699,9 +699,9 @@ sub usages()
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
-\t[-dl   | --debug_level level]                     0 : show all ...  4 : hide all
+\t[-dl  | --debug_level level]                     0 : show all ...  4 : hide all
 \t[-r   | --reformat_tmp]                          Re-format the /tmp partition
-\t[--fast_kernel_reboot]                           Use kexec to reboot quickly (only works with Linux env)
+\t[-fkr | --fast_kernel_reboot]                    Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use_prod_env]                          Use the production environment to deploy
 ";
 
@@ -741,8 +741,9 @@ sub check_options(){
 	       'debug_level=i'       => \$debug_level,
 	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
-	       'reformat_tmp'        => \$reformattmp,
 	       'r'                   => \$reformattmp,
+	       'reformat_tmp'        => \$reformattmp,
+	       'fkr'                 => \$fastkernelreboot,
 	       'fast_kernel_reboot'  => \$fastkernelreboot,
 	       'u'                   => \$useprodenvtodeploy,
 	       'use_prod_env'        => \$useprodenvtodeploy,

@@ -6,7 +6,9 @@ kaenvironments - list and remove an environment.
 
 B<kaenvironments>  B<-e|--environment> environment_name [B<-l> username] [B<-c|--cluster> clustername]
 
-B<kaenvironments>  B<-d> environment_name [B<-c|--cluster> clustername]
+B<kaenvironments>  B<-a|--add> environment_file [B<-c|--cluster> clustername]
+
+B<kaenvironments>  B<-d|--delete> environment_name [B<-c|--cluster> clustername]
 
 B<kaenvironments>  B<-m|--machine> hostname
 
@@ -36,7 +38,11 @@ For I<some> multicluster installation: specifies the cluster, by default it uses
 
 Specifies a target host to scan: it lists deployed environments.
 
-=item B<-d> environment_name
+=item B<-a|--add> environment file
+
+Specifies the filename that contains the environment to add.
+
+=item B<-d|--delete> environment_name
 
 Specifies the environment to delete.
 
