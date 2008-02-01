@@ -3,195 +3,248 @@
 #This program is derived from oar project's sources (http//:oar.imag.fr)
 #
 
-SHELL=/bin/sh
+SHELL=/bin/bash
+# Kadeploy versioning
+MAJOR = 2
+MINOR = 1
+SUBMINOR = 7
+KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
+
+# Kadeploy directories installation layout
+# System directories
 PREFIX=/usr/local
 
-KADEPLOYHOMEDIR=$(PREFIX)/kadeploy
 MANDIR=$(PREFIX)/man
 INFODIR=$(PREFIX)/info
-BINDIR=$(KADEPLOYHOMEDIR)/bin
-SBINDIR=$(KADEPLOYHOMEDIR)/sbin
-LIBDIR=$(KADEPLOYHOMEDIR)/lib
-PERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2
-KADEPLOYCONFDIR=/etc/kadeploy
+BINDIR=$(PREFIX)/bin
+SBINDIR=$(PREFIX)/sbin
 
-tftp_repository=/var/lib/tftpboot/PXEClient/
-pxe_rep=pxelinux.cfg/
-tftp_relative_path=images_grub
-ARCH=x86_64
+PERLDIR=/usr/share/perl/5.8/
+
+# Kadeploy directories
+KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
+
+KABINDIR=$(KADEPLOYHOMEDIR)/bin
+KASBINDIR=$(KADEPLOYHOMEDIR)/sbin
+KAADDONSDIR=$(KADEPLOYHOMEDIR)/addons
+KAPERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2
+KADBDIR=$(KADEPLOYHOMEDIR)/db
+KADEPLOYCONFDIR=/etc/kadeploy-$(KADEPLOY_VERSION)
+
+KADEPLOY_BINFILES=kaconsole kaenvironments karecordenv kadeploy kareboot karemote kaaddkeys kadatabase
+KADEPLOY_SBINFILES=kaadduser kadeluser kanodes
+KADEPLOY_MANPAGES=kaadduser.1 kaaddkeys.1 kaconsole.1 kadeluser.1 kaenvironments.1 karecordenv.1 kadeploy.1 kareboot.1 deploy.conf.1 karemote.1 deploy_cmd.conf.1
+
+# For archive creation
+MANPAGES_SRC=docs/man/src/
+MANPAGES=docs/man/man1/
+DOCUMENTATION_SRC=docs/texi/
+DOCUMENTATION=$(DOCUMENTATION_SRC)/documentation/
+SCRIPTS=scripts/
+ADDONS=addons/
+TOOLS=tools/
+
+EXCLUDED=--exclude=.svn
+KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
 
 DEPLOYUSER=deploy
 DEPLOYGROUP=deploy
 
+ARCH=x86_64
+
+
+#################
+#
+# Default action
+#
+#################
+
 all: usage
+
+
+########################################
+# 
+# Installation or uninstallation checks
+# 
+########################################
 
 #Check if you execute installation with root privileges
 root_check:
+	@echo "root check ..."
 	@[ `whoami` = 'root' ] || ( echo "Warning: root-privileges are required to install some files !" ; exit 1 )
 
 #Add the "proxy" user/group to /etc/passwd if needed.
-checks_user_and_group_deploy: 
+user_and_group_deploy_check: 
+	# grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
+	# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy 
+	@( grep -q "^deploy:" /etc/passwd && grep -q "^deploy:" /etc/group ) || \
+	  adduser --system --group --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER)
 
-#	@grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
-	@grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy 
-
-#Links Installation in /usr/local/bin
 links_install:
-#Users_Tools
-#	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaaddkeys
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaconsole
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kaenvironments
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karecordenv
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kadeploy
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/kareboot
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/bin/karemote
+	@echo "Making links to sudowrapper ..."
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kaconsole
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kaenvironments
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/karecordenv
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kadeploy
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kareboot
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/karemote
+# ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR/kaaddkeys
 
-#Admin_Tools
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kaadduser
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kadeluser
-	ln -s $(BINDIR)/kasudowrapper.sh $(PREFIX)/sbin/kanodes
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kaadduser
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kadeluser
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kanodes
 
+directories:
+	@echo "Making directories ..."
+	@mkdir -p $(KADEPLOYHOMEDIR)/db
+	@mkdir -p $(KABINDIR)	
+	@mkdir -p $(KASBINDIR)
+	@mkdir -p $(KAPERLDIR)
+	@mkdir -p -m 700 $(KADEPLOYCONFDIR)
+	@mkdir -p $(BINDIR)
+	@mkdir -p $(SBINDIR)
+
+files_install:
+	@echo "Copying files ..."
+	@install -m 600 conf/deploy.conf $(KADEPLOYCONFDIR)/
+	@install -m 600 conf/deploy_cmd.conf $(KADEPLOYCONFDIR)/
+	@install -m 600 conf/clusternodes.conf $(KADEPLOYCONFDIR)/
+	@install -m 600 conf/clusterpartition.conf $(KADEPLOYCONFDIR)/
+	@chown -R $(DEPLOYUSER) $(KADEPLOYCONFDIR)
+
+	@install -m 755 bin/kaconsole $(KABINDIR)/
+	@install -m 755 bin/kaenvironments  $(KABINDIR)/
+	@install -m 755 bin/karecordenv $(KABINDIR)/
+	@install -m 755 bin/kadeploy $(KABINDIR)/
+	@install -m 755 bin/kareboot $(KABINDIR)/
+	@install -m 755 bin/karemote $(KABINDIR)/
+	@install -m 755 bin/kaaddkeys $(BINDIR)/
+	@install -m 755 bin/kadatabase $(BINDIR)/
+	@install -m 755 bin/kasudowrapper.sh $(KABINDIR)/	
+
+	@install -m 755 sbin/kaadduser $(KASBINDIR)/
+	@install -m 755 sbin/kadeluser $(KASBINDIR)/
+	@install -m 755 sbin/kastats $(KASBINDIR)/	
+	@install -m 755 sbin/kanodes $(KASBINDIR)/
+	@install -m 755 sbin/setup_pxe.pl $(KASBINDIR)/
+
+# Perl modules 
+	@install -m 755 libkadeploy2/* $(KAPERLDIR)/
+	@ln -s $(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2 $(PERLDIR)/libkadeploy2
+
+# database scripts
+	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
+	@install -m 755 scripts/install/kadeploy_conflib.pm $(KADBDIR)
+	@install -m 755 scripts/sql/*.sql $(KADBDIR)
+	
 #Kadeploy installation in main directory
-kadeploy_install:
-
-	mkdir -p $(KADEPLOYHOMEDIR)
-	mkdir -p $(BINDIR)	
-	mkdir -p $(SBINDIR)
-	mkdir -p $(LIBDIR)/grub
-	mkdir -p $(LIBDIR)/deployment_kernel/x86
-	mkdir -p $(LIBDIR)/deployment_kernel/x86_64
-	mkdir -p $(PERLDIR)
-	mkdir -p -m 700 $(KADEPLOYCONFDIR)
-
-	install -m 600 tools/cookbook/conf/deploy.conf $(KADEPLOYCONFDIR)/
-	install -m 600 tools/cookbook/conf/deploy_cmd.conf $(KADEPLOYCONFDIR)/
-	install -m 600 tools/cookbook/conf/clusternodes.conf $(KADEPLOYCONFDIR)/
-	install -m 600 tools/cookbook/conf/clusterpartition.conf $(KADEPLOYCONFDIR)/
-
-	chown -R $(DEPLOYUSER) $(KADEPLOYCONFDIR)
-
-	install -m 755 cmd/kaconsole $(BINDIR)/
-	install -m 755 cmd/kaenvironments  $(BINDIR)/
-	install -m 755 cmd/karecordenv $(BINDIR)/
-	install -m 755 cmd/kadeploy $(BINDIR)/
-	install -m 755 cmd/kareboot $(BINDIR)/
-	install -m 755 cmd/karemote $(BINDIR)/
-	install -m 755 tools/kasudowrapper/kasudowrapper.sh $(BINDIR)/	
-
-	install -m 755 tools/addons/kaaddkeys $(PREFIX)/bin/kaaddkeys
-
-	install -m 755 tools/libboot/deployment_kernel/x86/* $(LIBDIR)/deployment_kernel/x86/
-	install -m 755 tools/libboot/deployment_kernel/x86_64/* $(LIBDIR)/deployment_kernel/x86_64/
-	install -m 755 tools/libboot/grub/* $(LIBDIR)/grub/
-
-	install -m 755 cmd/kaadduser $(SBINDIR)/
-	install -m 755 cmd/kadeluser $(SBINDIR)/
-	install -m 755 cmd/kastats $(SBINDIR)/	
-	install -m 755 tools/boot/setup_pxe.pl $(SBINDIR)/
-	install -m 755 cmd/kanodes $(SBINDIR)/
-
-	install -m 755 cmd/libkadeploy2/* $(PERLDIR)/ 
-
-	sed -i "s%kadeploy2_directory[\ |\t]*=.*%kadeploy2_directory = $(KADEPLOYHOMEDIR)%" $(KADEPLOYCONFDIR)/deploy.conf
-	sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(BINDIR)/kasudowrapper.sh
-
-#Database scripts installation
-db_install:
-	mkdir -p $(KADEPLOYHOMEDIR)/
-	install -m 755 tools/cookbook/install_scripts/kadeploy_db_init.pl $(KADEPLOYHOMEDIR)/
-	install -m 644 share/mysql/create_table_deploy.sql $(KADEPLOYHOMEDIR)/
-	install -m 644 tools/cookbook/install_scripts/kadeploy_conflib.pm $(KADEPLOYHOMEDIR)/
+kadeploy_install: root_check user_and_group_deploy_check directories files_install links_install sudo_install man_install
 
 
-#Sudo installation part. Modification of /etc/sudoers
+#Sudo installation : modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" ; exit 1 )
-	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
-	tools/cookbook/install_scripts/sudoers_install.pl $(KADEPLOYHOMEDIR)
+	@sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
+	@scripts/install/sudoers_install.pl $(KADEPLOYHOMEDIR)
 
 
 #Install and creation of mans
-install_man:
-	mkdir -p $(MANDIR)/man1
-	install -m 755 man/man1/* $(MANDIR)/man1/
+man_install:
+	@mkdir -p $(MANDIR)/man1
+	@install -m 755 $(MANPAGES)/* $(MANDIR)/man1/
 
 #Install info documentation
-install_info:
-	mkdir -p $(INFODIR)
-	install -m 755 Documentation/info/*  $(INFODIR)/
+#info_install:
+#	@mkdir -p $(INFODIR)
+#	@install -m 755 docsDocumentation/info/*  $(INFODIR)/
 
-#Installation of ftp part
-tftp_install:
-	@echo "Installation of tftp"
-
-	mkdir -p /$(tftp_repository)/$(pxe_rep)
-	mkdir -p /$(tftp_repository)/$(tftp_relative_path)
-
-	chown $(DEPLOYUSER)  $(tftp_repository)$(tftp_relative_path)
-	chown $(DEPLOYUSER)  $(tftp_repository)$(pxe_rep)
-
-	install -m 644 tools/libboot/pxelinux/pxelinux.0 $(tftp_repository) 
-	install -m 644 tools/libboot/pxelinux/memdisk $(tftp_repository)$(tftp_relative_path)
-	install -m 644 $(LIBDIR)/deployment_kernel/$(ARCH)/* $(tftp_repository)$(tftp_relative_path)
-
-	sed -i "s%^tftp_repository[\ |\t]*=.*%tftp_repository = $(tftp_repository)%" $(KADEPLOYCONFDIR)/deploy.conf
-	sed -i "s%^pxe-rep[\ |\t]*=.*%pxe_rep = $(pxe_rep)%" $(KADEPLOYCONFDIR)/deploy.conf
-	sed -i "s%^tftp_relative_path[\ |\t]*=.*%tftp_relative_path = $(tftp_relative_path)%" $(KADEPLOYCONFDIR)/deploy.conf	
-
+###########################
+#
+# Kadeploy un-installation
+# 
+###########################
 
 #Remove Installation of Kadeploy 
 remove_installation:
-	rm -rf $(KADEPLOYHOMEDIR)
-	rm -f $(PREFIX)/bin/kaaddkeys
-	rm -f $(PREFIX)/bin/kaconsole
-	rm -f $(PREFIX)/bin/kaenvironments
-	rm -f $(PREFIX)/bin/karecordenv
-	rm -f $(PREFIX)/bin/kadeploy
-	rm -f $(PREFIX)/bin/kareboot
-	rm -f $(PREFIX)/bin/karemote
+	@echo "Removing installed files ..."
+	@rm -f $(PERLDIR)/libkadeploy2
+	@cd $(BINDIR) && rm -f $(KADEPLOY_BINFILES)
+	@cd $(SBINDIR) && rm -f $(KADEPLOY_SBINFILES)
+	@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
+     
+	@echo "Uninstalling sudowrapper ..."
+	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
+	@echo "Removing deploy user and group ..."
+	@( grep -q $(DEPLOYUSER) /etc/passwd && userdel $(DEPLOYUSER) )
+	@( grep -q $(DEPLOYGROUP) /etc/group && groupdel $(DEPLOYGROUP) )
 
-	rm -f $(PREFIX)/sbin/kaadduser
-	rm -f $(PREFIX)/sbin/kadeluser
-	rm -f $(PREFIX)/sbin/kanodes	
-
-	rm -f $(MANDIR)/kaadduser.1
-	rm -f $(MANDIR)/kaaddkeys.1
-	rm -f $(MANDIR)/kaconsole.1
-	rm -f $(MANDIR)/kadeluser.1
-	rm -f $(MANDIR)/kaenvironments.1
-	rm -f $(MANDIR)/karecordenv.1
-	rm -f $(MANDIR)/kadeploy.1
-	rm -f $(MANDIR)/kareboot.1
-	rm -f $(MANDIR)/deploy.conf.1
-	rm -f $(MANDIR)/karemote.1
-	rm -f $(MANDIR)/deploy_cmd.conf.1
-
-	rm -f $(INFODIR)/kadeploy-info.info.gz
-
-	rm -rf $(KADEPLOYCONFDIR)/
-
-	tools/cookbook/uninstall_scripts/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
-
-	userdel -r $(DEPLOYUSER)
-#	groupdel $(DEPLOYGROUP)
-
-#Database scripts installation
-db_uninstall:
-	rm $(KADEPLOYHOMEDIR)/kadeploy_db_init.pl 
-	rm $(KADEPLOYHOMEDIR)/create_table_deploy.sql 
-	rm $(KADEPLOYHOMEDIR)/kadeploy_conflib.pm 
+	@rm -rf $(KADEPLOYHOMEDIR)/
+	@rm -rf $(KADEPLOYCONFDIR)/
 
 
-#Main part of the installation
-install: root_check checks_user_and_group_deploy kadeploy_install links_install sudo_install install_man install_info
-
-#Installation cleaning
-uninstall: root_check remove_installation
+kadeploy_uninstall: root_check remove_installation
 
 
-#Usage of make
+#############################
+# 
+# Archive creation (tarball)
+# 
+#############################
+
+archive: manpages_arc documentation_arc scripts_arc addons_arc tools_arc
+	@echo "Archiving Kadeploy main files ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) bin/
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) sbin/
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) libkadeploy2/
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) conf/
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) AUTHORS
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) COPYING
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) README
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) Makefile
+	@echo "Compressing archive ..."
+	@gzip $(KADEPLOY_ARC)
+	@echo "Done."
+
+scripts_arc:
+	@echo "Archiving scripts ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(SCRIPTS)
+	
+addons_arc:
+	@echo "Archiving addons ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(ADDONS)
+	
+tools_arc:
+	@echo "Archiving tools ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(TOOLS)
+	
+manpages_arc: manpages
+	@echo "Archiving Manpages ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(MANPAGES)
+	
+manpages:
+	@make -C $(MANPAGES_SRC) 2>&1 >/dev/null
+	
+documentation_arc: documentation
+	@echo "Archiving documentation ..."
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
+	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
+	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
+	
+documentation:
+	@make -C $(DOCUMENTATION_SRC) 2>&1 >/dev/null
+
+
+################
+#
+# Usage of make
+# 
+################
+
 usage:
-	@echo "Installation of Kadeploy 2.1.5."
-	@echo "Usage: make [ OPTIONS=<...> ] MODULES"
-	@echo "Where MODULES := { install | db_install | tftp_install | uninstall | db_uninstall}"
-	@echo "OPTIONS :={KADEPLOYHOMEDIR | ARCH | tftp_repository | pxe_rep | image_grub}"
+	@echo -e "\n\t**************************************"
+	@echo -e "\t*** Installation of Kadeploy-$(KADEPLOY_VERSION) ***"
+	@echo -e "\t**************************************"
+	@echo -e "\n\tUsage: make [ OPTIONS=<...> ] MODULES"
+	@echo -e "\t\twhere MODULES := { kadeploy_install | kadeploy_uninstall | archive }"
+	@echo -e "\t\tand   OPTIONS := { PREFIX | KADEPLOYHOMEDIR | KADEPLOYCONFDIR } \n"

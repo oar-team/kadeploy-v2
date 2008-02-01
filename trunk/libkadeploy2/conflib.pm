@@ -12,7 +12,7 @@
 ##
 ## Apres initialisation du modules a l'aide de la fonction check_conf(),
 ## la recuperation d'un parametre se fait avec la fonction get_conf("truc").
-## La fonction is_conf quant à elle permet de savoir si un parametre est defini.
+## La fonction is_conf quant Ã  elle permet de savoir si un parametre est defini.
 ##
 ## - Exemple d'utilisation:
 ##  > use ConfLib qw(init_conf get_conf is_conf);
