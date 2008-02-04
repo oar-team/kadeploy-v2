@@ -22,7 +22,7 @@ sub debugl($$) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
 	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
     } else {
-	$current_debug_level = 1;
+	$current_debug_level = 0;
     }
     if ($ENV{KADEPLOY_CLUSTER}) {
 	$cluster = $ENV{KADEPLOY_CLUSTER};
@@ -42,7 +42,7 @@ sub debugl_light($$) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
 	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
     } else {
-	$current_debug_level = 1;
+	$current_debug_level = 0;
     }
     if ($ENV{KADEPLOY_CLUSTER}) {
 	$cluster = $ENV{KADEPLOY_CLUSTER};
@@ -62,12 +62,12 @@ sub system_wrapper($) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
 	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
     } else {
-	$current_debug_level = 1;
+	$current_debug_level = 0;
     }
     my $cmd = shift;
     my $ret;
 
-    if ($current_debug_level >= 3) {
+    if ($current_debug_level >= 4) {
 	$ret = system($cmd);
     } else {
 	$ret = system($cmd." &>/dev/null");
@@ -79,11 +79,11 @@ sub exec_wrapper($) {
     if ($ENV{KADEPLOY_DEBUG_LEVEL}) {
 	$current_debug_level = $ENV{KADEPLOY_DEBUG_LEVEL};
     } else {
-	$current_debug_level = 1;
+	$current_debug_level = 0;
     }
     my $cmd = shift;
 
-    if ($current_debug_level >= 3) {
+    if ($current_debug_level >= 4) {
 	exec($cmd);
     } else {
 	exec($cmd." &>/dev/null");
