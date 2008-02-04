@@ -87,11 +87,11 @@ sub manage_grub_pxe($$){
 
     # common parts
     if (! $kernel_param) { # take default parameters if any
-	libkadeploy2::debug::debugl(1, "No kernel parameter, taking default ones defined in the configuration file\n");
+	libkadeploy2::debug::debugl(3, "No kernel parameter, taking default ones defined in the configuration file\n");
 	$kernel_param = $configuration->get_conf("kernel_param");
     }
     if (!$custom_kernel_parameters eq "") { # user customized kernel parameters
-	libkadeploy2::debug::debugl(1, "using custom kernel parameters: " . $custom_kernel_parameters . "\n");
+	libkadeploy2::debug::debugl(3, "using custom kernel parameters: " . $custom_kernel_parameters . "\n");
 	# compute basic checksum
 	my $checksum = 0;
 	my $ascval;
@@ -141,14 +141,14 @@ sub manage_grub_pxe($$){
 	    my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
 
 	    if ( $gen_pxe_entry ) {
-		libkadeploy2::debug::debugl(1, "generating PXE : first node : $ip\n");		
+		libkadeploy2::debug::debugl(3, "generating PXE : first node : $ip\n");		
 		$firstipx=$iphexalized;
 		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 		$gen_pxe_entry = 0; # generated once
 		$firstnode = 0;     # next processing different as for 1st node
 	    }
 	    else {
-		libkadeploy2::debug::debugl(1, "generating PXE : other nodes : $ip\n"); 
+		libkadeploy2::debug::debugl(3, "generating PXE : other nodes : $ip\n"); 
 		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 	    }
 
@@ -340,11 +340,11 @@ sub generate_grub_files_chainload($$$$){
     
     close MENU;
 	       
-    libkadeploy2::debug::debugl(1, "* Copying grub base image\n");
+    libkadeploy2::debug::debugl(3, "* Copying grub base image\n");
     libkadeploy2::debug::system_wrapper("cp $base_grub_image $output");
-    libkadeploy2::debug::debugl(1, "* Modifying grub menu at block $menu_offset\n");
+    libkadeploy2::debug::debugl(3, "* Modifying grub menu at block $menu_offset\n");
     libkadeploy2::debug::system_wrapper("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
-    libkadeploy2::debug::debugl(1, "$output has been generated.\n");
+    libkadeploy2::debug::debugl(3, "$output has been generated.\n");
     return 1;
 }
 
@@ -421,11 +421,11 @@ sub generate_grub_files($$$$$$$$){
     }
     close MENU;
 
-    libkadeploy2::debug::debugl(1, "* Copying grub base image\n");
+    libkadeploy2::debug::debugl(3, "* Copying grub base image\n");
     libkadeploy2::debug::system_wrapper("cp $base_grub_image $output");
-    libkadeploy2::debug::debugl(1, "* Modifying grub menu at block $menu_offset\n");
+    libkadeploy2::debug::debugl(3, "* Modifying grub menu at block $menu_offset\n");
     libkadeploy2::debug::system_wrapper("dd if=$menu of=$output bs=512 seek=$menu_offset count=$menu_len conv=notrunc");
-    libkadeploy2::debug::debugl(1, "$output has been generated.\n");
+    libkadeploy2::debug::debugl(3, "$output has been generated.\n");
 
     return 1;
 }
@@ -522,7 +522,7 @@ sub reboot($$$$){
     foreach my $host (@host_list){
 	if(!$cmd{$host}{$reboot}){
 	    print "WARNING : no $reboot command found for $host !\n";
-	    libkadeploy2::debug::debugl(1, "WARNING : no $reboot command found for $host !\n");
+	    libkadeploy2::debug::debugl(3, "WARNING : no $reboot command found for $host !\n");
 	}else{
 	    # debug print
 	    # print "to be executed : $host -> $cmd{$host}{$reboot}\n";
@@ -556,7 +556,7 @@ sub reboot($$$$){
 	my $test = kill(9, $jobtokill);
 	if ($test == 1) { # means that kill effectively signaled 1 job
 	    if ($hard) {
-		libkadeploy2::debug::debugl(1, "Warning: node $key did not hard reboot properly\n");
+		libkadeploy2::debug::debugl(3, "Warning: node $key did not hard reboot properly\n");
 	    } 
 #	    else {
 #		print "Warning: node $key did not soft reboot properly\n";

@@ -91,15 +91,15 @@ sub new {
     if(!$environment) { # environment is not defined
 	$environment = $env;
     } elsif ($environment ne $env) {
-	libkadeploy2::debug::debugl(4, "environments should not be mixed in the same deployment!\n");
+	libkadeploy2::debug::debugl(0, "environments should not be mixed in the same deployment!\n");
 	return 0;
     }
 
     ## want the help of nmap ?
     $self->{useNmap} = $useNmapByDefault;
-    libkadeploy2::debug::debugl(1, "nmapCmd: $nmapCmd\n"); 
+    libkadeploy2::debug::debugl(3, "nmapCmd: $nmapCmd\n"); 
     if (!defined($nmapCmd) || (! -x $nmapCmd)){
-	libkadeploy2::debug::debugl(1, "WARNING: nmap won't be used there\n");
+	libkadeploy2::debug::debugl(3, "WARNING: nmap won't be used there\n");
 	$self->{useNmap} = 0;
     }
     $self->{nodesByIPs} = {}; # hash of 'node' instances, key is IP
@@ -395,7 +395,7 @@ sub checkPortswithNmap {
     foreach $nodeIP (sort (keys(%seenNodes))) {
       if(exists($self->{nodesByIPs}->{$nodeIP})) {
 	if($self->{nodesByIPs}->{$nodeIP}->get_state() != 1) {
-	  libkadeploy2::debug::debugl(1, "there on check:  $nodeIP \n");
+	  libkadeploy2::debug::debugl(3, "there on check:  $nodeIP \n");
 	  $self->{nodesByIPs}->{$nodeIP}->set_state(1);
 	  $displayReadyNodesNumber = 1;
 	}
@@ -408,7 +408,7 @@ sub checkPortswithNmap {
     for $nodeIP (@{$self->{nodesToPing}}) {
 	if (!exists($seenNodes{$nodeIP})) { #unseen node
 	    if ($self->{nodesByIPs}->{$nodeIP}->get_state() == 1) { # node disappeared
-		libkadeploy2::debug::debugl(1, "node should have rebooted: $nodeIP\n") if ($environment ne "production");
+		libkadeploy2::debug::debugl(3, "node should have rebooted: $nodeIP\n") if ($environment ne "production");
 		$displayReadyNodesNumber = 1;
 	    }
 	    $self->{nodesByIPs}->{$nodeIP}->set_error($self->get_error());
@@ -418,9 +418,9 @@ sub checkPortswithNmap {
     $nodesReadyNumber = keys %seenNodes;
     if ($displayReadyNodesNumber) {
 	if ($environment eq "deployment") {
-	    libkadeploy2::debug::debugl(1, "<BootInit ".$nodesReadyNumber.">\n");
+	    libkadeploy2::debug::debugl(3, "<BootInit ".$nodesReadyNumber.">\n");
 	} elsif ($environment eq "production") {
-	    libkadeploy2::debug::debugl(1, "<BootEnv ".$nodesReadyNumber.">\n");
+	    libkadeploy2::debug::debugl(3, "<BootEnv ".$nodesReadyNumber.">\n");
 	}
     }
     return 1;
@@ -528,7 +528,7 @@ sub runThose {
       if ($pid > 0){
          if (defined($running_processes{$pid})){
             $processDuration{$running_processes{$pid}}{"end"} = [gettimeofday()] if ($useTime == 1);
-	    libkadeploy2::debug::debugl(0, "[VERBOSE] Child process $pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n");
+	    libkadeploy2::debug::debugl(4, "[VERBOSE] Child process $pid ended : exit_value = $exit_value, signal_num = $signal_num, dumped_core = $dumped_core \n");
             $finished_processes{$running_processes{$pid}} = [$exit_value,$signal_num,$dumped_core];
             delete($running_processes{$pid});
             $nb_running_processes--;
@@ -545,7 +545,7 @@ sub runThose {
     while (($index < $nbcommands) or ($#timeout >= 0)){
       # Check if window is full or not
       while((($nb_running_processes) < $window_size) and ($index < $nbcommands)){
-	libkadeploy2::debug::debugl(0, "[VERBOSE] fork process for $index command\n");
+	libkadeploy2::debug::debugl(4, "[VERBOSE] fork process for $index command\n");
         $processDuration{$index}{"start"} = [gettimeofday()] if ($useTime == 1);
 
         $pid = fork();
@@ -556,7 +556,7 @@ sub runThose {
             if ($pid == 0){
                 #In the child
                 my $cmd = $commandsToRun{$nodes[$index]};
-		libkadeploy2::debug::debugl(0, "[VERBOSE] Execute command : $cmd\n");
+		libkadeploy2::debug::debugl(4, "[VERBOSE] Execute command : $cmd\n");
 		libkadeploy2::debug::exec_wrapper($cmd);
             }
         }else{
@@ -599,29 +599,29 @@ sub runThose {
 	$self->{nodesByIPs}->{$nodes[$i]}->set_error($errorString); # set error to errorString
         $exit_code = 1;
       }
-      libkadeploy2::debug::debugl(0, "$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2]) ");
+      libkadeploy2::debug::debugl(4, "$nodes[$i] : $verdict ($finished_processes{$i}->[0],$finished_processes{$i}->[1],$finished_processes{$i}->[2]) ");
 
       if ($useTime == 1){
         my $duration = tv_interval($processDuration{$i}{"start"}, $processDuration{$i}{"end"});
 	my $msg = sprintf("%.3f s",$duration);
-	libkadeploy2::debug::debugl(0, $msg);
+	libkadeploy2::debug::debugl(4, $msg);
       }
-      libkadeploy2::debug::debugl(0, "\n");
+      libkadeploy2::debug::debugl(4, "\n");
       if ($report_failed_node == 1) {
         $self->{nodesByIPs}->{$nodes[$i]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$i]}->set_state(-1);
-	libkadeploy2::debug::debugl(1, "node " . $nodes[$i] . " marked as failed\n");
+	libkadeploy2::debug::debugl(3, "node " . $nodes[$i] . " marked as failed\n");
       }
      
       } 
 
     foreach my $i (keys(%running_processes)){
-      libkadeploy2::debug::debugl(1, "$nodes[$running_processes{$i}] : BAD (-1,-1,-1) -1 s process disappeared\n");
+      libkadeploy2::debug::debugl(3, "$nodes[$running_processes{$i}] : BAD (-1,-1,-1) -1 s process disappeared\n");
       $exit_code = 1;
       if ($report_failed == 1) {
         $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_error($self->get_error());
         $self->{nodesByIPs}->{$nodes[$running_processes{$i}]}->set_state(-1);
-	libkadeploy2::debug::debugl(1, "node " . $nodes[$running_processes{$i}] . " marked as failed\n");
+	libkadeploy2::debug::debugl(3, "node " . $nodes[$running_processes{$i}] . " marked as failed\n");
       }
     }
 
@@ -629,7 +629,7 @@ sub runThose {
     if ($useTime == 1){
       $timeEnd = [gettimeofday()];
       my $msg = sprintf("Total duration : %.3f s (%d nodes)\n", tv_interval($timeStart, $timeEnd), $nbcommands);
-      libkadeploy2::debug::debugl(0, $msg);
+      libkadeploy2::debug::debugl(4, $msg);
     }
 
     # sync nodes structures
@@ -648,7 +648,7 @@ sub getThoseCommandSummary {
     my $test = 0;
     my $result = 1;
    
-    libkadeploy2::debug::debugl(1, "\nCommand execution summary:\n");
+    libkadeploy2::debug::debugl(3, "\nCommand execution summary:\n");
     foreach my $nodeIP (sort @{$self->{nodesToPing}}) {
 	$test=1; # at least one node
         if ( $self->{nodesByIPs}{$nodeIP}->get_command_status() == 1 ) {
@@ -657,9 +657,9 @@ sub getThoseCommandSummary {
 	    $status = "ERROR";
 	    $result=0;
 	}
-	libkadeploy2::debug::debugl(1, "\t" . $self->{nodesByIPs}{$nodeIP}->get_name() . "\t" . $status . "\n");
+	libkadeploy2::debug::debugl(3, "\t" . $self->{nodesByIPs}{$nodeIP}->get_name() . "\t" . $status . "\n");
     }
-    libkadeploy2::debug::debugl(1, "Finished\n\n");
+    libkadeploy2::debug::debugl(3, "Finished\n\n");
     
     return ($test && $result);
 }
@@ -706,9 +706,9 @@ sub runCommandMcat {
     $self->runRemoteCommand ("/usr/local/bin/launch_transfert.sh " . $node_pipe);
     # launch local command and pass data to the first node
     my $command = $server_command . " | " . $connector . " " . $sortedIP[0] . " \" cat > /entry_pipe \" ";
-    libkadeploy2::debug::debugl(0, "mcat local: $command\n");
+    libkadeploy2::debug::debugl(4, "mcat local: $command\n");
     libkadeploy2::debug::system_wrapper($command);
-    libkadeploy2::debug::debugl(0, "mcat done\n");
+    libkadeploy2::debug::debugl(4, "mcat done\n");
     $self->runRemoteCommandBackground ("sync", "transfert");
 }
 
@@ -798,7 +798,7 @@ sub runLocalRemote($$$$) {
         return 1;
     }
 
-    libkadeploy2::debug::debugl(0, "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP " . $remoteCommand . "\n");
+    libkadeploy2::debug::debugl(4, "LocalRemote called with " . $localCommand . " " . $connector . " nodeIP " . $remoteCommand . "\n");
 
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
@@ -928,13 +928,13 @@ sub rebootMyNodes {
         foreach my $nodeIP (@{$self->{nodesToPing}}) {
             $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
             if (!$cmd{$hostname}{$method}){
-		libkadeploy2::debug::debugl(1, "WARNING : no $method command found for $hostname !\n");
+		libkadeploy2::debug::debugl(3, "WARNING : no $method command found for $hostname !\n");
             } else {
 	        if (!$get_failed_nodes) {
 		    $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
 		} else {
 		    if ($self->{nodesByIPs}{$nodeIP}->get_state() == -1) {
-			libkadeploy2::debug::debugl(1, "Rebooting node $hostname hard\n");
+			libkadeploy2::debug::debugl(3, "Rebooting node $hostname hard\n");
                         $executedCommands{$nodeIP} = $cmd{$hostname}{$method};
 		    }
 		}
@@ -952,16 +952,16 @@ sub rebootMyNodes {
 	%nextExecutedCommands = (); # empty next commands to be run
         foreach my $nodeIP (keys(%executedCommands)) {
 	    if ( $self->{nodesByIPs}{$nodeIP}->get_command_status() != 1 ) {
-		libkadeploy2::debug::debugl(0, "$executedCommands{$nodeIP} went wrong \n ");
+		libkadeploy2::debug::debugl(4, "$executedCommands{$nodeIP} went wrong \n ");
 	        $hostname = $self->{nodesByIPs}{$nodeIP}->get_name();
-		libkadeploy2::debug::debugl(1, "Problem occured rebooting node :" . $hostname . " trying " . $next_method . " \n");
+		libkadeploy2::debug::debugl(3, "Problem occured rebooting node :" . $hostname . " trying " . $next_method . " \n");
 		if ($next_method eq "hardboot") {
 		    $use_next_method = 0;
 	            if(!$cmd{$hostname}{"hardboot"}){
-			libkadeploy2::debug::debugl(1,"WARNING : no hardboot command found for $hostname !\n");
+			libkadeploy2::debug::debugl(3,"WARNING : no hardboot command found for $hostname !\n");
 	            } else {
 		        $nbmethod_nodes++;
-			libkadeploy2::debug::debugl(0, "rebooting node $hostname hard \n");
+			libkadeploy2::debug::debugl(4, "rebooting node $hostname hard \n");
 	                $nextExecutedCommands{$nodeIP} = $cmd{$hostname}{"hardboot"};
 	            }
 		} else {
@@ -977,7 +977,7 @@ sub rebootMyNodes {
         }
 	%executedCommands = %nextExecutedCommands;
         if ( $nbmethod_nodes != 0 ) {
-	    libkadeploy2::debug::debugl(0, "Launching parrallel commands \n");
+	    libkadeploy2::debug::debugl(4, "Launching parrallel commands \n");
 	    $self->runThose(\%nextExecutedCommands, 6, $launcherWindowSize, "hardboot failed on node", 0);
 	} else {
             $use_next_method = 0;
