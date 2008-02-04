@@ -168,7 +168,7 @@ sub clean_previous_deployments ($) {
     	# set default value
     	$deployment_validity_timeout = 1000;
     }
-    libkadeploy2::debug::debugl(1, "invalidating deployments older than $deployment_validity_timeout\n");
+    libkadeploy2::debug::debugl(3, "invalidating deployments older than $deployment_validity_timeout\n");
 
     my $rows_affected = $dbh->do("UPDATE deployment
                                   SET deployment.state = 'error', deployment.enddate=deployment.startdate
@@ -1836,20 +1836,20 @@ sub debug_print($$$){
     }
 
     # prints information
-    libkadeploy2::debug::debugl_light(1, "\nDeploy\tState\n");
-    libkadeploy2::debug::debugl_light(1, "------\t-----\n");
-    libkadeploy2::debug::debugl_light(1, "$depl[0]\t$depl[1]\n");
-    libkadeploy2::debug::debugl_light(4, "\nNode\tState\t\tError Description (if any)\n");
-    libkadeploy2::debug::debugl_light(4, "----\t-----\t\t--------------------------\n");
+    libkadeploy2::debug::debugl_light(3, "\nDeploy\tState\n");
+    libkadeploy2::debug::debugl_light(3, "------\t-----\n");
+    libkadeploy2::debug::debugl_light(3, "$depl[0]\t$depl[1]\n");
+    libkadeploy2::debug::debugl_light(0, "\nNode\tState\t\tError Description (if any)\n");
+    libkadeploy2::debug::debugl_light(0, "----\t-----\t\t--------------------------\n");
 
     foreach my $res (keys %res){
 	if ($res{$res}[0] eq 'error'){
-	    libkadeploy2::debug::debugl_light(4, "$res\t$res{$res}[0]\t\t$res{$res}[1]\n");
+	    libkadeploy2::debug::debugl_light(0, "$res\t$res{$res}[0]\t\t$res{$res}[1]\n");
 	    if ($ret_nodes_nok) {
 		print NODES_NOK "$res\n";
 	    }
 	}else{
-	    libkadeploy2::debug::debugl_light(4, "$res\t$res{$res}[0]\t\n");
+	    libkadeploy2::debug::debugl_light(0, "$res\t$res{$res}[0]\t\n");
 	    if ($ret_nodes_nok) {
 		print NODES_OK "$res\n";
 	    }

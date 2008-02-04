@@ -72,7 +72,7 @@ sub test_cache_directory()
         if ($success) { return 1; }
         else 
         {
-	    libkadeploy2::debug::debugl(1, "$0: mkdir failed on $_cachedirectory\n");
+	    libkadeploy2::debug::debugl(3, "$0: mkdir failed on $_cachedirectory\n");
 	    return 0;
 	}
     }
@@ -81,7 +81,7 @@ sub test_cache_directory()
 	@failed = grep !(chmod 0755, $_), $_cachedirectory;
 	if ( @failed )
 	{
-	    libkadeploy2::debug::debugl(1, "$0 : chmod failed on $_cachedirectory\n");
+	    libkadeploy2::debug::debugl(3, "$0 : chmod failed on $_cachedirectory\n");
 	    exit 0;
 	}
 	else { return 1; }
@@ -96,7 +96,7 @@ sub read_files_in_cache()
     
     if ( ! opendir CACHEHANDLE, $_cachedirectory )
     {
-	libkadeploy2::debug::debugl(1, "$0 : opendir failed on $_cachedirectory");
+	libkadeploy2::debug::debugl(3, "$0 : opendir failed on $_cachedirectory");
 	exit 0;
     }
     

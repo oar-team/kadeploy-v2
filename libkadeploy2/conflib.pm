@@ -167,7 +167,7 @@ sub check_conf {
 	return 0;
     }
 
-    #libkadeploy2::debug::debugl(1, "Checking variable definition...\n");
+    #libkadeploy2::debug::debugl(3, "Checking variable definition...\n");
 
     open(DEPLOYCONF,$deployconf) or die "Can't open $deployconf, maybe you are not allowed to open this file\n";
 
@@ -179,7 +179,7 @@ sub check_conf {
 		$already_defined{$key} = $val;
                 $config->{params}{$key} = $val;
             }else{
-		libkadeploy2::debug::debugl(4, "ERROR : variable $key is defined twice in configuration file:" . $deployconf . "\n");
+		libkadeploy2::debug::debugl(0, "ERROR : variable $key is defined twice in configuration file:" . $deployconf . "\n");
                 $twice = 1;
             }
 	}
@@ -189,7 +189,7 @@ sub check_conf {
     # checks if the critic variables are defined 
     foreach my $var (keys %critic){
 	if(!exists($config->{params}{$var})){
-	    libkadeploy2::debug::debugl(4, "ERROR : critic variable $var is missing\n");
+	    libkadeploy2::debug::debugl(0, "ERROR : critic variable $var is missing\n");
 	    $missing = 1;
 	}else{# critic variable is defined
 
@@ -197,27 +197,27 @@ sub check_conf {
 	    my $valid = 0;
 	    if ($type == 2) { # check / debut & fin
 		if (!($config->{params}{$var} =~ /^\/.*\/$/)){
-		    libkadeploy2::debug::debugl(4, "ERROR : $var variable should start and end with an / \n");
+		    libkadeploy2::debug::debugl(0, "ERROR : $var variable should start and end with an / \n");
 		    $missing = 1;
 		}
 	    }elsif($type == 3){ # check / debut & pas / fin
 		if ((!($config->{params}{$var} =~ /^\/.*/)) || ($config->{params}{$var} =~ /.*\/$/)){
-		    libkadeploy2::debug::debugl(4, "ERROR : $var variable should start with an / and end without\n");
+		    libkadeploy2::debug::debugl(0, "ERROR : $var variable should start with an / and end without\n");
 		    $missing = 1;
 		}
 	    }elsif($type == 4){ # check / fin & pas / debut
 		if (($config->{params}{$var} =~ /^\/.*/) || (!($config->{params}{$var} =~ /.*\/$/))){
-		    libkadeploy2::debug::debugl(4, "ERROR : $var variable should end with an / and start without\n");
+		    libkadeploy2::debug::debugl(0, "ERROR : $var variable should end with an / and start without\n");
 		    $missing = 1;
 		}
 	    }elsif($type ==5){ # check pas de / ni debut ni fin
 		if (($config->{params}{$var} =~ /^\/.*/) || ($config->{params}{$var} =~ /.*\/$/)){
-		    libkadeploy2::debug::debugl(4, "ERROR : $var variable should not start neither end with an / \n");
+		    libkadeploy2::debug::debugl(0, "ERROR : $var variable should not start neither end with an / \n");
 		    $missing = 1;
 		}
 	    }elsif($type == 6){ # check / debut & peu importe fin
 		if (!($config->{params}{$var} =~ /^\/.*/)){
-		    libkadeploy2::debug::debugl(4, "ERROR : $var variable should start with an /\n");
+		    libkadeploy2::debug::debugl(0, "ERROR : $var variable should start with an /\n");
 		    $missing = 1;
 		}
 	    }elsif($type == 7){
@@ -227,7 +227,7 @@ sub check_conf {
 		      )
 		    )
 		{
-		    libkadeploy2::debug::debugl(4, "ERROR :$var should be yes or no\n");
+		    libkadeploy2::debug::debugl(0, "ERROR :$var should be yes or no\n");
 		    $missing = 1;
 		}		    	
 	    }else{ # pas de check
@@ -237,7 +237,7 @@ sub check_conf {
     }
 
     if ($twice || $missing){
-	libkadeploy2::debug::debugl(4, "ERROR : please check your configuration file\n");
+	libkadeploy2::debug::debugl(0, "ERROR : please check your configuration file\n");
 	return 0;
     }
     $config->{checked_conf} = 1;
@@ -261,7 +261,7 @@ sub check_clusterconf {
         exit 1;
     }
 
-    libkadeploy2::debug::debugl(1, "Checking clusters definitions...\n");
+    libkadeploy2::debug::debugl(3, "Checking clusters definitions...\n");
 
     open(CLUSTERCONF, $config->{clusterconf});
 
@@ -305,7 +305,7 @@ sub check_cmd {
         exit 1;
     }
 
-    libkadeploy2::debug::debugl(1, "Checking command definition...\n");
+    libkadeploy2::debug::debugl(3, "Checking command definition...\n");
     
     open(DEPLOYCMD, $config->{deploycmdconf});
     

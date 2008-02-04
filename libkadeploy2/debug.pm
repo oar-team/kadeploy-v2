@@ -32,7 +32,7 @@ sub debugl($$) {
     my $msg_debug_level = shift;
     my $msg = shift;
 
-    if ($msg_debug_level >= $current_debug_level) {
+    if ($msg_debug_level <= $current_debug_level) {
 	print("Cluster: ".$cluster." |".$msg);
 	syslog("info", "Cluster: ".$cluster." |".$msg);
     }
@@ -52,7 +52,7 @@ sub debugl_light($$) {
     my $msg_debug_level = shift;
     my $msg = shift;
 
-    if ($msg_debug_level >= $current_debug_level) {
+    if ($msg_debug_level <= $current_debug_level) {
 	print($msg);
 	syslog("info", $msg);
     }
@@ -67,7 +67,7 @@ sub system_wrapper($) {
     my $cmd = shift;
     my $ret;
 
-    if ($current_debug_level <= 1) {
+    if ($current_debug_level >= 3) {
 	$ret = system($cmd);
     } else {
 	$ret = system($cmd." &>/dev/null");
@@ -83,7 +83,7 @@ sub exec_wrapper($) {
     }
     my $cmd = shift;
 
-    if ($current_debug_level <= 1) {
+    if ($current_debug_level >= 3) {
 	exec($cmd);
     } else {
 	exec($cmd." &>/dev/null");

@@ -31,7 +31,7 @@ sub gethostipx($)
       }
     else
       {
-        libkadeploy2::debug::debugl(1, "$ip : wrong IP syntax.\n");
+        libkadeploy2::debug::debugl(3, "$ip : wrong IP syntax.\n");
         return 0;	  
       }
     
