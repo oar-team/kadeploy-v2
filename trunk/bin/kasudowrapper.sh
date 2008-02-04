@@ -53,6 +53,7 @@ then
 	do
 	    [ "$state" = "node_list" ] && node_list=$node_list" "$arg
 	    [ "$state" = "filename" ] && filename=$arg
+	    [ "$state" = "script" ] && script=$arg
 	    case $arg in
 		"-m") state="node_list";;
 		"--machine") state="node_list";;
@@ -60,6 +61,8 @@ then
 		"--file") state="filename";;
 		"-k") keys=1 ; state="";;
 		"--keys") keys=1 ; state="";;
+		"-s") state="script";;
+		"--script") state="script";;
 		*) state="";;
 	    esac
 	done
@@ -84,8 +87,11 @@ then
 	    exit 0
 	fi
 
-	#remove -k, -f and -m options
-	args=`echo $@ | sed -e 's/\-k//g' -e 's/\-f\ [a-zA-Z0-9.\_-]*//g' -e 's/\-m\ [a-zA-Z0-9.\_-]*//g'`
+	#remove -k, -f, -s and -m options
+	args=`echo $@ | sed -e 's/\-k//g' -e 's/\--keys//g' \
+	                    -e 's/\-f\ [a-zA-Z0-9.\_-]*//g' -e 's/\--filename\ [a-zA-Z0-9.\_-]*//g' \
+	                    -e 's/\-s\ [a-zA-Z0-9.\_-]*//g' -e 's/\--script\ [a-zA-Z0-9.\_-]*//g' \
+	                    -e 's/\-m\ [a-zA-Z0-9.\_-]*//g' -e 's/\--machine\ [a-zA-Z0-9.\_-]*//g'`
 	for file in kadeploy_tmp_cluster_*
 	do
 	    if [ -f $file ]
@@ -126,6 +132,8 @@ then
 	fi
 
 	rm -f kadeploy_tmp_cluster_*
+	#lauch a script after the deployment
+	[ $script ] && $script
     else
 	${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
     fi

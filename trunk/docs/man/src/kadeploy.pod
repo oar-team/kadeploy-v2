@@ -4,7 +4,7 @@ kadeploy - deploys an environment on the given nodes.
 
 =head1 SYNOPSIS
 
-B<kadeploy>  B<-e|--environment> environment_name [B<-l> username] [B<-d|--device> device] [B<-p|--partition> partition] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-dl|--debug-level> debug level] [B<-u|--use-prod-env>] [B<-r|--reformat-tmp>] [B<-fkr|--fast-kernel-reboot>]
+B<kadeploy>  B<-e|--environment> environment_name [B<-l> username] [B<-d|--device> device] [B<-p|--partition> partition] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-dl|--debug-level> debug_level] [B<-u|--use-prod-env>] [B<-r|--reformat-tmp>] [B<-fkr|--fast-kernel-reboot>] [B<-s|--script> path_to_script]
 
 =head1 DESCRIPTION
 
@@ -40,7 +40,7 @@ Specifies a target host. This option can be used more than once to specify sever
 
 Specifies a file containing a set of target nodes.
 
-=item B<-dl|--debug-level> debug level
+=item B<-dl|--debug-level> debug_level
 
 Specifies the verbosity's level. The values are : 0 (only result), 1 (main steps of the deployement), 2 (normal verbosity), 3 (advanced verbosity), 4 (extreme verbosity). 0 is default.
 
@@ -55,6 +55,10 @@ Performs the deployment with the production environment. This method avoid the f
 =item B<-fkr|--fast-kernel-reboot>
 
 Uses the optimized method to reboot the nodes after the copy of the environment. Avoid a hard reboot. This option only works with Linux based environments.
+
+=item B<-s|--script> path_to_script
+
+Executes a script at the end of the deployment. Warning, the script must be executable.
 
 =back
 

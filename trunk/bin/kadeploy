@@ -410,7 +410,7 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     
     libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
 # send the environment!!
-    libkadeploy2::debug::debugl(1, "### Sending user's environnement to the nodes\n");
+    libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
     $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
     libkadeploy2::debug::debugl(3, "Done\n");
 }
@@ -703,6 +703,7 @@ sub usages()
 \t[-r   | --reformat-tmp]                          Re-format the /tmp partition
 \t[-fkr | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use-prod-env]                          Use the production environment to deploy
+\t[-s   | --script]                                Launch a script after a deployment
 ";
 
 }
