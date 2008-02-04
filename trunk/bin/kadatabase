@@ -74,7 +74,7 @@ my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
 # Options handling
 # ----------------
 GetOptions('add_deploy_db_user' => \$add_deploy_db_user,
-    'remove_deploy_db_user'        => \$remove_deploy_db_user,
+    'del_deploy_db_user'        => \$del_deploy_db_user,
     'create_db_deploy_217'  => \$create_db_deploy_217,
     'db_migration_216_to_217' => \$db_migration_216_to_217,
     'create_db_deploy'      => \$create_db_deploy,
@@ -96,14 +96,14 @@ if ($clean_db_deploy)
     $ok=1;
 }
 
-if ($add_deploy_db_user        || 
-    $remove_deploy_db_user        ||
-    $drop_db_deploy        ||
-    $create_db_deploy      ||
-    $create_db_deploy_217  ||
+if ($add_deploy_db_user      || 
+    $del_deploy_db_user      ||
+    $drop_db_deploy          ||
+    $create_db_deploy        ||
+    $create_db_deploy_217    ||
     $db_migration_216_to_217 ||
-    $create_table_deploy   ||
-    $patch21               ||
+    $create_table_deploy     ||
+    $patch21                 ||
     $patch211
     ) 
 {
@@ -123,7 +123,7 @@ if ($db_migration_216_to_217) { mysqlload("db_migration_216_to_217"); $ok=1;}
 if ($drop_db_deploy)         { mysqlload("drop_db_deploy"); $ok=1; }
 
 if ($add_deploy_db_user)     { mysqlload("add_deploy_db_user"); $ok=1; }
-if ($remove_deploy_db_user)     { mysqlload("remove_deploy_db_user"); $ok=1; }
+if ($del_deploy_db_user)     { mysqlload("del_deploy_db_user"); $ok=1; }
 
 if ($create_db_deploy)       { mysqlload("create_db_deploy"); $ok=1;}
 if ($create_table_deploy)    { mysqlload("create_table_deploy"); $ok=1;}
@@ -150,7 +150,7 @@ sub usage()
     print "--create_table_deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
 
     print "--add_deploy_db_user \t\t\tAdd the \"deploy\" user for the Kadeploy DB\n";
-    print "--remove_deploy_db_user \t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
+    print "--del_deploy_db_user \t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
 
     print "--patch21 (deprecated)\n";
     print "--patch211 (deprecated)\n\n";

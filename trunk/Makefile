@@ -27,7 +27,7 @@ KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
 KABINDIR=$(KADEPLOYHOMEDIR)/bin
 KASBINDIR=$(KADEPLOYHOMEDIR)/sbin
 KAADDONSDIR=$(KADEPLOYHOMEDIR)/addons
-KAPERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2
+KAPERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8
 KADBDIR=$(KADEPLOYHOMEDIR)/db
 KADEPLOYCONFDIR=/etc/kadeploy-$(KADEPLOY_VERSION)
 
@@ -51,6 +51,12 @@ DEPLOYUSER=deploy
 DEPLOYGROUP=deploy
 
 ARCH=x86_64
+
+.PHONY : all usage root_check user_and_group_deploy_check \
+links_install directories files_install kadeploy_install sudo_install man_install \
+kadeploy_uninstall files_uninstall \
+archive scripts_arc addons_arc tools_arc manpages_arc manpages documentation_arc documentation
+	
 
 
 #################
@@ -76,7 +82,8 @@ root_check:
 #Add the "proxy" user/group to /etc/passwd if needed.
 user_and_group_deploy_check: 
 	# grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
-	# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy 
+	# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy
+	@echo "User and group check ..."
 	@( grep -q "^deploy:" /etc/passwd && grep -q "^deploy:" /etc/group ) || \
 	  adduser --system --group --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER)
 
@@ -99,7 +106,7 @@ directories:
 	@mkdir -p $(KADEPLOYHOMEDIR)/db
 	@mkdir -p $(KABINDIR)	
 	@mkdir -p $(KASBINDIR)
-	@mkdir -p $(KAPERLDIR)
+	@mkdir -p $(KAPERLDIR)/libkadeploy2
 	@mkdir -p -m 700 $(KADEPLOYCONFDIR)
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(SBINDIR)
@@ -129,8 +136,8 @@ files_install:
 	@install -m 755 sbin/setup_pxe.pl $(KASBINDIR)/
 
 # Perl modules 
-	@install -m 755 libkadeploy2/* $(KAPERLDIR)/
-	@ln -s $(KADEPLOYHOMEDIR)/share/perl/5.8/libkadeploy2 $(PERLDIR)/libkadeploy2
+	@install -m 755 libkadeploy2/* $(KAPERLDIR)/libkadeploy2/
+	@ln -s $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/libkadeploy2
 
 # database scripts
 	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
@@ -166,24 +173,28 @@ man_install:
 ###########################
 
 #Remove Installation of Kadeploy 
-remove_installation:
-	@echo "Removing installed files ..."
-	@rm -f $(PERLDIR)/libkadeploy2
+files_uninstall :
+	@echo "Removing system-wide installed files ..."
 	@cd $(BINDIR) && rm -f $(KADEPLOY_BINFILES)
 	@cd $(SBINDIR) && rm -f $(KADEPLOY_SBINFILES)
 	@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
      
 	@echo "Uninstalling sudowrapper ..."
 	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
+	
 	@echo "Removing deploy user and group ..."
-	@( grep -q $(DEPLOYUSER) /etc/passwd && userdel $(DEPLOYUSER) )
-	@( grep -q $(DEPLOYGROUP) /etc/group && groupdel $(DEPLOYGROUP) )
-
+	@( grep -q $(DEPLOYUSER) /etc/passwd && userdel $(DEPLOYUSER) ) \
+	|| echo "user $(DEPLOYUSER) already removed."
+	@( grep -q $(DEPLOYGROUP) /etc/group && groupdel $(DEPLOYGROUP) ) \
+	|| echo "group $(DEPLOYGROUP) already removed."
+	
+	@echo "Deleting Kadeploy homedir ..."
 	@rm -rf $(KADEPLOYHOMEDIR)/
+	@echo "Deleting Kadeploy confdir ..."
 	@rm -rf $(KADEPLOYCONFDIR)/
 
 
-kadeploy_uninstall: root_check remove_installation
+kadeploy_uninstall : root_check files_uninstall
 
 
 #############################
