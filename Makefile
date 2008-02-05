@@ -81,8 +81,8 @@ root_check:
 
 #Add the "proxy" user/group to /etc/passwd if needed.
 user_and_group_deploy_check: 
-	# grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
-	# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy
+	@# grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
+	@# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy
 	@echo "User and group check ..."
 	@( grep -q "^deploy:" /etc/passwd && grep -q "^deploy:" /etc/group ) || \
 	  adduser --system --group --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER)

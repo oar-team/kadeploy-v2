@@ -29,7 +29,7 @@ my $clean;
 my $testconf;
 my $help;
 my $add_deploy_db_user;
-my $remove_deploy_db_user;
+my $del_deploy_db_user;
 my $create_db_deploy;
 my $create_db_deploy_217;
 my $db_migration_216_to_217;
@@ -150,7 +150,7 @@ sub usage()
     print "--create_table_deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
 
     print "--add_deploy_db_user \t\t\tAdd the \"deploy\" user for the Kadeploy DB\n";
-    print "--del_deploy_db_user \t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
+    print "--del_deploy_db_user \t\t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
 
     print "--patch21 (deprecated)\n";
     print "--patch211 (deprecated)\n\n";
