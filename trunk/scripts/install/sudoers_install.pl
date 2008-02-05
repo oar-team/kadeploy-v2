@@ -9,8 +9,8 @@ my $sudoerstmp = "/etc/sudoers.tmp";
 my $kadeploy_tag="# DO NOT REMOVE, needed by Kadeploy packages"; 
 my $struct=pack("ssll", F_WRLCK, SEEK_CUR, 0, 0);
 
-my $bindir="@ARGV/bin/";
-my $sbindir="@ARGV/sbin/";
+my $bindir="@ARGV/bin";
+my $sbindir="@ARGV/sbin";
 
 sysopen (SUDOERS, $sudoers, O_RDWR|O_CREAT, 0440) or die "sysopen $sudoers: $!"; 
 fcntl(SUDOERS, F_SETLK, $struct) or die "fcntl: $!";
