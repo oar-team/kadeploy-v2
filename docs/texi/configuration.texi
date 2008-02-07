@@ -74,7 +74,7 @@ In @file{dhcpd.conf}, you must have a description of all mac adress and correspo
 dhcp server won't allocate adresses dynamically.@*
 Here is a sample @file{dhcpd.conf} file, @option{next-server} option is the IP address of the deployment server:
 @example
-@verbatiminclude ../../tools/cookbook/conf/dhcpd.conf 
+@verbatiminclude ../../conf/dhcpd.conf 
 @end example
 
 @strong{Caution:} the dhcp server configures the network on the nodes, @emph{DO NOT FORGET} that the nodes need to be 
@@ -170,13 +170,13 @@ It needs the description of the hosts, disks and partitions in a text file. The 
 and addresses of nodes, disk type and size, partition number and size etc.) in the database.@*
 Here is a sample @file{clusternodes.conf} file (available in @file{tools/cookbook/conf/clusternodes.conf}):
 @example
-@verbatiminclude ../../tools/cookbook/conf/clusternodes.conf
+@verbatiminclude ../../conf/clusternodes.conf
 @end example
 @*
 and @file{clusterpartition.conf} file (available in @file{tools/cookbook/conf/clusterpartition.conf}):
 
 @example
-@verbatiminclude ../../tools/cookbook/conf/clusterpartition.conf
+@verbatiminclude ../../conf/clusterpartition.conf
 @end example
 @*
 If you want to check if the db is correct, you can do: @samp{kanodes -listnode} and @samp{kanodes -listpartition}.

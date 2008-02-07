@@ -59,7 +59,7 @@ In the given template, the first executed script, handles every step during the 
 @end enumerate
 
 @example
-@verbatiminclude ../../tools/preinstallation/init.ash
+@verbatiminclude ../../addons/preinstallation/init.ash
 @end example
 
 
@@ -89,7 +89,7 @@ it later.
 @end itemize
 
 @example
-@verbatiminclude ../../tools/preinstallation/partition.ash
+@verbatiminclude ../../addons/preinstallation/partition.ash
 @end example
 
 
@@ -133,7 +133,7 @@ that your system boots as fast as possible, and do not get stuck in a phase aski
 @end enumerate
 
 @example
-@verbatiminclude ../../tools/postinstallation/traitement.ash
+@verbatiminclude ../../addons/postinstallation/traitement.ash
 @end example
 
 @subsection adapting @file{fstab}
@@ -151,7 +151,7 @@ your system will need at boot time (maybe @file{/proc}, or a @dfn{tmpfs}?), it d
 environment@footnote{that is why the postinstall is related to the environment}.
 
 @example
-@verbatiminclude ../../tools/postinstallation/fstab
+@verbatiminclude ../../addons/postinstallation/fstab
 @end example
 
 @subsection managing your cluster @command{ssh} configuration

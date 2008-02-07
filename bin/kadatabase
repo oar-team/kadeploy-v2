@@ -17,7 +17,7 @@ use strict;
 sub usage();
 sub mygetlogin();
 sub mygetpassword();
-sub mygetdbname();
+sub mygetdbname($);
 sub mysqlload($);
 
 ###################
@@ -33,6 +33,9 @@ my $del_deploy_db_user;
 my $create_db_deploy;
 my $create_db_deploy_217;
 my $db_migration_216_to_217;
+my $dup_deployment_rights;
+my $dup_production_db;
+my $purge_test_db;
 my $create_table_deploy;
 my $drop_db_deploy;
 my $clean_db_deploy;
@@ -41,6 +44,9 @@ my $patch211;
 my $login;
 my $password;
 my $ok=0;
+my $deploy_db_test_name;
+my $production_db_label=" (the production DB)";
+my $test_db_label=" (the development DB)";
 
 
 ##################
@@ -75,16 +81,19 @@ my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
 # ----------------
 GetOptions('add_deploy_db_user' => \$add_deploy_db_user,
     'del_deploy_db_user'        => \$del_deploy_db_user,
-    'create_db_deploy_217'  => \$create_db_deploy_217,
-    'db_migration_216_to_217' => \$db_migration_216_to_217,
-    'create_db_deploy'      => \$create_db_deploy,
-    'create_table_deploy'   => \$create_table_deploy,
-    'drop_db_deploy'        => \$drop_db_deploy,
-    'clean_db_deploy'       => \$clean_db_deploy,
-    'patch21'               => \$patch21,
-    'patch211'              => \$patch211,
-    'h!'                    => \$help,
-    'help!'                 => \$help,
+    'create_db_deploy_217'      => \$create_db_deploy_217,
+    'db_migration_216_to_217'   => \$db_migration_216_to_217,
+    'dup_deployment_rights'     => \$dup_deployment_rights,
+    'dup_production_db'         => \$dup_production_db,
+    'purge_test_db'             => \$purge_test_db,
+    'create_db_deploy'          => \$create_db_deploy,
+    'create_table_deploy'       => \$create_table_deploy,
+    'drop_db_deploy'            => \$drop_db_deploy,
+    'clean_db_deploy'           => \$clean_db_deploy,
+    'patch21'                   => \$patch21,
+    'patch211'                  => \$patch211,
+    'h!'                        => \$help,
+    'help!'                     => \$help,
 );
 
 
@@ -101,6 +110,9 @@ if ($add_deploy_db_user      ||
     $drop_db_deploy          ||
     $create_db_deploy        ||
     $create_db_deploy_217    ||
+    $dup_deployment_rights   ||
+    $dup_production_db       ||
+    $purge_test_db           ||
     $db_migration_216_to_217 ||
     $create_table_deploy     ||
     $patch21                 ||
@@ -112,23 +124,38 @@ if ($add_deploy_db_user      ||
     $password = mygetpassword();
 }
 
+if ($dup_deployment_rights || $dup_production_db)
+{
+    $deploy_db_test_name = mygetdbname($test_db_label);
+ 
+    $deploy_db_name = mygetdbname($production_db_label);
+}
+
+if ($purge_test_db)
+{
+    $deploy_db_test_name = mygetdbname($test_db_label);
+}
+
 if ($create_db_deploy_217 || $drop_db_deploy || $db_migration_216_to_217)
 {
-    $deploy_db_name = mygetdbname();
+    $deploy_db_name = mygetdbname("");
 }
 
 
-if ($create_db_deploy_217)   { mysqlload("create_db_deploy_217"); $ok=1;}
+if ($create_db_deploy_217)    { mysqlload("create_db_deploy_217"); $ok=1;}
 if ($db_migration_216_to_217) { mysqlload("db_migration_216_to_217"); $ok=1;}
-if ($drop_db_deploy)         { mysqlload("drop_db_deploy"); $ok=1; }
+if ($dup_deployment_rights)   { mysqlload("dup_deployment_rights"); $ok=1;}
+if ($dup_production_db)       { mysqlload("dup_production_db"); $ok=1;}
+if ($purge_test_db)           { mysqlload("purge_test_db"); $ok=1;}
+if ($drop_db_deploy)          { mysqlload("drop_db_deploy"); $ok=1; }
 
-if ($add_deploy_db_user)     { mysqlload("add_deploy_db_user"); $ok=1; }
-if ($del_deploy_db_user)     { mysqlload("del_deploy_db_user"); $ok=1; }
+if ($add_deploy_db_user)      { mysqlload("add_deploy_db_user"); $ok=1; }
+if ($del_deploy_db_user)      { mysqlload("del_deploy_db_user"); $ok=1; }
 
-if ($create_db_deploy)       { mysqlload("create_db_deploy"); $ok=1;}
-if ($create_table_deploy)    { mysqlload("create_table_deploy"); $ok=1;}
-if ($patch21)                { mysqlload("patch-kadeploy-2.1"); $ok=1;}
-if ($patch211)               { mysqlload("patch-kadeploy-2.1.1"); $ok=1;}
+if ($create_db_deploy)        { mysqlload("create_db_deploy"); $ok=1;}
+if ($create_table_deploy)     { mysqlload("create_table_deploy"); $ok=1;}
+if ($patch21)                 { mysqlload("patch-kadeploy-2.1"); $ok=1;}
+if ($patch211)                { mysqlload("patch-kadeploy-2.1.1"); $ok=1;}
 
 if ($ok==0 || $help) { usage(); }
 
@@ -144,20 +171,25 @@ sub usage()
 
     print "--create_db_deploy_217 \t\t\tCreate Kadeploy 2.1.7 DB\n";
     print "--db_migration_216_to_217 \t\tDB migration from 2.1.6 to 2.1.7\n";
+    print "--purge_test_db \t\t\tPurge Kadeploy test DB : deletes all records from tables\n";
     print "--drop_db_deploy \t\t\tDrop Kadeploy DB\n";
     print "--clean_db_deploy \t\t\tClean tables \"deployed\" and \"deployment\"\n\n";
-    print "--create_db_deploy (deprecated) \tCreate Kadeploy (<= 2.1.6) DB\n";
-    print "--create_table_deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
 
     print "--add_deploy_db_user \t\t\tAdd the \"deploy\" user for the Kadeploy DB\n";
     print "--del_deploy_db_user \t\t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
 
+    print "--dup_deployment_rights \t\tDuplicate into Kadeploy test DB current deployment rights\n";
+    print "--dup_production_db \t\t\tDuplicate production DB into the development DB\n\n";
+    
+    print "--create_db_deploy (deprecated) \tCreate Kadeploy (<= 2.1.6) DB\n";
+    print "--create_table_deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
     print "--patch21 (deprecated)\n";
     print "--patch211 (deprecated)\n\n";
 
     print "--clean \t\t\t\tCorrect error in Kadeploy DB\n";
     print "-h|--help \t\t\t\tPrint this message\n\n";
 }
+
 
 sub mygetlogin()
 {
@@ -167,6 +199,7 @@ sub mygetlogin()
     chomp($login);
     return $login;
 }
+
 
 sub mygetpassword()
 {
@@ -180,20 +213,23 @@ sub mygetpassword()
     return $password;
 }
 
-sub mygetdbname()
+
+sub mygetdbname($)
 {
+   my $db_label = shift;
    my $dbname;
-   print("- Kadeploy DB name : ");
+   print("- Kadeploy DB name" . $db_label . " : ");
    $dbname=<STDIN>;
    chomp($dbname);
    return $dbname;
 }
 
+
 sub mysqlload($)
 {
     my $func=shift;
     my $ret;
-    $ret=system("cat $mysqlschemapath/$func.sql | sed -e 's/SUBSTmydeploypasswordSUBST/$deploy_db_password/g' -e 's/SUBSTmydeployloginSUBST/$deploy_db_login/g' -e 's/SUBSTmydeploydbSUBST/$deploy_db_name/g' | mysql -u $login --password=$password --host=$host ");
+    $ret=system("cat $mysqlschemapath/$func.sql | sed -e 's/SUBSTmydeploypasswordSUBST/$deploy_db_password/g' -e 's/SUBSTmydeployloginSUBST/$deploy_db_login/g' -e 's/SUBSTmydeploydbSUBST/$deploy_db_name/g' -e 's/SUBSTmydeploydbtestSUBST/$deploy_db_test_name/g' | mysql -u $login --password=$password --host=$host ");
     if ($ret==0)
     {
 	print("\n*** The following operation has been applied : $func ***\n");
