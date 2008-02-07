@@ -152,8 +152,7 @@ sub manage_grub_pxe($$){
 		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
 	    }
 
-	    # $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
-	    $pxe_kernel_parameters = " root=" . $dev . $part . " " . $kernel_param;
+	    $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
 	    
 	    # Strip leading directories from kernel and initrd filenames for PXE setup configuration
 	    my $current_kernel = $kernel_path;

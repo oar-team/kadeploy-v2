@@ -132,7 +132,7 @@ then
 	fi
 
 	rm -f kadeploy_tmp_cluster_*
-	#lauch a script after the deployment
+	#launch a script after the deployment
 	[ $script ] && $script
     else
 	${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
