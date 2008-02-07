@@ -52,10 +52,10 @@ DEPLOYGROUP=deploy
 
 ARCH=x86_64
 
-.PHONY : all usage root_check user_and_group_deploy_check \
+.PHONY: all usage root_check user_and_group_deploy_check \
 links_install directories files_install kadeploy_install sudo_install man_install \
 kadeploy_uninstall files_uninstall \
-archive scripts_arc addons_arc tools_arc manpages_arc manpages documentation_arc documentation
+archive scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc
 	
 
 
@@ -146,7 +146,7 @@ files_install:
 	
 #Kadeploy installation in main directory
 kadeploy_install: root_check user_and_group_deploy_check directories files_install links_install sudo_install man_install
-
+	@chown -R deploy: $(KADEPLOYCONFDIR) 		  
 
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
@@ -243,7 +243,7 @@ documentation_arc: documentation
 	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
 	
 documentation:
-	@make -C $(DOCUMENTATION_SRC) 2>&1 >/dev/null
+	@( cd $(DOCUMENTATION_SRC) && $(MAKE) 2>&1 >/dev/null )
 
 
 ################
