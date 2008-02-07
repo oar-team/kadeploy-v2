@@ -703,7 +703,7 @@ sub usages()
 \t[-r   | --reformat-tmp]                          Re-format the /tmp partition
 \t[-fkr | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use-prod-env]                          Use the production environment to deploy
-\t[-s   | --script]                                Launch a script after a deployment
+\t[-s   | --script      script]                    Launch a script after a deployment
 ";
 
 }
