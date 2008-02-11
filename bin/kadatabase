@@ -44,7 +44,6 @@ my $patch211;
 my $login;
 my $password;
 my $ok=0;
-my $deploy_db_test_name;
 my $production_db_label=" (the production DB)";
 my $test_db_label=" (the development DB)";
 
@@ -71,6 +70,7 @@ if ( !$configuration->check_conf())
 
 my $host=$configuration->get_conf("deploy_db_host");
 my $deploy_db_name=$configuration->get_conf("deploy_db_name");
+my $deploy_db_test_name=$deploy_db_name . "test";
 my $deploy_db_login=$configuration->get_conf("deploy_db_login");
 my $deploy_db_password=$configuration->get_conf("deploy_db_psswd");
 my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
@@ -229,7 +229,7 @@ sub mysqlload($)
 {
     my $func=shift;
     my $ret;
-    $ret=system("cat $mysqlschemapath/$func.sql | sed -e 's/SUBSTmydeploypasswordSUBST/$deploy_db_password/g' -e 's/SUBSTmydeployloginSUBST/$deploy_db_login/g' -e 's/SUBSTmydeploydbSUBST/$deploy_db_name/g' -e 's/SUBSTmydeploydbtestSUBST/$deploy_db_test_name/g' | mysql -u $login --password=$password --host=$host ");
+    $ret=system("cat $mysqlschemapath/$func.sql | sed -e 's/SUBSTmydeploypasswordSUBST/$deploy_db_password/g' -e 's/SUBSTmydeployloginSUBST/$deploy_db_login/g' -e 's/SUBSTmydeploydbSUBST/$deploy_db_name/g' -e 's/SUBSTmydeploydbtestSUBST/$deploy_db_test_name/g' | mysql --user=$login --password=$password --host=$host ");
     if ($ret==0)
     {
 	print("\n*** The following operation has been applied : $func ***\n");
