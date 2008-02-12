@@ -4,22 +4,33 @@
 #
 
 SHELL=/bin/bash
+
 # Kadeploy versioning
 MAJOR = 2
 MINOR = 1
 SUBMINOR = 7
-KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
+
+DISTRIB = debian4
 
 # Kadeploy directories installation layout
 # System directories
 PREFIX=/usr/local
+
+KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
 
 MANDIR=$(PREFIX)/man
 INFODIR=$(PREFIX)/info
 BINDIR=$(PREFIX)/bin
 SBINDIR=$(PREFIX)/sbin
 
+ifeq ($(DISTRIB), debian4)
 PERLDIR=/usr/share/perl/5.8/
+else ifeq ($(DISTRIB), fedora4)
+PERLDIR=/usr/lib/perl5/5.8.6/
+else
+PERLDIR=/usr/share/perl/5.8/
+$(info $(DISTRIB) : using default Perl path : $(PERLDIR) )
+endif
 
 # Kadeploy directories
 KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
@@ -95,6 +106,7 @@ links_install:
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kadeploy
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kareboot
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/karemote
+	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kadatabase
 # ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR/kaaddkeys
 
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kaadduser
@@ -117,7 +129,8 @@ files_install:
 	@install -m 600 conf/deploy_cmd.conf $(KADEPLOYCONFDIR)/
 	@install -m 600 conf/clusternodes.conf $(KADEPLOYCONFDIR)/
 	@install -m 600 conf/clusterpartition.conf $(KADEPLOYCONFDIR)/
-	@chown -R $(DEPLOYUSER) $(KADEPLOYCONFDIR)
+	@chown -R $(DEPLOYUSER):root $(KADEPLOYCONFDIR)
+	@chmod -R 700 $(KADEPLOYCONFDIR)
 
 	@install -m 755 bin/kaconsole $(KABINDIR)/
 	@install -m 755 bin/kaenvironments  $(KABINDIR)/
@@ -125,9 +138,9 @@ files_install:
 	@install -m 755 bin/kadeploy $(KABINDIR)/
 	@install -m 755 bin/kareboot $(KABINDIR)/
 	@install -m 755 bin/karemote $(KABINDIR)/
-	@install -m 755 bin/kaaddkeys $(BINDIR)/
-	@install -m 755 bin/kadatabase $(BINDIR)/
+	@install -m 755 bin/kadatabase $(KABINDIR)/
 	@install -m 755 bin/kasudowrapper.sh $(KABINDIR)/	
+	@install -m 755 bin/kaaddkeys $(BINDIR)/
 
 	@install -m 755 sbin/kaadduser $(KASBINDIR)/
 	@install -m 755 sbin/kadeluser $(KASBINDIR)/

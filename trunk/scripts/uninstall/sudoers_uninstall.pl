@@ -4,7 +4,7 @@ use Fcntl;
 
 my $sudoers = "/etc/sudoers";
 my $sudoerstmp = "/etc/sudoers.tmp"; 
-my $kadeploy_tag="# DO NOT REMOVE, needed by Kadeploy packages"; 
+my $kadeploy_tag="# KADEPLOY_TAG"; 
 my $struct=pack("ssll", F_WRLCK, SEEK_CUR, 0, 0);
 
 my $bindir="@ARGV/bin/";
