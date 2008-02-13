@@ -288,7 +288,7 @@ sub generate_grub_files_chainload($$$$){
     #print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
 
     ## "hard-coded" options
-    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/lib/grub/";    
+    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/grub/";    
     my $floppy_blks = 720;
     my $default = 0;
     my $fallback = 1;

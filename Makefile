@@ -116,6 +116,7 @@ links_install:
 directories:
 	@echo "Making directories ..."
 	@mkdir -p $(KADEPLOYHOMEDIR)/db
+	@mkdir -p $(KADEPLOYHOMEDIR)/grub
 	@mkdir -p $(KABINDIR)	
 	@mkdir -p $(KASBINDIR)
 	@mkdir -p $(KAPERLDIR)/libkadeploy2
@@ -156,6 +157,9 @@ files_install:
 	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
 	@install -m 755 scripts/install/kadeploy_conflib.pm $(KADBDIR)
 	@install -m 755 scripts/sql/*.sql $(KADBDIR)
+	
+# GRUB files
+	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 	
 #Kadeploy installation in main directory
 kadeploy_install: root_check user_and_group_deploy_check directories files_install links_install sudo_install man_install
