@@ -75,8 +75,8 @@ sub manage_grub_pxe($$){
     $env_archive = substr($env_archive,6);
 
     my $custom_kernel_parameters = $configuration->get_conf("custom_kernel_parameters");
-    #my $nogrub = 1;
-    my $nogrub = $configuration->get_conf("use_nogrub");
+    my $nogrub = 1;
+    $nogrub = $configuration->get_conf("use_nogrub");
     my $clustername = $configuration->get_clustername();
     my $filename_append = "-" . $clustername;
     if ($clustername eq "") { # smooth transition from mono to multi cluster names
@@ -475,7 +475,7 @@ sub setup_pxe($$$){
 	{
 	    my $hex_ip = libkadeploy2::hexlib::gethostipx($ip);
 	    my $destination=$pxe_rep.$hex_ip;
-	    if ($nogrub == 1)
+	    if ($nogrub)
             {
                 $kernel = $tftp_relative_path . "/" . $hex_ip . "/" . $current_kernel;
                 $append = "initrd=" . $tftp_relative_path . "/" . $hex_ip . "/" . $current_initrd;
