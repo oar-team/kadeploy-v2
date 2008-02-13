@@ -185,10 +185,10 @@ sub manage_grub_pxe($$){
 		
 		if ( $gen_grub_entry ) { # generate with every unknown device
 		    libkadeploy2::bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path,$env_fdisktype);
-		  copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
-		  $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
-		  copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
-		  }
+		    copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
+		    $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
+		    copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
+		}
 	    }
 
 	    # setups pxe
@@ -459,6 +459,10 @@ sub setup_pxe($$$){
     
     my $template_default_content="PROMPT $PROMPT\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
     
+    my $kernel;
+    my $append;
+    my $nogrub = $configuration->get_conf("use_nogrub");
+
     # generate files in pxe directories and overwrite old ones
     for (my $i=0; $i<scalar(@kernels); $i++) 
     {
@@ -471,10 +475,16 @@ sub setup_pxe($$$){
 	{
 	    my $hex_ip = libkadeploy2::hexlib::gethostipx($ip);
 	    my $destination=$pxe_rep.$hex_ip;
-
-	    my $kernel = $tftp_relative_path . "/" . $hex_ip . "/" . $current_kernel;
-	    my $append = "initrd=" . $tftp_relative_path . "/" . $hex_ip . "/" . $current_initrd;
-	    
+	    if ($nogrub == 1)
+            {
+                $kernel = $tftp_relative_path . "/" . $hex_ip . "/" . $current_kernel;
+                $append = "initrd=" . $tftp_relative_path . "/" . $hex_ip . "/" . $current_initrd;
+            }
+            else
+            {
+                $kernel = $tftp_relative_path . "/" . $current_kernel;
+		$append = "initrd=" . $tftp_relative_path . "/" . $current_initrd;
+            }
 	    open(DEST, "> $destination") or die "Couldn't open $destination for writing: $!\n";
 	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
 	    close(DEST);
