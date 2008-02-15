@@ -79,21 +79,21 @@ my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
 # ----------------
 # Options handling
 # ----------------
-GetOptions('add_deploy_db_user' => \$add_deploy_db_user,
-    'del_deploy_db_user'        => \$del_deploy_db_user,
-    'create_db_deploy_217'      => \$create_db_deploy_217,
-    'db_migration_216_to_217'   => \$db_migration_216_to_217,
-    'dup_deployment_rights'     => \$dup_deployment_rights,
-    'dup_production_db'         => \$dup_production_db,
-    'purge_test_db'             => \$purge_test_db,
-    'create_db_deploy'          => \$create_db_deploy,
-    'create_table_deploy'       => \$create_table_deploy,
-    'drop_db_deploy'            => \$drop_db_deploy,
-    'clean_db_deploy'           => \$clean_db_deploy,
+GetOptions('add-deploy-db-user' => \$add_deploy_db_user,
+    'del-deploy-db-user'        => \$del_deploy_db_user,
+    'create-db-deploy-217'      => \$create_db_deploy_217,
+    'db-migration-216-to-217'   => \$db_migration_216_to_217,
+    'dup-deployment-rights'     => \$dup_deployment_rights,
+    'dup-production-db'         => \$dup_production_db,
+    'purge-test-db'             => \$purge_test_db,
+    'create-db-deploy'          => \$create_db_deploy,
+    'create-table-deploy'       => \$create_table_deploy,
+    'drop-db-deploy'            => \$drop_db_deploy,
+    'clean-db-deploy'           => \$clean_db_deploy,
     'patch21'                   => \$patch21,
     'patch211'                  => \$patch211,
-    'h!'                        => \$help,
-    'help!'                     => \$help,
+    'h'                        => \$help,
+    'help'                     => \$help,
 );
 
 
@@ -169,20 +169,20 @@ sub usage()
 {
     print "\nUsage : kadatabase <OPTION> \n\t<OPTION> is one of the following :\n\n";
 
-    print "--create_db_deploy_217 \t\t\tCreate Kadeploy 2.1.7 DB\n";
-    print "--db_migration_216_to_217 \t\tDB migration from 2.1.6 to 2.1.7\n";
-    print "--purge_test_db \t\t\tPurge Kadeploy test DB : deletes all records from tables\n";
-    print "--drop_db_deploy \t\t\tDrop Kadeploy DB\n";
-    print "--clean_db_deploy \t\t\tClean tables \"deployed\" and \"deployment\"\n\n";
+    print "--create-db-deploy-217 \t\t\tCreate Kadeploy 2.1.7 DB\n";
+    print "--db-migration-216-to-217 \t\tDB migration from 2.1.6 to 2.1.7\n";
+    print "--purge-test-db \t\t\tPurge Kadeploy test DB : deletes all records from tables\n";
+    print "--drop-db-deploy \t\t\tDrop Kadeploy DB\n";
+    print "--clean-db-deploy \t\t\tClean tables \"deployed\" and \"deployment\"\n\n";
 
-    print "--add_deploy_db_user \t\t\tAdd the \"deploy\" user for the Kadeploy DB\n";
-    print "--del_deploy_db_user \t\t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
+    print "--add-deploy-db-user \t\t\tAdd the \"deploy\" user for the Kadeploy DB\n";
+    print "--del-deploy-db-user \t\t\tRemove the \"deploy\" user from the Kadeploy DB\n\n";
 
-    print "--dup_deployment_rights \t\tDuplicate into Kadeploy test DB current deployment rights\n";
-    print "--dup_production_db \t\t\tDuplicate production DB into the development DB\n\n";
+    print "--dup-deployment-rights \t\tDuplicate into Kadeploy test DB current deployment rights\n";
+    print "--dup-production-db \t\t\tDuplicate production DB into the development DB\n\n";
     
-    print "--create_db_deploy (deprecated) \tCreate Kadeploy (<= 2.1.6) DB\n";
-    print "--create_table_deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
+    print "--create-db-deploy (deprecated) \tCreate Kadeploy (<= 2.1.6) DB\n";
+    print "--create-table-deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
     print "--patch21 (deprecated)\n";
     print "--patch211 (deprecated)\n\n";
 
