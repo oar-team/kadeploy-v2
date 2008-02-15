@@ -30,7 +30,8 @@ my $verbose = 0;
 ##
 my $configuration;
 
-my $launcherWindowSize = 40; # default window_size
+# my $launcherWindowSize = 40; # default window_size
+my $launcherWindowSize = 200; # default window_size
 my $nmapCmd;
 my $useNmapByDefault;
 my $nmapArgs; # can add parameters to customize ping request to the site
@@ -493,7 +494,7 @@ sub runThose {
     my $report_failed = shift;
 
 # for tests reduce window_size
-#$window_size=4;
+# $window_size=4;
 
     my %commandsToRun = %{$ref_to_commands};
 
@@ -803,7 +804,8 @@ sub runLocalRemote($$$$) {
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-    return $self->runThose(\%executedCommands, 50, $launcherWindowSize, "failed on node", $report_failed);
+    # return $self->runThose(\%executedCommands, 50, $launcherWindowSize, "failed on node", $report_failed);
+    return $self->runThose(\%executedCommands, 600, $launcherWindowSize, "failed on node", $report_failed);
 
 }
 
@@ -824,7 +826,8 @@ sub runDetachedCommand {
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
     }
 
-    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Detached command failed on node", 0);
+    # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Detached command failed on node", 0);
+    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "Detached command failed on node", 0);
 }
 
 
@@ -848,7 +851,8 @@ sub runKexecReboot {
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
     }
 
-    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Kexec failed on node", 0);
+    # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Kexec failed on node", 0);
+    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "Kexec failed on node", 0);
 }
 
 
@@ -868,7 +872,8 @@ sub runSimpleReboot {
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
 
-    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
+    # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
+    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "reboot failed on node", 0);
 }
 
 
@@ -889,7 +894,8 @@ sub rebootThoseNodes
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand; 
     }
 
-    return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
+    # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
+    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "reboot failed on node", 0);
 }
 
 
@@ -940,7 +946,8 @@ sub rebootMyNodes {
 		}
             }
         }
-        $self->runThose(\%executedCommands, 6, $launcherWindowSize, "$method failed on node", 0);
+        # $self->runThose(\%executedCommands, 6, $launcherWindowSize, "$method failed on node", 0);
+        $self->runThose(\%executedCommands, 100, $launcherWindowSize, "$method failed on node", 0);
     } else {
         # deployreboot
         return $self->rebootThoseNodes();
@@ -978,7 +985,8 @@ sub rebootMyNodes {
 	%executedCommands = %nextExecutedCommands;
         if ( $nbmethod_nodes != 0 ) {
 	    libkadeploy2::debug::debugl(4, "Launching parrallel commands \n");
-	    $self->runThose(\%nextExecutedCommands, 6, $launcherWindowSize, "hardboot failed on node", 0);
+	    # $self->runThose(\%nextExecutedCommands, 6, $launcherWindowSize, "hardboot failed on node", 0);
+	    $self->runThose(\%nextExecutedCommands, 100, $launcherWindowSize, "hardboot failed on node", 0);
 	} else {
             $use_next_method = 0;
 	}
