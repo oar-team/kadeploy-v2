@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "/usr/share/xml/docbook/schema/dtd/4.4/docbookx.dtd">
+
+<article  id="kadeploy_installation_howto" lang="en">
+	<title>Kadepoy installation HOW-TO</title>
+	
+	<articleinfo>
+		<author>
+			<firstname>Benjamin</firstname>
+			<surname>DEXHEIMER</surname>
+  		</author>
+		<date>18/02/2008</date>
+		<releaseinfo>0.1</releaseinfo>
+		<abstract>
+			<para>
+This HOW-TO deals about the installation methods of Kadeploy. Firstly we would explain how-to perform a parallel installation aside from the production instance of a previously installed Kadeploy, and secondly how to perform a production installation of Kadeploy 2.1.7.
+			</para>
+		</abstract>
+  	</articleinfo>
+	
+  	<sect1 id="s1_testinstall">
+  		<title>How-to perform a parallel installation</title>
+  		<para>
+This part explains how-to have at the same time a testing-purpose instance of Kadeploy aside from the production instance.
+		</para>
+		<sect2 id="s12_testinstall">
+			<title>Pre-requisites</title>
+			<para>
+The Kadeploy commands suite cannot handle a customized configuration path, which is set by default at <filename>/etc/kadeploy</filename>. It implies to use a second server so as to have at the same time a production and a testing-purpose instance of Kadeploy. 
+			</para>
+			<para>
+From now, the frontend machine hosting the production-class Kadeploy will be designated by <emphasis>frontend-prod</emphasis> and the frontend hosting the testing version will be designated by <emphasis>frontend-dev</emphasis>.
+			</para>
+			<para>
+Kadeploy needs several ressources :
+			</para>
+<itemizedlist>
+	<listitem><para>a DHCP server</para></listitem>
+	<listitem><para>a PXELinux environment for booting nodes</para></listitem>
+	<listitem><para>a TFTP server, and therefore a writeable access to the root TFTP directory served by the tftp daemon (e.g. <filename>/var/lib/tftpboot</filename> and its sub-directories)</para></listitem>
+	<listitem><para>a MySQL database</para></listitem>
+	<listitem><para>a file-system level read access to Grid'5000 deployable system images.</para></listitem>
+</itemizedlist>
+
+
+			<sect3 id="s121_testinstall">
+				<title>DHCP</title>
+				<para>
+Because of nature of DHCP, it's rather difficult to have side by side 2 servers handling the same set of nodes but with different configuration. That's why nodes used during Kadeploy tests will be booted with the same DHCP as for production use.
+				</para>				
+			</sect3>
+			<sect3 id="s122_testinstall">
+				<title>TFTP and PXELinux</title>
+				<para>
+Because of <link linkend="s121_testinstall">previous DHCP configuration</link>, the testing instance of Kadeploy will use the same TFTP server and therefore, the testing and production instances need to write PXE files at the same place. 
+				</para>
+				<para>
+The steps to follow are :
+				</para>
+				
+				<orderedlist>
+					<listitem><para>Install a NFS server on frontend hosting TFTP service.</para></listitem>
+					<listitem><para>Make export root TFTP directory (cf <filename>/etc/exports</filename>) from this frontend.</para></listitem>
+					<listitem><para>On frontend-dev : import the previously exported root TFTP directory.</para></listitem>
+				</orderedlist>
+				<para>
+
+The PXE environment is usually set by the cluster sysadmin in accordance with the TFTP installation layout. PXE related files and directories are likely to be located under TFTP root directory (cf <filename>pxelinux.0</filename> bootloader and <filename>pxelinux.cfg</filename> directory containing the boot configuration for the nodes). If TFTP root directory is NFS-mounted by frontend-dev, it will have access to PXE ressources, too.
+				</para>
+			</sect3>
+			<sect3 id="s123_testinstall">
+				<title>MySQL database</title>
+				<para>
+<application>Kadeploy</application> needs an access as root and deploy user to a MySQL instance. Make sure your MySQL running server is reachable from frontend-dev using the MySQL root user. 
+For instance, the following command should be working from frontend-dev : 
+<programlisting>
+	mysql -u root -p -h mysql.<![CDATA[<site>]]>.grid5000.fr
+</programlisting>
+				</para>
+			</sect3>
+			<sect3 id="s124_testinstall">
+				<title>Grid'5000 images</title>
+				<para>
+Kadeploy needs a direct file-system access to deployable system images. The <filename>/grid5000</filename> directory have to be NFS mounted by fronted-dev.
+				</para>
+			</sect3>
+
+		</sect2>
+		<sect2>
+			<title>Kadeploy 2.1.7 installation</title>
+			<para>
+The frontend considered for this installation is <emphasis>frontend-dev</emphasis>.
+			</para>
+			<para>
+Please follow the instructions below : 
+			</para>
+			<procedure>
+				<step>
+					<para>
+Retrieve and unpack the tarball archive of Kadeploy 2.1.7 (<filename>kadeploy-2.1.7.tar.gz</filename>) into a safe location (e.g. your home directory).
+<programlisting>
+cd <![CDATA[/home/<site>/<login>]]> <![CDATA[&&]]> tar -xvzf kadeploy-2.1.7.tar.gz
+</programlisting>
+					</para>
+				</step>
+				<step>
+					<para>
+Edit the heading variables of <filename>Makefile</filename> located at the top of Kadeploy archive.
+					</para>
+					<substeps>
+						<step>
+							<para>Especially, the following variables :</para>
+							<itemizedlist>
+								<listitem><para>
+<command>DISTRIB</command> : your distribution name
+								</para></listitem>
+								<listitem><para>
+<command>PREFIX</command> : the PREFIX for installation pathnames.
+								</para></listitem>
+							</itemizedlist>
+						</step>
+					</substeps>
+				</step>
+			</procedure>
+
+		</sect2>
+	</sect1>
+	<sect1>
+		<title>How-to perform a migration from 2.1.6 to 2.1.7</title>
+	</sect1>
+</article>
