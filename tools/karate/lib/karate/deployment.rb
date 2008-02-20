@@ -24,7 +24,11 @@ module Karate
       @id_deploy = id_deploy
       @deploy_finished = false
 
-      @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment}"
+      if #{@config.fast_kernel_reboot}
+          @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment} -frk"
+      else
+          @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment}"
+      end
       if not @config.ssh_hostname.nil?
         # Call  kadeploy  on  a  host  with an  old  version  of  ruby
         # installed, therefore  launch the script on  another host and

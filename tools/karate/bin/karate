@@ -36,7 +36,9 @@ Supported options:
   --ssh/-s [hostname]
   --nb-tests/-n [number]
   --environment/-e [environment]
+  --device/-d [device]
   --partition/-p [partition]
+  --fast-kernel-reboot/-f
 END
   exit(exit_status)
 end
@@ -49,6 +51,7 @@ def parse_cmd_arguments
                         ["--debug",       "-l", GetoptLong::NO_ARGUMENT],
                         ["--version",     "-v", GetoptLong::NO_ARGUMENT],
                         ["--yaml",        "-y", GetoptLong::NO_ARGUMENT],
+                        ["--fast-kernel-reboot", "-f", GetoptLong::NO_ARGUMENT],
                         ["--output-dir",  "-o", GetoptLong::REQUIRED_ARGUMENT],
                         ["--machine",     "-m", GetoptLong::REQUIRED_ARGUMENT],
                         ["--ssh",         "-s", GetoptLong::REQUIRED_ARGUMENT],
@@ -56,6 +59,7 @@ def parse_cmd_arguments
                         ["--environment", "-e", GetoptLong::REQUIRED_ARGUMENT],
                         ["--device",      "-d", GetoptLong::REQUIRED_ARGUMENT],
                         ["--partition",   "-p", GetoptLong::REQUIRED_ARGUMENT])
+
 
   nodes = []
 
@@ -79,6 +83,8 @@ def parse_cmd_arguments
       $config.partition = arg
     when '--nb-tests'
       $config.nb_tests = arg.to_i
+    when '--fast-kernel-reboot'
+      $config.fast_kernel_reboot = true
     when '--help'
       show_help_msg
     when '--version'
