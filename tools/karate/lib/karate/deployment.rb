@@ -25,7 +25,7 @@ module Karate
       @deploy_finished = false
 
       if #{@config.fast_kernel_reboot}
-          @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment} -frk"
+          @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment} -fkr"
       else
           @kadeploy_cmd = "/usr/local/bin/kadeploy -d #{@config.device} -p #{@config.partition} -m #{@nodes.join(' -m ')} -dl 0 -e #{@config.environment}"
       end
