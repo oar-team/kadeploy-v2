@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "/usr/share/xml/docbook/schema/dtd/4.4/docbookx.dtd">
 
-<article  id="kadeploy_installation_howto" lang="en">
-	<title>Kadepoy installation HOW-TO</title>
+<article  id="kadeploy_parallel_installation_HOWTO" lang="en">
+	<title>Kadepoy parallel installation HOW-TO</title>
 	
 	<articleinfo>
 		<author>
@@ -18,16 +18,11 @@ This HOW-TO deals about the installation methods of Kadeploy. Firstly we would e
 		</abstract>
   	</articleinfo>
 	
-  	<sect1 id="parallel_install">
-  		<title>How-to perform a parallel installation</title>
-  		<para>
-This part explains how-to have at the same time a testing-purpose instance of Kadeploy aside from the production instance.
-		</para>
-		<sect2 id="prerequisites">
-			<title>Pre-requisites</title>
-			<para>
+ 	<sect1 id="prerequisites">
+		<title>Pre-requisites before performing a duplicate installation of Kadeploy</title>
+		<para>
 The Kadeploy commands suite cannot handle a customized configuration path, which is set by default at <filename>/etc/kadeploy</filename>. It implies to use a second server so as to have at the same time a production and a testing-purpose instance of Kadeploy. 
-			</para>
+		</para>
 			<para>
 From now, the frontend machine hosting the production-class Kadeploy will be designated by <emphasis>frontend-prod</emphasis> and the frontend hosting the testing version will be designated by <emphasis>frontend-dev</emphasis>.
 			</para>
@@ -42,19 +37,19 @@ Kadeploy needs several resources :
 	<listitem><para>MySQL database</para></listitem>
 	<listitem><para>File-system level read access to Grid'5000 deployable system images.</para></listitem>
 </itemizedlist>
-			<sect3 id="rsh">
+			<sect2 id="rsh">
 				<title>rsh client</title>
 				<para>
 Kadeploy requires the usage of a legacy rsh client. This could be somewhat problematic because rsh is not installed by default  anymore in modern Linux distributions, although rsh responds at CLI (but it's a symbolic link pointing to ssh client). In debian-like systems, you have to install the package <emphasis>rsh-client</emphasis> to obtain the real rsh client.
 				</para>
-			</sect3>
-			<sect3 id="dhcp">
+			</sect2>
+			<sect2 id="dhcp">
 				<title>DHCP</title>
 				<para>
 Because of nature of DHCP, it's rather difficult to have side by side 2 servers handling the same set of nodes but with different configuration. That's why nodes used during Kadeploy tests will be booted with the same DHCP as for production use.
 				</para>				
-			</sect3>
-			<sect3 id="tftppxe">
+			</sect2>
+			<sect2 id="tftppxe">
 				<title>TFTP and PXELinux</title>
 				<para>
 Because of <link linkend="dhcp">previous DHCP configuration</link>, the testing instance of Kadeploy will use the same TFTP server and therefore, the testing and production instances need to write PXE files at the same place. 
@@ -84,8 +79,8 @@ On frontend-dev : import the previously exported root TFTP directory.
 
 The PXE environment is usually set by the cluster sysadmin in accordance with the TFTP installation layout. PXE related files and directories are likely to be located under TFTP root directory (cf <filename>pxelinux.0</filename> bootloader and <filename>pxelinux.cfg</filename> directory containing the boot configuration for the nodes). If TFTP root directory is NFS-mounted by frontend-dev, it will have access to PXE ressources, too.
 				</para>
-			</sect3>
-			<sect3 id="mysql">
+			</sect2>
+			<sect2 id="mysql">
 				<title>MySQL database</title>
 				<para>
 <application>Kadeploy</application> needs an access as root and deploy user to a MySQL instance. Make sure your MySQL running server is reachable from frontend-dev using the MySQL root user. 
@@ -94,19 +89,19 @@ For instance, the following command should be working from frontend-dev :
 	mysql -u root -p -h mysql.<![CDATA[<site>]]>.grid5000.fr
 </programlisting>
 				</para>
-			</sect3>
-			<sect3 id="images">
+			</sect2>
+			<sect2 id="images">
 				<title>Grid'5000 images</title>
 				<para>
 Kadeploy needs a direct file-system access to deployable system images. The <filename>/grid5000</filename> directory have to be NFS mounted by fronted-dev.
 				</para>
-			</sect3>
+			</sect2>
 
-		</sect2>
-		<sect2 id="217install">
-			<title>Kadeploy 2.1.7 installation</title>
+		</sect1>
+		<sect1 id="217install">
+			<title>Perform the duplicate installation</title>
 			<para>
-The frontend considered for this installation is <emphasis>frontend-dev</emphasis>.
+The frontend considered for this operation is <emphasis>frontend-dev</emphasis>.
 			</para>
 			<para>
 Please follow the instructions below : 
@@ -197,7 +192,7 @@ Setup the Kadeploy database. The goal is to have side by side the production DB 
 					<substeps>
 						<step>
 							<para>
-								Issue the following commands : 
+To setup the second Kadeploy database, issue the following commands : 
 							</para>
 							<itemizedlist>
 								<listitem>
@@ -245,10 +240,5 @@ Remember to issue <command>kadatabase --dup-deployment-rights</command> each tim
 
 					</itemizedlist>
 			</note>
-		</sect2>
-	</sect1>
-	<sect1 id="migration">
-		<title>How-to perform a migration from 2.1.6 to 2.1.7</title>
-		<para>TODO.</para>
 	</sect1>
 </article>
