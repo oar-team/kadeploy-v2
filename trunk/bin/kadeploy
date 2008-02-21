@@ -12,6 +12,8 @@ use libkadeploy2::debug;
 use warnings;
 use strict;
 
+Getopt::Long::Configure ("gnu_getopt");
+
 ## flush stdout
 $| = 1;
 
@@ -699,9 +701,9 @@ sub usages()
 \t[-h   | --help]                                  This help message
 \t[-l                   username]                  Default : $username
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
-\t[-dl  | --debug-level level]                     4 : show all ...  0 : hide all
+\t[-D   | --debug-level level]                     4 : show all ...  0 : hide all
 \t[-r   | --reformat-tmp]                          Re-format the /tmp partition
-\t[-fkr | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
+\t[-F   | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use-prod-env]                          Use the production environment to deploy
 \t[-s   | --script      script]                    Launch a script after a deployment
 ";
@@ -734,17 +736,15 @@ sub check_options(){
 	       'l=s'                 => \$user,
 	       'loadpartitionfile=s' => \$partitionfile,
 	       'lpf=s'               => \$partitionfile,
-	       'v!'                  => \$verbose,
-	       'verbose'             => \$verbose,
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
-	       'dl=i'                => \$debug_level,
+	       'D=i'                 => \$debug_level,
 	       'debug-level=i'       => \$debug_level,
 	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
 	       'r'                   => \$reformattmp,
 	       'reformat-tmp'        => \$reformattmp,
-	       'fkr'                 => \$fastkernelreboot,
+	       'F'                    => \$fastkernelreboot,
 	       'fast-kernel-reboot'  => \$fastkernelreboot,
 	       'u'                   => \$useprodenvtodeploy,
 	       'use-prod-env'        => \$useprodenvtodeploy,

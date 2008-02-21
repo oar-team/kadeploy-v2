@@ -839,7 +839,7 @@ sub runKexecReboot {
     my $destPart = shift;
     my $kernelParam = shift;
     my $connector = $nodes_commands{$environment}{remote_command};
-    my $remoteCommand = "\"/sbin/kexec -l $kernelPath --initrd=$initrdPath --append=\"root=$destPart $kernelParam\" ; kexec -e\" 2>/dev/null &";
+    my $remoteCommand = "\"/sbin/kexec -l $kernelPath --initrd=$initrdPath --append=\"root=$destPart $kernelParam\" ; /sbin/kexec -e\" 2>/dev/null &";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
