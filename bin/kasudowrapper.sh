@@ -8,7 +8,7 @@ function kadeploy_split_nodes()
     current_cluster=""
     rm -f kadeploy_tmp_cluster_*
 
-    cat $f | sort | while read node
+    cat $f | sort | uniq | while read node
     do
 	cluster=`echo $node | cut -f1 -d"." | sed s/[-]*[0-9]*//g`
 	[ "$cluster" != "$current_cluster" ] && current_cluster=$cluster
