@@ -131,7 +131,7 @@ sub connect() {
     my $user = $configuration->get_conf("deploy_db_login");
     my $pwd  = $configuration->get_conf("deploy_db_psswd");
 
-    #print "host $host name $name user $user passwd $pwd\n";
+    # print "host $host name $name user $user passwd $pwd\n";
     my $dbh = DBI->connect("DBI:mysql:database=$name;host=$host",$user,$pwd,{'PrintError'=>0,'InactiveDestroy'=>1}) or $status = 0;
     
     if($status == 0){
@@ -1233,10 +1233,10 @@ sub part_id_to_nb($$){
 }
 
 
-#node_last_dep
-#find the last deployed partition of a node
-#parameters : base, hostname
-#return value: partition nb
+# node_last_dep
+# find the last deployed partition of a node
+# parameters : base, hostname
+# return value: partition nb
 sub node_last_dep($$){
         my $dbh = shift;
         my $hostname = shift;
@@ -1264,11 +1264,11 @@ sub node_last_dep($$){
                                                                                                                                                                                                                    r r return $pn;
 }
 
-#node_last_dep_env_optsupport
-#find the optimisation support of the last deployed environment of the partition of a node
-#parameters: base, hostname
-#return : optimisation support nb 
 
+# node_last_dep_env_optsupport
+# find the optimisation support of the last deployed environment of the partition of a node
+# parameters: base, hostname
+# return : optimisation support nb 
 sub node_last_dep_env_optsupport($$){
    my $dbh = shift;
    my $hostname = shift;
@@ -1295,11 +1295,11 @@ sub node_last_dep_env_optsupport($$){
    return $pn;
 }
 
-#node_last_dep_env
-#find the environment name of the last deployed environment of the partition of a node
-#parameters: base, hostname
-#return : environment name
 
+# node_last_dep_env
+# find the environment name of the last deployed environment of the partition of a node
+# parameters: base, hostname
+# return : environment name
 sub node_last_dep_env($$){
    my $dbh = shift;
    my $hostname = shift;
@@ -1324,11 +1324,11 @@ sub node_last_dep_env($$){
    return $pn;
 }                                                       
 
-#node_last_dep_dev
-##find the device of the last deployed environment of the partition of a node
-##parameters: base, hostname
-##return :disk dev 
 
+# node_last_dep_dev
+# find the device of the last deployed environment of the partition of a node
+# parameters: base, hostname
+# return :disk dev 
 sub node_last_dep_dev($$){
    my $dbh = shift;
    my $hostname = shift;
@@ -1355,11 +1355,11 @@ sub node_last_dep_dev($$){
    
 }                    
 
-#node_last_envid
-##find the envid of the last deployed environment of the partition of a node
-##parameters: base, hostname
-##return :envid 
 
+# node_last_envid
+# find the envid of the last deployed environment of the partition of a node
+# parameters: base, hostname
+# return :envid 
 sub node_last_envid($$){
    my $dbh = shift;
    my $hostname = shift;

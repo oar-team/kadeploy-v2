@@ -125,6 +125,8 @@ sub put_in_cache_from_archive($$$)
     my $archive = shift;
     my $strip   = shift;
     my $cachemodified = 0;
+    my $agearchive = 0;
+    my $agecachefile = 0;
 
     if ( empty_cache() ) { read_files_in_cache(); }
     
@@ -137,7 +139,10 @@ sub put_in_cache_from_archive($$$)
 	my $cachefile = $archivefile;
 	# Strip leading directories from filename
 	$cachefile =~ s/.*\/([^\/]*)$/$1/;
-	if ( ! already_in_cache($cachefile) )
+	$agearchive = ( -M $archive );
+	$agecachefile = ( -C $_cachedirectory."/".$cachefile );
+        # print $archive." : ".$agearchive." | ".$_cachedirectory."/".$cachefile." : ".$agecachefile."\n";
+	if ( ( ! already_in_cache($cachefile) ) || ( $agearchive < $agecachefile ) )
 	{
 	    # print "cache::put_in_cache_from_archive :  adding " . $archivefile . "\n";
 	    my $islink = 1;
@@ -149,6 +154,7 @@ sub put_in_cache_from_archive($$$)
 	    }
 	    $cachemodified = 1;
 	}
+	# else : maj estampille temporelle dernier acces (-A) / touch / ben non : c automatique
     }
     
     ## If cache modified, reload it
@@ -170,11 +176,10 @@ sub clean_cache()
     foreach my $currentfile ( @_filesincache )
     {
 	my $f = $_cachedirectory . "/" . $currentfile;
-	my $ageoffile = ( -C $f );
-	# print "cache::clean_cache() : currentfile = " . $currentfile . " -C = " . $ageoffile . "\n";	
+	my $ageoffile = ( -A $f );
+	# print "cache::clean_cache() : currentfile = " . $currentfile . " -A = " . $ageoffile . "\n";	
 	if ( $ageoffile > $_expirydelay )
 	{
-	    # print "cache::clean_cache() : delete " . $currentfile . "\n";
 	    libkadeploy2::debug::system_wrapper("rm -f $_cachedirectory/$currentfile");
 	    $cachemodified = 1;
 	}
