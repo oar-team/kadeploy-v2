@@ -1,27 +1,49 @@
 #!/usr/bin/make
-#
-#This program is derived from oar project's sources (http//:oar.imag.fr)
-#
 
-SHELL=/bin/bash
+#######################################
+#
+# Installation Makefile for Kadeploy
+# Grid'5000 project 
+#
+#######################################
 
-# Kadeploy versioning
+
+#=========
+# Version
+#=========
+
 MAJOR = 2
 MINOR = 1
 SUBMINOR = 7
+KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
 
+
+#=============================================
+# Modify to adapt at your local environment
+#=============================================
+
+# Distribution : for Perl library installation path
 DISTRIB = debian4
 
 # Kadeploy directories installation layout
-# System directories
 PREFIX=/usr/local
 
-KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
+# Kadeploy main installation directory
+KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
 
-MANDIR=$(PREFIX)/man
-INFODIR=$(PREFIX)/info
-BINDIR=$(PREFIX)/bin
-SBINDIR=$(PREFIX)/sbin
+# Kadeploy main configuration directory
+KADEPLOYCONFDIR=/etc/kadeploy-$(KADEPLOY_VERSION)
+
+# Kadeploy system user
+DEPLOYUSER=deploy
+DEPLOYGROUP=deploy
+
+
+#=====================
+# DO NOT modify below 
+#=====================
+
+SHELL=/bin/bash
 
 ifeq ($(DISTRIB), debian4)
 PERLDIR=/usr/share/perl/5.8/
@@ -32,21 +54,26 @@ PERLDIR=/usr/share/perl/5.8/
 $(info $(DISTRIB) : using default Perl path : $(PERLDIR) )
 endif
 
-# Kadeploy directories
-KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
+MANDIR=$(PREFIX)/man
+INFODIR=$(PREFIX)/info
+BINDIR=$(PREFIX)/bin
+SBINDIR=$(PREFIX)/sbin
 
 KABINDIR=$(KADEPLOYHOMEDIR)/bin
 KASBINDIR=$(KADEPLOYHOMEDIR)/sbin
 KAADDONSDIR=$(KADEPLOYHOMEDIR)/addons
 KAPERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8
 KADBDIR=$(KADEPLOYHOMEDIR)/db
-KADEPLOYCONFDIR=/etc/kadeploy-$(KADEPLOY_VERSION)
 
 KADEPLOY_BINFILES=kaconsole kaenvironments karecordenv kadeploy kareboot karemote kaaddkeys kadatabase
 KADEPLOY_SBINFILES=kaadduser kadeluser kanodes
 KADEPLOY_MANPAGES=kaadduser.1 kaaddkeys.1 kaconsole.1 kadeluser.1 kaenvironments.1 karecordenv.1 kadeploy.1 kareboot.1 deploy.conf.1 karemote.1 deploy_cmd.conf.1
 
-# For archive creation
+
+#==================
+# Archive creation
+#==================
+
 MANPAGES_SRC=docs/man/src/
 MANPAGES=docs/man/man1/
 DOCUMENTATION_SRC=docs/texi/
@@ -58,17 +85,13 @@ TOOLS=tools/
 EXCLUDED=--exclude=.svn
 KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
 
-DEPLOYUSER=deploy
-DEPLOYGROUP=deploy
 
-ARCH=x86_64
 
 .PHONY: all usage root_check user_and_group_deploy_check \
 links_install directories files_install kadeploy_install sudo_install man_install \
 kadeploy_uninstall files_uninstall \
 archive scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc
 	
-
 
 #################
 #

@@ -34,22 +34,22 @@ libkadeploy2::cache::put_in_cache_from_archive(\@files, $arc, $strip);
 if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
 else { print $f1 . " n'est pas present dans le cache.\n"; }
 
-print "### nettoyage cache ###\n";
-libkadeploy2::cache::clean_cache();
+# print "### nettoyage cache ###\n";
+# libkadeploy2::cache::clean_cache();
 
-if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
-else { print $f1 . " n'est pas present dans le cache.\n"; }
+# if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
+# else { print $f1 . " n'est pas present dans le cache.\n"; }
 
 # print "### purge cache ###\n";
 # libkadeploy2::cache::purge_cache();
 
-if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
-else { print $f1 . " n'est pas present dans le cache.\n"; }
+# if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
+# else { print $f1 . " n'est pas present dans le cache.\n"; }
 
-print "### get_cache_directory_tftprelative ###\n";
+# print "### get_cache_directory_tftprelative ###\n";
 
-my $tftprelative = libkadeploy2::cache::get_cache_directory_tftprelative(1);
-print "tftprelative = " . $tftprelative . "\n";
+# my $tftprelative = libkadeploy2::cache::get_cache_directory_tftprelative(1);
+# print "tftprelative = " . $tftprelative . "\n";
 
 my $dir = libkadeploy2::cache::get_cache_directory();
 $dir = $dir .  "/" . $f1;
