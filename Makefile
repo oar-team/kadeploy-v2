@@ -78,19 +78,21 @@ MANPAGES_SRC=docs/man/src/
 MANPAGES=docs/man/man1/
 DOCUMENTATION_SRC=docs/texi/
 DOCUMENTATION=$(DOCUMENTATION_SRC)/documentation/
+DOCBOOK=docs/docbook/
 SCRIPTS=scripts/
 ADDONS=addons/
 TOOLS=tools/
+PDF_DOCS=$(wildcard $(DOCBOOK)*.pdf)
 
 EXCLUDED=--exclude=.svn
 KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
 
 
 
-.PHONY: all usage root_check user_and_group_deploy_check \
-links_install directories files_install kadeploy_install sudo_install man_install \
-kadeploy_uninstall files_uninstall \
-archive scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc
+.PHONY: all usage installcheck root_check user_and_group_deploy_check \
+links_install installdirs files_install install sudo_install man_install \
+uninstall files_uninstall \
+dist scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc
 	
 
 #################
@@ -109,6 +111,8 @@ all: usage
 ########################################
 
 #Check if you execute installation with root privileges
+installcheck: root_check user_and_group_deploy_check
+
 root_check:
 	@echo "root check ..."
 	@[ `whoami` = 'root' ] || ( echo "Warning: root-privileges are required to install some files !" ; exit 1 )
@@ -136,7 +140,7 @@ links_install:
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kadeluser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kanodes
 
-directories:
+installdirs:
 	@echo "Making directories ..."
 	@mkdir -p $(KADEPLOYHOMEDIR)/db
 	@mkdir -p $(KADEPLOYHOMEDIR)/grub
@@ -185,7 +189,7 @@ files_install:
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 	
 #Kadeploy installation in main directory
-kadeploy_install: root_check user_and_group_deploy_check directories files_install links_install sudo_install man_install
+install: installcheck installdirs files_install links_install sudo_install man_install
 	@chown -R deploy: $(KADEPLOYCONFDIR) 		  
 
 #Sudo installation : modification of /etc/sudoers
@@ -234,7 +238,7 @@ files_uninstall :
 	@rm -rf $(KADEPLOYCONFDIR)/
 
 
-kadeploy_uninstall : root_check files_uninstall
+uninstall : root_check files_uninstall
 
 
 #############################
@@ -243,7 +247,7 @@ kadeploy_uninstall : root_check files_uninstall
 # 
 #############################
 
-archive: manpages_arc documentation_arc scripts_arc addons_arc tools_arc
+dist: manpages_arc documentation_arc scripts_arc addons_arc tools_arc
 	@echo "Archiving Kadeploy main files ..."
 	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) bin/
 	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) sbin/
@@ -281,10 +285,11 @@ documentation_arc: documentation
 	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
 	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
 	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
-	
+	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(PDF_DOCS)
+
 documentation:
 	@( cd $(DOCUMENTATION_SRC) && $(MAKE) 2>&1 >/dev/null )
-
+	@( cd $(DOCBOOK) && $(MAKE) 2>&1 >/dev/null )
 
 ################
 #
@@ -297,5 +302,5 @@ usage:
 	@echo -e "\t*** Installation of Kadeploy-$(KADEPLOY_VERSION) ***"
 	@echo -e "\t**************************************"
 	@echo -e "\n\tUsage: make [ OPTIONS=<...> ] MODULES"
-	@echo -e "\t\twhere MODULES := { kadeploy_install | kadeploy_uninstall | archive }"
+	@echo -e "\t\twhere MODULES := { install | uninstall | dist }"
 	@echo -e "\t\tand   OPTIONS := { PREFIX | KADEPLOYHOMEDIR | KADEPLOYCONFDIR } \n"

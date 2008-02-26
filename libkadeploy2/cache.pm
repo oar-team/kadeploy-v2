@@ -118,15 +118,16 @@ sub already_in_cache($)
 }
 
 ## Put files in cache if they're not already in
-sub put_in_cache_from_archive($$$)
+sub put_in_cache_from_archive($$$$)
 {
-    my $ref_files   = shift;
-    my @files = @{$ref_files};
-    my $archive = shift;
-    my $strip   = shift;
+    my $ref_files = shift;
+    my $archive   = shift;
+    my $strip     = shift;
+    my $env_id    = shift;
+    my @files     = @{$ref_files};
     my $cachemodified = 0;
-    my $agearchive = 0;
-    my $agecachefile = 0;
+    my $agearchive    = 0;
+    my $agecachefile  = 0;
 
     if ( empty_cache() ) { read_files_in_cache(); }
     
@@ -139,10 +140,11 @@ sub put_in_cache_from_archive($$$)
 	my $cachefile = $archivefile;
 	# Strip leading directories from filename
 	$cachefile =~ s/.*\/([^\/]*)$/$1/;
+	$cachefileid = $cachefile.".".$env_id;
 	$agearchive = ( -M $archive );
-	$agecachefile = ( -C $_cachedirectory."/".$cachefile );
+	$agecachefile = ( -C $_cachedirectory."/".$cachefileid );
         # print $archive." : ".$agearchive." | ".$_cachedirectory."/".$cachefile." : ".$agecachefile."\n";
-	if ( ( ! already_in_cache($cachefile) ) || ( $agearchive < $agecachefile ) )
+	if ( ( ! already_in_cache($cachefileid) ) || ( $agearchive < $agecachefile ) )
 	{
 	    # print "cache::put_in_cache_from_archive :  adding " . $archivefile . "\n";
 	    my $islink = 1;
@@ -152,9 +154,9 @@ sub put_in_cache_from_archive($$$)
 		$file = readlink $_cachedirectory."/".$archivefile;
 		if ( ! $file ) { $islink = 0; }
 	    }
+	    rename $_cachedirectory."/".$cachefile, $_cachedirectory."/".$cachefileid;
 	    $cachemodified = 1;
 	}
-	# else : maj estampille temporelle dernier acces (-A) / touch / ben non : c automatique
     }
     
     ## If cache modified, reload it
