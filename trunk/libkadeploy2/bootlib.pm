@@ -21,7 +21,7 @@ use POSIX qw(:signal_h :errno_h :sys_wait_h);
 sub setup_grub_pxe($$);
 sub manage_grub_pxe($$);
 sub generate_grub_files($$$$$$$$);
-sub generate_nogrub_files($$$$$$);
+sub generate_nogrub_files($$$$$$$);
 sub setup_pxe($$$);
 sub reboot($$$$);
 
@@ -143,13 +143,13 @@ sub manage_grub_pxe($$){
 	    if ( $gen_pxe_entry ) {
 		libkadeploy2::debug::debugl(3, "generating PXE : first node : $ip\n");		
 		$firstipx=$iphexalized;
-		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
+		generate_nogrub_files($env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode, $env_id);
 		$gen_pxe_entry = 0; # generated once
 		$firstnode = 0;     # next processing different as for 1st node
 	    }
 	    else {
 		libkadeploy2::debug::debugl(3, "generating PXE : other nodes : $ip\n"); 
-		generate_nogrub_files( $env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode );
+		generate_nogrub_files($env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode, $env_id);
 	    }
 
 	    $pxe_kernel_parameters = " root=/dev/" . $dev . $part . " " . $kernel_param;
@@ -211,7 +211,7 @@ sub manage_grub_pxe($$){
 ## parameters : env_archive, kernel_path, initrd_path, destination folder, 
 ## first IP of the deployment, boolean value on first node
 ## return value : 1 if successful
-sub generate_nogrub_files($$$$$$)
+sub generate_nogrub_files($$$$$$$)
 {
     my $env_archive = shift;
     my $kernel_path = shift;
@@ -219,6 +219,7 @@ sub generate_nogrub_files($$$$$$)
     my $dest_folder = shift;
     my $firstipx    = shift;
     my $firstnode   = shift;
+    my $env_id      = shift;
     
     if (-d $dest_folder ) 
     {
@@ -245,14 +246,14 @@ sub generate_nogrub_files($$$$$$)
 	$file1 =~ s/^\///;
 	$file2 =~ s/^\///;
 	my @files = ($file1, $file2);
-	libkadeploy2::cache::put_in_cache_from_archive(\@files, $env_archive, 1);
+	libkadeploy2::cache::put_in_cache_from_archive(\@files, $env_archive, 1, $env_id);
         ## Retrieve relative path to cache from PXE destinatation directory
 	my $tftprelative = libkadeploy2::cache::get_cache_directory_tftprelative(1);
 	## Strip leading directories from filenames
 	$file1 =~ s/.*\/([^\/]*)$/$1/;
 	$file2 =~ s/.*\/([^\/]*)$/$1/;
-        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file1 $file1");
-        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file2 $file2");
+        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file1.$env_id $file1");
+        libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file2.$env_id $file2");
    }
    else 
    {
