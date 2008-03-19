@@ -831,7 +831,7 @@ sub runDetachedCommand {
 }
 
 
-sub runKexecReboot {
+sub runDetachedKexec {
     my $self = shift;
     my $useprodenvtodeploy = shift;
     my $kernelPath = shift;
@@ -839,7 +839,7 @@ sub runKexecReboot {
     my $destPart = shift;
     my $kernelParam = shift;
     my $connector = $nodes_commands{$environment}{remote_command};
-    my $remoteCommand = "\"/sbin/kexec -l $kernelPath --initrd=$initrdPath --append=\"root=$destPart $kernelParam\" ; /sbin/kexec -e\" 2>/dev/null &";
+    my $remoteCommand = "\"/bin/kexec_detach $kernelPath $initrdPath $destPart $kernelParam\" &";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
@@ -850,7 +850,6 @@ sub runKexecReboot {
     foreach my $nodeIP (sort keys %{$self->{nodesReady}}) {
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
     }
-
     # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Kexec failed on node", 0);
     return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "Kexec failed on node", 0);
 }

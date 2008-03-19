@@ -409,7 +409,6 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
     $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
     libkadeploy2::debug::debugl(3, "Done\n");
-    
     libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
 # send the environment!!
     libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
@@ -462,7 +461,7 @@ libkadeploy2::debug::debugl(1, "### Reboot the nodes on the deployed environnmen
 if ($fastkernelreboot) #We use kexec to reboot faster
 {
     libkadeploy2::debug::debugl(3, "Let's use kexec to perform a fast reboot on the deployed environment\n");
-    $nodes_set->runKexecReboot($useprodenvtodeploy, "/mnt/dest/$kernel_path", "/mnt/dest/$initrd_path", $destination_partition, $kernel_param);
+    $nodes_set->runDetachedKexec($useprodenvtodeploy, "/mnt/dest/$kernel_path", "/mnt/dest/$initrd_path", $destination_partition, $kernel_param);
     if ($useprodenvtodeploy == 1)
     {
 	#Wait a little bit here, so reboot is not detected ...
@@ -744,11 +743,12 @@ sub check_options(){
 	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
 	       'r'                   => \$reformattmp,
 	       'reformat-tmp'        => \$reformattmp,
-	       'F'                    => \$fastkernelreboot,
+	       'F'                   => \$fastkernelreboot,
 	       'fast-kernel-reboot'  => \$fastkernelreboot,
 	       'u'                   => \$useprodenvtodeploy,
 	       'use-prod-env'        => \$useprodenvtodeploy,
 	       );
+
     #crappy
     if ($rmnodefilesintmp) {
 	my $cmd="rm -f /tmp/kadeploy-".$username."*";

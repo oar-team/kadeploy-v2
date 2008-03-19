@@ -110,7 +110,7 @@ then
 	#copy nodes files in the current directory
 	cp /tmp/kadeploy-$USER*.out . 2>/dev/null
 	#remove nodes files in /tmp
-	sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy -rmnodefilesintmp $USER
+	sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy --rmnodefilesintmp $USER
 
 	#copy ssh keys in root's authorized_keys
 	if [ $keys ]
