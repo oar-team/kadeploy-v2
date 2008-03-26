@@ -455,7 +455,9 @@ my @to_reboot = @db_checked_hosts;
 
 
 # grub and pxe
-libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
+my $ret = libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
+if ($ret != 1) {halt("Setup of PXE-grub failed")};
+
 libkadeploy2::debug::debugl(1, "### Reboot the nodes on the deployed environnment\n");
 
 if ($fastkernelreboot) #We use kexec to reboot faster
@@ -1021,7 +1023,7 @@ sub check_consistency()
 sub halt($){
     my $msg = shift;
 
-    print "ERROR : $msg\n";
+    libkadeploy2::debug::debugl(0, "ERROR : $msg\n");
     libkadeploy2::deploy_iolib::cancel_deployment($base,$deployment);
     libkadeploy2::deploy_iolib::disconnect($base);
     exit 0;

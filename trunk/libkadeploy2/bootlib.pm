@@ -44,15 +44,15 @@ sub register_conf {
 ## setup_grub_pxe
 ## wrapper kadeploy - manage_grub_pxe
 ## parameters : base, deployment identifier
-## return value : /
+## return value : -1 in case of error, 1 otherwise
 sub setup_grub_pxe($$){
     my $dbh = shift;
     my $deploy_id = shift;
 
     my @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($dbh,$deploy_id);
     my %node_info = libkadeploy2::deploy_iolib::deploy_id_to_node_info($dbh,$deploy_id);
-    
-    manage_grub_pxe(\%node_info,\@env_info);
+    my $ret = manage_grub_pxe(\%node_info,\@env_info);
+    return $ret;
 }
 
 ## manage_grub_pxe
@@ -138,6 +138,7 @@ sub manage_grub_pxe($$){
 
 	my $current_kernel = "";
 	my $current_initrd = "";
+	my $ret = 0;
 	$iphexalized = libkadeploy2::hexlib::gethostipx($ip);
 	# Generate PXE environment folder for current node
 	if ( $nogrub ) { 
@@ -190,7 +191,8 @@ sub manage_grub_pxe($$){
 		$grub_boot_img_name = "grub_img_chainload_env".$iphexalized."_".$dev.$part;
 		$grub_menu_file_name = "grub_menu_chainload_env".$iphexalized."_".$dev.$part;
 		
-		libkadeploy2::bootlib::generate_grub_files_chainload($grub_boot_img_name,$grub_menu_file_name,"rebootchainload","$dev$part",$env_fdisktype);
+		$ret = libkadeploy2::bootlib::generate_grub_files_chainload($grub_boot_img_name,$grub_menu_file_name,"rebootchainload","$dev$part",$env_fdisktype);
+		if ($ret != 1) {return -1};
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
 		$tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
 		copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");	       
@@ -201,7 +203,8 @@ sub manage_grub_pxe($$){
 		
 		if ( $gen_grub_entry ) { 
 		    # Generate with every unknown device
-		    libkadeploy2::bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path,$env_fdisktype);
+		    $ret = libkadeploy2::bootlib::generate_grub_files($grub_boot_img_name, $grub_menu_file_name, "reboot", "$dev$part", $kernel_path, $kernel_param, $initrd_path,$env_fdisktype);
+		    if ($ret != 1) {return -1};
 		    copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
 		    $tftp_destination_folder = $configuration->get_conf("tftp_repository") . $configuration->get_conf("tftp_relative_path");
 		    copy("/tmp/$grub_boot_img_name", "$tftp_destination_folder");
@@ -365,7 +368,7 @@ sub generate_grub_files_chainload($$$$){
     my $fdisktype = shift;
 
     ## "hard-coded" options
-    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/grub/";    
+    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/grub";    
     my $floppy_blks = 720;
     my $default = 0;
     my $fallback = 1;
@@ -385,7 +388,8 @@ sub generate_grub_files_chainload($$$$){
 	       
     my $base_grub_image="$grub_dir/grub.img"; # a grub 360ko floppy image
     if (!-e $base_grub_image) {
-	halt("ERROR : file $base_grub_image does not exist or path is incorrect\n");
+	libkadeploy2::debug::debugl(0, "ERROR : file $base_grub_image does not exist or path is incorrect\n");
+	return -1;
     }
     my $menu_len=2;
     my $menu_offset=718;
@@ -446,7 +450,7 @@ sub generate_grub_files($$$$$$$$){
     # print "OUT = $output ; MENU = $menu ; TITLE = $title ; ROOT = $root ; KER = $kernel ; PARAM = $param\n";
 
     ## "hard-coded" options
-    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/lib/grub/";    
+    my $grub_dir = $configuration->get_conf("kadeploy2_directory") . "/grub";    
     my $floppy_blks = 720;
     my $default = 0;
     my $fallback = 1;
@@ -467,7 +471,8 @@ sub generate_grub_files($$$$$$$$){
 	       
     my $base_grub_image="$grub_dir/grub.img"; # a grub 360ko floppy image
     if (!-e $base_grub_image) {
-	halt("ERROR : file $base_grub_image does not exist or path is incorrect\n");
+	libkadeploy2::debug::debugl(0, "ERROR : file $base_grub_image does not exist or path is incorrect\n");
+	return -1;
     }
     my $menu_len=2;
     my $menu_offset=718;
