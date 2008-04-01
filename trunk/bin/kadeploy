@@ -481,9 +481,9 @@ else
     }
     if ($useprodenvtodeploy == 1)
     {
-	$nodes_set->runSimpleReboot();
+	$nodes_set->rebootThoseNodes();
 	#Wait a little bit here, so reboot is not detected ...
-	sleep(13); 
+	sleep(15);
     }
     else
     {

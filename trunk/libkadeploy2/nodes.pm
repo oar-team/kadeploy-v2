@@ -839,7 +839,7 @@ sub runDetachedKexec {
     my $destPart = shift;
     my $kernelParam = shift;
     my $connector = $nodes_commands{$environment}{remote_command};
-    my $remoteCommand = "\"/bin/kexec_detach $kernelPath $initrdPath $destPart $kernelParam\" &";
+    my $remoteCommand = "\"/usr/local/bin/kexec_detach $kernelPath $initrdPath $destPart $kernelParam\" &";
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
 
@@ -880,7 +880,7 @@ sub rebootThoseNodes
 {
     my $self = shift;
     my $connector = $nodes_commands{$environment}{remote_command};
-    my $remoteCommand = "reboot_detach";
+    my $remoteCommand = "/usr/local/bin/reboot_detach";
 
     my %executedCommands;
     my $nodesReadyNumber = $self->syncNodesReadyOrNot();
@@ -977,7 +977,7 @@ sub rebootMyNodes {
 		}
 	        if ($next_method eq "deployreboot") {
 		    $nbmethod_nodes++;
-		    $nextExecutedCommands{$nodeIP} = $connector . " " . $nodeIP . " reboot_detach";
+		    $nextExecutedCommands{$nodeIP} = $connector . " " . $nodeIP . " /usr/local/bin/reboot_detach";
 		} 
 	    }
         }
