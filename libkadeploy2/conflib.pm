@@ -154,6 +154,7 @@ sub check_conf {
 		  "tftp_repository" => 2,
 		  "pxe_rep" => 4,
 		  "tftp_relative_path" => 5,
+	          "use_kexec_by_default" => 1,
 		  #############################
 		  );
 
