@@ -36,6 +36,7 @@ Kadeploy needs several resources :
 	<listitem><para>TFTP server, and therefore a writeable access to root TFTP directory served by tftp daemon (e.g. <filename>/var/lib/tftpboot</filename> and its sub-directories)</para></listitem>
 	<listitem><para>MySQL database</para></listitem>
 	<listitem><para>File-system level read access to Grid'5000 deployable system images.</para></listitem>
+	<listitem><para>Software requisites.</para></listitem>
 </itemizedlist>
 			<sect2 id="rsh">
 				<title>rsh client</title>
@@ -96,7 +97,15 @@ For instance, the following command should be working from frontend-dev :
 Kadeploy needs a direct file-system access to deployable system images. The <filename>/grid5000</filename> directory have to be NFS mounted by fronted-dev.
 				</para>
 			</sect2>
-
+			<sect2 id="softs">
+			       <title>Softwares requisites</title>
+			       <para>
+Kadeploy is very tied to the Perl language. Make sure to have it
+installed on the system hosting the deployment frontend. In
+particular, the following package (Debian systems)
+libterm-readkey-perl has to be installed.
+			       </para>
+		        </sect2>
 		</sect1>
 		<sect1 id="217install">
 			<title>Perform the duplicate installation</title>
@@ -167,7 +176,7 @@ This variables may be of interest, too :
 Install Kadeploy by using the command as <emphasis>root</emphasis> : 
 					</para>
 <programlisting>
-make kadeploy_install
+make install
 </programlisting>
 				</step>
 				<step>

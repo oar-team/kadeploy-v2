@@ -417,9 +417,14 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
     libkadeploy2::debug::debugl(3, "Done\n");
     libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
-# send the environment!!
+    # send the environment!!
     libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
     $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
+
+    # test
+    # $nodes_set->runRemoteCommandBackground(" sleep 10000 ","sleep");
+    # end_test
+    
     libkadeploy2::debug::debugl(3, "Done\n");
 }
 if ($filebase =~ /^.+\.dd\.gz$/)
