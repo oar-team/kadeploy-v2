@@ -27,6 +27,9 @@ sub set_tar_options($);
 sub set_mkfs_option($);
 sub halt($);
 
+## declares the constants
+use constant KADEPLOY_VERSION => "2.1.7";
+
 ## declares the options
 my $env = '';               # env name to be deployed
 my @host_list = ();         # host list to deploy on
@@ -127,6 +130,7 @@ if ($configuration->get_conf("do_fdisk_on_deploy")) {$do_fdisk_on_deploy = $conf
 my $kadeploydir=$configuration->get_conf("kadeploy2_directory");
 my $deployuser=$configuration->get_conf("deploy_user");
 my $help;
+my $version;
 my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
 my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
 
@@ -712,6 +716,7 @@ sub usages()
 \t[-d   | --device   device]
 \t[-p   | --partition   partition]
 \t[-h   | --help]                                  This help message
+\t[-V   | --version]                               Version
 \t[-l                   username]                  Default : $username
 \t[-k   | --keys]                                  Add ssh keys at the end of the deployment
 \t[-D   | --debug-level level]                     4 : show all ...  0 : hide all
@@ -721,6 +726,11 @@ sub usages()
 \t[-s   | --script      script]                    Launch a script after a deployment
 ";
 
+}
+
+sub version()
+{
+    print "Kadeploy ".KADEPLOY_VERSION."\n";
 }
 
 
@@ -751,6 +761,8 @@ sub check_options(){
 	       'lpf=s'               => \$partitionfile,
 	       'h'                   => \$help,       
 	       'help!'               => \$help,
+	       'V'                   => \$version,
+	       'version'             => \$version,
 	       'D=i'                 => \$debug_level,
 	       'debug-level=i'       => \$debug_level,
 	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
@@ -772,6 +784,8 @@ sub check_options(){
 
     ## first read command options    
     if ($help) { usages(); exit(0); }
+
+    if ($version) { version(); exit(0); }
 
     if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
         print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
