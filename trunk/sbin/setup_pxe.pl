@@ -208,6 +208,7 @@ for ($i=0; $i<scalar(@kernels); $i++) {
     $append = "initrd=$tftp_relative_path/$initrd";
     for($j=$ranges1[$i]; $j<=$ranges2[$i]; $j++) {
 	$destination=$pxe_rep.$hexnetworks[$i].hexalize($j);
+	unlink $destination if (-l $destination); #prevent from overwriting the default PXE configuration
 	open(DEST, "> $destination")
 	    or die "Couldn't open $destination for writing: $!\n";
 	print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
