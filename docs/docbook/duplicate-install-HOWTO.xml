@@ -250,4 +250,42 @@ Remember to issue <command>kadatabase --dup-deployment-rights</command> each tim
 					</itemizedlist>
 			</note>
 	</sect1>
+	<sect1 id="collatfittings">
+		<title>Collateral fittings</title>
+		<para>
+			Several operations must be performed to get a fully working Kadeploy 2.1.7.
+			<itemizedlist>
+				<listitem>
+					<para>
+						The deployment kernel must be rebuilt thanks to the script provided in the <filename>addons/deployment_kernel_generation</filename> directory of the Kadeploy's distribution.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						The configuration files <filename>/etc/kadeploy/deploy.conf</filename> and <filename>/etc/kadeploy/deploy-cluster.conf</filename> must be updated according the example provided in the <filename>confs</filename> directory of the distribution. In particular, pay attention to the options <command>use_kexec_by_default</command>, <command>default_target_device</command> and <command>default_target_partition</command>.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						The preinstall file must be modified according the files given in the <filename>addons/preinstallation</filename> directory of the distribution.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						The SSH public key of the user deploy must be added in the root's <filename>authorized_keys</filename> on the production environment of the nodes (this is used for the kexec optimization).
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						The SSH public key of the user root of the production environment must be added in the root's <filename>authorized_keys</filename> on the production environment of the nodes (this is used for the kexec optimization).
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						The files located in the <filename>scripts/scripts_used_to_deploy</filename> directory of the distribution must be copied in the <filename>/usr/local/bin</filename> directory of the production environment on the nodes.
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>	
+	</sect1>
 </article>
