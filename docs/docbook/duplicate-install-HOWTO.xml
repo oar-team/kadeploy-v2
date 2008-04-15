@@ -257,7 +257,7 @@ Remember to issue <command>kadatabase --dup-deployment-rights</command> each tim
 			<itemizedlist>
 				<listitem>
 					<para>
-						The deployment kernel must be rebuilt thanks to the script provided in the <filename>addons/deployment_kernel_generation</filename> directory of the Kadeploy's distribution.
+						The deployment kernel must be rebuilt thanks to the script provided in the <filename>addons/deployment_kernel_generation</filename> directory of the Kadeploy's distribution. Warning, the deployment kernel must not be compiled with the SMP support, otherwhise kexec will not work.
 					</para>
 				</listitem>
 				<listitem>
