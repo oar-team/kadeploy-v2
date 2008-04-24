@@ -83,12 +83,12 @@ then
 	    rm -f $tmp_file
 	else
 	    #let kadeploy manage the error
-	    sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@"
+	    sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$*"
 	    exit 0
 	fi
 
 	#remove -k, -f, -s and -m options
-	args=`echo $@ | sed -e 's/\-k//g' -e 's/\--keys//g' \
+	args=`echo "$*" | sed -e 's/\-k//g' -e 's/\--keys//g' \
 	                    -e 's/\-f\ [a-zA-Z0-9.\_-]*//g' -e 's/\--filename\ [a-zA-Z0-9.\_-]*//g' \
 	                    -e 's/\-s\ [a-zA-Z0-9.\_-]*//g' -e 's/\--script\ [a-zA-Z0-9.\_-]*//g' \
 	                    -e 's/\-m\ [a-zA-Z0-9.\_-]*//g' -e 's/\--machine\ [a-zA-Z0-9.\_-]*//g'`
