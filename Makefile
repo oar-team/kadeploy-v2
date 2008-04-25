@@ -15,7 +15,7 @@
 MAJOR = 2
 MINOR = 1
 SUBMINOR = 7
-KADEPLOY_VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
+KADEPLOY_VERSION = "-$(MAJOR).$(MINOR).$(SUBMINOR)"
 
 
 #=============================================
@@ -29,10 +29,7 @@ DISTRIB = debian4
 PREFIX=/usr/local
 
 # Kadeploy main installation directory
-KADEPLOYHOMEDIR=$(PREFIX)/kadeploy-$(KADEPLOY_VERSION)
-
-# Kadeploy main configuration directory
-KADEPLOYCONFDIR=/etc/kadeploy-$(KADEPLOY_VERSION)
+KADEPLOYHOMEDIR=$(PREFIX)/kadeploy$(KADEPLOY_VERSION)
 
 # Kadeploy system user
 DEPLOYUSER=deploy
@@ -54,6 +51,11 @@ PERLDIR=/usr/share/perl/5.8/
 $(info $(DISTRIB) : using default Perl path : $(PERLDIR) )
 endif
 
+# Kadeploy main configuration directory
+CONFDIR=/etc/kadeploy
+KADEPLOYCONFDIR=$(CONFDIR)$(KADEPLOY_VERSION)
+
+
 MANDIR=$(PREFIX)/man
 INFODIR=$(PREFIX)/info
 BINDIR=$(PREFIX)/bin
@@ -69,6 +71,8 @@ KADEPLOY_BINFILES=kaconsole kaenvironments karecordenv kadeploy kareboot karemot
 KADEPLOY_SBINFILES=kaadduser kadeluser kanodes
 KADEPLOY_MANPAGES=kaadduser.1 kaaddkeys.1 kaconsole.1 kadeluser.1 kaenvironments.1 karecordenv.1 kadeploy.1 kareboot.1 deploy.conf.1 karemote.1 deploy_cmd.conf.1
 
+GROUPS=/etc/group
+USERS=/etc/passwd
 
 #==================
 # Archive creation
@@ -85,7 +89,7 @@ TOOLS=tools/
 PDF_DOCS=$(wildcard $(DOCBOOK)*.pdf)
 
 EXCLUDED=--exclude=.svn
-KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
+KADEPLOY_ARC=kadeploy$(KADEPLOY_VERSION).tar
 
 
 
@@ -119,11 +123,11 @@ root_check:
 
 #Add the "proxy" user/group to /etc/passwd if needed.
 user_and_group_deploy_check: 
-	@# grep -q "^deploy:" /etc/passwd || adduser --system --home /home/deploy --group deploy
-	@# grep -q "^deploy:" /etc/passwd || useradd -d /home/deploy/ -r deploy
 	@echo "User and group check ..."
-	@( grep -q "^deploy:" /etc/passwd && grep -q "^deploy:" /etc/group ) || \
-	  adduser --system --group --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER)
+	@( ( grep -q "^deploy:" $(GROUPS) && echo "deploy group already created." ) || \
+		addgroup --quiet --system $(DEPLOYGROUP) )
+	@( ( grep -q "^deploy:" $(USERS) && echo "deploy user already created." ) || \
+		adduser --quiet --system --ingroup $(DEPLOYGROUP) --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER) 2>&1 >/dev/null )
 
 links_install:
 	@echo "Making links to sudowrapper ..."
@@ -178,7 +182,7 @@ files_install:
 
 # Perl modules 
 	@install -m 755 libkadeploy2/* $(KAPERLDIR)/libkadeploy2/
-	@ln -s $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/libkadeploy2
+	@ln -sf $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/libkadeploy2
 
 # database scripts
 	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
@@ -187,9 +191,13 @@ files_install:
 	
 # GRUB files
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
+
+conflink_install:
+	@( test -e $(CONFDIR) && mv $(CONFDIR) $(CONFDIR).old )
+	@( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) )
 	
 #Kadeploy installation in main directory
-install: installcheck installdirs files_install links_install sudo_install man_install
+install: installcheck installdirs files_install links_install conflink_install sudo_install man_install
 	@chown -R deploy: $(KADEPLOYCONFDIR) 		  
 
 #Sudo installation : modification of /etc/sudoers
@@ -299,8 +307,8 @@ documentation:
 
 usage:
 	@echo -e "\n\t**************************************"
-	@echo -e "\t*** Installation of Kadeploy-$(KADEPLOY_VERSION) ***"
+	@echo -e "\t*** Installation of Kadeploy$(KADEPLOY_VERSION) ***"
 	@echo -e "\t**************************************"
-	@echo -e "\n\tUsage: make [ OPTIONS=<...> ] MODULES"
-	@echo -e "\t\twhere MODULES := { install | uninstall | dist }"
-	@echo -e "\t\tand   OPTIONS := { PREFIX | KADEPLOYHOMEDIR | KADEPLOYCONFDIR } \n"
+	@echo -e "\n\tUsage: make [ OPTIONS=<...> ] MODULE"
+	@echo -e "\t\t==> OPTIONS := { PREFIX | KADEPLOYHOMEDIR } "
+	@echo -e "\t\t==> MODULE := { install | uninstall | dist }\n"
