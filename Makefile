@@ -42,13 +42,26 @@ DEPLOYGROUP=deploy
 
 SHELL=/bin/bash
 
+$(info Use settings for distribution : $(DISTRIB) )
 ifeq ($(DISTRIB), debian4)
 PERLDIR=/usr/share/perl/5.8/
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
 else ifeq ($(DISTRIB), fedora4)
 PERLDIR=/usr/lib/perl5/5.8.6/
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
 else
 PERLDIR=/usr/share/perl/5.8/
 $(info $(DISTRIB) : using default Perl path : $(PERLDIR) )
+HTMLDOC=/usr/bin/htmldoc
+$(info $(DISTRIB) : using default htmldoc path : $(HTMLDOC) )
+XSLTPROC=/usr/bin/xsltproc
+$(info $(DISTRIB) : using default xsltproc path : $(XSLTPROC) )
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+$(info $(DISTRIB) : using default LPD XSL stylesheet : $(TLDPOPXSL) )
 endif
 
 # Kadeploy main configuration directory
@@ -88,7 +101,7 @@ ADDONS=addons/
 TOOLS=tools/
 PDF_DOCS=$(wildcard $(DOCBOOK)*.pdf)
 
-EXCLUDED=--exclude=.svn
+EXCLUDED=--exclude='.svn' --exclude='*~'
 KADEPLOY_ARC=kadeploy$(KADEPLOY_VERSION).tar
 
 
@@ -96,7 +109,8 @@ KADEPLOY_ARC=kadeploy$(KADEPLOY_VERSION).tar
 .PHONY: all usage installcheck root_check user_and_group_deploy_check \
 links_install installdirs files_install install sudo_install man_install \
 uninstall files_uninstall \
-dist scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc
+dist scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc 
+
 	
 
 #################
@@ -115,7 +129,11 @@ all: usage
 ########################################
 
 #Check if you execute installation with root privileges
-installcheck: root_check user_and_group_deploy_check
+installcheck: root_check user_and_group_deploy_check prefix_check
+
+prefix_check:
+	     @echo "Installation directory check ..."
+	     ( test -d $(PREFIX) || ( mkdir -p $(PREFIX) && echo "$(PREFIX) created." ) )
 
 root_check:
 	@echo "root check ..."
@@ -202,8 +220,10 @@ install: installcheck installdirs files_install links_install conflink_install s
 
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
-	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" ; exit 1 )
+	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" && exit 1 )
 	@sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%DEPLOYUSER=.*%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%PERL5LIBDEPLOY=.*%PERL5LIBDEPLOY=$(PERLDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 	@scripts/install/sudoers_install.pl $(KADEPLOYHOMEDIR)
 
@@ -290,13 +310,21 @@ manpages:
 	
 documentation_arc: documentation
 	@echo "Archiving documentation ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
-	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
-	@tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
 	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(PDF_DOCS)
+	# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
+	# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
+	# @tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
 
-documentation:
-	@( cd $(DOCUMENTATION_SRC) && $(MAKE) 2>&1 >/dev/null )
+check_htmldoc:
+	@( test -f $(HTMLDOC) || ( echo "$(HTMLDOC) : command not found." && exit 1; ) )
+	
+check_xsltproc: 
+	@( test -f $(XSLTPROC) || ( echo "$(XSLTPROC) : command not found." && exit 1; ) )
+
+check_ldpxsl:
+	@( test -f $(TLDPOPXSL) || ( echo "$(TLDPOPXSL) : command not found." && exit 1; ) )
+
+documentation: check_htmldoc check_xsltproc check_ldpxsl
 	@( cd $(DOCBOOK) && $(MAKE) 2>&1 >/dev/null )
 
 ################

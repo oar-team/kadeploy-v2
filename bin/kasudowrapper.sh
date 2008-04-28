@@ -18,10 +18,10 @@ function kadeploy_split_nodes()
 
 DEPLOYDIR=/usr/local/kadeploy/
 DEPLOYUSER=deploy
-PERL5LIBDEPLOY=$DEPLOYDIR/share/perl/5.8
+PERL5LIBDEPLOY=/usr/share/perl/5.8
 OK=0
-export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
 export DEPLOYDIR
+export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
 
 append=""
 
