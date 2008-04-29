@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" "/usr/share/xml/docbook/schema/dtd/4.4/docbookx.dtd">
 
-<article  id="kadeploy_parallel_installation_HOWTO" lang="en">
-	<title>Kadepoy parallel installation HOW-TO</title>
+<article  id="kadeploy_install_HOWTO" lang="en">
+	<title>Kadepoy 2.1.7 installation HOW-TO</title>
 	
 	<articleinfo>
 		<author>
 			<firstname>Benjamin</firstname>
 			<surname>DEXHEIMER</surname>
   		</author>
+		<author>
+			<firstname>Emmanuel</firstname>
+			<surname>JEANVOINE</surname>
+		</author>
 		<date>18/02/2008</date>
-		<releaseinfo>0.1</releaseinfo>
+		<releaseinfo>0.2</releaseinfo>
 		<abstract>
 			<para>
-This HOW-TO deals about the installation methods of Kadeploy. Firstly we would explain how-to perform a parallel installation aside from the production instance of a previously installed Kadeploy, and secondly how to perform a production installation of Kadeploy 2.1.7.
+This HOW-TO deals about installation process of Kadeploy. In particular, the process for a parallel installation of Kadeploy aside from an already working (but older) instance of Kadeploy would be explained. Then some generic points related to installation process will be exposed.
 			</para>
 		</abstract>
   	</articleinfo>
@@ -90,6 +94,11 @@ For instance, the following command should be working from frontend-dev :
 	mysql -u root -p -h mysql.<![CDATA[<site>]]>.grid5000.fr
 </programlisting>
 				</para>
+			<sect3 id="mysql_par">
+				<title>Case of parallel installation</title>
+			<para> If you're planning for a parallel installation, you have to setup a testing-purpose Kadeploy DB aside from the production DB. The test DB would be hosted on the same MySQL server than the production DB. The script used to setup the test DB expects to find both databases on the same MySQL server.
+			</para>
+			</sect3>
 			</sect2>
 			<sect2 id="images">
 				<title>Grid'5000 images</title>
@@ -100,15 +109,136 @@ Kadeploy needs a direct file-system access to deployable system images. The <fil
 			<sect2 id="softs">
 			       <title>Softwares requisites</title>
 			       <para>
-Kadeploy is very tied to the Perl language. Make sure to have it
-installed on the system hosting the deployment frontend. In
-particular, the following package (Debian systems)
-libterm-readkey-perl has to be installed.
+Kadeploy is very tied to the Perl language. Make sure to have it installed on the system hosting the deployment frontend. In
+particular, the following package (on Debian-like systems) <filename>libterm-readkey-perl</filename> has to be installed.
 			       </para>
 		        </sect2>
 		</sect1>
+		<sect1>
+			<title>Key points to be aware of</title>
+			<sect2>
+				<title>Makefile usage</title>
+				<para>
+					Kadeploy's makefile offers 3 targets. 
+					<itemizedlist>
+						<listitem><para><command>install</command> : use this target to install Kadeploy on the deployment frontend (may it be production or test). 
+								<emphasis>It must run as root.</emphasis>
+							</para>
+						<procedure>
+							<para>
+								The following actions are performed on the target system :
+							</para>
+							<step>
+								<para>
+									Create if necessary user and group "deploy".
+								</para>
+							</step>
+							<step>
+								<para>
+									Copies commands, libraries, configuration files and manpages to correct places.
+								</para>
+							</step>
+							<step>
+								Do the sudowrapper configuration (in <filename>/etc/sudoers</filename>) and create corresponding symlinks to Kadeploy utility commands.
+							</step>
+						</procedure>	
+						</listitem>
+						<listitem>
+							<para><command>uninstall</command> : use this target to uninstall a previous installation of <emphasis>Kadeploy 2.1.7</emphasis>.
+							<emphasis>It must be run as root.</emphasis></para>
+							<procedure>
+								<para>The following actions are performed on the target system :</para>
+								<step>
+									<para>
+										Removes all Kadeploy files (commands, libraries, configuration files and manpages).
+									</para>
+								</step>
+								<step>
+									<para>
+										Removes the sudowrapper configuration (in <filename>/etc/sudoers</filename>).
+									</para>
+								</step>
+							</procedure>
+						</listitem>
+						<listitem>
+							<para><command>dist</command> : use this target from the SVN root directory (<filename>trunk/</filename>). It packs all Kadeploy files into a tgz typed archive. This archive will be used later to install Kadeploy on a deployment frontend.</para>
+								<procedure>
+									<para>
+										In particular, it generates this HOW-TO and manpages.
+										</para>
+								</procedure>
+						</listitem>
+					</itemizedlist>
+				</para>
+			</sect2>
+			<sect2>
+				<title>Setup of database</title>
+				<para>
+					Various operations on Kadeploy internal database should be done with the <command>kadatabase</command> command. When using this command, you should keep in mind that point : 
+					<itemizedlist>
+						<listitem>
+							<para>
+								DB settings should have be done on Kadeploy main configuration file (<filename>/etc/kadeploy/deploy.conf</filename>). Specifically, some informations like DB hostname, DB  name, deploy username and password are expected by kadatabase to be found in this file. That's why, full Kadeploy configuration should be done before any DB setup.
+							</para>
+						</listitem>
+					</itemizedlist>
+					It supports the following options :
+					<itemizedlist>
+						<listitem>
+							<command>--create-db-deploy-217</command> : creates a Kadeploy 2.1.7 compliant DB, which is empty from any data.
+							<warning>this option is destructive if you're giving a name already used by a previously existing DB.</warning>
+						</listitem>
+						<listitem>
+							<command>--dup-production-db</command> : duplicates data from a production DB into a testing DB. It asks for both DB names.
+							<note>It duplicates only static data (not history), that is said : disk, environment, node and partition tables.</note>
+						</listitem>
+						<listitem>
+							<command>--dup-deployment-rights</command> : duplicates deployment data rights from production DB into testing DB.
+							<note>It is useful when testing Kadeploy 2.1.7 when OAR is still connected to a production working Kadeploy 2.1.6.</note>
+						</listitem>
+						<listitem>
+							<command>--db-migration-216-to-217</command> : changes a Kadeploy 2.1.6 DB schema into a Kadeploy 2.1.7 compliant DB schema.
+						</listitem>
+						<listitem>
+							<command>--add-deploy-db-user</command> : adds the deploy user into the user table and grants him corrects privileges.
+						</listitem>
+						<listitem>
+							<command>--del-deploy-db-user</command> : removes the deploy user from the user table and flushes his privileges.
+						</listitem>
+						<listitem>
+							<command>--purge-test-db</command> : removes all data from the testing DB (disk, environment, node, partition and rights tables).
+						</listitem>
+						<listitem>
+							<command>--drop-db-deploy</command> : drops the specified DB (may it be production or testing).
+						</listitem>
+						<listitem>
+							<command>--clean-db-deploy</command> : removes all history data from the production DB (deployed and deployment tables).
+						</listitem>					
+					</itemizedlist>
+					Others options are no longer used and may be deprecated ; please do not use them.
+				</para>
+			</sect2>
+			<sect2>
+				<title>Recommanded installation layout</title>
+					<para>
+						You may choose the installation PREFIX of your choice. A standard choice will be <filename>/usr/local</filename>.
+					</para>
+					<para>
+						the KADEPLOYHOMEDIR will default to <![CDATA[<PREFIX]]>/kadeploy-2.1.7. It's generally a good idea to leave it unchanged.
+					</para>
+					<para>
+						DEPLOYUSER and DEPLOYGROUP will default to <emphasis>deploy</emphasis>. To keep compliance with habits from Kadeploy 2.1.6, it's generally a good idea to leave them unchanged. 
+					</para>
+					<para>
+						KADEPLOYCONFDIR must be leaved unchanged. Kadeploy commands will search their configuration file into <filename>/etc/kadeploy</filename>. This directory is unfortunately hard-coded and cannot be easily changed without code refactoring. By default, Kadeploy 2.1.7 creates a <filename>/etc/kadeploy-2.1.7</filename> configuration directory and makes a symlink <filename>/etc/kadeploy</filename> onto it. It preserves a previously existing <filename>/etc/kadeploy</filename> directory (from a 2.1.6 release for instance) by renaming it into <filename>/etc/kadeploy.old</filename>.
+					</para>
+					<para>
+						if your DISTRIB is not in the Makefile, some lines should be added to set up some PATHS which are distribution dependant. Please ask Kadeploy staff for extensive explanations.
+					</para>
+			</sect2>
+		</sect1>
 		<sect1 id="217install">
-			<title>Perform the duplicate installation</title>
+			<title>How-to perform a parallel installation</title>
 			<para>
 The frontend considered for this operation is <emphasis>frontend-dev</emphasis>.
 			</para>
@@ -154,12 +284,7 @@ This variables may be of interest, too :
 							<itemizedlist>
 								<listitem>
 									<para>
-<command>KADEPLOYCONFDIR</command> : where to place configuration files.
-									</para>
-								</listitem>
-								<listitem>
-									<para>
-<command>KADEPLOYHOMEDIR</command> : where Kadeploy files are installed.
+<command>KADEPLOYHOMEDIR</command> : where Kadeploy files are installed. By default it generates a directory name which includes PREFIX and current version number.
 									</para>
 								</listitem>
 								<listitem>
