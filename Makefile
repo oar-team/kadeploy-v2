@@ -264,7 +264,8 @@ files_uninstall :
 	@rm -rf $(KADEPLOYHOMEDIR)/
 	@echo "Deleting Kadeploy confdir ..."
 	@rm -rf $(KADEPLOYCONFDIR)/
-
+	@( test -L /etc/kadeploy && rm -f /etc/kadeploy )
+	@( test -d /etc/kadeploy.old && mv /etc/kadeploy.old /etc/kadeploy )
 
 uninstall : root_check files_uninstall
 
@@ -311,9 +312,9 @@ manpages:
 documentation_arc: documentation
 	@echo "Archiving documentation ..."
 	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(PDF_DOCS)
-	# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
-	# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
-	# @tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
+# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
+# @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
+# @tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)
 
 check_htmldoc:
 	@( test -f $(HTMLDOC) || ( echo "$(HTMLDOC) : command not found." && exit 1; ) )
