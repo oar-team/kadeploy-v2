@@ -107,7 +107,7 @@ KADEPLOY_ARC=kadeploy$(KADEPLOY_VERSION).tar
 
 
 .PHONY: all usage installcheck root_check user_and_group_deploy_check \
-links_install installdirs files_install install sudo_install man_install \
+links_install conflink_install installdirs files_install install sudo_install man_install \
 uninstall files_uninstall \
 dist scripts_arc addons_arc tools_arc manpages_arc manpages documentation documentation_arc 
 
@@ -133,7 +133,7 @@ installcheck: root_check user_and_group_deploy_check prefix_check
 
 prefix_check:
 	     @echo "Installation directory check ..."
-	     ( test -d $(PREFIX) || ( mkdir -p $(PREFIX) && echo "$(PREFIX) created." ) )
+	     @( test -d $(PREFIX) || ( mkdir -p $(PREFIX) && echo "$(PREFIX) created." ) )
 
 root_check:
 	@echo "root check ..."
@@ -211,8 +211,8 @@ files_install:
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 
 conflink_install:
-	@( test -e $(CONFDIR) && mv $(CONFDIR) $(CONFDIR).old )
-	@( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) )
+	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
+	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
 	
 #Kadeploy installation in main directory
 install: installcheck installdirs files_install links_install conflink_install sudo_install man_install
@@ -264,8 +264,8 @@ files_uninstall :
 	@rm -rf $(KADEPLOYHOMEDIR)/
 	@echo "Deleting Kadeploy confdir ..."
 	@rm -rf $(KADEPLOYCONFDIR)/
-	@( test -L /etc/kadeploy && rm -f /etc/kadeploy )
-	@( test -d /etc/kadeploy.old && mv /etc/kadeploy.old /etc/kadeploy )
+	@( [ -L $(CONFDIR) ] && ( rm -f $(CONFDIR) ) || echo No previously existing $(CONFDIR) found. )
+	@( [ -d $(CONFDIR).old ] && ( mv $(CONFDIR).old $(CONFDIR) ) || echo No previously existing $(CONFDIR).old found. )
 
 uninstall : root_check files_uninstall
 
