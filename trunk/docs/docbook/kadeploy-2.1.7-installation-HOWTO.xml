@@ -108,6 +108,7 @@ For instance, the following command should be working from frontend-dev :
 					<itemizedlist>
 						<listitem><filename>libterm-readkey-perl</filename></listitem>
 						<listitem><filename>libdbi-perl</filename></listitem>
+						<listitem><filename>libdbd-mysql-perl</filename></listitem>
 					</itemizedlist>
 				</para>
 			</sect2>
