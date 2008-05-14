@@ -95,7 +95,7 @@ For instance, the following command should be working from frontend-dev :
 </programlisting>
 				</para>
 			<sect3 id="mysql_par">
-				<title>Case of parallel installation</title>
+				<title>In case of parallel installation</title>
 			<para> If you're planning for a parallel installation, you have to setup a testing-purpose Kadeploy DB aside from the production DB. The test DB would be hosted on the same MySQL server than the production DB. The script used to setup the test DB expects to find both databases on the same MySQL server.
 			</para>
 			</sect3>
@@ -257,6 +257,24 @@ Kadeploy needs a direct file-system access to deployable system images. The <fil
 					<para>
 						if your DISTRIB is not in the Makefile, some lines should be added to set up some PATHS which are distribution dependant. Please ask Kadeploy staff for extensive explanations.
 					</para>
+			</sect2>
+			<sect2>
+				<title>Rights access to directories</title>
+				<para>
+					When a user issues a <emphasis>kadeploy</emphasis> command, it has been run in fact as the <emphasis>deploy</emphasis> user, defined in <filename>Makefile</filename> and <filename>/etc/kadeploy/deploy.conf</filename>. It's mandatory that some specific directories will be open for read/write access to that system user, created at installation time.</para>
+				<para>In particular, make sure that the directories below are opened for R/W access to user <emphasis>deploy</emphasis>: 
+					<itemizedlist>
+						<listitem><filename>/etc/kadeploy</filename></listitem>
+						<listitem><filename>/var/lib/tftpboot</filename> (usually used on Debian for TFTP root directory configuration) and the subdirectories  <filename>boot/</filename>, <filename>boot/cache</filename>, and <filename>pxelinux.cfg/</filename></listitem>
+					</itemizedlist>
+					It means that this directories must be owned by the <emphasis>deploy</emphasis> user.
+				</para>
+				<sect3>
+					<title>In case of parallel installation</title>
+					<para>
+						You will be driven to align the <emphasis>deploy</emphasis> UID/GID of frontend-dev on those of frontend-prod. Do not forget to check directories listed above with the UID/GID updated.
+					</para>
+				</sect3>
 			</sect2>
 		</sect1>
 		<sect1 id="217install">
