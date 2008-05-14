@@ -55,8 +55,15 @@ my @hostlist;
 my $hostfile;
 my $clustername;
 my $deploy_user;
+
 ## Configuration
 my $configuration = libkadeploy2::conflib->new();
+if ( !$configuration->check_conf()) {
+	      print "ERROR : problem occured while loading Kadeploy configuration file.\n";
+	      exit 1;
+}
+
+my $ka_install_dir = $configuration->get_conf("kadeploy2_directory");
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -188,7 +195,7 @@ if (@envToAdd)
 {
     foreach $i (@envToAdd)
     {
-	system("/usr/local/kadeploy/bin/karecordenv -fe $i")
+	system("$ka_install_dir"."/bin/karecordenv -fe $i")
     }
     exit(0);
 }
