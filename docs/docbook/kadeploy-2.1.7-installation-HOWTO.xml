@@ -39,8 +39,8 @@ Kadeploy needs several resources :
 	<listitem><para>PXE booting environment (usually from Syslinux project) for booting nodes</para></listitem>
 	<listitem><para>TFTP server, and therefore a writeable access to root TFTP directory served by tftp daemon (e.g. <filename>/var/lib/tftpboot</filename> and its sub-directories)</para></listitem>
 	<listitem><para>MySQL database</para></listitem>
+	<listitem><para>Perl modules</para></listitem>
 	<listitem><para>File-system level read access to Grid'5000 deployable system images.</para></listitem>
-	<listitem><para>Software requisites.</para></listitem>
 </itemizedlist>
 			<sect2 id="rsh">
 				<title>rsh client</title>
@@ -100,19 +100,23 @@ For instance, the following command should be working from frontend-dev :
 			</para>
 			</sect3>
 			</sect2>
+			<sect2 id="perl">
+				<title>Perl modules</title>
+				<para>
+					Kadeploy is fully written en Perl, and therefore is based upon some Perl modules.
+					You have to ensure that the packages listed below (Debian names) are installed on the deployment frontend (the machine hosting the Ka* commands) :
+					<itemizedlist>
+						<listitem><filename>libterm-readkey-perl</filename></listitem>
+						<listitem><filename>libdbi-perl</filename></listitem>
+					</itemizedlist>
+				</para>
+			</sect2>
 			<sect2 id="images">
 				<title>Grid'5000 images</title>
 				<para>
 Kadeploy needs a direct file-system access to deployable system images. The <filename>/grid5000</filename> directory have to be NFS mounted by fronted-dev.
 				</para>
 			</sect2>
-			<sect2 id="softs">
-			       <title>Softwares requisites</title>
-			       <para>
-Kadeploy is very tied to the Perl language. Make sure to have it installed on the system hosting the deployment frontend. In
-particular, the following package (on Debian-like systems) <filename>libterm-readkey-perl</filename> has to be installed.
-			       </para>
-		        </sect2>
 		</sect1>
 		<sect1>
 			<title>Key points to be aware of</title>
@@ -121,7 +125,8 @@ particular, the following package (on Debian-like systems) <filename>libterm-rea
 				<para>
 					Kadeploy's makefile offers 3 targets. 
 					<itemizedlist>
-						<listitem><para><command>install</command> : use this target to install Kadeploy on the deployment frontend (may it be production or test). 
+						<listitem><para><command>install</command> : use this target to install Kadeploy on the deployment frontend (may it be production or test). </para>
+							<para>
 								<emphasis>It must run as root.</emphasis>
 							</para>
 						<procedure>
@@ -130,7 +135,7 @@ particular, the following package (on Debian-like systems) <filename>libterm-rea
 							</para>
 							<step>
 								<para>
-									Create if necessary user and group "deploy".
+									Create if necessary user and group <emphasis>deploy</emphasis>.
 								</para>
 							</step>
 							<step>
@@ -144,14 +149,15 @@ particular, the following package (on Debian-like systems) <filename>libterm-rea
 						</procedure>	
 						</listitem>
 						<listitem>
-							<para><command>uninstall</command> : use this target to uninstall a previous installation of <emphasis>Kadeploy 2.1.7</emphasis>.
-							<emphasis>It must be run as root.</emphasis></para>
+							<para><command>uninstall</command> : use this target to uninstall a previous installation of <emphasis>Kadeploy 2.1.7</emphasis>.</para>
+							<para>
+								<emphasis>It must be run as root.</emphasis></para>
 							<procedure>
-								<para>The following actions are performed on the target system :</para>
+								<para>The following actions are performed on the target system </para>
 								<step>
-									<para>
-										Removes all Kadeploy files (commands, libraries, configuration files and manpages).
-									</para>
+									<para>	
+									Removes all Kadeploy files (commands, libraries, configuration files and manpages).
+								</para>
 								</step>
 								<step>
 									<para>
@@ -178,41 +184,56 @@ particular, the following package (on Debian-like systems) <filename>libterm-rea
 					<itemizedlist>
 						<listitem>
 							<para>
-								DB settings should have be done on Kadeploy main configuration file (<filename>/etc/kadeploy/deploy.conf</filename>). Specifically, some informations like DB hostname, DB  name, deploy username and password are expected by kadatabase to be found in this file. That's why, full Kadeploy configuration should be done before any DB setup.
+								DB settings should have be done on Kadeploy main configuration file (<filename>/etc/kadeploy/deploy.conf</filename>).</para>
+							<para>
+								Specifically, some informations like DB hostname, DB name, deploy username and password are expected by kadatabase to be found in this file. Ensure to have a working configuration before doing any DB setup.
 							</para>
 						</listitem>
 					</itemizedlist>
 					It supports the following options :
 					<itemizedlist>
-						<listitem>
+						<listitem><para>
 							<command>--create-db-deploy-217</command> : creates a Kadeploy 2.1.7 compliant DB, which is empty from any data.
-							<warning>this option is destructive if you're giving a name already used by a previously existing DB.</warning>
+							<warning>this option is destructive if you're giving a name already used by a previously existing DB.</warning></para>
 						</listitem>
 						<listitem>
+							<para>
 							<command>--dup-production-db</command> : duplicates data from a production DB into a testing DB. It asks for both DB names.
 							<note>It duplicates only static data (not history), that is said : disk, environment, node and partition tables.</note>
+						</para>
 						</listitem>
 						<listitem>
+							<para>
 							<command>--dup-deployment-rights</command> : duplicates deployment data rights from production DB into testing DB.
 							<note>It is useful when testing Kadeploy 2.1.7 when OAR is still connected to a production working Kadeploy 2.1.6.</note>
+						</para>
 						</listitem>
 						<listitem>
-							<command>--db-migration-216-to-217</command> : changes a Kadeploy 2.1.6 DB schema into a Kadeploy 2.1.7 compliant DB schema.
+							<para>
+							<command>--db-migration-216-to-217</command> : changes a Kadeploy 2.1.6 DB schema into a Kadeploy 2.1.7 compliant DB schema.</para>
 						</listitem>
 						<listitem>
-							<command>--add-deploy-db-user</command> : adds the deploy user into the user table and grants him corrects privileges.
+							<para>
+							<command>--add-deploy-db-user</command> : adds the deploy user into the user table and grants him corrects privileges.</para>
 						</listitem>
 						<listitem>
-							<command>--del-deploy-db-user</command> : removes the deploy user from the user table and flushes his privileges.
+							<para>
+							<command>--del-deploy-db-user</command> : removes the deploy user from the user table and flushes his privileges.</para>
 						</listitem>
 						<listitem>
+							<para>
 							<command>--purge-test-db</command> : removes all data from the testing DB (disk, environment, node, partition and rights tables).
+						</para>
 						</listitem>
 						<listitem>
+							<para>
 							<command>--drop-db-deploy</command> : drops the specified DB (may it be production or testing).
+						</para>
 						</listitem>
 						<listitem>
+							<para>
 							<command>--clean-db-deploy</command> : removes all history data from the production DB (deployed and deployment tables).
+						</para>
 						</listitem>					
 					</itemizedlist>
 					Others options are no longer used and may be deprecated ; please do not use them.
@@ -224,7 +245,7 @@ particular, the following package (on Debian-like systems) <filename>libterm-rea
 						You may choose the installation PREFIX of your choice. A standard choice will be <filename>/usr/local</filename>.
 					</para>
 					<para>
-						the KADEPLOYHOMEDIR will default to <![CDATA[<PREFIX]]>/kadeploy-2.1.7. It's generally a good idea to leave it unchanged.
+						the KADEPLOYHOMEDIR will default to <![CDATA[<PREFIX>]]>/kadeploy-2.1.7. It's generally a good idea to leave it unchanged.
 					</para>
 					<para>
 						DEPLOYUSER and DEPLOYGROUP will default to <emphasis>deploy</emphasis>. To keep compliance with habits from Kadeploy 2.1.6, it's generally a good idea to leave them unchanged. 
@@ -284,12 +305,13 @@ This variables may be of interest, too :
 							<itemizedlist>
 								<listitem>
 									<para>
-<command>KADEPLOYHOMEDIR</command> : where Kadeploy files are installed. By default it generates a directory name which includes PREFIX and current version number.
+<command>KADEPLOYHOMEDIR</command> : where Kadeploy files are installed. By default it's compound by the PREFIX and the path string <filename>kadeploy-<![CDATA[<VERSION>]]></filename>. </para>
+<para>That variable is tied to the one specified in main Kadeploy's configuration file <filename>deploy.conf</filename> : <emphasis>kadeploy2_directory</emphasis>. Please ensure the same value has been entered for boths variables otherwise some path will be missing at run time.
 									</para>
 								</listitem>
 								<listitem>
 									<para>
-<command>DEPLOYUSER</command> and <command>DEPLOYGROUP</command> : username and groupname of the identity used by Kadeploy to perform his work (instead of using the super-privileged user <emphasis>root</emphasis>). The values <emphasis>deploy</emphasis> for both variables are set by default.
+<command>DEPLOYUSER</command> and <command>DEPLOYGROUP</command> : username and groupname of the identity used by Kadeploy to perform his work (instead of using the super-privileged user <emphasis>root</emphasis>). The value <emphasis>deploy</emphasis> is set by default for both variables.
 									</para>
 								</listitem>
 							</itemizedlist>
@@ -368,7 +390,7 @@ Remember to issue kadeploy commands from frontend-dev when you want to test the 
 						</listitem>
 						<listitem>
 							<para>
-Remember to issue <command>kadatabase --dup-deployment-rights</command> each time you get a OAR reservation.
+Remember to issue <command>kadatabase --dup-deployment-rights</command> each time you've done an OAR reservation.
 							</para>
 						</listitem>
 
