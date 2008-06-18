@@ -92,6 +92,7 @@ getenv({anonymous, User, Directory}) when is_list(Directory)->
                kernelparam=KernelParam,
                user=User,
                md5=Md5,
+               id=anonymous,
                description=katools:chop(Description)
               }};
         {error,Reason} ->
@@ -117,7 +118,7 @@ setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
     {ok,IPtmp}=inet:getaddr(Hostname, inet), %% IPV4
     IPhex=katools:ip_hex(IPtmp),
     Filename=filename:join([TFTPDir,PXERep,IPhex]),
-    ?LOGF("writing PXE file (~p) for host ~p",[Filename,Hostname],?NOTICE),
+    ?LOGF("writing PXE file (~p) for host ~p~n",[Filename,Hostname],?NOTICE),
     Data=list_to_binary(PXEData),
     file:write_file(Filename,Data).
 
@@ -125,7 +126,7 @@ setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
 %%                     Config, Env, Partition::integer) -> Data::string
 %% @doc returns the pxe configuration
 setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
-    Id=integer_to_list(Env#environment.id),
+    Id=getid(Env),
     TFTPRelPath=getval(tftp_relative_path,Config),
     Device    = getval(device,Config),
     case UseGrub of
@@ -149,7 +150,40 @@ setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
 
 %% @spec extract_kernel(Env::record(environment),Directory) -> ok | {error, Reason}
 %% @doc extract kernel and initrd files to output directory
-extract_kernel(Env,Directory) ->
-    ok.
+%% FIXME : dd env ?
+extract_kernel(Env, BaseDirectory) ->
+    Base=Env#environment.filebase,
+    Directory=filename:join([BaseDirectory,"folder_env_"++getid(Env)]),
+    Kernel=remove_slash(Env#environment.kernelpath),
+    InitRd=remove_slash(Env#environment.initrdpath),
+    ok = katools:create_dir_ifnec(Directory),
+    %% FIXME: check that extracted files are readable for tftp
+    %% FIXME: check timestamp
+    case {exists(filename:join(Directory,Kernel)),
+                 exists(filename:join(Directory,InitRd))} of
+        {true, true} ->
+            ?LOG("kernel and initrd already extracted~n",?DEB),
+            {ok, exists};
+        _ -> % at least one file does not exists, extract everythin
+            ?LOGF("kernel and initrd needs to be extracted from archive ~p~n",[Base],?NOTICE),
+            kaslave:myoscmd("tar zxf "++Base++" -C "++Directory++" "++Kernel++" "++InitRd)
+    end.
+
+
+remove_slash("/"++Tail)->Tail;
+remove_slash(String) -> String.
+
+exists(Filename) ->
+    ?LOGF("check if file ~p exists~n",[Filename],?DEB),
+    case file:read_file_info(Filename) of
+        {ok, _} -> true;
+        _       -> false
+    end.
 
 getval(Key,Config)-> kaconfig:getval_or_fail(Key,Config).
+
+getid(#environment{ id=Id }) when is_integer(Id) ->
+    integer_to_list(Id) ;
+%% use md5 as id for pxe env pathname
+getid(#environment{id=anonymous,md5=MD5}) ->
+    MD5.

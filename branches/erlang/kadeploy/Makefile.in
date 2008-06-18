@@ -139,6 +139,8 @@ test:
 	$(MAKE) TYPE=test dotest
 
 dotest: kadeploy boot buildtest $(CONFFILE) $(TEST_CONFFILE)
+	@mkdir -p /tmp/tftpboot/PXEClient/images_grub
+	@mkdir -p /tmp/tftpboot/PXEClient/pxelinux.cfg
 	$(ERL) +A 16 -noshell -sname testserver -pa ./ebin -s eunit test katests_all -s init stop -setcookie testcookie
 
 g5ktest:

@@ -155,13 +155,14 @@ handle_cast(Msg, State) ->
 
 %% last pid has finished
 handle_info({done, FromPid, Host }, State=#state{pids=[Pid],bad=Bad,good=Good}) ->
-    ?LOGF("Last Host ~p has been deployed~p~n",[Host],?DEB),
+    ?LOGF("Last Host ~p has been deployed~n",[Host],?DEB),
     NewBad = delbadnode(Bad,Host),
     gen_server:reply(State#state.clientpid,{[Host|Good],NewBad}),
     {stop,normal,State};
 
 handle_info({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=Good,bad=Bad}) ->
-    ?LOGF("Host ~p has been deployed~p~n",[Host],?DEB),
+    Duration=katools:elapsed(Depl#deployment.startdate, now())/1000,
+    ?LOGF("Host ~p has been deployed in ~p sec~n",[Host,Duration],?INFO),
     Now=now(),
     NewPids= Pids -- [FromPid],
     NewBad = delbadnode(Bad,Host),
@@ -175,10 +176,10 @@ handle_info({error, Reason, FromPid,Host }, State=#state{deployment=Depl,pids=Pi
     NewBad = setreason(Bad,Host,Reason),
     case Pids -- [FromPid] of
         [] ->
-            ?LOG("No more nodes, stop ~n",?INFO),
+            ?LOG("No more nodes, stop~n",?INFO),
             gen_server:reply(State#state.clientpid,{State#state.good,NewBad}),
             {stop,normal,State};
-        NewPids->
+        NewPid->
             ?LOGF("Wait for Pids~p ~n",[NewPids],?DEB),
             Opts=Depl#deployment.options,
             {noreply,State#state{pids=NewPids,bad=NewBad}}
@@ -189,6 +190,11 @@ handle_info({timeout, _Ref, deploy_timeout}, State=#state{good=Good,bad=Bad})->
     gen_server:reply(State#state.clientpid,{Good,Bad}),
     {stop, normal, State};
 
+%% we can receive notstarted message after the kaslave:XXstart fun for
+%% not responding nodes (already set as kaslave_failure)
+handle_info({notstarted,  {Reason, Host, Name}},  State) ->
+    ?LOGF("Failed to start a beam on host ~p, reason:~p~n",[Host,Reason],?NOTICE),
+    {noreply, State};
 handle_info(Msg, State) ->
     ?LOGF("Unknown Msg ~p~n",[Msg],?WARN),
     {noreply, State}.
@@ -200,8 +206,9 @@ handle_info(Msg, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(Reason, _State) ->
-    ?LOGF("Terminate mgr ~p~n",[Reason],?WARN),
+terminate(Reason, State=#state{deployment=Depl}) ->
+    Duration=katools:elapsed(Depl#deployment.startdate, now())/1000,
+    ?LOGF("Deployment finished (~p), duration: ~p~n",[Reason,Duration],?WARN),
     ok.
 
 %%--------------------------------------------------------------------
@@ -235,7 +242,11 @@ check_rights_node(Env,D=#deployment{username=User})->
     %% we should check if the user has rights on each nodes/partition
     ok = karights:check_nodes(User,D#deployment.partition,D#deployment.nodes),
     %% extract kernel from environment if needed (tar format only)
-    ok = kaenv:extract_kernel(Env,fixme),
+    {ok, TFTPRep}   = kaconfig:getval(tftp_repository),
+    {ok, TFTPPath}  = kaconfig:getval(tftp_relative_path),
+    Filename  = filename:join(TFTPRep,TFTPPath),
+    ?LOGF("Kernel and initrd will be extracted in ~p",[Filename],?DEB),
+    {ok,_Res} = kaenv:extract_kernel(Env,Filename),
     {ok, Env}.
 
 deploy_setup(D=#deployment{options=Opts},Env)

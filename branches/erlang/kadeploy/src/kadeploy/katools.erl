@@ -26,7 +26,8 @@
 -include("kaconf.hrl").
 
 -export([debug/3, debug/4, get_val/1, elapsed/2, join/2, clean_str/1,
-         chop/1, check_host/3, ip_tostr/1, split2/2, split2/3, ip_hex/1]).
+         chop/1, check_host/3, ip_tostr/1, split2/2, split2/3, ip_hex/1,
+        create_dir_ifnec/1]).
 
 level2int("debug")     -> ?DEB;
 level2int("info")      -> ?INFO;
@@ -70,6 +71,7 @@ debug(From, Message, Args, Level) ->
             nodebug
     end.
 
+%% time elapsed in msec
 elapsed({Before1, Before2, Before3}, {After1, After2, After3}) ->
     After  = After1  * 1000000000  + After2  * 1000 + After3/1000,
     Before = Before1 * 1000000000  + Before2 * 1000 + Before3/1000,
@@ -130,3 +132,15 @@ split2(String,Chr,nostrip) ->
 
 ip_hex(A={IP1,IP2,IP3,IP4})->
     lists:flatten(io_lib:format(lists:flatten(lists:duplicate(4,"~2.16.0B")),tuple_to_list(A))).
+create_dir_ifnec(DestDir)->
+    case file:read_file_info(DestDir) of
+        {ok, FileInfo}  ->
+            ?LOGF("Info for file ~p: ~p~n",[DestDir,FileInfo],?DEB),
+            ok;
+        {error, enoent} ->
+            ?LOGF("Must create directory ~p on node~p~n",[DestDir,node()],?WARN),
+            ok=file:make_dir(DestDir);
+        Error ->
+            {error,cant_create_dir,Error}
+    end.
+
