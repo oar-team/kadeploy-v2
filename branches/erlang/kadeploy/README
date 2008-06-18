@@ -1,0 +1,69 @@
+* This a prototype implementation of kadeploy-v3 in erlang
+
+
+** Architecture:
+
+- a kadeploy daemon (supervisor), running several permanent services:
+  - kareboot_srv : manage reboot of nodes
+  - kaconfig     : manage configuration
+  - kanodes_sup (supervisor) : manage the temporary processes
+
+- two transient services, started for each deployement:
+  - kadeploy_mgr: handle the deployment
+  - kachain_srv: handle the transfert of the image (using a chain)
+
+- a temporary process for each node to be deployed:
+  - kadeploy_node
+
+** configuration:
+
+3 configuration files:
+- deploy.conf: global configuration (same syntax as kadeploy-v3)
+- cluster-XXXX.conf (where XXX= cluster name). All configuration
+specific to a cluster (cluster = set of homogenous nodes)
+- nodes.conf: define all nodes (each node MUST belong to a cluster)
+
+a global parameter can be redifined in the cluster config and/or in
+the node config.
+
+** deployment using the production environment:
+- requires erlang on the frontend and on the nodes (same version)
+- requires slave_noproxy.beam module on the nodes and the frontend
+- requires /bin/ash on nodes (for postinstallation script)
+
+
+** usage
+
+- no client script or server script available
+- the only to use it, is to use the test suite:
+   make test
+
+test on g5k:
+- OAR_NODEFILE=mynodefile make g5ktest
+
+** DONE
+- deployment using production environment
+- reboot
+- preinstall (using current format, but the script is not executed)
+- postinstall (using current format)
+- pxe/tftp configuration (nogrub)
+
+** TODO
+- script to start|stop the kadeploy-server
+- script to start a deployment
+- handle minnodes (stop as soon as 'minnodes' are OK)
+- handle errors during transfert
+- transfert retries
+- reboot server tuning (pool of concurrent reboots ?)
+- make a duke env with erlang
+- rights management
+- database management (logs, ...)
+- extract of kernel/initrd from tarball
+- anonymous environment
+- kexec reboot
+- virtualization
+- nfsroot
+- option to mkfs /tmp
+- for prod env: check if partition is not the same as the current partition
+- tftp server in erlang
+
