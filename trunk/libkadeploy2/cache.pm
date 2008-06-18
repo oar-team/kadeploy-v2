@@ -66,14 +66,12 @@ sub init_cache($)
 ## and create it if needed
 sub test_cache_directory()
 {
-    if (! -d $_cachedirectory) 
+    if ( ! -e $_cachedirectory ) 
     { 
-	my $success =  mkdir $_cachedirectory, 0755;
-        if ($success) { return 1; }
-        else 
-        {
-	    libkadeploy2::debug::debugl(3, "$0: mkdir failed on $_cachedirectory\n");
-	    return 0;
+        if ( mkdir $_cachedirectory, 0755 ) { return 1; }
+        else {
+	  libkadeploy2::debug::debugl(3, "$0: mkdir failed on $_cachedirectory\n");
+	  return 0;
 	}
     }
     elsif ( ! -r $_cachedirectory || ! -w $_cachedirectory || ! -x $_cachedirectory ) 
@@ -93,10 +91,10 @@ sub test_cache_directory()
 sub read_files_in_cache()
 {
     # print "cache::read_files_in_cache() \n";
-    
-    if ( ! opendir CACHEHANDLE, $_cachedirectory )
+    my $succes = opendir CACHEHANDLE, $_cachedirectory;
+    if ( ! $succes )
     {
-	libkadeploy2::debug::debugl(3, "$0 : opendir failed on $_cachedirectory");
+	libkadeploy2::debug::debugl(3, "$0 : opendir failed on $_cachedirectory\n");
 	exit 0;
     }
     
