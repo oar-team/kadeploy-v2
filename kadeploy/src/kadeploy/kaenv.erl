@@ -29,8 +29,13 @@
 %% @ doc everything related to environments
 
 %% API
--export([getenv/1, setup_pxe/5, setup_pxe_data/5, extract_kernel/1]).
+-export([getenv/1, setup_pxe/5, setup_pxe_data/5, extract_kernel/2]).
 
+-define(postinstall_file,"postinstall.tgz").
+-define(description_file,"description").
+-define(initrdpath_file,"initrd").
+-define(kernelpath_file,"kernel").
+-define(kernelparam_file,"bootcmdline").
 -define(PXE_HEADER,"PROMPT 1
 DEFAULT bootlabel
 DISPLAY messages
@@ -40,9 +45,62 @@ TIMEOUT 50
          KERNEL ").
 
 %% @spec getenv(EnvName::String) -> {ok, record(environment)} | { error, Reason}
-getenv(_EnvName)->
-    {ok, #environment{} }.
+%% @doc returns an environment record from a name or a directory
+%%  https://www.grid5000.fr/mediawiki/index.php/Kadeploy:Environment
+getenv({recorded, User, EnvName}) when is_list(EnvName)->
+    %% TODO
+    {ok, #environment{user=User} };
+getenv({anonymous, User, Directory}) when is_list(Directory)->
+    ?LOGF("Scanning anonymous env in directory ~p~n",[Directory],?INFO),
+    case file:list_dir(Directory) of
+        {ok, Filenames} ->
+            %% there should be one base.tgz or base.dd file
+            SearchBase=fun("base.dd") -> true ;
+                          ("base.tgz")-> true ;
+                          (_) -> false end ,
+            [Base]=lists:filter(SearchBase,Filenames),
+            FileBase=filename:absname(filename:join(Directory,Base)),
+            ?LOG("Read filebase info~n",?INFO),
+            {ok,_} = file:read_file_info(FileBase), % check if exists and is readable
+            PostInstall=filename:absname(filename:join(Directory,?postinstall_file)),
+            {ok,_} = file:read_file_info(PostInstall), % check if exists and is readable
+            ?LOG("Read kernel, initrd and desc~n",?INFO),
+            {ok,Description}= file:read_file(filename:join(Directory,?description_file)),
+            {ok,KernelPath}= file:read_file(filename:join(Directory,?kernelpath_file)),
+            {ok,InitrdPath}= file:read_file(filename:join(Directory,?initrdpath_file)),
+            KernelParam = case file:read_file(filename:join(Directory,?kernelparam_file)) of
+                              {ok, Bin} -> binary_to_list(Bin);
+                              _ -> ""
+                          end,
+            Md5 = case [X ||  X <- Filenames, X=="md5sum"] of
+                      [] -> % no md5file
+                          ?LOG("Missing md5sum file, compute md5~n",?INFO),
+                          lists:sublist(os:cmd("md5sum  "++FileBase),32);
+                      [File] ->
+                          {ok, Md5Bin} = file:read_file(filename:join(Directory,File)),
+                          %% FIXME: what is the format of md5sum ?
+                          %% just the md5 of base.tgz or md5 of all
+                          %% files ?
+                          binary_to_list(Md5Bin)
+                  end,
+            ?LOGF("MD5 of ~p is ~p~n",[FileBase,Md5],?NOTICE),
+            {ok,#environment{
+               filebase=FileBase,
+               filesite=PostInstall,
+               kernelpath=katools:chop(KernelPath),
+               initrdpath=katools:chop(InitrdPath),
+               kernelparam=KernelParam,
+               user=User,
+               md5=Md5,
+               description=katools:chop(Description)
+              }};
+        {error,Reason} ->
+            {error,Reason}
+    end.
 
+%% @spec setup_pxe(UseGrub::grub|nogrub,Hostname::string,
+%%                  Config, Env, Partition::integer) -> ok | {error,Reason}
+%% @doc returns an environment record from a name or a directory
 setup_pxe(UseGrub, Hostname, _Config,{deploykernel, Duke},Partition)->
     %% @FIXME Temporary: Use external script to do this
     case kaslave:myoscmd(Duke) of
@@ -63,6 +121,9 @@ setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
     Data=list_to_binary(PXEData),
     file:write_file(Filename,Data).
 
+%% @spec setup_pxe_data(UseGrub::grub|nogrub,Hostname::string,
+%%                     Config, Env, Partition::integer) -> Data::string
+%% @doc returns the pxe configuration
 setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
     Id=integer_to_list(Env#environment.id),
     TFTPRelPath=getval(tftp_relative_path,Config),
@@ -86,7 +147,9 @@ setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
                           KernelParam])
     end.
 
-extract_kernel(Env) ->
+%% @spec extract_kernel(Env::record(environment),Directory) -> ok | {error, Reason}
+%% @doc extract kernel and initrd files to output directory
+extract_kernel(Env,Directory) ->
     ok.
 
 getval(Key,Config)-> kaconfig:getval_or_fail(Key,Config).

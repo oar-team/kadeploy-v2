@@ -48,7 +48,7 @@ ip_test()->
     ?assertMatch("127.0.0.1",katools:ip_tostr(IP)).
 
 unzip_test()->
-    {ok, Bin} = file:read_file("./src/test/test.tgz"),
+    {ok, Bin} = file:read_file("./src/test/base.tgz"),
     ?assertMatch({ok,Res},kaslave:unzip_and_exec(Bin,"/tmp/post","erlang/script.sh")).
 
 nmap_test()->
@@ -63,7 +63,7 @@ badnodes_test()->
     Good=[],
     application:start(kadeploy),
     application:set_env(kadeploy,debug_level,?DEBUG_LEVEL),
-    Resp=kadeploy_mgr:deploy(root,["badone","badtwo"],"nef2",#deploy_opts{timeout=2000}),
+    Resp=kadeploy_mgr:deploy(root,["badone","badtwo"],{recorded,"nef2"},#deploy_opts{timeout=2000}),
     ?assertMatch({Good,
                   [{"badone", {error,kaslave_failure}},
                    {"badtwo", {error,kaslave_failure}}]},
@@ -84,7 +84,7 @@ pxedata_nogrub_test()->
                       initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
                       kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
                       kernelparam = "",
-                      filesite="./src/test/test.tgz"},
+                      filesite="./src/test/base.tgz"},
     Host="hyperion",
     Conf=kaconfig:getnodeconf(Host),
     put(master, self()), % needed for failure call
@@ -101,7 +101,7 @@ pxedata_grub_test()->
                       initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
                       kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
                       kernelparam = "",
-                      filesite="./src/test/test.tgz"},
+                      filesite="./src/test/base.tgz"},
     Host="hyperion",
     Conf=kaconfig:getnodeconf(Host),
     put(master, self()), % needed for failure call
@@ -115,7 +115,7 @@ pxe_grub_test()->
                       initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
                       kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
                       kernelparam = "",
-                      filesite="./src/test/test.tgz"},
+                      filesite="./src/test/base.tgz"},
     Host="hyperion",
     Conf=kaconfig:getnodeconf(Host),
     put(master, self()), % needed for failure call
@@ -126,7 +126,7 @@ pxe_grub_test()->
 
 chain_tar_test()->
     ?LOG("chain_tar_test~n",?DEB),
-    {ok, ChainPid} = kadeploy_sup:start_chain_srv(tar, "./src/test/test.tgz", 1),
+    {ok, ChainPid} = kadeploy_sup:start_chain_srv(tar, "./src/test/base.tgz", 1),
     ?LOG("ok:~n",?DEB),
     Res=kachain_srv:start_transfert(ChainPid, "/tmp", node()),
     Rep= receive
@@ -153,8 +153,8 @@ deploytimeout_test()->
     myset_env(),
     Good=[],
     {ok, Hostname}=inet:gethostname(),
-    Env= #environment{filebase="./src/test/test.tgz",
-                      filesite="./src/test/test.tgz"},
+    Env= #environment{filebase="./src/test/base.tgz",
+                      filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=1,
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
@@ -171,8 +171,8 @@ deploytimeout_test()->
 deployenv_test()->
     myset_env(),
     Good=[],
-    Env= #environment{filebase="./src/test/test.tgz",
-                      filesite="./src/test/test.tgz"},
+    Env= #environment{filebase="./src/test/base.tgz",
+                      filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=4000,
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
@@ -188,8 +188,8 @@ deployenv_test()->
 goodnode_test()->
     myset_env(),
     Good=[],
-    Env= #environment{filebase="./src/test/test.tgz",
-                      filesite="./src/test/test.tgz"},
+    Env= #environment{filebase="./src/test/base.tgz",
+                      filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=6000,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
 
@@ -201,6 +201,20 @@ goodnode_test()->
                   ]},
                  Resp).
 
+anonymous_env_test()->
+    Filebase=filename:absname("./src/test/base.tgz"),
+    Filesite=filename:absname("./src/test/postinstall.tgz"),
+    OK={ok, #environment{filebase=Filebase,
+                         description="this is an environment description",
+                         user="root",
+                         kernelparam=[],
+                         kernelpath="/boot/vmlinuz-2.6.18-6-amd64",
+                         initrdpath="/boot/initrd.img-2.6.18-6-amd64",
+                         filesite=Filesite,
+                         md5="5caade269e878d7962f0e1ec3a1d4d12"}},
+    Res = kaenv:getenv({anonymous,"root","./src/test"}),
+    erlang:display([Res]),
+    ?assertMatch(OK,Res).
 
 
 myset_env()->
