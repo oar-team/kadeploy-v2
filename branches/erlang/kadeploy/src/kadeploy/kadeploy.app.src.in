@@ -1,0 +1,26 @@
+{application, kadeploy,
+      [{description,  "kadeploy"},
+       {vsn,          "%VSN%"},
+       {modules,      [
+                        kadeploy
+                      ]},
+       {registered,   [
+                       kadeploy
+                      ]},
+       {env,        [
+                     {debug_level, 3},
+                     {kaslave_timeout, 30000},
+                     {chunksize, 1000000}, % in bytes
+                     {transfert_timeout, 900000}, % 15mn
+                     {last_boot_timeout, 180000}, %   3mn
+                     {first_boot_timeout, 180000}, %   3mn
+                     {first_check_interval, 15000}, %   15sec
+                     {check_interval, 5000}, %   5sec
+                     {check_timeout,  2000}, %   2sec
+                     {check_portno,   22}, %   ssh
+                     {logchunksize, 100000000}, % in bytes
+                     {deploy_timeout, 600000}
+                    ]},
+       {applications, [ @ERLANG_APPLICATIONS@]},
+       {mod,          {kadeploy, []}}
+      ]}.
