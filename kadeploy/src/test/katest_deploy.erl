@@ -30,7 +30,7 @@
 test()->
     ok.
 
--define(DEBUG_LEVEL,6).
+-define(DEBUG_LEVEL,7).
 
 myoscmd_test()->
     myset_env(),
@@ -63,10 +63,18 @@ badnodes_test()->
     Good=[],
     application:start(kadeploy),
     application:set_env(kadeploy,debug_level,?DEBUG_LEVEL),
-    Resp=kadeploy_mgr:deploy(root,["badone","badtwo"],{recorded,"nef2"},#deploy_opts{timeout=2000}),
+    Env= #environment{filebase="./src/test/base.tgz",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
+                      id=1,
+                      filesite="./src/test/base.tgz"
+                     },
+    Opts=#deploy_opts{timeout=2000},
+     Resp=kadeploy_mgr:deploy(root,["badone","badtwo"],Env,Opts),
     ?assertMatch({Good,
                   [{"badone", {error,kaslave_failure}},
-                   {"badtwo", {error,kaslave_failure}}]},
+                   {"badtwo", {error,kaslave_failure}}]
+                 },
                  Resp).
 
 config_test()->
@@ -98,8 +106,8 @@ ip_hex_test()->
 
 pxedata_grub_test()->
     Env= #environment{id=765,
-                      initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
-                      kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
                       kernelparam = "",
                       filesite="./src/test/base.tgz"},
     Host="hyperion",
@@ -112,16 +120,16 @@ pxedata_grub_test()->
 
 pxe_grub_test()->
     Env= #environment{id=765,
-                      initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
-                      kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
                       kernelparam = "",
                       filesite="./src/test/base.tgz"},
-    Host="hyperion",
+    Host="hyperion.inria.fr",
     Conf=kaconfig:getnodeconf(Host),
     put(master, self()), % needed for failure call
     put(hostname, Host), % needed for failure call
     Data=ok,
-    Res=kaenv:setup_pxe(grub,Host,Conf,{env,Env},3),
+    Res = kaenv:setup_pxe(grub,Host,Conf,{env,Env},3),
     ?assertMatch(Data,Res).
 
 chain_tar_test()->
@@ -154,6 +162,9 @@ deploytimeout_test()->
     Good=[],
     {ok, Hostname}=inet:gethostname(),
     Env= #environment{filebase="./src/test/base.tgz",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
+                      id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=1,
                       method=deployenv,
@@ -172,16 +183,19 @@ deployenv_test()->
     myset_env(),
     Good=[],
     Env= #environment{filebase="./src/test/base.tgz",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
+                      id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=4000,
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     {ok, Hostname}=inet:gethostname(),
-    Resp=kadeploy_mgr:deploy(root,[Hostname,"badtwo"],Env,Opts),
+    Resp=kadeploy_mgr:deploy(root,[Hostname,"badconfig"],Env,Opts),
     ?assertMatch({Good,
                   [
                    {Hostname, {error,setup_pxe_failure}},
-                   {"badtwo", {error,{node_badconfig, Key}}}
+                   {"badconfig", {error,{node_badconfig, Key}}}
                    ]},
                  Resp).
 
@@ -189,6 +203,9 @@ goodnode_test()->
     myset_env(),
     Good=[],
     Env= #environment{filebase="./src/test/base.tgz",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
+                      id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=6000,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
@@ -208,6 +225,7 @@ anonymous_env_test()->
                          description="this is an environment description",
                          user="root",
                          kernelparam=[],
+                         id=anonymous,
                          kernelpath="/boot/vmlinuz-2.6.18-6-amd64",
                          initrdpath="/boot/initrd.img-2.6.18-6-amd64",
                          filesite=Filesite,

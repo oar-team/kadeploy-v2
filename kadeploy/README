@@ -47,6 +47,8 @@ test on g5k:
 - preinstall (using current format, but the script is not executed)
 - postinstall (using current format)
 - pxe/tftp configuration (nogrub)
+- extract of kernel/initrd from tarball
+- anonymous environment
 
 ** TODO
 - script to start|stop the kadeploy-server
@@ -58,8 +60,6 @@ test on g5k:
 - make a duke env with erlang
 - rights management
 - database management (logs, ...)
-- extract of kernel/initrd from tarball
-- anonymous environment
 - kexec reboot
 - virtualization
 - nfsroot

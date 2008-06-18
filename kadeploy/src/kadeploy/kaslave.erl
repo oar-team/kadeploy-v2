@@ -136,13 +136,13 @@ splithalf(List) ->
 
 
 fdisk_file(Device, TmpPath, FdiskFile)->
-    ok=create_dir_ifnec(TmpPath),
+    ok=katools:create_dir_ifnec(TmpPath),
     FileName=filename:join(TmpPath,FdiskFile),
     Cmd="fdisk "++Device ++" < " ++FileName,
     myoscmd(Cmd ).
 
 fdisk_data(Device, TmpPath, FdiskData)->
-    ok=create_dir_ifnec(TmpPath),
+    ok=katools:create_dir_ifnec(TmpPath),
     FileName=filename:join(TmpPath,"fdisk-preinstall-tmp.txt"),
     file:write_file(FileName,list_to_binary(FdiskData)),
     Cmd="fdisk "++Device ++" < " ++FileName,
@@ -153,7 +153,7 @@ mkfs(Device, FSType, Options)->
     myoscmd(Cmd).
 
 mount(Partition, FSType, Mount)->
-    ok=create_dir_ifnec(Mount),
+    ok=katools:create_dir_ifnec(Mount),
     Cmd=lists:append(["mount -t ",FSType," ",Partition," ",Mount]),
     myoscmd(Cmd).
 
@@ -161,27 +161,15 @@ umount(Mount) when is_list(Mount)->
     Cmd="umount "++Mount,
     myoscmd(Cmd).
 
-create_dir_ifnec(DestDir)->
-    case file:read_file_info(DestDir) of
-        {ok, FileInfo}  ->
-            ?LOGF("Info for file ~p: ~p~n",[DestDir,FileInfo],?DEB),
-            ok;
-        {error, enoent} ->
-            ?LOGF("Must create directory ~p on node~p~n",[DestDir,node()],?WARN),
-            ok=file:make_dir(DestDir);
-        Error ->
-            {error,cant_create_dir,Error}
-    end.
-
 unzip_and_exec(Bin,DestDir,Script)->
-    ok=create_dir_ifnec(DestDir),
+    ok=katools:create_dir_ifnec(DestDir),
     ok = erl_tar:extract({binary,Bin},[{cwd,DestDir},compressed]),
     AbsScript=filename:join([DestDir,Script]),
     myoscmd(AbsScript).
 
 unzip(Bin,DestDir)->
     ?LOGF("Extracting tar in ~p on node ~p~n",[DestDir,node()],?INFO),
-    ok=create_dir_ifnec(DestDir),
+    ok=katools:create_dir_ifnec(DestDir),
     case erl_tar:extract({binary,Bin},[{cwd,DestDir},compressed]) of
         ok   -> {ok, ""};
         Else -> Else

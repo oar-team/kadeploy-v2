@@ -197,7 +197,6 @@ first_boot(timeout, State=#state{})->
             success(State#state.master,State#state.hostname),
             {next_state,setup_env,State,1};
         {error, _Reason} ->
-            ?LOG("failure, continue waiting~n",?INFO),
             {next_state, first_boot, State, State#state.check_interval}
     end;
 
@@ -273,7 +272,7 @@ last_boot({reboot_done}, State=#state{})->
     %% the reboot command was succesfully launched. Now we must wait
     %% for the node to finish it's reboot sequence.
     %% start the timer
-    ?LOG("Reboot command done, wait for node to reboot~n",?INFO),
+    ?LOGF("Reboot command done, wait for node ~p to reboot~n",[State#state.hostname],?INFO),
     erlang:start_timer(State#state.last_boot_timeout,self(),last_boot_timeout),
     {next_state, last_boot, State, State#state.first_check_interval};
 
@@ -287,7 +286,6 @@ last_boot(timeout, State=#state{})->
             success(State#state.master,State#state.hostname),
             {stop,normal,State};
         {error, _Reason} ->
-            ?LOG("failure, continue waiting~n",?INFO),
             {next_state, last_boot, State, State#state.check_interval}
     end;
 
