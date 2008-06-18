@@ -126,12 +126,8 @@ handle_call({deploy}, From, State=#state{deployment=D}) ->
             {Pids, BadChilds} = get_good_childs(OutPut),
             %% @FIXME what if retries ?
             %% @FIXME handle badchilds: remove them from chain, ...
-            %% @FIXME: improve timeout: we need a global timeout from
-            %%         the beginning of the deployment
-            ?LOGF("Call wait_nodes with pids ~p (timeout is ~p)~n",[Pids,Opts#deploy_opts.timeout],?DEB),
             %% initialise bad nodes list with 'timeout' reason
             AllBad = Bad ++badnodes(Good,?fail_timeout),
-%%             {noreply,State#state{clientpid=From,pids=Pids,good=[],bad=AllBad,env=Env },Opts#deploy_opts.timeout}
             {noreply,State#state{clientpid=From,pids=Pids,good=[],bad=AllBad,env=Env } }
     end;
 handle_call(Request, From, State) ->
@@ -222,21 +218,24 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @spec deploy_check(D::record(deployment), MgrPid::pid) ->
 %%      {NodesOK::List, BadNodes::List }
-check_rights(D=#deployment{username=User}) ->
-    %% first, we should get the environment
-    {ok, Env} = case is_list(D#deployment.envname) of
-                    true ->
-                        kaenv:getenv(D#deployment.envname);
-                    false -> % already a record(environment)
-                        {ok, D#deployment.envname}
-                end,
+check_rights(D=#deployment{username=User,envname=Env}) when is_record(Env,environment) ->
     %% check if the user has access to this environment
     ok = karights:check_env(User, Env),
+    check_rights_node(Env,D);
+check_rights(D=#deployment{username=User,envname={anonymous,Directory}}) ->
+    {ok, Env} = kaenv:getenv({anonymous,User, Directory}),
+    check_rights_node(Env,D);
+check_rights(D=#deployment{username=User,envname={recorded,Name}}) ->
+    {ok, Env} = kaenv:getenv({recorded,User, Name}),
+    %% check if the user has access to this environment
+    ok = karights:check_env(User, Env),
+    check_rights_node(Env,D).
 
+check_rights_node(Env,D=#deployment{username=User})->
     %% we should check if the user has rights on each nodes/partition
     ok = karights:check_nodes(User,D#deployment.partition,D#deployment.nodes),
     %% extract kernel from environment if needed (tar format only)
-    ok = kaenv:extract_kernel(Env),
+    ok = kaenv:extract_kernel(Env,fixme),
     {ok, Env}.
 
 deploy_setup(D=#deployment{options=Opts},Env)

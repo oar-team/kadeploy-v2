@@ -98,6 +98,7 @@ check_host(PortNo, Host, TimeOut) ->
                 {error, Reason}
         end.
 
+chop(Bin) when is_binary(Bin)-> chop(binary_to_list(Bin));
 chop(String) -> string:strip(String, right, 10).
 
 %%----------------------------------------------------------------------

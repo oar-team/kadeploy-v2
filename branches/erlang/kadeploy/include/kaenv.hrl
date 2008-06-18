@@ -39,5 +39,6 @@
           filesystem = "ext2",
           siteid,
           optsupport, %% ??
+          md5, %% md5sum of filebase (needed for anonymous env)
           user
          }).

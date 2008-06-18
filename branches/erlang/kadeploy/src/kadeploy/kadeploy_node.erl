@@ -119,6 +119,7 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
     %% use process dictionnary for failure handling
     put(master,Master),
     put(hostname,Host),
+    %% FIXME: get the timeout values from the kaconfig server ?
     State = #state{hostname=Host,
                    chainsrv=ChainSrv,
                    master=Master,
