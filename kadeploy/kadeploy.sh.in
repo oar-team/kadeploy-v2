@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+UNAME=`uname`
+case $UNAME in
+        "Linux") HOST=`hostname -s`;;
+        "SunOS") HOST=`hostname`;;
+        *) HOST=`hostname -s`;;
+esac
+
+INSTALL_DIR=@prefix@/lib/erlang/
+ERL=@ERL@
+MAIN_DIR=$HOME/.tsung
+LOG_DIR=$MAIN_DIR/log
+LOG_OPT="log_file \"$LOG_DIR/tsung.log\""
+VERSION=@PACKAGE_VERSION@
+NAMETYPE="-sname"
+
+NAME=kadeploy
+
+KADEPLOYPATH=$INSTALL_DIR/lib/$NAME-$VERSION/ebin
+
+CONF_OPT_FILE="/etc/kadeploy/kadeploy.conf"
+BOOT_OPT="-boot $INSTALL_DIR/lib/$NAME-$VERSION/priv/$NAME -boot_var KADEPLOYPATH  $INSTALL_DIR "
+DEBUG_LEVEL=5
+ERL_RSH=" -rsh ssh "
+ERL_OPTS=" -smp auto +P 250000 +A 16 +K true @ERL_OPTS@ "
+COOKIE='kadeploy'
+ERTS_RUN=`$ERL -version 2>&1 | tr -cd 0123456789.`
+ERTS_BOOT=`grep erts $KADEPLOYPATH/../priv/$NAME.rel | tr -cd 0123456789.`
+
+stop() {
+    $ERL $ERL_OPTS $ERL_RSH -noshell  $NAMETYPE killer -setcookie $COOKIE -pa $TSUNGPATH -pa $CONTROLLERPATH -s tsung_controller stop_all $HOST -s init stop
+}
+
+checkversion() {
+    if [ $ERTS_RUN != $ERTS_BOOT ]
+    then
+        echo "Erlang version has changed ! [$ERTS_BOOT] != [$ERTS_RUN]"
+        echo "Must create new boot files (you may have to run this one time as root ! )"
+        makebootfiles
+    fi
+}
+
+makebootfiles() {
+    cd $KADEPLOYPATH/..
+    echo "creating boot file for kadeploy application"
+    $ERL $ERL_OPTS -noshell -pa $KADEPLOYPATH -s builder go -s init stop > /dev/null
+}
+
+start() {
+    echo "Starting Kadeploy server"
+    $ERL $ERL_OPTS $ERL_RSH -noshell $NAMETYPE $CONTROLLER -setcookie $COOKIE  $BOOT_OPT \
+    -pa $KADEPLOYPATH  \
+    -kadeploy debug_level $DEBUG_LEVEL
+}
+
+debug() {
+    $ERL $ERL_OPTS $ERL_RSH $NAMETYPE $CONTROLLER -setcookie $COOKIE  $BOOT_OPT \
+     -pa $KADEPLOYPATH
+}
+
+version() {
+    echo "Tsung version $VERSION"
+}
+
+checkconfig() {
+    if [ ! -e $CONF_OPT_FILE ]
+    then
+        echo "Config file $CONF_OPT_FILE doesn't exist, aborting !"
+        exit 1
+    fi
+}
+
+maindir() {
+    if [ ! -d $MAIN_DIR ]
+    then
+        echo "Creating local Tsung directory $MAIN_DIR"
+        mkdir $MAIN_DIR
+    fi
+}
+
+logdir() {
+        if [ ! -d $LOG_DIR ]
+        then
+                echo "Creating Tsung log directory $LOG_DIR"
+                mkdir $LOG_DIR
+        fi
+}
+
+status() {
+    SNAME=tsung_status_$RANDOM
+    $ERL -noshell $NAMETYPE $SNAME -setcookie $COOKIE -pa $TSUNGPATH -pa $CONTROLLERPATH -s tsung_controller status $HOST -s init stop
+}
+
+checkrunning(){
+    if [ -f $PIDFILE ]; then
+        CURPID=`cat $PIDFILE`
+        if kill -0 $CURPID 2> /dev/null ; then
+            echo "Can't start: Kadeploy already running !"
+            exit 1
+        fi
+    fi
+}
+
+usage() {
+    prog=`basename $0`
+    echo "$prog <options> start|stop|restart|debug|status|version"
+    exit
+}
+
+while getopts ":f:p:l:d:r:i:P:L:I:u:nF" Option
+do
+    case $Option in
+        f) CONF_OPT_FILE=$OPTARG;;
+        l) # must add absolute path
+            echo "$OPTARG" | grep -q "^/"
+            RES=$?
+            if [ "$RES" == 0 ]; then
+                LOG_OPT="log_file \"$OPTARG\" "
+            else
+                LOG_OPT="log_file \"$PWD/$OPTARG\" "
+            fi
+            ;;
+        d) DEBUG_LEVEL=$OPTARG;;
+        r) ERL_RSH=" -rsh $OPTARG ";;
+        n) RUN_NAME=$OPTARG;;
+        u) USE_PARENT_PROXY=true;;
+        F) NAMETYPE="-name";;
+        *) usage ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+case $1 in
+    start)
+#         checkconfig
+        checkversion
+        maindir
+        start
+        ;;
+    boot)
+        checkversion
+        ;;
+
+    debug)
+#         checkconfig
+        checkversion
+        maindir
+        debug
+        ;;
+
+    stop)
+        stop
+        ;;
+    status)
+        recorder_status
+        status
+        ;;
+
+    restart)
+        stop
+        start
+        ;;
+    version)
+        version
+        ;;
+
+    *)
+        usage $0
+        ;;
+esac
