@@ -30,7 +30,7 @@
 
 %% API
 -export([start_link/4, start_transfert/3, update_nodes/2]).
--export([bad_node/2, late_node/2]).
+-export([bad_node/2, late_node/2, retry_transfert/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -45,11 +45,13 @@
           type,          %% tar | dd
           destdir,
           chunksize,     %%
+          wait_before_retry,     %%
           timeout,       %%
           start_chain,   %% date
           filename,      %% file to transfert
           transfered=[], %% finished nodes
-          pending=[]     %% pending nodes
+          pending=[],     %% pending nodes (transfert is ongoing)
+          waiting=[]     %% waiting nodes (wait for transfert to start)
          }).
 
 %%====================================================================
@@ -72,9 +74,14 @@ start_link(Type,File,NodeNumber,From) ->
 start_transfert(Pid, DestDir,Node)->
     gen_server:cast(Pid, {transfert, {DestDir,Node,self()}}).
 
+%% @spec retry_transfert(Pid::pid, DestDir::string, Node::node) -> ok
+%% @doc the given node is ready to restart the transfert
+retry_transfert(Pid, DestDir,Node)->
+    gen_server:cast(Pid, {retry, {DestDir,Node,self()}}).
+
 %% @spec update_nodes(Pid::pid, NodeNumber::integer) -> ok
 %% @doc update the node number (can be positive or negative)
-update_nodes(Pid,0)-> ok;
+update_nodes(_Pid,0)-> ok;
 update_nodes(Pid,NodeNumber)->
     gen_server:cast(Pid, {update_nodenum, NodeNumber}).
 
@@ -105,6 +112,7 @@ init({Type,File,NodeNumber,From}) ->
                      type=Type,
                      filename=File,
                      number=NodeNumber,
+                     wait_before_retry=?config(wait_before_retry),
                      timeout=?config(transfert_timeout),
                      master=From},
     {ok, State}.
@@ -128,21 +136,32 @@ handle_call(_Request, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number}) ->
+handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number,status=waiting}) ->
     New=Number+NodeNumber,
     ?LOGF("Update nodenumber from ~p to ~p~n",[Number,New],?NOTICE),
     {noreply, T#transfert{number=New}};
-handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,pending=P}) ->
+
+%% Node is ready to start the transfert
+handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P}) ->
     %% FIXME Destdir can be dependant on child ? (dd)
-    NewState=T#transfert{pending=[{From,Node}|P], destdir=DestDir},
-    case length(NewState#transfert.pending) of
+    NewState=T#transfert{waiting=[{From,Node}|P], destdir=DestDir},
+    case length(NewState#transfert.waiting) of
         Number -> %% all nodes are waiting for transfert, go !
             %% timeout for transfert
             erlang:start_timer(T#transfert.timeout,self(),transfert_timeout),
             {noreply, start_chain(NewState) } ;
         _ ->
             {noreply, NewState}
-    end.
+    end;
+%% Node wants to retry the transfert
+handle_cast({retry,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P}) ->
+    case erlang:read_timer(wait_before_retry) of
+        false -> % timer for retry not start (first node to retry)
+            erlang:start_timer(T#transfert.wait_before_retry,self(),wait_before_retry);
+        _ ->
+            ok
+    end,
+    {noreply, T#transfert{number=Number+1,destdir=DestDir,waiting=[{From,Node}|P]}}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -169,20 +188,20 @@ handle_info({transfert_status, FromNode, Size}, State) ->
           [FromNode, Size/(1024*1024)],?DEB),
     {noreply, State#transfert{}};
 
-handle_info({port_timeout, From, FromNode}, State) ->
+handle_info({port_timeout, _From, FromNode}, State) ->
     ?LOGF("Port timeout from node ~p~n",[FromNode],?WARN),
     case lists:keysearch(FromNode, 2, State#transfert.pending) of
-        {value, {Pid,_}, TupleList2} ->
+        {value, {Pid,_}, _TupleList} ->
             kadeploy_node:transfert_failed(Pid);
         false ->
             ?LOGF("Can't find ~p when port_timeout event occured!~n",[FromNode],?ERR)
     end,
     {noreply, State#transfert{}};
 
-handle_info({chain_timeout, From, FromNode}, State) ->
+handle_info({chain_timeout, _From, FromNode}, State) ->
     ?LOGF("Chain timeout from node ~p~n",[FromNode],?WARN),
     case lists:keysearch(FromNode, 2, State#transfert.pending) of
-        {value, {Pid,_}, TupleList2} ->
+        {value, {Pid,_}, _TupleList} ->
             kadeploy_node:transfert_failed(Pid);
         false ->
             ?LOGF("Can't find ~p when chain_timeout event occured!~n",[FromNode],?ERR)
@@ -192,6 +211,8 @@ handle_info({chain_timeout, From, FromNode}, State) ->
 handle_info({timeout, _Ref, transfert_timeout}, State)  ->
     %% @FIXME
     {noreply, State};
+handle_info({timeout, _Ref, wait_before_retry}, State)  ->
+    start_chain(State); % start a new chain with waiting nodes
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -216,8 +237,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-start_chain(T=#transfert{filename=Filename,pending=[{_Pid,NextNode}|Nodes],destdir=DestDir,
-                         chunksize=ChunkSize}) ->
+start_chain(T=#transfert{filename=Filename,pending=Pending,waiting=Waiting,
+                         destdir=DestDir, chunksize=ChunkSize}) ->
+    [{Pid,NextNode}|Nodes] = Waiting,
     {ok, FileInfo} = file:read_file_info(Filename),
     Size=FileInfo#file_info.size,
     ?LOGF("file size:~p KB~n",[Size/1024],?DEB),
@@ -227,7 +249,9 @@ start_chain(T=#transfert{filename=Filename,pending=[{_Pid,NextNode}|Nodes],destd
     ?LOG("first slave started, read file and send~n",?INFO),
     Reader=spawn_link(kachain_srv,read_forward,[Filename,ChunkSize,Size,NextPid,length(Nodes)+1]),
     NextPid ! {readerpid, Reader},
-    T#transfert{start_chain=now(),status=started}.
+    %% switch from waiting to pending
+    NewPending=lists:append(Waiting,Pending),
+    T#transfert{pending=NewPending,waiting=[],number=0,status=started}.
 
 getcmd(tar,DestDir) -> {"tar zx",DestDir};
 getcmd(dd, DestDir)  -> {"dd of="++DestDir,"./"}. %don't change dir for dd
