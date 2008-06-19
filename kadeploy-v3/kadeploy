@@ -1,0 +1,198 @@
+#!/usr/bin/ruby -w
+
+
+require 'lib/debug'
+require 'lib/checkrights'
+require 'lib/nodes'
+require 'lib/config'
+require 'lib/stepdeployenv'
+require 'lib/stepbroadcastenv'
+require 'lib/stepbootnewenv'
+require 'thread'
+require 'optparse'
+
+
+class MagicCookie
+end
+
+class WindowManager
+
+end
+
+class QueueManager
+  @queue_deployment_environment = nil
+  @queue_broadcast_environment = nil
+  @queue_boot_new_environment = nil
+  @queue_process_finished_nodes = nil
+  @config = nil
+
+  def initialize(config)
+    @config = config
+    @queue_deployment_environment = Queue.new
+    @queue_broadcast_environment = Queue.new
+    @queue_boot_new_environment = Queue.new
+    @queue_process_finished_nodes = Queue.new
+  end
+
+  def next_macro_step(current_step, nodes)
+    if (nodes.set.empty?)
+      raise "Empty node set"
+    else
+      case current_step
+      when nil
+        @queue_deployment_environment.push(nodes)
+      when /SetDeploymentEnv/
+        @queue_broadcast_environment.push(nodes)
+      when /BroadcastEnv/
+        @queue_boot_new_environment.push(nodes)
+      when /BootNewEnv/
+        @queue_process_finished_nodes.push(nodes)
+      else
+        raise "Wrong step name"
+      end
+    end
+  end
+  
+  def get_task(queue)
+    case queue
+    when /SetDeploymentEnv/
+      return @queue_deployment_environment.pop
+    when /BroadcastEnv/
+      return @queue_broadcast_environment.pop
+    when /BootNewEnv/
+      return @queue_boot_new_environment.pop
+    when /ProcessFinishedNodes/
+      return @queue_process_finished_nodes.pop
+    else
+      raise "Wrong queue name"
+    end
+  end
+  
+  def send_exit_signal
+    @queue_deployment_environment.push(MagicCookie.new)
+    @queue_broadcast_environment.push(MagicCookie.new)
+    @queue_boot_new_environment.push(MagicCookie.new) 
+    @queue_process_finished_nodes.push(MagicCookie.new)
+  end
+end
+
+class WindowManager
+  
+end
+
+class KadeployWorkflow
+  @thread_set_deployment_environment = nil
+  @thread_broadcast_environment = nil
+  @thread_boot_new_environment = nil 
+  @thread_process_finished_nodes = nil
+  @queue_manager = nil
+  @output = nil
+  @rights = nil
+  @nodeset = nil
+  @config = nil
+  @window_manager = nil
+
+  def initialize(config, nodeset)
+    @config = config
+    @output = Debug::OutputControl.new(@config.common.debug_level)
+    @rights = CheckRights::CheckRightsFactory.new(@config.common.rights_kind).klass
+    @queue_manager = QueueManager.new(@config)
+    @window_manager = WindowManager.new
+
+    @thread_set_deployment_environment = Thread.new {
+      launch_thread_for_macro_step("SetDeploymentEnv")
+    }
+    @thread_broadcast_environment = Thread.new {
+      launch_thread_for_macro_step("BroadcastEnv")
+    }
+    @thread_boot_new_environment = Thread.new {
+      launch_thread_for_macro_step("BootNewEnv")
+    }
+    @thread_process_finished_nodes = Thread.new {
+      launch_thread_for_macro_step("ProcessFinishedNodes")
+    }
+    @nodeset = nodeset
+  end
+
+  def launch_thread_for_macro_step(kind)
+    close_thread = false
+
+    @output.debugl(0, "#{kind} thread launched")
+    while (not close_thread) do
+      nodes = @queue_manager.get_task(kind)
+      #We receive the signal to exit
+      if (nodes.kind_of?(MagicCookie)) then
+        close_thread = true
+      else
+        nodes.group_by_cluster.each_pair { |cluster, set|
+          if kind != "ProcessFinishedNodes" then
+            macro_step_instance = @config.cluster_specific[cluster].get_macro_step(kind).get_instance
+          end
+          case kind
+          when /SetDeploymentEnv/
+            SetDeploymentEnvironnment::SetDeploymentEnvFactory.new(macro_step_instance[0], 
+                                                                   macro_step_instance[1], 
+                                                                   set,
+                                                                   @queue_manager,
+                                                                   @window_manager,
+                                                                   @output).klass.run
+          when /BroadcastEnv/
+            BroadcastEnvironment::BroadcastEnvFactory.new(macro_step_instance[0], 
+                                                          macro_step_instance[1], 
+                                                          set,
+                                                          @queue_manager,
+                                                          @window_manager,
+                                                          @output).klass.run
+          when /BootNewEnv/
+            BootNewEnvironment::BootNewEnvFactory.new(macro_step_instance[0], 
+                                                      macro_step_instance[1], 
+                                                      set,
+                                                      @queue_manager,
+                                                      @window_manager,
+                                                      @output).klass.run 
+          when /ProcessFinishedNodes/
+            puts "Deployed nodes on cluster #{cluster}"
+            puts set.to_s
+            @queue_manager.send_exit_signal
+            @thread_set_deployment_environment.join
+            @thread_broadcast_environment.join
+            @thread_boot_new_environment.join
+          else
+            raise "Invalid macro step name"
+          end
+        }
+      end
+    end
+  end
+
+  def run
+    puts "Launching Kadeploy ..."
+    if (@rights.granted? == true)
+      @queue_manager.next_macro_step(nil, @nodeset)
+      @thread_process_finished_nodes.join
+    else
+      puts "You do not have the deployment rights on all the nodes"
+    end
+  end
+end
+
+
+n1=Nodes::Node.new("pounpoun", "192.168.0.10", "paravent")
+n2=Nodes::Node.new("poypoy", "192.168.0.11", "paravent")
+ns=Nodes::NodeSet.new
+ns.push(n1)
+ns.push(n2)
+
+Signal.trap("INT") do
+  puts "SIGINT trapped, let's clean everything ..."
+  #todo: clean some stuff
+  exit 1
+end
+
+config = ConfigInformation::Config.new
+if (config.load_cmdline_options == true)
+  workflow=KadeployWorkflow.new(config, ns)
+  workflow.run
+end
+
+
