@@ -30,7 +30,7 @@
 -include("kaenv.hrl").
 
 %% API
--export([start_link/1, deploy/4]).
+-export([start_link/1, deploy/4, node_failure/2, node_success/2 ]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -42,6 +42,7 @@
           good,
           bad,
           env,
+          minnodes_wait,
           clientpid
           }).
 
@@ -63,7 +64,7 @@ start_link(Args) ->
 %% @doc main method for deploying a given environment on a list of nodes.
 %%
 %% No nodes, aborts
-deploy(User,[],Env,Opts) ->
+deploy(_User,[],_Env,_Opts) ->
     ?LOG("No nodes to deploy, abort !",?ERR),
     {[],[]};
 %%
@@ -75,6 +76,13 @@ deploy(User,Nodes,Env,Opts) ->
     TimeOut=Opts#deploy_opts.timeout + 60000,
     gen_server:call(Pid, {deploy}, TimeOut).
 
+%%
+node_failure(Pid,{Reason, FromPid, FromHost}) ->
+    gen_server:cast(Pid,{node_failure, Reason, FromPid, FromHost}).
+
+%%
+node_success(Pid,{FromPid, FromHost}) ->
+    gen_server:cast(Pid,{done, FromPid, FromHost}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -92,7 +100,7 @@ init({User, Nodes, EnvName, Opts}) ->
                       nodes= Nodes,
                       envname=EnvName,
                       options=Opts, startdate=now()},
-    {ok, #state{deployment=Depl}};
+    {ok, #state{deployment=Depl,minnodes_wait=?config(minnodes_wait)}};
 init(Args) ->
     ?LOGF("error: init with args~p~n",[Args],?ERR).
 
@@ -124,8 +132,7 @@ handle_call({deploy}, From, State=#state{deployment=D}) ->
             StartChild= fun(Node)->kadeploy_node:start({Node,Env,Opts,ChainPid,self()}) end,
             OutPut= lists:map(StartChild, Good),
             {Pids, BadChilds} = get_good_childs(OutPut),
-            %% @FIXME what if retries ?
-            %% @FIXME handle badchilds: remove them from chain, ...
+            kachain_srv:update_nodes(ChainPid,-length(BadChilds)),
             %% initialise bad nodes list with 'timeout' reason
             AllBad = Bad ++badnodes(Good,?fail_timeout),
             {noreply,State#state{clientpid=From,pids=Pids,good=[],bad=AllBad,env=Env } }
@@ -141,35 +148,32 @@ handle_call(Request, From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast(Msg, State) ->
-    ?LOGF("Unknown Msg ~p~n",[Msg],?WARN),
-    {noreply, State}.
-
-%%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
-%%--------------------------------------------------------------------
-%% @FIXME: handle minnodes (stop as soon as we have minnodes successfully deployed
-
 %% last pid has finished
-handle_info({done, FromPid, Host }, State=#state{pids=[Pid],bad=Bad,good=Good}) ->
-    ?LOGF("Last Host ~p has been deployed~n",[Host],?DEB),
+handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=[Pid],bad=Bad,good=Good}) ->
+    Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
+    ?LOGF("Last Host ~p was deployed in ~p sec~n",[Host,Duration],?DEB),
     NewBad = delbadnode(Bad,Host),
     gen_server:reply(State#state.clientpid,{[Host|Good],NewBad}),
     {stop,normal,State};
 
-handle_info({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=Good,bad=Bad}) ->
-    Duration=katools:elapsed(Depl#deployment.startdate, now())/1000,
-    ?LOGF("Host ~p has been deployed in ~p sec~n",[Host,Duration],?INFO),
+handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=Good,bad=Bad}) ->
+    Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
+    ?LOGF("Host ~p was deployed in ~p sec~n",[Host,Duration],?INFO),
     Now=now(),
     NewPids= Pids -- [FromPid],
     NewBad = delbadnode(Bad,Host),
     Opts=Depl#deployment.options,
+    %% check if minnodes is reached
+    case length(Good)+1 >= Opts#deploy_opts.minnodes of
+        true  ->
+            %% wait a bit before stopping (maybe a few nodes will finish soon ?)
+            erlang:start_timer(State#state.minnodes_wait,self(),minnodes);
+        false ->
+            ok
+    end,
     {noreply, State#state{pids=NewPids,good=[Host|Good],bad=NewBad}};
 
-handle_info({error, Reason, FromPid,Host }, State=#state{deployment=Depl,pids=Pids,bad=Bad}) ->
+handle_cast({node_failure,Reason,FromPid,Host},State=#state{deployment=Depl,pids=Pids,bad=Bad}) ->
     ?LOGF("Client ~p has failed, reason ~p~n",[Host,Reason],?WARN),
     Now=now(),
     NewPids = Pids -- [FromPid],
@@ -185,12 +189,28 @@ handle_info({error, Reason, FromPid,Host }, State=#state{deployment=Depl,pids=Pi
             {noreply,State#state{pids=NewPids,bad=NewBad}}
     end;
 
+handle_cast(Msg, State) ->
+    ?LOGF("Unknown Msg ~p~n",[Msg],?WARN),
+    {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% Function: handle_info(Info, State) -> {noreply, State} |
+%%                                       {noreply, State, Timeout} |
+%%                                       {stop, Reason, State}
+%% Description: Handling all non call/cast messages
+%%--------------------------------------------------------------------
+handle_info({timeout, _Ref, minnnodes}, State=#state{good=Good,bad=Bad})->
+    ?LOGF("Minnodes reached (~p nodes), stop deployment !~n",[length(Good)],?NOTICE),
+    %% FIXME: do we need to kill bad childs ?
+    gen_server:reply(State#state.clientpid,{Good,Bad}),
+    {stop, normal, State};
+
 handle_info({timeout, _Ref, deploy_timeout}, State=#state{good=Good,bad=Bad})->
     ?LOG("Timeout, abort deployment ~n",?DEB),
     gen_server:reply(State#state.clientpid,{Good,Bad}),
     {stop, normal, State};
 
-%% we can receive notstarted message after the kaslave:XXstart fun for
+%% we can receive notstared message after the kaslave:XXstart fun for
 %% not responding nodes (already set as kaslave_failure)
 handle_info({notstarted,  {Reason, Host, Name}},  State) ->
     ?LOGF("Failed to start a beam on host ~p, reason:~p~n",[Host,Reason],?NOTICE),
@@ -207,8 +227,8 @@ handle_info(Msg, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(Reason, State=#state{deployment=Depl}) ->
-    Duration=katools:elapsed(Depl#deployment.startdate, now())/1000,
-    ?LOGF("Deployment finished (~p), duration: ~p~n",[Reason,Duration],?WARN),
+    Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
+    ?LOGF("Deployment finished (~p), duration: ~p sec~n",[Reason,Duration],?WARN),
     ok.
 
 %%--------------------------------------------------------------------

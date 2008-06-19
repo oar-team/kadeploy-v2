@@ -29,6 +29,10 @@
          unzip_and_exec/3,unzip/2]).
 -export([chain_init/6, load_code/1]).
 
+-define(chain_timeout,120000).
+-define(port_timeout,120000).
+-define(logchunksize,100000000). % send a report msg to the master every 100MBytes
+
 -export([myoscmd/1]).
 
 -export([port_loop/5]).
@@ -186,6 +190,9 @@ myoscmd(Cmd)->
             {error,list_to_integer(ErrNo),Res} %% @FIXME: remove errno from Res
     end.
 
+%% @spec chain_init(AllNodes::List,Command::string,Master::pid,
+%%                  DestDir::string,PredPid::pid,Id::integer) -> ok
+%% @doc initialise chain for transfert on node and start a process on the next Node
 chain_init(AllNodes,Command,Master,DestDir,PredPid,Id)->
     NextPid=case AllNodes of
                 [] ->
@@ -195,13 +202,18 @@ chain_init(AllNodes,Command,Master,DestDir,PredPid,Id)->
             end,
     ?DebugF("Open command ~p , pwd=~p~n",[Command,DestDir]),
     Port = open_port({spawn, Command},[stream,{cd, DestDir},exit_status,use_stdio,binary]),
-    %% use a separate process to handle the port, otherwise, it will
+    %% use a separate process to handle the port (OS command), otherwise, it will
     %% block if the port is running too slow, and will slow down the chain.
+    %% WARN: a slow node (slow disk) will have to keep the data in RAM
+    %%       this can be a problem with very big image ( size > RAM)
     LoopPort=spawn_link(kaslave,port_loop,[Command,DestDir,Master,Port,self()]),
     port_connect(Port,LoopPort),
     unlink(Port),
     loop(Master,PredPid,NextPid,LoopPort,Port,0,[],Id).
 
+%% @spec port_loop(Command::string, DestDir::string,Master::pid,
+%%                  Port::pid, Parent::pid) -> ok
+%% @doc wait for data and send it to the port process (tar or dd)
 port_loop(Command,DestDir,Master,Port,Parent)->
     receive
         {data,Bin}->
@@ -212,13 +224,17 @@ port_loop(Command,DestDir,Master,Port,Parent)->
             send(Master, {done, self(), node(), Id});
         _Msg -> % useful ??
             port_loop(Command,DestDir,Master,Port,Parent)
-    after 120000 -> % @FIXME: hardcoded values is BAD
+    after ?port_timeout ->
             send(Master, {port_timeout,self(), node()})
     end.
 
+%% @spec port(Master,PredPid,NextPid,TarPid,Port,CurrentSize,Reader,Id) ->ok
+%%
+%% @doc wait for data from predecessor in the chain and send it to
+%% the port and to the next node in the chain.
 loop(Master,PredPid,NextPid,TarPid,Port,CurrentSize,Reader,Id)->
     receive
-        {readerpid,Pid} ->
+        {readerpid,Pid} -> %% only useful for the first node in the chain
              ?DebugF("got reader pid:~p~n",[Pid]),
             %% we must link to the port to do limit the input rate.
 %%             port_connect(Port,self()),
@@ -227,26 +243,28 @@ loop(Master,PredPid,NextPid,TarPid,Port,CurrentSize,Reader,Id)->
             send(NextPid,{data, Bin, self()} ),
             TarPid ! {data, Bin},
             NewSize=CurrentSize+size(Bin),
+            %% the first node in the chain must acknoledge all msg
+            %% sent by the file reader (limit the rate of the sender)
             case Reader of
                 Pid when is_pid(Pid) -> Pid ! {next, self()};
                 [] -> skip
             end,
-%%             case NewSize rem ?config(logchunksize) == 0 of
-%%                 true ->
-%%                     mylog(Master,["slave ", Id," chain ",NewSize]);
-%%                 _    -> ok
-%%             end,
+            case NewSize rem ?logchunksize == 0 of
+                true -> send(Master,{transfert_status, node(), NewSize});
+                _    -> ok
+            end,
             loop(Master,PredPid,NextPid,TarPid, Port,NewSize,Reader,Id);
-        {eof, _From} ->
+        {eof, _From} -> % transfert is finished
             send(NextPid, {eof, self()}),
 %%             case Reader of
 %%                 Pid when is_pid(Pid) -> unlink(Port);
 %%                 [] -> skip
 %%             end,
             TarPid ! {eof, Id}
-    after 300000 -> % @FIXME: hardcoded values is BAD
+    after ?chain_timeout ->
             send(Master, {chain_timeout,self(), node()})
     end.
 
 send(none,_)  -> ok;
 send(Pid,Msg) -> Pid ! Msg.
+

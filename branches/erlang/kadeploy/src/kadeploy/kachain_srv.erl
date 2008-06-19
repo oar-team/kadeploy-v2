@@ -29,7 +29,8 @@
 -include_lib("kernel/include/file.hrl").
 
 %% API
--export([start_link/4, start_transfert/3]).
+-export([start_link/4, start_transfert/3, update_nodes/2]).
+-export([bad_node/2, late_node/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -71,6 +72,22 @@ start_link(Type,File,NodeNumber,From) ->
 start_transfert(Pid, DestDir,Node)->
     gen_server:cast(Pid, {transfert, {DestDir,Node,self()}}).
 
+%% @spec update_nodes(Pid::pid, NodeNumber::integer) -> ok
+%% @doc update the node number (can be positive or negative)
+update_nodes(Pid,0)-> ok;
+update_nodes(Pid,NodeNumber)->
+    gen_server:cast(Pid, {update_nodenum, NodeNumber}).
+
+%% @spec bad_node(Pid::pid,{FromPid::pid, Hostname::string}) -> ok
+%% @doc warn the chain server that this node is bad
+bad_node(Pid,{FromPid, Hostname})->
+    gen_server:cast(Pid, {bad_node, FromPid, Hostname}).
+
+%% @spec late_node(Pid::pid,{FromPid::pid, Hostname::string}}) -> ok
+%% @doc warn the chain server that this node will be late (retry)
+late_node(Pid,{FromPid, Hostname})->
+    gen_server:cast(Pid, {late_node, FromPid, Hostname}).
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
@@ -111,6 +128,10 @@ handle_call(_Request, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
+handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number}) ->
+    New=Number+NodeNumber,
+    ?LOGF("Update nodenumber from ~p to ~p~n",[Number,New],?NOTICE),
+    {noreply, T#transfert{number=New}};
 handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,pending=P}) ->
     %% FIXME Destdir can be dependant on child ? (dd)
     NewState=T#transfert{pending=[{From,Node}|P], destdir=DestDir},
@@ -143,9 +164,31 @@ handle_info({done,From, FromNode,Id}, State) ->
             end,
     {noreply, State#transfert{pending=Pending}};
 
-handle_info({port_timeout, From, FromNode}, State) ->
-    %% @TODO: update state and warn the kadeploy_node process that transfert has failed
+handle_info({transfert_status, FromNode, Size}, State) ->
+    ?LOGF("Transfert status for node ~p: ~p MBytes written so far~n",
+          [FromNode, Size/(1024*1024)],?DEB),
     {noreply, State#transfert{}};
+
+handle_info({port_timeout, From, FromNode}, State) ->
+    ?LOGF("Port timeout from node ~p~n",[FromNode],?WARN),
+    case lists:keysearch(FromNode, 2, State#transfert.pending) of
+        {value, {Pid,_}, TupleList2} ->
+            kadeploy_node:transfert_failed(Pid);
+        false ->
+            ?LOGF("Can't find ~p when port_timeout event occured!~n",[FromNode],?ERR)
+    end,
+    {noreply, State#transfert{}};
+
+handle_info({chain_timeout, From, FromNode}, State) ->
+    ?LOGF("Chain timeout from node ~p~n",[FromNode],?WARN),
+    case lists:keysearch(FromNode, 2, State#transfert.pending) of
+        {value, {Pid,_}, TupleList2} ->
+            kadeploy_node:transfert_failed(Pid);
+        false ->
+            ?LOGF("Can't find ~p when chain_timeout event occured!~n",[FromNode],?ERR)
+    end,
+    {noreply, State#transfert{}};
+
 handle_info({timeout, _Ref, transfert_timeout}, State)  ->
     %% @FIXME
     {noreply, State};

@@ -32,6 +32,7 @@
 -define(fail_last_boot, last_boot_failure).
 -define(fail_first_boot, first_boot_failure).
 -define(fail_timeout, timeout). %% which case ?
+-define(fail_transfert, transfert_failure).
 -define(fail_transfert_timeout, transfert_timeout).
 -define(fail_last_boot_timeout, last_boot_timeout).
 -define(fail_first_boot_timeout, first_boot_timeout).
