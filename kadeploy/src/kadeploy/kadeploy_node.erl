@@ -31,7 +31,8 @@
 -define(init_timeout, 1).
 
 %% API
--export([start_link/1, start/1, transfert_done/1, reboot_done/1, reboot_failed/1]).
+-export([start_link/1, start/1, transfert_done/1, transfert_failed/1,
+         reboot_done/1, reboot_failed/1]).
 -export([failure/1]).
 
 %% gen_fsm callbacks
@@ -50,7 +51,9 @@
           node,     %% remote erlang node name
           config,
           env,
-          system_maxretries=0, %% max retries for systemd command (fdisk, mkfs ...)
+          retry=0,  %% integer: current retry number (for the current state)
+          max_retry, %% integer: max number of retries (for each state)
+          system_maxretries=0, %% max retries for system command (fdisk, ...) FIXME:useful ?
           transfert_timeout,
           first_boot_timeout,
           last_boot_timeout,
@@ -88,6 +91,13 @@ transfert_done(Pid) ->
     ?LOGF("Send transfert done event to~p~n",[Pid],?DEB),
     gen_fsm:send_event(Pid, {transfert_done}).
 
+%% @spec: transfert_failed(Pid::pid) -> ok
+%% @doc: called by the kachain server when the transfert has failed
+%% for this node (asynchronous call)
+transfert_failed(Pid) ->
+    ?LOGF("Send transfert failed event to~p~n",[Pid],?DEB),
+    gen_fsm:send_event(Pid, {transfert_failed}).
+
 %% @spec: reboot_done(Pid::pid) -> ok
 %% @doc: called by the reboot server when the reboot command has been
 %% successfully executed for this node (asynchronous call)
@@ -119,11 +129,13 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
     %% use process dictionnary for failure handling
     put(master,Master),
     put(hostname,Host),
+    put(chainsrv,ChainSrv),
     %% FIXME: get the timeout values from the kaconfig server ?
     State = #state{hostname=Host,
                    chainsrv=ChainSrv,
                    master=Master,
                    node=RemoteNode,
+                   max_retry=?config(max_retry),
                    transfert_timeout =?config(transfert_timeout),
                    first_boot_timeout=?config(first_boot_timeout),
                    last_boot_timeout =?config(last_boot_timeout),
@@ -195,7 +207,7 @@ first_boot(timeout, State=#state{})->
         ok ->
             ?LOG("success !!! ~n",?INFO),
             success(State#state.master,State#state.hostname),
-            {next_state,setup_env,State,1};
+            {next_state,setup_env,State#state{retry=0},1};
         {error, _Reason} ->
             {next_state, first_boot, State, State#state.check_interval}
     end;
@@ -207,21 +219,24 @@ first_boot(Event, State=#state{})->
 setup_env(timeout, State=#state{options=Opts}) when Opts#deploy_opts.method == deployenv ->
 %% just switch from first_boot
     NewState = setup_disk(State#state.config,State,Opts),
-    {next_state, transfert, NewState, State#state.transfert_timeout};
+    {next_state, transfert, NewState#state{retry=0}, State#state.transfert_timeout};
 
 setup_env({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == currentenv ->
     %% check
     ok = check_erlang_node(State#state.node, State),
     Config = kaconfig:getnodeconf(State#state.hostname),
     NewState = setup_disk(Config,State,Opts),
-    {next_state, transfert, NewState, State#state.transfert_timeout};
+    {next_state, transfert, NewState#state{retry=0}, State#state.transfert_timeout};
 
 setup_env(Event, State=#state{})->
     ?LOGF("got event ~p~n",[Event],?WARN),
     {next_state, setup_env, State}.
 
+transfert({transfert_failed}, State=#state{config=Config,options=Opts})->
+    %% FIXME: retry ?
+    failure(?fail_transfert);
 transfert({transfert_done}, State=#state{config=Config,options=Opts})->
-    ?LOG("transfert done~n",?DEB),
+    ?LOGF("transfert done on host~p~n",[State#state.hostname],?INFO),
     Env=State#state.env,
     DestDir = getval(post_install_destdir,Config), % destdir ?
     Script  = getval(post_install_script,Config),
@@ -239,7 +254,7 @@ transfert({transfert_done}, State=#state{config=Config,options=Opts})->
             case kaenv:setup_pxe(Grub,State#state.hostname,Config, {env,Env},Partition) of
                 ok ->
                     kareboot_srv:reboot(State#state.hostname,get_reboot_cmds(Config)),
-                    {next_state, last_boot, State, State#state.last_boot_timeout};
+                    {next_state,last_boot,State#state{retry=0},State#state.last_boot_timeout};
                 {error, Reason} ->
                     failure(?fail_setup_pxe)
             end;
@@ -247,14 +262,14 @@ transfert({transfert_done}, State=#state{config=Config,options=Opts})->
             case kaenv:setup_pxe(Grub,State#state.hostname,Config,{env,Env},Partition) of
                 ok ->
                     kareboot_srv:kexec(State#state.hostname,[]),
-                    {next_state, last_boot, State, State#state.last_boot_timeout};
+                    {next_state,last_boot,State#state{retry=0},State#state.last_boot_timeout};
                 {error, Reason} ->
                     failure(?fail_setup_pxe)
             end;
         virt ->
             kareboot_srv:reboot_virt(State#state.hostname),
              %% use another state ?
-            {next_state, last_boot, State, State#state.last_boot_timeout}
+            {next_state, last_boot, State#state{retry=0}, State#state.last_boot_timeout}
     end;
 
 transfert(timeout, _State) ->
@@ -374,12 +389,10 @@ handle_sync_event(_Event, _From, StateName, State) ->
 %% (or a system message).
 %%--------------------------------------------------------------------
 handle_info({timeout, _Ref, last_boot_timeout}, last_boot, State)  ->
-    failure(?fail_last_boot_timeout),
-    {stop, normal, State};
+    failure(?fail_last_boot_timeout);
 
 handle_info({timeout, _Ref, first_boot_timeout}, first_boot, State)  ->
-    failure(?fail_first_boot_timeout),
-    {stop, normal, State};
+    failure(?fail_first_boot_timeout);
 
 handle_info(Info, StateName, State) ->
     ?LOGF("got message ~p in state ~p~n",[Info,StateName],?WARN),
@@ -450,14 +463,17 @@ check_erlang_node(RemoteNode,State)->
     end.
 
 success(Master,Hostname)->
-    Master ! {done, self(), Hostname}.
+    kadeploy_mgr:node_success(Master, {self(), Hostname}).
 
+%% warn: use process dictionnary !!!
+failure({warn_chain_srv, Reason})->
+    kachain_srv:dead_node( get(chainsrv), {self(),get(hostname)}),
+    failure(Reason);
 failure(Reason)->
-    %% warn: use process dictionnary !!!
     failure(Reason,get(master),get(hostname)).
 
 failure(Reason,Master,Hostname)->
-    Master ! {error, Reason, self(), Hostname},
+    kadeploy_mgr:node_failure(Master, {Reason, self(), Hostname}),
     exit(normal).
 
 set_device(Device)-> "/dev/"++Device.
@@ -512,7 +528,7 @@ rpc_retry(Node,Mod,Fun,Args,Retries,ErrorType) when is_integer(Retries)->
             ok;
         {Error,-1} -> %% negative value mean: continue even if an error occured
             ?LOGF("rpc ~p:~p(~p) failed on node ~p, error: ~p, but continue as requested",
-                 [Mod,Fun,Args,Node,Error],?ERR),
+                 [Mod,Fun,Args,Node,Error],?WARN),
             ok;
         {Error,0} ->
             ?LOG("rpc failed~n",?DEB),

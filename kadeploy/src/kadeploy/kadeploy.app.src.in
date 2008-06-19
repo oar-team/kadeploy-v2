@@ -18,6 +18,7 @@
                      {check_interval, 5000}, %   5sec
                      {check_timeout,  2000}, %   2sec
                      {check_portno,   22}, %   ssh
+                     {minnodes_wait,  20000}, %   20sec
                      {logchunksize, 100000000}, % in bytes
                      {deploy_timeout, 600000}
                     ]},

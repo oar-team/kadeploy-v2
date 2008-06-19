@@ -87,6 +87,7 @@ myset_env()->
     application:set_env(stdlib,debug_level,?DEBUG_LEVEL),
     application:set_env(stdlib,deploy_timeout,600000),
     ssl:start(),
+    application:start(sasl),
     application:start(crypto).
 
 
