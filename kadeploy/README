@@ -49,13 +49,13 @@ test on g5k:
 - pxe/tftp configuration (nogrub)
 - extract of kernel/initrd from tarball
 - anonymous environment
+- handle minnodes (stop as soon as 'minnodes' are OK)
+- handle errors during transfert
 
 ** TODO
 - script to start|stop the kadeploy-server
 - script to start a deployment
-- handle minnodes (stop as soon as 'minnodes' are OK)
-- handle errors during transfert
-- transfert retries
+- retries for each state (transfert, ...)
 - reboot server tuning (pool of concurrent reboots ?)
 - make a duke env with erlang
 - rights management
