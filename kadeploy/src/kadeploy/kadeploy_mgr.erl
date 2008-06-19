@@ -154,7 +154,7 @@ handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=[Pid],bad=
     ?LOGF("Last Host ~p was deployed in ~p sec~n",[Host,Duration],?DEB),
     NewBad = delbadnode(Bad,Host),
     gen_server:reply(State#state.clientpid,{[Host|Good],NewBad}),
-    {stop,normal,State};
+    {stop,normal,State#state{pids=[],good=[Host|Good],bad=NewBad}};
 
 handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=Good,bad=Bad}) ->
     Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
@@ -226,9 +226,10 @@ handle_info(Msg, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(Reason, State=#state{deployment=Depl}) ->
+terminate(Reason, State=#state{deployment=Depl,good=Good,bad=Bad}) ->
     Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
-    ?LOGF("Deployment finished (~p), duration: ~p sec~n",[Reason,Duration],?WARN),
+    ?LOGF("Deployment finished (~p), duration: ~p sec (good=~p, bad=~p)~n",
+          [Reason,Duration,length(Good),length(Bad)],?WARN),
     ok.
 
 %%--------------------------------------------------------------------
