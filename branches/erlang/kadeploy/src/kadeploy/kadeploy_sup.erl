@@ -34,7 +34,6 @@
 %% Supervisor callbacks
 -export([init/1]).
 
--define(SERVER, ?MODULE).
 -define(retries, 4).
 
 %%====================================================================
@@ -45,21 +44,19 @@
 %% Description: Starts the supervisor
 %%--------------------------------------------------------------------
 start_link(Args) ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, [Args]).
+    supervisor:start_link({global, ?MODULE}, ?MODULE, [Args]).
 
 start_mgr_srv(Args)->
     Ref=get_unique_id(),
-    ?LOGF("Ref for chain server: ~p~n",[Ref],?CRIT),
     DeployMgr = {Ref, {kadeploy_mgr, start_link, [Args]},
                  temporary, 2000, worker, [kadeploy_mgr]},
-    supervisor:start_child(?MODULE,DeployMgr).
+    supervisor:start_child({global, ?MODULE},DeployMgr).
 
 start_chain_srv(Type,File,NodeNumber)->
     Ref=get_unique_id(),
-    ?LOGF("Ref for chain server: ~p~n",[Ref],?DEB),
     ChainSrv  = {Ref, {kachain_srv, start_link, [Type,File,NodeNumber,self()]},
                  temporary, 2000, worker, [kachain_srv]},
-    supervisor:start_child(?MODULE,ChainSrv).
+    supervisor:start_child({global, ?MODULE},ChainSrv).
 
 %% FIXME: can exhaust atom space !
 get_unique_id() ->
@@ -82,9 +79,10 @@ get_unique_id() ->
 init([_Args]) ->
     KaNodes   = {kanodes_sup,{kanodes_sup,start_link,[]},
                  permanent,2000,supervisor,[kanodes_sup]},
-    %% @FIXME: filename
+    NodesConf= ?config(nodes_conf),
+    MainConf= ?config(global_conf),
     ConfigSrv =  {kaconfig, {kaconfig, start_link,
-                             [{"./src/test/nodes.conf","./src/test/deploy.conf"}]},
+                             [{NodesConf,MainConf}]},
                  permanent, 2000, worker, [kaconfig]},
     RebootSrv = {kareboot_srv, {kareboot_srv, start_link, []},
                  permanent, 2000, worker, [kareboot_srv]},

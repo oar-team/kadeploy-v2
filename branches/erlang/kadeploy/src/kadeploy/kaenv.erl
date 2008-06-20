@@ -81,7 +81,7 @@ getenv({anonymous, User, Directory}) when is_list(Directory)->
                           %% FIXME: what is the format of md5sum ?
                           %% just the md5 of base.tgz or md5 of all
                           %% files ?
-                          binary_to_list(Md5Bin)
+                          lists:sublist(binary_to_list(Md5Bin),32)
                   end,
             ?LOGF("MD5 of ~p is ~p~n",[FileBase,Md5],?NOTICE),
             {ok,#environment{

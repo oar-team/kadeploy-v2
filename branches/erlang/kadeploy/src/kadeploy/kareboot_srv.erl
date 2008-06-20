@@ -138,6 +138,9 @@ code_change(_OldVsn, State, _Extra) ->
 handle_reboot(Pid,Node,[{_Type, [] }])->
     ?LOGF("Failed to reboot node ~p!~n",[Node],?ERR),
     kadeploy_node:reboot_failed(Pid);
+handle_reboot(Pid,Node,[{Type, []} | Rest])->
+    ?LOGF("Method ~p is not defined for host ~p~n",[Type,Node],?INFO),
+    handle_reboot(Pid,Node,Rest);
 handle_reboot(Pid,Node,[{Type,NextMethod}|Rest])->
     ?LOGF("Try to boot ~p with cmd ~p~n",[Node,NextMethod],?DEB),
     %% @FIXME add timeout ? or let the node process handle it's timeout ?

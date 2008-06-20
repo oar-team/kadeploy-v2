@@ -27,7 +27,7 @@
 -include("kaenv.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--define(DEBUG_LEVEL,6).
+-define(DEBUG_LEVEL,7).
 
 test()->
     ok.
@@ -55,28 +55,49 @@ kadeg5k_test_()->
     Nodes=get_batch_nodes("OAR_NODEFILE"),
     application:start(kadeploy),
     application:set_env(kadeploy,debug_level,?DEBUG_LEVEL),
-    Env= #environment{id = 843,
+    Env= #environment{
+%%       id = 843,
+      id = 653,
                       version = 1,
                       name = "etch-x64-nfs-1.0",
                       description = "https://www.grid5000.fr/index.php/Etch-x64-nfs-1.0",
-                      author = "cyril.constantin@loria.fr",
-                      filebase = "/grid5000/images/etch-x64-nfs-1.0.tgz",
-                      filesite = "/grid5000/postinstalls/etch-x64-nfs-1.0-post.tgz",
+                      filebase = "/grid5000/images//nef-2.tgz",
+                      filesite = "/grid5000/postinstalls/postinstall_gen.tgz",
                       size = "1000",
-                      initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
-                      kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
+                      initrdpath = "/boot/initrd-2.6.18-8.1.10.el5.img",
+                      kernelpath = "/boot/vmlinuz-2.6.18-8.1.10.el5",
+%%                       initrdpath = "/boot/initrd.img-2.6.18-6-amd64",
+%%                       kernelpath = "/boot/vmlinuz-2.6.18-6-amd64",
                       kernelparam = "",
                       fdisktype = 83,
-                      filesystem = "ext2",
+%%                       filesystem = "ext2",
+                      filesystem = "ext3",
                       siteid = 1,
                       optsupport = 0,
                       user = "deploy"},
-    Opts=#deploy_opts{timeout=600000,
+    Opts=#deploy_opts{timeout=900000,
                       partition=3,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
 
+%% name = nef2
+%% id = 653
+%% version = 1
+%% description = Default image based on fedora 7
+%% author = nicolas.niclausse@sophia.inria.fr
+%% filebase = file:///grid5000/images/nef-2.tgz
+%% filesite = file:///grid5000/postinstalls/postinstall_gen.tgz
+%% size = 1000
+%% initrdpath = /boot/initrd-2.6.18-8.1.10.el5.img
+%% kernelpath = /boot/vmlinuz-2.6.18-8.1.10.el5
+%% kernelparam =
+%% fdisktype = 83
+%% filesystem = ext3
+%% siteid = 1
+%% optsupport = 0
+%% user = root
+
 %%     ?LOGF("Deployenv Result:~p~n",[Resp],?DEB),
-    {timeout, 240, ?_assertMatch({Good,
+    {timeout, 900, ?_assertMatch({Good,
                                   [
                                    {"hyperion", {error,timeout}},
                                    {"badtwo", {error,timeout}}

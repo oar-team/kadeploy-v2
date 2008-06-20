@@ -47,10 +47,10 @@
 -record(deploy_opts,
         {
           method     = currentenv, %%  deployenv|nfsroot|currentenv|virt
-          erlang_args     , %%  currentenv specs (FIXME)
+          erlang_args= "+A 16 -connect_all false +K true -rsh ssh -smp auto",
           last_boot  = bios, %%  bios|kexec|virt
           partition  = 3,    %%  deployment partition
-          timeout,  %% global timeout for deployement (in msec)
+          timeout    = 900000,%% global timeout for deployement (in msec)
           minnodes  %% minimum nodes to deploy: stop deployment as soon as
                     %% minodes has been succesfully deployed.
          }).

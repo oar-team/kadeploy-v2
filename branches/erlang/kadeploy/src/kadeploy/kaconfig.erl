@@ -31,7 +31,7 @@
 
 %% API
 -export([start_link/1,
-         reload/0, getnodeconf/1,
+         reload/0, getnodeconf/1, readconf/3,
          getval/1, getval/2, getval_or_fail/2]).
 
 %% gen_server callbacks
@@ -95,10 +95,10 @@ getval(Keys)->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init({NodeConfFile,GlobalConfFile}) ->
-    ?LOGF("Reading node config file ~p~n",[NodeConfFile],?INFO),
+    ?LOGF("Reading node config file ~p~n",[NodeConfFile],?NOTICE),
     {ok, NodeConfig} = readnodeconf(NodeConfFile),
     {ok, ClusterConfig} = readclusters(NodeConfig,filename:dirname(GlobalConfFile)),
-    ?LOGF("Reading global config file ~p~n",[GlobalConfFile],?INFO),
+    ?LOGF("Reading global config file ~p~n",[GlobalConfFile],?NOTICE),
     {ok, GlobalConfig} = readglobalconf(GlobalConfFile),
     {ok, #state{ config=GlobalConfig, configfile=GlobalConfFile,
                  clustersconfig=ClusterConfig,
@@ -206,21 +206,19 @@ getclusters(NodesConfig, [Node|Tail],Clusters)->
     end.
 
 readnodeconf(FileName) ->
-    case file:open(FileName, [read]) of
-        {error, Reason} ->
-            {error, Reason};
-        {ok , File} ->
-            Conf = read_lines(File, fun(A,B)->parse_node(A,B) end, gb_trees:empty()),
-            file:close(File),
-            {ok, Conf}
-    end.
+    readconf(FileName, fun(A,B)->parse_node(A,B) end,  gb_trees:empty()).
 
 readglobalconf(FileName) ->
+    readconf(FileName, fun(A,B)->parse_global(A,B) end, []).
+
+%% spec
+%% doc
+readconf(FileName,ParseFun,Store) ->
     case file:open(FileName, [read]) of
         {error, Reason} ->
             {error, Reason};
         {ok , File} ->
-            Conf = read_lines(File, fun(A,B)->parse_global(A,B) end, []),
+            Conf = read_lines(File, ParseFun, Store),
             file:close(File),
             {ok, Conf}
     end.
@@ -236,7 +234,6 @@ read_lines(FD, "#"++Rest, Fun, Table) -> %skip comment
     read_lines(FD, io:get_line(FD,""),Fun,Table);
 read_lines(FD, Line, Fun, Table) ->
     CLine=katools:chop(Line),
-    ?LOGF("read line ~p~n",[CLine],?DEB),
     NewTable=Fun(CLine, Table),
     read_lines(FD, io:get_line(FD,""),Fun, NewTable).
 

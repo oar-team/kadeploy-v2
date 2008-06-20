@@ -2124,11 +2124,11 @@ ERLANG_SSL=`head -1 < confapp.out`
 if test "$ERLANG_SSL" == "error" ; then
   { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
-  ERLANG_APPLICATIONS="kernel,stdlib"
+  ERLANG_APPLICATIONS="kernel,stdlib,sasl"
 else
   { echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6; }
-  ERLANG_APPLICATIONS="kernel,stdlib,ssl"
+  ERLANG_APPLICATIONS="kernel,stdlib,sasl,ssl"
 fi
 
 { echo "$as_me:$LINENO: checking crypto application " >&5
