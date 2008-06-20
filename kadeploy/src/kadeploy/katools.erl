@@ -27,7 +27,7 @@
 
 -export([debug/3, debug/4, get_val/1, elapsed/2, join/2, clean_str/1,
          chop/1, check_host/3, ip_tostr/1, split2/2, split2/3, ip_hex/1,
-        create_dir_ifnec/1]).
+         create_dir_ifnec/1, readnodes/1, read_unique_nodes/1]).
 
 level2int("debug")     -> ?DEB;
 level2int("info")      -> ?INFO;
@@ -144,3 +144,12 @@ create_dir_ifnec(DestDir)->
             {error,cant_create_dir,Error}
     end.
 
+readnodes(Nodefile)->
+    kaconfig:readconf(Nodefile, fun(A,B) -> [A|B] end, []).
+
+read_unique_nodes(Nodefile)->
+    case readnodes(Nodefile) of
+        {ok, Nodes } ->
+            {ok, lists:usort(Nodes)};
+        Error -> Error
+    end.

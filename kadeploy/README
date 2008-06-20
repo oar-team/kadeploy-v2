@@ -34,10 +34,15 @@ the node config.
 
 ** usage
 
-- no client script or server script available
-- the only to use it, is to use the test suite:
-   make test
+First, start the server
+- kadeploy-server start
 
+Then use the kadeploy command:
+- kadeploy -f ./src/test/nodefile -d ./src/test/ start
+
+** Test suite
+- use the test suite (no need to start kadeploy-server):
+   make test
 test on g5k:
 - OAR_NODEFILE=mynodefile make g5ktest
 
@@ -51,11 +56,12 @@ test on g5k:
 - anonymous environment
 - handle minnodes (stop as soon as 'minnodes' are OK)
 - handle errors during transfert
-
-** TODO
+- retries for each state (transfert, ...)
 - script to start|stop the kadeploy-server
 - script to start a deployment
-- retries for each state (transfert, ...)
+
+** TODO
+- add options to script
 - reboot server tuning (pool of concurrent reboots ?)
 - make a duke env with erlang
 - rights management

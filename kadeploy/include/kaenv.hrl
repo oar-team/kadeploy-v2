@@ -36,7 +36,7 @@
           kernelpath,
           kernelparam,
           fdisktype  = "83",
-          filesystem = "ext2",
+          filesystem = "ext3",
           siteid,
           optsupport, %% ??
           md5, %% md5sum of filebase (needed for anonymous env)

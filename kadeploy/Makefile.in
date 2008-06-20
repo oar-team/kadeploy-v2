@@ -112,6 +112,7 @@ TGT_APPFILES_E = $(EBIN)/$(APPLICATION).app
 TGT_APPFILES_P = priv/$(APPLICATION)*
 
 SCRIPT   = $(BINDIR)/kadeploy
+SCRIPT-SERVER   = $(BINDIR)/kadeploy-server
 PWD = $(shell pwd)
 BUILD_OPTIONS =	'[{systools, \
         [{variables,[ \
@@ -124,12 +125,12 @@ BUILD_OPTIONS_DOT = $(subst $(PWD)/temp/,./,$(BUILD_OPTIONS))
 
 BUILD_OPTIONS_FILE = ./BUILD_OPTIONS
 
-DIST_COMMON=Makefile.in $(CONFFILE_SRC) $(PERL_SCRIPTS_SRC) kadeploy.sh.in kadeploy.spec.in
+DIST_COMMON=Makefile.in $(CONFFILE_SRC) $(PERL_SCRIPTS_SRC) kadeploy.sh.in kadeploy-server.sh.in kadeploy.spec.in
 
 
 .PHONY: doc
 
-kadeploy: Makefile config.status $(PERL_SCRIPTS) kadeploy.sh kadeploy.spec $(TARGET) $(RECORDER_TARGET) $(CONTROLLER_TARGET) $(LIB_TARGET)
+kadeploy: Makefile config.status $(PERL_SCRIPTS) kadeploy.sh kadeploy-server.sh kadeploy.spec $(TARGET) $(RECORDER_TARGET) $(CONTROLLER_TARGET) $(LIB_TARGET)
 
 buildtest: $(TEST_TARGET)
 
@@ -175,7 +176,8 @@ clean:
 	-cd priv && rm -f $(shell ls priv | grep -v builder\.erl| grep -v CVS) && cd ..
 	-rm -f $(TARGET) $(TMP) $(BUILD_OPTIONS_FILE) builder.beam confapp*
 	-rm -f $(TGT_APPFILES) kadeploy.sh $(PERL_SCRIPTS) $(CONFFILE)
-	-rm -f ebin/*.beam kadeploy.sh kadeploy.spec kadeploy.xml
+	-rm -f $(ESRC)/$(APPLICATION)/$(APPLICATION).app.src
+	-rm -f ebin/*.beam kadeploy*.sh kadeploy.spec kadeploy.xml
 	-rm -fr auto*cache
 
 install: boot $(CONFFILE)
@@ -208,6 +210,7 @@ install: boot $(CONFFILE)
 
 # create startup script
 	install kadeploy.sh $(SCRIPT)
+	install kadeploy-server.sh $(SCRIPT-SERVER)
 # 	install $(PERL_SCRIPTS) $(LIBDIR)/
 
 # 	install -d $(CONFDIR)

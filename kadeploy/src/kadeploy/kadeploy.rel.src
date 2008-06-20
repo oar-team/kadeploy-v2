@@ -2,4 +2,5 @@
  [
   {kernel,"&kernel_vsn&"},
   {ssl,"&ssl_vsn&"},
+  {sasl,"&sasl_vsn&"},
   {stdlib,"&stdlib_vsn&"}]}.

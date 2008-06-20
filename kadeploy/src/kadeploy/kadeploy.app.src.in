@@ -8,19 +8,22 @@
                        kadeploy
                       ]},
        {env,        [
-                     {debug_level, 3},
+                     {debug_level, 5},
+                     {global_conf, "./src/test/deploy.conf"},
+                     {nodes_conf, "./src/test/nodes.conf"},
+                     {log_file, "kadeploy.log"},
                      {kaslave_timeout, 30000},
                      {chunksize, 1000000}, % in bytes
                      {wait_before_retry, 60000}, % 1mn
                      {transfert_timeout, 900000}, % 15mn
                      {last_boot_timeout, 240000}, %   4mn
                      {first_boot_timeout, 240000}, %   4mn
-                     {first_check_interval, 15000}, %   15sec
+                     {first_check_interval, 25000}, %   25sec
                      {check_interval, 5000}, %   5sec
                      {check_timeout,  2000}, %   2sec
                      {check_portno,   22}, %   ssh
                      {minnodes_wait,  20000}, %   20sec
-                     {max_retry,  2}, % max retries for each state
+                     {max_retry,  1}, % max retries for each state
                      {logchunksize, 100000000}, % in bytes
                      {deploy_timeout, 600000}
                     ]},

@@ -30,7 +30,8 @@
 -include("kaenv.hrl").
 
 %% API
--export([start_link/1, deploy/4, node_failure/2, node_success/2 ]).
+-export([start_link/1, deploy/1, deploy/5, node_failure/2, node_success/2 ]).
+-export([deploy_call/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -39,8 +40,8 @@
 -record(state, {
           deployment,
           pids,
-          good,
-          bad,
+          good=[],
+          bad=[],
           env,
           minnodes_wait,
           clientpid
@@ -56,6 +57,44 @@
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
+%% @doc deploy and put results in two files:
+deploy([Server,User,NodeFile,"anonymous",Env,Options]) ->
+    deploy([Server,User,NodeFile,{anonymous,Env},Options]);
+
+deploy([Server,User,NodeFile,"recorded",Env,Options]) ->
+    deploy([Server,User,NodeFile,{recorded,Env},Options]);
+
+deploy([Server,User,NodeFile,Env,Options]) ->
+    RealOptions= case Options of
+                     "default"->
+                         #deploy_opts{};
+                     Val ->
+                         todo,
+                         Val
+                 end,
+    Erl_args=RealOptions#deploy_opts.erlang_args++" -setcookie kadeploy ",
+    deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=Erl_args}).
+
+deploy(Server,User,NodeFile,Env,Opts) ->
+    case net_adm:ping(Server) of
+        pang->
+            erlang:display("can't reach kadeploy server"),
+            exit(normal);
+        pong ->
+            global:sync()
+    end,
+    {ok,Nodes}=katools:read_unique_nodes(NodeFile),
+    {Good, Bad} = deploy_call(User,Nodes,Env,Opts),
+    PrintBad=fun({Host,{Error, {Type, Reason}}}) ->
+                     io_lib:format("~s ~s ~s ~s~n",[Host, Error, Type, Reason]);
+                ({Host,{Error, Reason}}) ->
+                     io:format("~s ~s ~s~n",[Host, Error, Reason])
+             end,
+    PrintGood=fun(Host) ->
+                      io:format("~s deployed~n",[Host])
+              end,
+    lists:foreach(PrintGood,Good),
+    lists:foreach(PrintBad,Bad).
 
 %% @spec deploy(User::string, Nodes::List,
 %%       Env::record(environment) | {anonymous, Directory::string} |
@@ -64,11 +103,11 @@ start_link(Args) ->
 %% @doc main method for deploying a given environment on a list of nodes.
 %%
 %% No nodes, aborts
-deploy(_User,[],_Env,_Opts) ->
+deploy_call(_User,[],_Env,_Opts) ->
     ?LOG("No nodes to deploy, abort !",?ERR),
     {[],[]};
 %%
-deploy(User,Nodes,Env,Opts) ->
+deploy_call(User,Nodes,Env,Opts) ->
     {ok, Pid} = kadeploy_sup:start_mgr_srv({User,Nodes,Env,Opts}),
     %% a timer is used to stop the deployment after #deploy_opts.timeout
     %% here we add another timeout (with one minute more) for the call (is
@@ -96,6 +135,8 @@ node_success(Pid,{FromPid, FromHost}) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init({User, Nodes, EnvName, Opts}) ->
+    ?LOGF("Start new deployment for user ~p on ~p nodes using environment ~p~n",
+          [User,length(Nodes),EnvName],?NOTICE),
     Depl= #deployment{username=User,
                       nodes= Nodes,
                       envname=EnvName,
@@ -151,7 +192,9 @@ handle_call(Request, From, State) ->
 %% last pid has finished
 handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=[Pid],bad=Bad,good=Good}) ->
     Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
-    ?LOGF("Last Host ~p was deployed in ~p sec~n",[Host,Duration],?DEB),
+    GoodNumber=length(Good)+1,
+    Total=length(Bad)+length(Good),
+    ?LOGF("Last Host ~p was deployed in ~p sec (~p/~p nodes)~n",[Host,Duration,GoodNumber,Total],?DEB),
     NewBad = delbadnode(Bad,Host),
     gen_server:reply(State#state.clientpid,{[Host|Good],NewBad}),
     {stop,normal,State#state{pids=[],good=[Host|Good],bad=NewBad}};
@@ -312,3 +355,4 @@ delbadnode(BadList, Host)->
 
 setreason(BadList, BadHost, Reason)->
     lists:keyreplace(BadHost,1, BadList, {BadHost, {error, Reason}}).
+

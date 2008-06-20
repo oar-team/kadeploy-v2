@@ -307,21 +307,21 @@ last_boot({reboot_done}, State=#state{})->
     erlang:start_timer(State#state.last_boot_timeout,self(),last_boot_timeout),
     {next_state, last_boot, State, State#state.first_check_interval};
 
-last_boot(timeout, State=#state{})->
-    ?LOG("last boot timeout, check host~n",?DEB),
+last_boot(timeout, State=#state{hostname=Host})->
+    ?LOGF("~p: last boot timeout, check host on port ~p~n",[Host,State#state.check_portno],?DEB),
     case katools:check_host(State#state.check_portno,
-                            State#state.hostname,
+                            Host,
                             State#state.check_timeout) of
         ok ->
-            ?LOG("success !!! ~n",?INFO),
-            success(State#state.master,State#state.hostname),
+            ?LOGF("~p: success !!! ~n",[Host],?INFO),
+            success(State#state.master,Host),
             {stop,normal,State};
         {error, _Reason} ->
             {next_state, last_boot, State, State#state.check_interval}
     end;
 
 last_boot(Event, State=#state{})->
-    ?LOGF("got event in state last_boot~n",[Event],?NOTICE),
+    ?LOGF("~p: got event in state last_boot~n",[State#state.hostname,Event],?NOTICE),
     {next_state, last_boot, State}.
 
 
@@ -524,7 +524,7 @@ postinstall(State,File,DestDir,Script,Retries) ->
     prepostinstall(?fail_postinstall,State,File,DestDir,RealScript,Retries).
 
 prepostinstall(ErrorType,State,File,DestDir,Script,Retries) ->
-    ?LOGF("prepost: read file ~p (destdir is ~p)~n",[File, DestDir],?DEB),
+    ?LOGF("~p: prepost: read file ~p (destdir is ~p)~n",[State#state.hostname,File, DestDir],?DEB),
     {ok, Bin}= file:read_file(File),
     rpc_retry(State#state.node,kaslave,unzip_and_exec,[Bin,DestDir,Script],
               Retries,ErrorType).
@@ -566,7 +566,7 @@ retry(State, ErrorType, Error)->
             %% FIXME: warn the chain server that we may be late ?
             {next_state, setup_env, State#state{retry=Retry+1},?init_timeout};
         false->
-            ?LOG("Max retries reached in state setup_env, abort~n",?ERR),
+            ?LOGF("~p: Max retries reached in state setup_env, abort~n",[State#state.hostname],?ERR),
             failure({ErrorType, Error})
     end.
 
@@ -574,8 +574,8 @@ reboot_retry(State=#state{options=Opts,config=Config},StateName,StateTimeout,Err
     Retry= State#state.retry,
     case Retry < State#state.max_retry of
         true ->
-            ?LOGF("Reboot in state ~p of node ~p has failed, try again (try=~p)",
-                  [StateName,State#state.hostname,Retry+1],?WARN),
+            ?LOGF("~p: Reboot in state ~p has failed, try again (try=~p)",
+                  [State#state.hostname,StateName, Retry+1],?WARN),
             case Opts#deploy_opts.last_boot of
                 bios ->
                     kareboot_srv:reboot(State#state.hostname,get_reboot_cmds(Config)),

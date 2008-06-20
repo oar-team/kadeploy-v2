@@ -30,7 +30,7 @@
 test()->
     ok.
 
--define(DEBUG_LEVEL,7).
+-define(DEBUG_LEVEL,5).
 
 myoscmd_test()->
     myset_env(),
@@ -70,7 +70,7 @@ badnodes_test()->
                       filesite="./src/test/base.tgz"
                      },
     Opts=#deploy_opts{timeout=2000},
-     Resp=kadeploy_mgr:deploy(root,["badone","badtwo"],Env,Opts),
+     Resp=kadeploy_mgr:deploy_call(root,["badone","badtwo"],Env,Opts),
     ?assertMatch({Good,
                   [{"badone", {error,kaslave_failure}},
                    {"badtwo", {error,kaslave_failure}}]
@@ -169,7 +169,7 @@ deploytimeout_test()->
     Opts=#deploy_opts{timeout=1,
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
-    Resp=kadeploy_mgr:deploy(root,[Hostname,"localhost"],Env,Opts),
+    Resp=kadeploy_mgr:deploy_call(root,[Hostname,"localhost"],Env,Opts),
     ?assertMatch({Good,
                   [
                    {Hostname, {error,timeout}},
@@ -191,13 +191,14 @@ deployenv_test()->
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     {ok, Hostname}=inet:gethostname(),
-    Resp=kadeploy_mgr:deploy(root,[Hostname,"badconfig"],Env,Opts),
+    Resp=kadeploy_mgr:deploy_call(root,[Hostname,"badconfig"],Env,Opts),
     ?assertMatch({Good,
                   [
                    {Hostname, {error,setup_pxe_failure}},
                    {"badconfig", {error,{node_badconfig, Key}}}
                    ]},
                  Resp).
+
 
 goodnode_test()->
     myset_env(),
@@ -211,7 +212,7 @@ goodnode_test()->
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
 
     {ok, Hostname}=inet:gethostname(),
-    Resp=kadeploy_mgr:deploy(root,[Hostname,"badtwo"],Env,Opts),
+    Resp=kadeploy_mgr:deploy_call(root,[Hostname,"badtwo"],Env,Opts),
     ?assertMatch({Good,
                   [{"badtwo", {error,kaslave_failure}},
                    {Hostname, {error,{preinstall_failure,Reason}}}
@@ -234,6 +235,30 @@ anonymous_env_test()->
     erlang:display([Res]),
     ?assertMatch(OK,Res).
 
+readnodes_test()->
+    Nodefile=filename:absname("./src/test/nodefile"),
+    ?assertMatch({ok,["azur-22.sophia.grid5000.fr",
+                      "helios-33.sophia.grid5000.fr",
+                      "sol-3.sophia.grid5000.fr"]},katools:read_unique_nodes(Nodefile)).
+
+
+deployenv2_test()->
+    myset_env(),
+    Good=[],
+    Env= #environment{filebase="./src/test/base.tgz",
+                      initrdpath = "erlang/chain.beam",
+                      kernelpath = "erlang/chain.erl",
+                      id=1,
+                      filesite="./src/test/base.tgz"},
+    Opts=#deploy_opts{timeout=4000,
+                      method=deployenv,
+                      erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
+    {ok, Hostname}=inet:gethostname(),
+    Nodefile=filename:absname("./src/test/nodefile"),
+    Resp=kadeploy_mgr:deploy(root,Nodefile,Env,Opts),
+    ?assertMatch(ok, Resp).
+
+%%%%%%%%%%%%%%%%% end of test funs
 
 myset_env()->
     application:set_env(stdlib,debug_level,?DEBUG_LEVEL),
