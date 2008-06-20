@@ -16,11 +16,12 @@
                      {chunksize, 1000000}, % in bytes
                      {wait_before_retry, 60000}, % 1mn
                      {transfert_timeout, 900000}, % 15mn
+                     {wait_before_transfert, 120000}, % 2mn
                      {last_boot_timeout, 240000}, %   4mn
                      {first_boot_timeout, 240000}, %   4mn
                      {first_check_interval, 25000}, %   25sec
                      {check_interval, 5000}, %   5sec
-                     {check_timeout,  2000}, %   2sec
+                     {check_timeout,  1500}, %   1.5sec
                      {check_portno,   22}, %   ssh
                      {minnodes_wait,  20000}, %   20sec
                      {max_retry,  1}, % max retries for each state

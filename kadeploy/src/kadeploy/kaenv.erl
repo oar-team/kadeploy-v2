@@ -132,6 +132,7 @@ setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
     case UseGrub of
         grub ->
             Cluster=getval(cluster,Config),
+            %%FIXME: we must create grub image !
             lists:append([?PXE_HEADER,TFTPRelPath,"/",
                           "memdisk\n",
                           "         APPEND initrd=",TFTPRelPath,"/grub_img_env",
