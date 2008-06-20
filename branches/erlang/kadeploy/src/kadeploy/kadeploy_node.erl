@@ -555,17 +555,18 @@ get_reboot_cmds(Conf) ->
     Hard = getval(hardboot,Conf),
     {Soft, Hard, ""}.
 
-
+%% called in setup_env state
 retry(State, ErrorType, Error)->
     ?LOGF("catch exception~p, check if we retry~n",[{ErrorType, Error}],?INFO),
     Retry= State#state.retry,
     case Retry < State#state.max_retry of
         true ->
             ?LOG("Retry~n",?INFO),
-            %% FIXME: warn the chain server that we may be late ?
             {next_state, setup_env, State#state{retry=Retry+1},?init_timeout};
         false->
             ?LOGF("~p: Max retries reached in state setup_env, abort~n",[State#state.hostname],?ERR),
+            %% warn the chain server that it should not wait for me:
+            kachain_srv:update_nodes(State#state.chainsrv, -1),
             failure({ErrorType, Error})
     end.
 
@@ -586,5 +587,12 @@ reboot_retry(State=#state{options=Opts,config=Config},StateName,StateTimeout,Err
                     {next_state, StateName, State#state{retry=Retry+1}, StateTimeout}
             end;
         false ->
+            case StateName of
+                first_boot ->
+                    %% warn the chain server that it should not wait for me:
+                    kachain_srv:update_nodes(State#state.chainsrv, -1);
+                _ ->
+                    ok
+            end,
             failure(ErrorMessage)
     end.

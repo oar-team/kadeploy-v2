@@ -137,9 +137,14 @@ handle_call(_Request, _From, State) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number,status=waiting}) ->
-    New=Number+NodeNumber,
-    ?LOGF("Update nodenumber from ~p to ~p~n",[Number,New],?NOTICE),
-    {noreply, T#transfert{number=New}};
+    case Number+NodeNumber of
+        0 ->
+            %% no more node to wait for, go !
+            {noreply, start_chain(T)} ;
+        New ->
+            ?LOGF("Update nodenumber from ~p to ~p~n",[Number,New],?NOTICE),
+            {noreply, T#transfert{number=New}}
+    end;
 
 %% Node is ready to start the transfert, but it's too late
 handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P,status=started}) ->
