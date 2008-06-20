@@ -83,18 +83,23 @@ deploy(Server,User,NodeFile,Env,Opts) ->
         pong ->
             global:sync()
     end,
+    Start=now(),
     {ok,Nodes}=katools:read_unique_nodes(NodeFile),
     {Good, Bad} = deploy_call(User,Nodes,Env,Opts),
-    PrintBad=fun({Host,{Error, {Type, Reason}}}) ->
-                     io_lib:format("~s ~s ~s ~s~n",[Host, Error, Type, Reason]);
+    PrintBad=fun({Host,{Error, {Type, _Reason}}}) ->
+                     io:format("~s ~s ~s ~n",[Host, Error, Type]);
                 ({Host,{Error, Reason}}) ->
-                     io:format("~s ~s ~s~n",[Host, Error, Reason])
+                     io:format("~s ~s ~s~n",[Host, Error, Reason]);
+                ({Host,Reason}) ->
+                     io:format("~s ~p~n",[Host, Reason])
              end,
     PrintGood=fun(Host) ->
                       io:format("~s deployed~n",[Host])
               end,
     lists:foreach(PrintGood,Good),
-    lists:foreach(PrintBad,Bad).
+    lists:foreach(PrintBad,Bad),
+    Elapsed=round(katools:elapsed(Start,now())/1000),
+    io:format("# Deployment duration ~p sec (~p:~p)~n", [ Elapsed,length(Good),length(Bad) ]).
 
 %% @spec deploy(User::string, Nodes::List,
 %%       Env::record(environment) | {anonymous, Directory::string} |
@@ -190,7 +195,7 @@ handle_call(Request, From, State) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 %% last pid has finished
-handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=[Pid],bad=Bad,good=Good}) ->
+handle_cast({done, _FromPid, Host }, State=#state{deployment=Depl,pids=[_Pid],bad=Bad,good=Good}) ->
     Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
     GoodNumber=length(Good)+1,
     Total=length(Bad)+length(Good),
@@ -201,8 +206,9 @@ handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=[Pid],bad=
 
 handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=Good,bad=Bad}) ->
     Duration=round(katools:elapsed(Depl#deployment.startdate, now())/1000),
-    ?LOGF("Host ~p was deployed in ~p sec~n",[Host,Duration],?INFO),
-    Now=now(),
+    GoodNumber=length(Good)+1,
+    Total=length(Bad)+length(Good),
+    ?LOGF("Host ~p was deployed in ~p sec  (~p/~p nodes)~n",[Host,Duration,GoodNumber,Total],?INFO),
     NewPids= Pids -- [FromPid],
     NewBad = delbadnode(Bad,Host),
     Opts=Depl#deployment.options,
@@ -216,19 +222,17 @@ handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=
     end,
     {noreply, State#state{pids=NewPids,good=[Host|Good],bad=NewBad}};
 
-handle_cast({node_failure,Reason,FromPid,Host},State=#state{deployment=Depl,pids=Pids,bad=Bad}) ->
+handle_cast({node_failure,Reason,FromPid,Host},State=#state{pids=Pids,bad=Bad}) ->
     ?LOGF("Client ~p has failed, reason ~p~n",[Host,Reason],?WARN),
-    Now=now(),
     NewPids = Pids -- [FromPid],
     NewBad = setreason(Bad,Host,Reason),
-    case Pids -- [FromPid] of
+    case NewPids of
         [] ->
             ?LOG("No more nodes, stop~n",?INFO),
             gen_server:reply(State#state.clientpid,{State#state.good,NewBad}),
             {stop,normal,State};
-        NewPid->
+        _  ->
             ?LOGF("Wait for Pids~p ~n",[NewPids],?DEB),
-            Opts=Depl#deployment.options,
             {noreply,State#state{pids=NewPids,bad=NewBad}}
     end;
 
@@ -328,7 +332,7 @@ deploy_setup(D=#deployment{options=Opts},Env)
     %% @TODO
     {D#deployment.nodes, []};
 
-deploy_setup(D=#deployment{options=Opts,nodes=Nodes},Env)
+deploy_setup(#deployment{options=Opts,nodes=Nodes},Env)
   when Opts#deploy_opts.method==currentenv ->
     %% First we need to start a beam on each node
     {ok, TimeOut}=kaconfig:getval(first_check_env_timeout),

@@ -113,7 +113,7 @@ init({Type,File,NodeNumber,From}) ->
                      filename=File,
                      number=NodeNumber,
                      wait_before_retry=?config(wait_before_retry),
-                     timeout=?config(transfert_timeout),
+                     timeout=?config(wait_before_transfert),
                      master=From},
     {ok, State}.
 
@@ -141,17 +141,25 @@ handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number,status=wai
     ?LOGF("Update nodenumber from ~p to ~p~n",[Number,New],?NOTICE),
     {noreply, T#transfert{number=New}};
 
+%% Node is ready to start the transfert, but it's too late
+handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P,status=started}) ->
+    ?LOGF("~p is ready to start the transfert, but its too late; wait for the next transfert",[Node],?WARN),
+    %% same case as a retry
+    handle_cast({retry,{DestDir,Node,From}},  T);
+
 %% Node is ready to start the transfert
 handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P}) ->
     %% FIXME Destdir can be dependant on child ? (dd)
     NewState=T#transfert{waiting=[{From,Node}|P], destdir=DestDir},
     case length(NewState#transfert.waiting) of
         Number -> %% all nodes are waiting for transfert, go !
-            %% timeout for transfert
-            erlang:start_timer(T#transfert.timeout,self(),transfert_timeout),
+%%             %% timeout for transfert: not needed: each node has its own timeout
+%%             erlang:start_timer(T#transfert.timeout,self(),transfert_timeout),
             {noreply, start_chain(NewState) } ;
         _ ->
-            {noreply, NewState}
+            %% timer useful if a node is blocked before the transfert
+            %% otherwise it will block all the other nodes
+            {noreply, NewState, T#transfert.timeout}
     end;
 %% Node wants to retry the transfert
 handle_cast({retry,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P}) ->
@@ -208,11 +216,14 @@ handle_info({chain_timeout, _From, FromNode}, State) ->
     end,
     {noreply, State#transfert{}};
 
-handle_info({timeout, _Ref, transfert_timeout}, State)  ->
-    %% @FIXME
-    {noreply, State};
 handle_info({timeout, _Ref, wait_before_retry}, State)  ->
+    ?LOG("Start a new transfert~n",?NOTICE),
     start_chain(State); % start a new chain with waiting nodes
+handle_info(timeout,  T=#transfert{number=Number,waiting=P})  ->
+    %% timeout: all clients are not ready: start with ready nodes
+    ?LOGF("Don't wait any longer for late nodes: start transfert with ~p/~p nodes~n",
+          [length(P),Number],?ERR),
+    {noreply, start_chain(T) } ;
 handle_info(_Info, State) ->
     {noreply, State}.
 

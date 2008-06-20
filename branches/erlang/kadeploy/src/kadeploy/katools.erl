@@ -65,7 +65,7 @@ debug(From, Message, Args, Level) ->
     Debug_level = ?config(debug_level),
     if
         Level =< Debug_level ->
-            error_logger:info_msg("~20s:(~p:~p) "++ Message,
+            error_logger:info_msg("~14s:(~p:~p) "++ Message,
                                   [From, Level, self()] ++ Args);
         true ->
             nodebug
@@ -91,14 +91,20 @@ join2(Sep, [First | List]) when is_list(First)->
 
 
 %% check if a port is open
-check_host(PortNo, Host, TimeOut) ->
-        case gen_tcp:connect(Host,PortNo,[], TimeOut) of
-            {ok,Sock} ->
-                gen_tcp:close(Sock),
-                ok;
-            {error, Reason} ->
-                {error, Reason}
-        end.
+check_host(PortNo, Host, TimeOut) -> % special case; use fping
+    case kaslave:myoscmd("fping "++Host) of
+        {ok, Res } ->
+            check_host_2(PortNo, Host, TimeOut);
+        {error, ErrNo, Reason} -> {error,Reason}
+    end.
+check_host_2(PortNo, Host, TimeOut) ->
+    case gen_tcp:connect(Host,PortNo,[], TimeOut) of
+        {ok,Sock} ->
+            gen_tcp:close(Sock),
+            ok;
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 chop(Bin) when is_binary(Bin)-> chop(binary_to_list(Bin));
 chop(String) -> string:strip(String, right, 10).

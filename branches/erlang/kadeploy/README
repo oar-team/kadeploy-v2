@@ -62,6 +62,7 @@ test on g5k:
 
 ** TODO
 - add options to script
+- grub image creation
 - reboot server tuning (pool of concurrent reboots ?)
 - make a duke env with erlang
 - rights management

@@ -254,14 +254,13 @@ transfert({transfert_failed}, State=#state{config=Config,options=Opts})->
     end;
 
 transfert({transfert_done}, State=#state{config=Config,options=Opts})->
-    ?LOGF("transfert done on host~p~n",[State#state.hostname],?INFO),
+    ?LOGF("transfert done on host~p, start postinstall~n",[State#state.hostname],?INFO),
     Env=State#state.env,
     DestDir = getval(post_install_destdir,Config), % destdir ?
     Script  = getval(post_install_script,Config),
     Retries = getval(post_install_script_retries,Config),
     Partition=Opts#deploy_opts.partition,
     %% @FIXME timeouts for prepost ?
-    ?LOG("postinstall ...~n",?DEB),
     ok = postinstall(State,Env#environment.filesite,DestDir,Script,Retries),
     Grub = case getval(use_nogrub,Config) of
                1 -> nogrub;
@@ -461,7 +460,7 @@ setup_disk(Config,State,Opts)->
     disk_mkfs(State,PartDevice,Env#environment.filesystem,"",MaxRetries),
 %%% FIXME mkfs tmp ?
     disk_mount(State,Mount,PartDevice,Env#environment.filesystem,MaxRetries),
-    ?LOG("start transfert ~n",?DEB),
+    ?LOGF("~p: ask for transfert ~n",[State#state.hostname],?DEB),
     kachain_srv:start_transfert(State#state.chainsrv, Mount,State#state.node),
     State#state{config=Config}.
 
