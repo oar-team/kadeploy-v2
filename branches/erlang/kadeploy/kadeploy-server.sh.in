@@ -25,7 +25,8 @@ NODES_CONF_FILE="\"/etc/kadeploy/nodes.conf\""
 BOOT_OPT="-boot $INSTALL_DIR/lib/$NAME-$VERSION/priv/$NAME -boot_var KADEPLOYPATH  $INSTALL_DIR "
 DEBUG_LEVEL=5
 ERL_RSH=" -rsh ssh "
-ERL_OPTS=" -smp auto +P 250000 +A 16 +K true @ERL_OPTS@ "
+# FIXME: disable smp (bug with old version of erlang: R11B-XX; TODO: retry with R12B-3)
+ERL_OPTS=" -smp disable +P 250000 +A 16 +K true @ERL_OPTS@ "
 COOKIE='kadeploy'
 ERTS_RUN=`$ERL -version 2>&1 | tr -cd 0123456789.`
 ERTS_BOOT=`grep erts $KADEPLOYPATH/../priv/$NAME.rel | tr -cd 0123456789.`

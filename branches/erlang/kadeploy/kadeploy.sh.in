@@ -46,7 +46,7 @@ usage() {
     exit
 }
 
-while getopts ":f:p:l:d:r:i:P:L:I:u:nF" Option
+while getopts ":f:p:l:d:r:L:u:n:e" Option
 do
     case $Option in
         f) NODEFILE=$OPTARG;;
@@ -60,11 +60,10 @@ do
             fi
             ;;
         d) ANONYMOUS_ENV=" anonymous $OPTARG ";;
-        d) RECORDED_ENV=" recorded $OPTARG ";;
+        e) RECORDED_ENV=" recorded $OPTARG ";;
         r) ERL_RSH=" -rsh $OPTARG ";;
         n) RUN_NAME=$OPTARG;;
         u) USE_PARENT_PROXY=true;;
-        F) NAMETYPE="-name";;
         *) usage ;;
     esac
 done

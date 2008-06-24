@@ -139,10 +139,19 @@ fulltest:  clean test
 test:
 	$(MAKE) TYPE=test dotest
 
+testdbg:
+	$(MAKE) TYPE=test dotestdbg
+
 dotest: kadeploy boot buildtest $(CONFFILE) $(TEST_CONFFILE)
 	@mkdir -p /tmp/tftpboot/PXEClient/images_grub
 	@mkdir -p /tmp/tftpboot/PXEClient/pxelinux.cfg
-	$(ERL) +A 16 -noshell -sname testserver -pa ./ebin -s eunit test katests_all -s init stop -setcookie testcookie
+	@echo "running unit tests with eunit:"
+	@$(ERL) +A 16 -noshell -sname testserver -pa ./ebin -s eunit test katests_all -s init stop -setcookie testcookie -stdlib debug_level 3
+
+dotestdbg: kadeploy boot buildtest $(CONFFILE) $(TEST_CONFFILE)
+	@mkdir -p /tmp/tftpboot/PXEClient/images_grub
+	@mkdir -p /tmp/tftpboot/PXEClient/pxelinux.cfg
+	$(ERL) +A 16 -noshell -sname testserver -pa ./ebin -s eunit test katests_all -s init stop -setcookie testcookie -stdlib debug_level 7
 
 g5ktest:
 	$(MAKE) TYPE=test g5kdotest

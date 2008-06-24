@@ -90,14 +90,17 @@ join2(Sep, [First | List]) when is_list(First)->
         lists:foldl(fun(X, Sum) -> X ++ Sep ++ Sum end, First, List).
 
 
-%% check if a port is open
-check_host(PortNo, Host, TimeOut) -> % special case; use fping
+%% @spec  check_host(PortNo::integer, Host::string, TimeOut::integer) -> ok
+%% @doc check if a remote node is up
+%% use fping
+check_host(fping, Host, TimeOut) ->
     case kaslave:myoscmd("fping "++Host) of
         {ok, Res } ->
-            check_host_2(PortNo, Host, TimeOut);
+            ok;
         {error, ErrNo, Reason} -> {error,Reason}
-    end.
-check_host_2(PortNo, Host, TimeOut) ->
+    end;
+%% try to connect to a given port
+check_host(PortNo, Host, TimeOut) ->
     case gen_tcp:connect(Host,PortNo,[], TimeOut) of
         {ok,Sock} ->
             gen_tcp:close(Sock),

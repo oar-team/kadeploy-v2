@@ -136,6 +136,9 @@ handle_call(_Request, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
+handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=0,status=waiting}) ->
+    ?LOGF("Update nodenumber asked with ~p, but no nodes ask for a transfert !~n",[NodeNumber],?ERR),
+    {noreply, T};
 handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number,status=waiting}) ->
     case Number+NodeNumber of
         0 ->
@@ -147,7 +150,7 @@ handle_cast({update_nodenum, NodeNumber},  T=#transfert{number=Number,status=wai
     end;
 
 %% Node is ready to start the transfert, but it's too late
-handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P,status=started}) ->
+handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{status=started}) ->
     ?LOGF("~p is ready to start the transfert, but its too late; wait for the next transfert",[Node],?WARN),
     %% same case as a retry
     handle_cast({retry,{DestDir,Node,From}},  T);
@@ -253,9 +256,12 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
+start_chain(T=#transfert{waiting=[]}) ->
+    ?LOG("No one is waiting, abort transfert~n",?WARN),
+    T;
 start_chain(T=#transfert{filename=Filename,pending=Pending,waiting=Waiting,
                          destdir=DestDir, chunksize=ChunkSize}) ->
-    [{Pid,NextNode}|Nodes] = Waiting,
+    [{_Pid,NextNode}|Nodes] = Waiting,
     {ok, FileInfo} = file:read_file_info(Filename),
     Size=FileInfo#file_info.size,
     ?LOGF("file size:~p KB~n",[Size/1024],?DEB),

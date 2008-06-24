@@ -112,12 +112,12 @@ setup_pxe(UseGrub, Hostname, _Config,{deploykernel, Duke},Partition)->
     end;
 
 setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
-    PXEData=setup_pxe_data(UseGrub,Hostname, Config, Env,Partition),
-    PXERep=getval(pxe_rep,Config),
-    TFTPDir=getval(tftp_repository,Config),
-    {ok,IPtmp}=inet:getaddr(Hostname, inet), %% IPV4
-    IPhex=katools:ip_hex(IPtmp),
-    Filename=filename:join([TFTPDir,PXERep,IPhex]),
+    PXEData   = setup_pxe_data(UseGrub,Hostname, Config, Env,Partition),
+    PXERep    = getval(pxe_rep,Config),
+    TFTPDir   = getval(tftp_repository,Config),
+    {ok,IPtmp}= inet:getaddr(Hostname, inet), %% FIXME: IPV4 only
+    IPhex     = katools:ip_hex(IPtmp),
+    Filename  = filename:join([TFTPDir,PXERep,IPhex]),
     ?LOGF("writing PXE file (~p) for host ~p~n",[Filename,Hostname],?NOTICE),
     Data=list_to_binary(PXEData),
     file:write_file(Filename,Data).

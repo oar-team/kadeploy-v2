@@ -30,10 +30,9 @@
 test()->
     ok.
 
--define(DEBUG_LEVEL,5).
-
 myoscmd_test()->
     myset_env(),
+    mystart(),
     ?assertMatch({error,2, Reason},kaslave:myoscmd("ls /sdfsdfsd")).
 
 %% too dangerous if test is running as root :)
@@ -61,8 +60,10 @@ nmap_nok_test()->
 
 badnodes_test()->
     Good=[],
+    myset_env(),
     application:start(kadeploy),
-    application:set_env(kadeploy,debug_level,?DEBUG_LEVEL),
+    {ok,Level}=application:get_env(stdlib,debug_level),
+    application:set_env(kadeploy,debug_level,Level),
     Env= #environment{filebase="./src/test/base.tgz",
                       initrdpath = "erlang/chain.beam",
                       kernelpath = "erlang/chain.erl",
@@ -232,7 +233,6 @@ anonymous_env_test()->
                          filesite=Filesite,
                          md5="5caade269e878d7962f0e1ec3a1d4d12"}},
     Res = kaenv:getenv({anonymous,"root","./src/test"}),
-    erlang:display([Res]),
     ?assertMatch(OK,Res).
 
 readnodes_test()->
@@ -242,7 +242,7 @@ readnodes_test()->
                       "sol-3.sophia.grid5000.fr"]},katools:read_unique_nodes(Nodefile)).
 
 
-deployenv2_test()->
+deployenv2_test_()->
     myset_env(),
     Good=[],
     Env= #environment{filebase="./src/test/base.tgz",
@@ -250,21 +250,30 @@ deployenv2_test()->
                       kernelpath = "erlang/chain.erl",
                       id=1,
                       filesite="./src/test/base.tgz"},
-    Opts=#deploy_opts{timeout=4000,
+    Opts=#deploy_opts{timeout=4500,
                       method=deployenv,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     {ok, Hostname}=inet:gethostname(),
     Nodefile=filename:absname("./src/test/nodefile"),
-    Resp=kadeploy_mgr:deploy(root,Nodefile,Env,Opts),
-    ?assertMatch(ok, Resp).
+    ?LOG("Starting deployenv2 test with anonymous env~n",?DEB),
+   {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(node(),"root",Nodefile,Env,Opts))}.
 
 %%%%%%%%%%%%%%%%% end of test funs
 
-myset_env()->
-    application:set_env(stdlib,debug_level,?DEBUG_LEVEL),
-    application:set_env(stdlib,deploy_timeout,600000),
+mystart()->
+    {ok,Level}=application:get_env(stdlib,debug_level),
     ssl:start(),
-    application:start(sasl),
+    case Level > 6 of
+        true ->
+            application:start(sasl);
+        _ ->
+            ok
+    end,
     application:start(crypto).
+
+myset_env()->
+    {ok,Level}=application:get_env(stdlib,debug_level),
+    application:set_env(stdlib,debug_level,Level),
+    application:set_env(stdlib,deploy_timeout,600000).
 
 

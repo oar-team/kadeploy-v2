@@ -134,10 +134,10 @@ fi
 ERLANG_SSL=`head -1 < confapp.out`
 if test "$ERLANG_SSL" == "error" ; then
   AC_MSG_RESULT(no)
-  ERLANG_APPLICATIONS="kernel,stdlib,sasl"
+  ERLANG_APPLICATIONS="kernel,stdlib"
 else
   AC_MSG_RESULT(yes)
-  ERLANG_APPLICATIONS="kernel,stdlib,sasl,ssl"
+  ERLANG_APPLICATIONS="kernel,stdlib,ssl"
 fi
 
 AC_MSG_CHECKING(crypto application )

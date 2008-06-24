@@ -76,11 +76,13 @@ deploy([Server,User,NodeFile,Env,Options]) ->
     deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=Erl_args}).
 
 deploy(Server,User,NodeFile,Env,Opts) ->
-    case net_adm:ping(Server) of
-        pang->
+    case { net_adm:ping(Server), node()} of
+        {pang, _ }->
             erlang:display("can't reach kadeploy server"),
             exit(normal);
-        pong ->
+        { pong, Server}  -> % run on the same node, no need to sync
+            ok;
+        { pong, _}  ->
             global:sync()
     end,
     Start=now(),
@@ -307,13 +309,14 @@ check_rights(D=#deployment{username=User,envname={recorded,Name}}) ->
     check_rights_node(Env,D).
 
 check_rights_node(Env,D=#deployment{username=User})->
+    ?LOGF("Checking user ~p rights~n",[User],?DEB),
     %% we should check if the user has rights on each nodes/partition
     ok = karights:check_nodes(User,D#deployment.partition,D#deployment.nodes),
     %% extract kernel from environment if needed (tar format only)
     {ok, TFTPRep}   = kaconfig:getval(tftp_repository),
     {ok, TFTPPath}  = kaconfig:getval(tftp_relative_path),
     Filename  = filename:join(TFTPRep,TFTPPath),
-    ?LOGF("Kernel and initrd will be extracted in ~p",[Filename],?DEB),
+    ?LOGF("Kernel and initrd will be extracted in ~p~n",[Filename],?DEB),
     {ok,_Res} = kaenv:extract_kernel(Env,Filename),
     {ok, Env}.
 
