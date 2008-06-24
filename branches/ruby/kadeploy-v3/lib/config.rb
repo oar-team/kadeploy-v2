@@ -1,5 +1,9 @@
+require "lib/environment"
+require "lib/nodes"
+
 module ConfigInformation
-  CONFIGURATION_FOLDER = "/etc/kadeploy"
+  CONFIGURATION_FOLDER = Dir.pwd + "/conf" #"/etc/kadeploy"
+  COMMANDS_FILE = "cmd"
   COMMON_CONFIGURATION_FILE = "conf"
   SPECIFIC_CONFIGURATION_FILE_PREFIX = "specific_conf_"
 
@@ -38,12 +42,30 @@ module ConfigInformation
       end
       return true
     end
+    
+    def check_config
+      if not File.exist?(@common.tftp_repository) then
+        puts "The #{@common.tftp_repository} directory does not exist"
+        return false
+      else
+        if not File.exist?(@common.tftp_repository + "/" + @common.tftp_images_path) then
+          puts "The #{@common.tftp_repository}/#{@common.tftp_images_path} directory does not exist"
+          return false
+        else
+          if not File.exist?(@common.tftp_repository + "/" + @common.tftp_cfg) then
+            puts "The #{@common.tftp_repository}/##{@common.tftp_cfg} directory does not exist"
+            return false
+          end
+        end
+      end
+      return check_options
+    end
 
     def load_cmdline_options
       progname = File::basename($PROGRAM_NAME)
 
       opts = OptionParser::new do |opts|
-        opts.version = "$Id: $"
+        opts.version = "$Id$"
         opts.release = nil
         opts.summary_indent = "  "
         opts.summary_width = 28
@@ -60,40 +82,91 @@ module ConfigInformation
             @common.node_list.push(node)
           }
         }
+        opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
+          @common.environment.load_from_file(f)
+        }
       end
 
       opts.parse!(ARGV)
-      return check_options
+      return check_config
     end
   end
   
   class CommonConfig
     attr_accessor :debug_level
+    attr_accessor :tftp_repository
+    attr_accessor :tftp_images_path
+    attr_accessor :tftp_cfg
+    attr_accessor :move_pxe_cfg
     attr_accessor :deploy_db_host
     attr_accessor :deploy_db_name
     attr_accessor :deploy_db_login
     attr_accessor :deploy_db_passwd
     attr_accessor :rights_kind
     attr_accessor :node_list
-    attr_accessor :env_file
+    attr_accessor :environment
+    attr_accessor :commands       #Hashtable of NodeCmd
 
     def initialize
       @debug_level = 3
       @node_list = Array.new
       @rights_kind = "dummy"
+      @environment = EnvironmentManagement::Environment.new
+      @commands = Hash.new
+      init_config
+      load_commands
+    end
+
+    def init_config
+      @tftp_repository = Dir.pwd + "/test/pxe"
+      @tftp_images_path = "images"
+      @tftp_cfg = "pxelinux.cfg"
+    end
+
+    def load_commands
+      commands_file = CONFIGURATION_FOLDER + "/" + COMMANDS_FILE
+      if File.exist?(commands_file) then
+        IO::read(commands_file).split("\n").each { |line|
+          if /(.+)\|(.+)\|(.+)/ =~ line then
+            content = Regexp.last_match
+            if not @commands.has_key?(content[1])
+            then
+              @commands[content[1]] = Nodes::NodeCmd.new
+            end
+            case content[2]
+            when "reboot_soft"
+              @commands[content[1]].reboot_soft = content[3]
+            when "reboot_hard"
+              @commands[content[1]].reboot_hard = content[3]
+            when "reboot_veryhard"
+              @commands[content[1]].reboot_veryhard = content[3]
+            when "console"
+              @commands[content[1]].console = content[3]
+            else
+              puts "Unknown command: #{content[2]}"
+            end
+          end
+        }
+      else
+        raise "Cannot find the command file"
+      end
     end
   end
   
   class ClusterSpecificConfig
-    attr_accessor :label_grub
-    attr_accessor :kernel_param
-    attr_accessor :deployment_parts #list, the first one is used by default
+    attr_accessor :deploy_kernel
+    attr_accessor :deploy_initrd
+    attr_accessor :deploy_parts     #Array of String, the first one is used by default
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :default_block_device
     attr_accessor :default_device_number
     
     def initialize
       init_automata
+      @deploy_kernel = "deploy-linux-image-2.6.99"
+      @deploy_initrd = "deploy-linux-initrd-2.6.99.img ETH_DRV=e1000 ETH_DEV=eth0 DISK_DRV=ahci console=tty0 console=ttyS1,38400n8 ramdisk_size=400000"
+      @deploy_parts = Array.new
+      @deploy_parts.push("/dev/sda2")
     end
 
     def init_automata

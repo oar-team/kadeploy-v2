@@ -1,0 +1,7 @@
+virtual_host_1|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_1 /sbin/reboot
+
+virtual_host_2|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_2 /sbin/reboot
+
+virtual_host_3|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_3 /sbin/reboot
+
+virtual_host_4|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_4 /sbin/reboot

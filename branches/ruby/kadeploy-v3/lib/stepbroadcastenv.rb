@@ -4,10 +4,10 @@ module BroadcastEnvironment
   class BroadcastEnvFactory
     attr_accessor :klass
 
-    def initialize(kind, max_retries, nodes, queue_manager, window_manager, output)
+    def initialize(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when /BroadcastEnvChainWithFS/
-        @klass = BroadcastEnvChainWithFS.new(max_retries, nodes, queue_manager, window_manager, output)
+        @klass = BroadcastEnvChainWithFS.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the environment broadcast step"
       end
@@ -20,8 +20,8 @@ module BroadcastEnvironment
     @queue_manager = nil
     @window_manager = nil
     @output = nil
-
-    def initialize(max_retries, nodes, queue_manager, window_manager, output)
+    
+    def initialize(max_retries, cluster, nodes, queue_manager, window_manager, output)
       @remaining_retries = max_retries
       @nodes = nodes
       @queue_manager = queue_manager
@@ -36,9 +36,11 @@ module BroadcastEnvironment
 
   class BroadcastEnvChainWithFS < BroadcastEnv
     def run
+      @queue_manager.increment_active_threads
       Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes)
-      }   
+      }
+      @queue_manager.decrement_active_threads
     end
   end
 end
