@@ -73,11 +73,11 @@ class QueueManager
       case current_step
       when nil
         @queue_deployment_environment.push(nodes)
-      when /SetDeploymentEnv/
+      when "SetDeploymentEnv"
         @queue_broadcast_environment.push(nodes)
-      when /BroadcastEnv/
+      when "BroadcastEnv"
         @queue_boot_new_environment.push(nodes)
-      when /BootNewEnv/
+      when "BootNewEnv"
         @queue_process_finished_nodes.push(nodes)
       else
         raise "Wrong step name"
@@ -95,13 +95,13 @@ class QueueManager
 
   def get_task(queue)
     case queue
-    when /SetDeploymentEnv/
+    when "SetDeploymentEnv"
       return @queue_deployment_environment.pop
-    when /BroadcastEnv/
+    when "BroadcastEnv"
       return @queue_broadcast_environment.pop
-    when /BootNewEnv/
+    when "BootNewEnv"
       return @queue_boot_new_environment.pop
-    when /ProcessFinishedNodes/
+    when "ProcessFinishedNodes"
       return @queue_process_finished_nodes.pop
     else
       raise "Wrong queue name"
@@ -206,7 +206,7 @@ class KadeployWorkflow
             @nodes_ok.add(nodes)
           end
           if ((nodes.empty? && @queue_manager.one_last_active_thread?) || \
-              (not nodes.empty? && @queue_manager.no_more_active_thread?)) then
+              ((not nodes.empty?) && @queue_manager.no_more_active_thread?)) then
             @nodes_ok.group_by_cluster.each_pair { |cluster, set|
               puts "Nodes correctly deployed on cluster #{cluster}"
               puts set.to_s
@@ -219,8 +219,6 @@ class KadeployWorkflow
             @thread_set_deployment_environment.join
             @thread_broadcast_environment.join
             @thread_boot_new_environment.join
-          else
-            puts @queue_manager.nb_active_threads
           end
         end
       end
@@ -239,13 +237,13 @@ class KadeployWorkflow
 end
 
 n1=Nodes::Node.new("virtual_host_1", "192.168.0.10", "paravent")
-n2=Nodes::Node.new("virtual_host_2", "192.168.0.11", "paravent")
-n3=Nodes::Node.new("virtual_host_3", "192.168.0.12", "paravent")
-n4=Nodes::Node.new("virtual_host_4", "192.168.0.13", "paravent")
+#n2=Nodes::Node.new("virtual_host_2", "192.168.0.11", "paravent")
+#n3=Nodes::Node.new("virtual_host_3", "192.168.0.12", "paravent")
+n4=Nodes::Node.new("virtual_host_5", "192.168.0.13", "paravent")
 ns=Nodes::NodeSet.new
 ns.push(n1)
-ns.push(n2)
-ns.push(n3)
+#ns.push(n2)
+#ns.push(n3)
 ns.push(n4)
 
 Signal.trap("INT") do

@@ -87,6 +87,13 @@ module Nodes
       }
       return ht
     end
+
+    def get_node_by_host(hostname)
+      @set.each { |node|
+        return node if (node.hostname == hostname)
+      }
+      return nil
+    end
   end
 
   class NodeCmd
