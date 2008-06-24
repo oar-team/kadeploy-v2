@@ -259,9 +259,11 @@ transfert({transfert_done}, State=#state{config=Config,options=Opts})->
     DestDir = getval(post_install_destdir,Config), % destdir ?
     Script  = getval(post_install_script,Config),
     Retries = getval(post_install_script_retries,Config),
+    Mount = getval(mount,Config),
     Partition=Opts#deploy_opts.partition,
     %% @FIXME timeouts for prepost ?
     ok = postinstall(State,Env#environment.filesite,DestDir,Script,Retries),
+    disk_umount(State,Mount,-1),
     Grub = case getval(use_nogrub,Config) of
                1 -> nogrub;
                0 -> grub

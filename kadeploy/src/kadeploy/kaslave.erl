@@ -126,6 +126,9 @@ start_slave(Host,Name, Args, MyHosts, Fun, Master,DoSpawn) ->
             %% FIXME temporary set for debug
             rpc:cast(Node,application, set_env, [stdlib,debug_level, 6]),
             rpc:cast(Node,?MODULE, deploy, [MyHosts, Args, Fun, Master, DoSpawn]);
+        {error, {already_running, Node}} ->
+            ?LOGF("already running slave on ~p, weird, continue anyway~n",[Host],?WARN),
+            rpc:cast(Node,?MODULE, deploy, [MyHosts, Args, Fun, Master, DoSpawn]);
         Reason ->
             Master ! {notstarted, {Reason, Host, Name}}
     end.
