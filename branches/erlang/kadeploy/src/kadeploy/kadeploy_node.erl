@@ -54,6 +54,7 @@
           retry=0,  %% integer: current retry number (for the current state)
           max_retry, %% integer: max number of retries (for each state)
           system_maxretries=0, %% max retries for system command (fdisk, ...) FIXME:useful ?
+          transfert_start, %% date
           transfert_timeout,
           first_boot_timeout,
           last_boot_timeout,
@@ -253,8 +254,10 @@ transfert({transfert_failed}, State=#state{config=Config,options=Opts})->
             failure(?fail_transfert)
     end;
 
-transfert({transfert_done}, State=#state{config=Config,options=Opts})->
-    ?LOGF("transfert done on host~p, start postinstall~n",[State#state.hostname],?INFO),
+transfert({transfert_done}, State=#state{config=Config,transfert_start=TD,options=Opts})->
+    TransfertTime=round(katools:elapsed(TD,now())/1000),
+    ?LOGF("~p: transfert done in ~p sec, start postinstall~n",[State#state.hostname, TransfertTime],?INFO),
+    Now=now(),
     Env=State#state.env,
     DestDir = getval(post_install_destdir,Config), % destdir ?
     Script  = getval(post_install_script,Config),
@@ -264,6 +267,8 @@ transfert({transfert_done}, State=#state{config=Config,options=Opts})->
     %% @FIXME timeouts for prepost ?
     ok = postinstall(State,Env#environment.filesite,DestDir,Script,Retries),
     disk_umount(State,Mount,-1),
+    Elapsed=round(katools:elapsed(Now,now())/1000),
+    ?LOGF("~p: postinstall done and filesystem unmounted (~p sec)~n",[State#state.hostname, Elapsed],?INFO),
     Grub = case getval(use_nogrub,Config) of
                1 -> nogrub;
                0 -> grub
@@ -464,7 +469,7 @@ setup_disk(Config,State,Opts)->
     disk_mount(State,Mount,PartDevice,Env#environment.filesystem,MaxRetries),
     ?LOGF("~p: ask for transfert ~n",[State#state.hostname],?DEB),
     kachain_srv:start_transfert(State#state.chainsrv, Mount,State#state.node),
-    State#state{config=Config}.
+    State#state{config=Config, transfert_start=now()}.
 
 check_erlang_node(RemoteNode,State)->
     ?LOGF("Try to reach ~p~n",[RemoteNode],?NOTICE),

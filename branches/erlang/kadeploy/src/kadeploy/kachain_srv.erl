@@ -45,7 +45,8 @@
           type,          %% tar | dd
           destdir,
           chunksize,     %%
-          wait_before_retry,     %%
+          wait_before_retry,  %%
+          wait_before_timer,  %% ref of the wait_before_retry timer or undefined
           timeout,       %%
           start_chain,   %% date
           filename,      %% file to transfert
@@ -171,13 +172,13 @@ handle_cast({transfert,{DestDir,Node,From}},  T=#transfert{number=Number,waiting
     end;
 %% Node wants to retry the transfert
 handle_cast({retry,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P}) ->
-    case erlang:read_timer(wait_before_retry) of
-        false -> % timer for retry not start (first node to retry)
+    NewRef = case T#transfert.wait_before_timer of
+        undefined -> % timer for retry not start (first node to retry)
             erlang:start_timer(T#transfert.wait_before_retry,self(),wait_before_retry);
-        _ ->
-            ok
+        Ref ->
+            Ref
     end,
-    {noreply, T#transfert{number=Number+1,destdir=DestDir,waiting=[{From,Node}|P]}}.
+    {noreply, T#transfert{number=Number+1, wait_before_timer=NewRef, destdir=DestDir,waiting=[{From,Node}|P]}}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -186,7 +187,6 @@ handle_cast({retry,{DestDir,Node,From}},  T=#transfert{number=Number,waiting=P})
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({done,From, FromNode,Id}, State) ->
-    %% @TODO: update state and warn the kadeploy_node process that transfert is done
     ?LOGF("Transfert done for ~p:~p:~p ~n",[From,FromNode,Id],?DEB),
     Pending=case keytake(FromNode, 2, State#transfert.pending) of
                 {value, {Pid,_}, TupleList2} ->

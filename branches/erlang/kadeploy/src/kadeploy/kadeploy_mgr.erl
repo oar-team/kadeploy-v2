@@ -44,6 +44,7 @@
           bad=[],
           env,
           minnodes_wait,
+          minnodes_timer, %% undefined or ref of the timer
           clientpid
           }).
 
@@ -65,15 +66,10 @@ deploy([Server,User,NodeFile,"recorded",Env,Options]) ->
     deploy([Server,User,NodeFile,{recorded,Env},Options]);
 
 deploy([Server,User,NodeFile,Env,Options]) ->
-    RealOptions= case Options of
-                     "default"->
-                         #deploy_opts{};
-                     Val ->
-                         todo,
-                         Val
-                 end,
+    RealOptions= parse_options(Options),
     Erl_args=RealOptions#deploy_opts.erlang_args++" -setcookie kadeploy ",
     deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=Erl_args}).
+
 
 deploy(Server,User,NodeFile,Env,Opts) ->
     case { net_adm:ping(Server), node()} of
@@ -215,14 +211,21 @@ handle_cast({done, FromPid, Host }, State=#state{deployment=Depl,pids=Pids,good=
     NewBad = delbadnode(Bad,Host),
     Opts=Depl#deployment.options,
     %% check if minnodes is reached
-    case length(Good)+1 >= Opts#deploy_opts.minnodes of
+    TimerRef = case length(Good)+1 >= Opts#deploy_opts.minnodes of
         true  ->
             %% wait a bit before stopping (maybe a few nodes will finish soon ?)
-            erlang:start_timer(State#state.minnodes_wait,self(),minnodes);
+            case State#state.minnodes_timer of
+                undefined ->
+                    ?LOGF("Minimum nodes asked by user reached, wait ~p sec and stop~n",
+                          [round(State#state.minnodes_wait/1000)],?NOTICE),
+                    erlang:start_timer(State#state.minnodes_wait,self(),minnodes);
+                Ref -> %% already started
+                    Ref
+            end;
         false ->
-            ok
+            undefined
     end,
-    {noreply, State#state{pids=NewPids,good=[Host|Good],bad=NewBad}};
+    {noreply, State#state{pids=NewPids,good=[Host|Good],bad=NewBad, minnodes_timer=TimerRef}};
 
 handle_cast({node_failure,Reason,FromPid,Host},State=#state{pids=Pids,bad=Bad}) ->
     ?LOGF("Client ~p has failed, reason ~p~n",[Host,Reason],?WARN),
@@ -248,7 +251,7 @@ handle_cast(Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({timeout, _Ref, minnnodes}, State=#state{good=Good,bad=Bad})->
+handle_info({timeout, _Ref, minnodes}, State=#state{good=Good,bad=Bad})->
     ?LOGF("Minnodes reached (~p nodes), stop deployment !~n",[length(Good)],?NOTICE),
     %% FIXME: do we need to kill bad childs ?
     gen_server:reply(State#state.clientpid,{Good,Bad}),
@@ -363,3 +366,26 @@ delbadnode(BadList, Host)->
 setreason(BadList, BadHost, Reason)->
     lists:keyreplace(BadHost,1, BadList, {BadHost, {error, Reason}}).
 
+
+parse_options(String)->
+    parse_options(string:tokens(String,";"),#deploy_opts{}).
+
+parse_options([], Options) ->
+    Options;
+parse_options([Opt|Tail], Options) ->
+    case string:tokens(Opt,":") of
+        ["minnodes",Val] ->
+            parse_options(Tail,Options#deploy_opts{minnodes=list_to_integer(Val)});
+        ["method",Val] ->
+            parse_options(Tail,Options#deploy_opts{method=Val});
+        ["erlang_args",Val] ->
+            parse_options(Tail,Options#deploy_opts{erlang_args=Val});
+        ["last_boot",Val] ->
+            parse_options(Tail,Options#deploy_opts{last_boot=Val});
+        ["partition",Val] ->
+            parse_options(Tail,Options#deploy_opts{last_boot=list_to_integer(Val)});
+        ["default"] ->
+            parse_options(Tail,Options);
+        ["timeout",Val] ->
+            parse_options(Tail,Options#deploy_opts{timeout=list_to_integer(Val)})
+    end.

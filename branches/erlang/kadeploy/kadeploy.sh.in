@@ -46,7 +46,7 @@ usage() {
     exit
 }
 
-while getopts ":f:p:l:d:r:L:u:n:e" Option
+while getopts ":f:m:p:l:d:r:n:e:" Option
 do
     case $Option in
         f) NODEFILE=$OPTARG;;
@@ -63,7 +63,10 @@ do
         e) RECORDED_ENV=" recorded $OPTARG ";;
         r) ERL_RSH=" -rsh $OPTARG ";;
         n) RUN_NAME=$OPTARG;;
-        u) USE_PARENT_PROXY=true;;
+        m)
+            MIN_NODES=$OPTARG
+            OPTIONS="minnodes:$MIN_NODES;$OPTIONS"
+            ;;
         *) usage ;;
     esac
 done
