@@ -4,12 +4,12 @@ module BootNewEnvironment
   class BootNewEnvFactory
     attr_accessor :klass
 
-    def initialize(kind, max_retries, nodes, queue_manager, window_manager, output)
+    def initialize(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when /BootNewEnvKexec/
-        @klass = BootNewEnvKexec.new(max_retries, nodes, queue_manager, window_manager, output)
+        @klass = BootNewEnvKexec.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when /BootNewEnvClassical/
-        @klass = BootNewEnvClassical.new(max_retries, nodes, queue_manager, window_manager, output)
+        @klass = BootNewEnvClassical.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the new environment boot step"
       end
@@ -23,7 +23,7 @@ module BootNewEnvironment
     @window_manager = nil
     @output = nil
 
-    def initialize(max_retries, nodes, queue_manager, window_manager, output)
+    def initialize(max_retries, cluster, nodes, queue_manager, window_manager, output)
       @remaining_retries = max_retries
       @nodes = nodes
       @queue_manager = queue_manager
@@ -38,17 +38,21 @@ module BootNewEnvironment
 
   class BootNewEnvKexec < BootNewEnv
     def run
+      @queue_manager.increment_active_threads
       Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes)
       }
+      @queue_manager.decrement_active_threads
     end
   end
 
   class BroadcastEnvClassical < BootNewEnv
     def run
+      @queue_manager.increment_active_threads
       Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes)
       }
+      @queue_manager.decrement_active_threads
     end
   end
 end
