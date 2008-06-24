@@ -106,7 +106,10 @@ module ConfigInformation
     attr_accessor :node_list
     attr_accessor :environment
     attr_accessor :commands       #Hashtable of NodeCmd
-
+    attr_accessor :taktuk_connector
+    attr_accessor :taktuk_tree_arity
+    attr_accessor :tarball_dest_dir
+    
     def initialize
       @debug_level = 3
       @node_list = Array.new
@@ -121,6 +124,9 @@ module ConfigInformation
       @tftp_repository = Dir.pwd + "/test/pxe"
       @tftp_images_path = "images"
       @tftp_cfg = "pxelinux.cfg"
+      @taktuk_connector = "ssh -o StrictHostKeyChecking=no -o BatchMode=yes"
+      @taktuk_tree_arity = 1
+      @tarball_dest_dir = "/tmp"
     end
 
     def load_commands
@@ -156,23 +162,27 @@ module ConfigInformation
   class ClusterSpecificConfig
     attr_accessor :deploy_kernel
     attr_accessor :deploy_initrd
+    attr_accessor :block_device
     attr_accessor :deploy_parts     #Array of String, the first one is used by default
+    attr_accessor :prod_part
     attr_accessor :workflow_steps   #Array of MacroStep
-    attr_accessor :default_block_device
-    attr_accessor :default_device_number
+
+
     
     def initialize
       init_automata
       @deploy_kernel = "deploy-linux-image-2.6.99"
       @deploy_initrd = "deploy-linux-initrd-2.6.99.img ETH_DRV=e1000 ETH_DEV=eth0 DISK_DRV=ahci console=tty0 console=ttyS1,38400n8 ramdisk_size=400000"
+      @block_device = "/dev/sda"
       @deploy_parts = Array.new
-      @deploy_parts.push("/dev/sda2")
+      @deploy_parts.push("2")
+      @prod_part = "1"
     end
 
     def init_automata
       #init example for the automata, this should be sourced from config file
       @workflow_steps = Array.new
-      @workflow_steps.push(MacroStep.new("SetDeploymentEnv",[["SetDeploymentEnvUntrusted",3]]))
+      @workflow_steps.push(MacroStep.new("SetDeploymentEnv",[["SetDeploymentEnvProd",2]]))
       @workflow_steps.push(MacroStep.new("BroadcastEnv",[["BroadcastEnvChainWithFS",2]]))
       @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvKexec",1], ["BootNewEnvClassical",2]]))
     end

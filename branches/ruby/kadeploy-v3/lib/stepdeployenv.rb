@@ -52,8 +52,8 @@ module SetDeploymentEnvironnment
 
   class SetDeploymentEnvUntrusted < SetDeploymentEnv
     def run
-      @queue_manager.increment_active_threads
       Thread.new {
+        @queue_manager.increment_active_threads
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -66,7 +66,8 @@ module SetDeploymentEnvironnment
           @step.do_format
           @remaining_retries -= 1
           if not @nodes_ok.empty? then
-            @queue_manager.next_macro_step(get_macro_step_name, @nodes_ok)
+            @nodes_ok.duplicate_and_free(@nodes)
+            @queue_manager.next_macro_step(get_macro_step_name, @nodes)
           end
         end
         #After several retries, some nodes may still be in an incorrect state
@@ -77,16 +78,52 @@ module SetDeploymentEnvironnment
       }
     end
   end
-  
-  class SetDeploymentEnvNfsroot < SetDeploymentEnv
-
-  end
 
   class SetDeploymentEnvProd < SetDeploymentEnv
+    def run
+      Thread.new {
+        @queue_manager.increment_active_threads
+        @nodes.duplicate_and_free(@nodes_ko)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+          @nodes_ko.duplicate_and_free(@nodes_ok)
+          @output.debugl(3, "Performing a SetDeploymentEnvProd step on the nodes: #{@nodes_ok.to_s}")
 
+          #Here are the micro steps 
+          @step.check_nodes("prod_env_booted")
+          @step.fdisk
+          @step.format_deploy_part
+          @step.mount_deploy_part
+          #End of micro steps
+
+          @remaining_retries -= 1
+          if not @nodes_ok.empty? then
+            @nodes_ok.duplicate_and_free(@nodes)
+            @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+          end
+        end
+        #After several retries, some nodes may still be in an incorrect state
+        if not @nodes_ko.empty? then
+          @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+        end    
+        @queue_manager.decrement_active_threads
+      }
+    end
+  end
+
+  
+  class SetDeploymentEnvNfsroot < SetDeploymentEnv
+    def run
+      @queue_manager.increment_active_threads
+      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+      @queue_manager.decrement_active_threads
+    end
   end
 
   class SetDeploymentEnvDummy < SetDeploymentEnv
-
+    def run
+      @queue_manager.increment_active_threads
+      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+      @queue_manager.decrement_active_threads
+    end
   end
 end
