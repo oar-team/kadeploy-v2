@@ -61,6 +61,15 @@ module Nodes
       end
     end
       
+    def all_ok?
+      @set.each { |node|
+        if node.state == "KO"
+          return false
+        end
+      }
+      return true
+    end
+
     def free
       @set.delete_if { |node| true }
     end

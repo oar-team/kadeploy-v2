@@ -169,7 +169,7 @@ module ConfigInformation
     attr_accessor :deploy_parts     #Array of String, the first one is used by default
     attr_accessor :prod_part
     attr_accessor :workflow_steps   #Array of MacroStep
-
+    attr_accessor :timeout_reboot
 
     
     def initialize
@@ -180,6 +180,7 @@ module ConfigInformation
       @deploy_parts = Array.new
       @deploy_parts.push("3")
       @prod_part = "2"
+      @timeout_reboot = 120
     end
 
     def init_automata

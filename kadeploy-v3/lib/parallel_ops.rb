@@ -1,5 +1,6 @@
 require 'contrib/taktuk_wrapper'
 require 'yaml'
+require 'socket'
 
 module ParallelOperations
   class ParallelOps
@@ -38,10 +39,24 @@ module ParallelOperations
       return args.split(" ")
     end
 
+    def init_nodes_state_before_send_file_command
+      @nodes.set.each { |node|
+        node.last_cmd_exit_status = "0"
+        node.last_cmd_stderr = ""
+      }
+    end
+
     def init_nodes_state_before_exec_command
       @nodes.set.each { |node|
         node.last_cmd_exit_status = "256"
         node.last_cmd_stderr = "The node #{node.hostname} is unreachable"
+      }
+    end
+
+    def init_nodes_state_before_wit_nodes_after_reboot_command
+      @nodes.set.each { |node|
+        node.last_cmd_stderr = "The node #{node.hostname} is unreachable after the reboot"
+        node.state = "KO"
       }
     end
 
@@ -57,13 +72,6 @@ module ParallelOperations
           @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output']
           @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error']
         }
-      }
-    end
-
-    def init_nodes_state_before_send_file_command
-      @nodes.set.each { |node|
-        node.last_cmd_exit_status = "0"
-        node.last_cmd_stderr = ""
       }
     end
 
@@ -111,5 +119,33 @@ module ParallelOperations
       }
       return [good_nodes, bad_nodes]   
     end
+
+    def wait_nodes_after_reboot(timeout)
+      good_nodes = Array.new
+      bad_nodes = Array.new
+      init_nodes_state_before_wit_nodes_after_reboot_command
+      sleep 10
+      start = Time.now.tv_sec
+      while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
+        sleep 2
+        @nodes.set.each { |node|
+          if node.state == "KO" then
+            sock = TCPSocket.new(node.hostname, 22) rescue false
+            if sock.kind_of? TCPSocket then
+              node.state = "OK"
+            end
+          end
+        }
+      end
+      @nodes.set.each { |node|
+        if node.state == "OK" then
+          good_nodes.push(node)
+        else
+          bad_nodes.push(node)
+        end
+      }
+      return [good_nodes, bad_nodes]
+    end
+
   end
 end
