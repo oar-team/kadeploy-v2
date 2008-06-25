@@ -70,7 +70,9 @@ badnodes_test()->
                       id=1,
                       filesite="./src/test/base.tgz"
                      },
-    Opts=#deploy_opts{timeout=2000},
+    Opts=#deploy_opts{timeout=2000,
+                      method=prod_env
+                     },
      Resp=kadeploy_mgr:deploy_call(root,["badone","badtwo"],Env,Opts),
     ?assertMatch({Good,
                   [{"badone", {error,kaslave_failure}},
@@ -168,9 +170,10 @@ deploytimeout_test()->
                       id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=1,
-                      method=deployenv,
+                      method=deploy_env,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     Resp=kadeploy_mgr:deploy_call(root,[Hostname,"localhost"],Env,Opts),
+    ?LOGF("TEST:deploytimeout: ~p~n",[Resp],?DEB),
     ?assertMatch({Good,
                   [
                    {Hostname, {error,timeout}},
@@ -189,7 +192,7 @@ deployenv_test()->
                       id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=4000,
-                      method=deployenv,
+                      method=deploy_env,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     {ok, Hostname}=inet:gethostname(),
     Resp=kadeploy_mgr:deploy_call(root,[Hostname,"badconfig"],Env,Opts),
@@ -203,18 +206,19 @@ deployenv_test()->
 
 goodnode_test()->
     myset_env(),
-    Good=[],
     Env= #environment{filebase="./src/test/base.tgz",
                       initrdpath = "erlang/chain.beam",
                       kernelpath = "erlang/chain.erl",
                       id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=6000,
+                      method=prod_env,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
 
     {ok, Hostname}=inet:gethostname(),
     Resp=kadeploy_mgr:deploy_call(root,[Hostname,"badtwo"],Env,Opts),
-    ?assertMatch({Good,
+    ?LOGF("Goodnode test: ~p~n",[Resp],?DEB),
+    ?assertMatch({[],
                   [{"badtwo", {error,kaslave_failure}},
                    {Hostname, {error,{preinstall_failure,Reason}}}
                   ]},
@@ -228,8 +232,8 @@ anonymous_env_test()->
                          user="root",
                          kernelparam=[],
                          id=anonymous,
-                         kernelpath="/boot/vmlinuz-2.6.18-6-amd64",
-                         initrdpath="/boot/initrd.img-2.6.18-6-amd64",
+                         kernelpath="erlang/avalanche.beam",
+                         initrdpath="erlang/chain.beam",
                          filesite=Filesite,
                          md5="5caade269e878d7962f0e1ec3a1d4d12"}},
     Res = kaenv:getenv({anonymous,"root","./src/test"}),
@@ -251,12 +255,20 @@ deployenv2_test_()->
                       id=1,
                       filesite="./src/test/base.tgz"},
     Opts=#deploy_opts{timeout=4500,
-                      method=deployenv,
+                      method=deploy_env,
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
-    {ok, Hostname}=inet:gethostname(),
     Nodefile=filename:absname("./src/test/nodefile"),
     ?LOG("Starting deployenv2 test with anonymous env~n",?DEB),
    {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(node(),"root",Nodefile,Env,Opts))}.
+
+parse_opts_test_()->
+    myset_env(),
+    Good=[],
+    Nodefile=filename:absname("./src/test/nodefile"),
+    Args=[atom_to_list(node()),"root",Nodefile,"anonymous",
+          "./src/test/","clean_tmp:true;method:prod_env;default"],
+    ?LOG("Starting parse_opts test ~n",?DEB),
+   {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(Args))}.
 
 %%%%%%%%%%%%%%%%% end of test funs
 

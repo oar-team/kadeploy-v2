@@ -156,7 +156,7 @@ fdisk_data(Device, TmpPath, FdiskData)->
     myoscmd(Cmd ).
 
 mkfs(Device, FSType, Options)->
-    Cmd=lists:append(["mkfs -t ",FSType," ",Device," ",Options]),
+    Cmd=lists:append(["mkfs -t ",FSType," ",Options," ",Device]),
     myoscmd(Cmd).
 
 mount(Partition, FSType, Mount)->

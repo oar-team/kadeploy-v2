@@ -147,9 +147,9 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
                    env=Env,
                    options=Opts},
     case Opts#deploy_opts.method of
-        currentenv ->
+        prod_env ->
             {ok, setup_env, State};
-        deployenv ->
+        deploy_env ->
             {ok, first_boot, State};
         nfsroot ->
             {ok, setup_env, State};
@@ -169,7 +169,7 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
 %% the current state name StateName is called to handle the event. It is also
 %% called if a timeout occurs.
 %%--------------------------------------------------------------------
-first_boot({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == deployenv->
+first_boot({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == deploy_env->
     Config = kaconfig:getnodeconf(State#state.hostname),
     Duke = getval(deployboot,Config),
     Grub = case getval(use_nogrub,Config) of
@@ -182,6 +182,7 @@ first_boot({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == 
             kareboot_srv:reboot(State#state.hostname, get_reboot_cmds(Config)),
             {next_state, first_boot, State#state{config=Config}, State#state.check_interval};
         {error, Reason} ->
+            ?LOGF("Error setup_pxe ~p~n",[Reason],?ERR),
             %% don't retry setup pxe
             failure(?fail_setup_pxe)
     end;
@@ -213,35 +214,49 @@ first_boot(Event, State=#state{})->
     ?LOGF("got event in state first_boot~n",[Event],?NOTICE),
     {next_state, first_boot, State}.
 
-setup_env(timeout, State=#state{options=Opts}) when Opts#deploy_opts.method == deployenv ->
+
+%% @spec setup_env(Event::term, State::record(state)) ->
+%%  {next_state, transfert|setup_env, State::record(state), Timeout::integer} |
+%%  {stop, Reason}
+%% @doc setup a deployment environment
+
+setup_env(timeout, State=#state{options=Opts,config=Config}) when Opts#deploy_opts.method == deploy_env ->
 %% just switch from first_boot
     try setup_disk(State#state.config,State,Opts) of
       NewState ->
+            ?LOGF("~p: setup_disk done, ask for transfert ~n",[State#state.hostname],?DEB),
+            Mount  = getval(mount,Config),
+            kachain_srv:start_transfert(NewState#state.chainsrv, Mount, NewState#state.node),
             {next_state, transfert, NewState#state{retry=0}, State#state.transfert_timeout}
     catch throw: {rpc, ErrorType, Error} ->
             retry(State, ErrorType, Error)
     end;
 
-setup_env(timeout, State=#state{options=Opts}) when Opts#deploy_opts.method == currentenv ->
+setup_env(timeout, State=#state{options=Opts}) when Opts#deploy_opts.method == prod_env ->
     setup_env({start}, State);
-setup_env({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == currentenv ->
-    %% check
+setup_env({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == prod_env ->
     ok = check_erlang_node(State#state.node, State),
     Config = kaconfig:getnodeconf(State#state.hostname),
     try setup_disk(Config,State,Opts) of
         NewState ->
+            ?LOGF("~p: setup_disk done, ask for transfert ~n",[State#state.hostname],?DEB),
+            Mount = getval(mount,Config),
+            kachain_srv:start_transfert(NewState#state.chainsrv, Mount, NewState#state.node),
             {next_state, transfert, NewState#state{retry=0}, State#state.transfert_timeout}
     catch throw: {rpc, ErrorType, Error} ->
             retry(State, ErrorType, Error)
     end;
-
 setup_env(Event, State=#state{})->
     ?LOGF("got event ~p~n",[Event],?WARN),
     {next_state, setup_env, State}.
 
 
-transfert({transfert_failed}, State=#state{config=Config,options=Opts})->
-    %% FIXME: retry ?
+%% @spec transfert(Event::term, State::record(state)) ->
+%%  {next_state,transfert|last_boot, State::record(state), Timeout::integer} |
+%%  {stop, Reason}
+%% @doc wait for transfert and then execute postinstall and go to last_boot
+
+transfert({transfert_failed}, State=#state{config=Config})->
     Retry = State#state.retry,
     case Retry < State#state.max_retry of
         true ->
@@ -257,16 +272,16 @@ transfert({transfert_failed}, State=#state{config=Config,options=Opts})->
 transfert({transfert_done}, State=#state{config=Config,transfert_start=TD,options=Opts})->
     TransfertTime=round(katools:elapsed(TD,now())/1000),
     ?LOGF("~p: transfert done in ~p sec, start postinstall~n",[State#state.hostname, TransfertTime],?INFO),
-    Now=now(),
-    Env=State#state.env,
-    DestDir = getval(post_install_destdir,Config), % destdir ?
-    Script  = getval(post_install_script,Config),
-    Retries = getval(post_install_script_retries,Config),
-    Mount = getval(mount,Config),
-    Partition=Opts#deploy_opts.partition,
-    %% @FIXME timeouts for prepost ?
+    Now = now(),
+    Env = State#state.env,
+    DestDir   = getval(post_install_destdir,Config), % destdir ?
+    Script    = getval(post_install_script,Config),
+    Retries   = getval(post_install_script_retries,Config),
+    Mount     = getval(mount,Config),
+    Partition = Opts#deploy_opts.partition,
+    %% start postinstall
     ok = postinstall(State,Env#environment.filesite,DestDir,Script,Retries),
-    disk_umount(State,Mount,-1),
+    disk_umount(State,Mount,-1), %% FIXME: stop if failure ?
     Elapsed=round(katools:elapsed(Now,now())/1000),
     ?LOGF("~p: postinstall done and filesystem unmounted (~p sec)~n",[State#state.hostname, Elapsed],?INFO),
     Grub = case getval(use_nogrub,Config) of
@@ -298,10 +313,15 @@ transfert({transfert_done}, State=#state{config=Config,transfert_start=TD,option
 
 transfert(timeout, _State) ->
     ?LOG("transfert timeout~n",?INFO),
-    %% @FIXME retry transfert ???
     failure(?fail_transfert_timeout).
 
 
+%% @spec last_boot(Event::term, State::record(state)) ->
+%%  {next_state, last_boot, State::record(state), Timeout::integer} |
+%%  {stop, Reason}
+%% @doc handle last_boot: first wait for the response from the
+%% kareboot server, then check the node periodically.
+%%
 last_boot({reboot_failed}, State=#state{})->
     reboot_retry(State, last_boot, State#state.last_boot_timeout,?fail_last_boot);
 
@@ -447,28 +467,43 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-setup_disk(Config,State,Opts)->
-    %% @FIXME: handle fdisktype
-    Env=State#state.env,
+%% @spec setup_disk(Config::List,State::record(state),Opts::record(deploy_opts))
+%%                  -> State::record(state)
+%% @doc unzip preinstall, fdisk, mkfs and mount
+setup_disk(Config,State=#state{hostname=Host},Opts)->
+    %% @FIXME: handle fdisktype in environment
+    Env = State#state.env,
     FDiskDataFile = getval(fdiskfile,Config),
-    Device    = getval(device,Config),
-    Mount     = getval(mount,Config),
-    TmpDir    = getval(preinstall_tmpdir,Config),
-    Partition = Opts#deploy_opts.partition,
-    MaxRetries=State#state.system_maxretries,
-    %% first, unzip preinstall files
-    ?LOG("preinstall ...~n",?DEB),
+    Device        = getval(device,Config),
+    Mount         = getval(mount,Config),
+    TmpDir        = getval(preinstall_tmpdir,Config),
+    Partition     = Opts#deploy_opts.partition, %% FIXME: read default in Config ?
+    MaxRetries    = State#state.system_maxretries,
     PreInstallTgz = getval(preinstall_archive,Config),
-    PartDevice=set_partition(Device,Partition),
+    PartDevice    = set_partition(Device,Partition),
+    FileSystem    = Env#environment.filesystem,
+    FSOptions     = getval(list_to_atom(FileSystem++"_options"),Config),
+
+    %% first, unzip preinstall files
+    ?LOGF("~p: preinstall ...~n",[Host],?DEB),
     preinstall(State,PreInstallTgz,TmpDir,MaxRetries),
     disk_fdisk(State,set_device(Device),TmpDir,FDiskDataFile,-1),
     disk_umount(State,Mount,-1),
-    %% @FIXME need to add force option or echo "y" ??
-    disk_mkfs(State,PartDevice,Env#environment.filesystem,"",MaxRetries),
-%%% FIXME mkfs tmp ?
+    %% @FIXME need to add force option or echo "y" ?
+    disk_mkfs(State,PartDevice,FileSystem,FSOptions,MaxRetries),
+    case Opts#deploy_opts.clean_tmp of
+        true ->
+            ?LOGF("~p: format /tmp~n",[Host],?NOTICE),
+            TmpPart       = getval(tmp_partition,Config),
+            TmpFS         = getval(tmp_fs,Config),
+            TmpFSOptions  = getval(list_to_atom(TmpFS++"_options"),Config),
+            PartDeviceTmp = set_partition(Device,TmpPart),
+            disk_umount(State,PartDeviceTmp,-1),
+            disk_mkfs(State,PartDeviceTmp,TmpFS,TmpFSOptions,MaxRetries);
+        false ->
+            ?LOGF("~p: don't format /tmp~n",[Host],?DEB)
+    end,
     disk_mount(State,Mount,PartDevice,Env#environment.filesystem,MaxRetries),
-    ?LOGF("~p: ask for transfert ~n",[State#state.hostname],?DEB),
-    kachain_srv:start_transfert(State#state.chainsrv, Mount,State#state.node),
     State#state{config=Config, transfert_start=now()}.
 
 check_erlang_node(RemoteNode,State)->
@@ -479,8 +514,7 @@ check_erlang_node(RemoteNode,State)->
             ok;
         pang -> %% remote node is not alive, we must reboot it
             ?LOGF("Can't reach ~p~n",[RemoteNode],?WARN),
-            failure(?fail_slave_ping),
-            error
+            failure(?fail_slave_ping)
     end.
 
 success(Master,Hostname)->
@@ -557,6 +591,7 @@ rpc_retry(Node,Mod,Fun,Args,Retries,ErrorType) when is_integer(Retries)->
 
 getval(Key,Config)-> kaconfig:getval_or_fail(Key,Config).
 
+%% FIXME: add power off /power on if exists ?
 get_reboot_cmds(Conf) ->
     Soft = getval(softboot,Conf),
     Hard = getval(hardboot,Conf),
@@ -577,20 +612,21 @@ retry(State, ErrorType, Error)->
             failure({ErrorType, Error})
     end.
 
-reboot_retry(State=#state{options=Opts,config=Config},StateName,StateTimeout,ErrorMessage)->
+%% @spec reboot_retry(State::record(state),StateName:atom, TimeOut::integer, ErrorMessage::string) -> {next_state, StateName::atom, NewState::record(state), StateTimeOut} | exit
+reboot_retry(State=#state{options=Opts,config=Config,hostname=Host},StateName,StateTimeout,ErrorMessage)->
     Retry= State#state.retry,
     case Retry < State#state.max_retry of
         true ->
             ?LOGF("~p: Reboot in state ~p has failed, try again (try=~p)",
-                  [State#state.hostname,StateName, Retry+1],?WARN),
+                  [Host, StateName, Retry+1],?WARN),
             case Opts#deploy_opts.last_boot of
                 bios ->
-                    kareboot_srv:reboot(State#state.hostname,get_reboot_cmds(Config)),
+                    kareboot_srv:reboot(Host,get_reboot_cmds(Config)),
                     {next_state,StateName,State#state{retry=Retry+1},StateTimeout};
                 kexec -> % FIXME: if kexec has failed switch to classic reboot ?
-                    kareboot_srv:kexec(State#state.hostname,[]);
+                    kareboot_srv:kexec(Host,[]);
                 virt ->
-                    kareboot_srv:reboot_virt(State#state.hostname),
+                    kareboot_srv:reboot_virt(Host),
                     {next_state, StateName, State#state{retry=Retry+1}, StateTimeout}
             end;
         false ->

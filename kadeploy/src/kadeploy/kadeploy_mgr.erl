@@ -58,6 +58,8 @@
 start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
+%% @spec deploy([Server::string,User::string,NodeFile::filename,"anonymous"|"recorded",
+%%               Env::string,Options::string]) -> ok
 %% @doc deploy and put results in two files:
 deploy([Server,User,NodeFile,"anonymous",Env,Options]) ->
     deploy([Server,User,NodeFile,{anonymous,Env},Options]);
@@ -67,22 +69,29 @@ deploy([Server,User,NodeFile,"recorded",Env,Options]) ->
 
 deploy([Server,User,NodeFile,Env,Options]) ->
     RealOptions= parse_options(Options),
-    Erl_args=RealOptions#deploy_opts.erlang_args++" -setcookie kadeploy ",
-    deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=Erl_args}).
+    Cookie=erlang:get_cookie(),
+    ErlArgs=RealOptions#deploy_opts.erlang_args ++ " -setcookie " ++ atom_to_list(Cookie),
+    deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=ErlArgs}).
 
 
 deploy(Server,User,NodeFile,Env,Opts) ->
     case { net_adm:ping(Server), node()} of
         {pang, _ }->
-            erlang:display("can't reach kadeploy server"),
-            exit(normal);
+            io:format("Can't reach kadeploy server, abort~n"),
+            halt(1);
         { pong, Server}  -> % run on the same node, no need to sync
             ok;
         { pong, _}  ->
             global:sync()
     end,
     Start=now(),
-    {ok,Nodes}=katools:read_unique_nodes(NodeFile),
+    Nodes = case katools:read_unique_nodes(NodeFile) of
+                {ok,Nodes1} ->
+                    Nodes1;
+                _ ->
+                    io:format("bad nodefile, abort~n"),
+                    halt(2)
+            end,
     {Good, Bad} = deploy_call(User,Nodes,Env,Opts),
     PrintBad=fun({Host,{Error, {Type, _Reason}}}) ->
                      io:format("~s ~s ~s ~n",[Host, Error, Type]);
@@ -97,7 +106,21 @@ deploy(Server,User,NodeFile,Env,Opts) ->
     lists:foreach(PrintGood,Good),
     lists:foreach(PrintBad,Bad),
     Elapsed=round(katools:elapsed(Start,now())/1000),
-    io:format("# Deployment duration ~p sec (~p:~p)~n", [ Elapsed,length(Good),length(Bad) ]).
+    io:format("# Deployment duration ~p sec (~p:~p)~n", [ Elapsed,length(Good),length(Bad) ]),
+    case {Bad,Opts#deploy_opts.minnodes} of
+        {[],_} ->
+            io:format("No deployed node, error~n"),
+            halt(3);
+        {_, undefined} ->
+            ok;
+        {_, Min} ->
+            case  length(Good) >= Min of
+                true  -> ok;
+                false ->
+                    io:format("Not enough nodes deployed, error~n"),
+                    halt(4)
+            end
+    end.
 
 %% @spec deploy(User::string, Nodes::List,
 %%       Env::record(environment) | {anonymous, Directory::string} |
@@ -173,8 +196,8 @@ handle_call({deploy}, From, State=#state{deployment=D}) ->
             %% start the chain server
             {ok, ChainPid} = kadeploy_sup:start_chain_srv(tar, Env#environment.filebase,N),
             %% start a process (fsm) for each (good) node to deploy
-            StartChild= fun(Node)->kadeploy_node:start({Node,Env,Opts,ChainPid,self()}) end,
-            OutPut= lists:map(StartChild, Good),
+            StartChild = fun(Node)->kadeploy_node:start({Node,Env,Opts,ChainPid,self()}) end,
+            OutPut = lists:map(StartChild, Good),
             {Pids, BadChilds} = get_good_childs(OutPut),
             kachain_srv:update_nodes(ChainPid,-length(BadChilds)),
             %% initialise bad nodes list with 'timeout' reason
@@ -254,7 +277,7 @@ handle_cast(Msg, State) ->
 handle_info({timeout, _Ref, minnodes}, State=#state{good=Good,bad=Bad})->
     ?LOGF("Minnodes reached (~p nodes), stop deployment !~n",[length(Good)],?NOTICE),
     %% FIXME: do we need to kill bad childs ?
-    gen_server:reply(State#state.clientpid,{Good,Bad}),
+    gen_server:reply(State#state.clientpid,{Good,setallreason(Bad,?fail_minnodes_reached)}),
     {stop, normal, State};
 
 handle_info({timeout, _Ref, deploy_timeout}, State=#state{good=Good,bad=Bad})->
@@ -329,7 +352,7 @@ deploy_setup(D=#deployment{options=Opts},Env)
     {D#deployment.nodes, []};
 
 deploy_setup(D=#deployment{options=Opts,nodes=Nodes},Env)
-  when Opts#deploy_opts.method==deployenv ->
+  when Opts#deploy_opts.method==deploy_env ->
     %% @TODO
     {D#deployment.nodes, []};
 
@@ -339,10 +362,10 @@ deploy_setup(D=#deployment{options=Opts},Env)
     {D#deployment.nodes, []};
 
 deploy_setup(#deployment{options=Opts,nodes=Nodes},Env)
-  when Opts#deploy_opts.method==currentenv ->
+  when Opts#deploy_opts.method==prod_env ->
     %% First we need to start a beam on each node
     {ok, TimeOut}=kaconfig:getval(first_check_env_timeout),
-    ?LOGF("Try to start remote beams on node (currentenv case), use timeout ~p~n",
+    ?LOGF("Try to start remote beams on node (prod_env case), use timeout ~p~n",
          [TimeOut*1000],?NOTICE),
     %% WARN: diststart is much faster for big deployement, but it
     %% requires that ssh access between nodes works
@@ -366,6 +389,9 @@ delbadnode(BadList, Host)->
 setreason(BadList, BadHost, Reason)->
     lists:keyreplace(BadHost,1, BadList, {BadHost, {error, Reason}}).
 
+setallreason(BadList, Reason)->
+    lists:map(fun({BadHost, {error, _}}) ->{BadHost, {error, Reason}} end,BadList).
+
 
 parse_options(String)->
     parse_options(string:tokens(String,";"),#deploy_opts{}).
@@ -377,15 +403,17 @@ parse_options([Opt|Tail], Options) ->
         ["minnodes",Val] ->
             parse_options(Tail,Options#deploy_opts{minnodes=list_to_integer(Val)});
         ["method",Val] ->
-            parse_options(Tail,Options#deploy_opts{method=Val});
+            parse_options(Tail,Options#deploy_opts{method=list_to_atom(Val)});
         ["erlang_args",Val] ->
             parse_options(Tail,Options#deploy_opts{erlang_args=Val});
         ["last_boot",Val] ->
-            parse_options(Tail,Options#deploy_opts{last_boot=Val});
+            parse_options(Tail,Options#deploy_opts{last_boot=list_to_atom(Val)});
         ["partition",Val] ->
-            parse_options(Tail,Options#deploy_opts{last_boot=list_to_integer(Val)});
+            parse_options(Tail,Options#deploy_opts{partition=list_to_integer(Val)});
+        ["clean_tmp",Val] ->
+            parse_options(Tail,Options#deploy_opts{clean_tmp=list_to_atom(Val)});
         ["default"] ->
             parse_options(Tail,Options);
         ["timeout",Val] ->
-            parse_options(Tail,Options#deploy_opts{timeout=list_to_integer(Val)})
+            parse_options(Tail,Options#deploy_opts{timeout=list_to_integer(Val)*1000})
     end.

@@ -59,9 +59,10 @@ test on g5k:
 - retries for each state (transfert, ...)
 - script to start|stop the kadeploy-server
 - script to start a deployment
+- add options to script
+- option to mkfs /tmp
 
 ** TODO
-- add options to script
 - grub image creation
 - reboot server tuning (pool of concurrent reboots ?)
 - make a duke env with erlang
@@ -70,7 +71,6 @@ test on g5k:
 - kexec reboot
 - virtualization
 - nfsroot
-- option to mkfs /tmp
 - for prod env: check if partition is not the same as the current partition
 - tftp server in erlang
 

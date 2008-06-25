@@ -32,6 +32,7 @@
 -define(fail_last_boot, last_boot_failure).
 -define(fail_first_boot, first_boot_failure).
 -define(fail_timeout, timeout). %% which case ?
+-define(fail_minnodes_reached, min_nodes_reached).
 -define(fail_transfert, transfert_failure).
 -define(fail_transfert_timeout, transfert_timeout).
 -define(fail_last_boot_timeout, last_boot_timeout).
@@ -46,11 +47,12 @@
 
 -record(deploy_opts,
         {
-          method     = currentenv, %%  deployenv|nfsroot|currentenv|virt
+          method     = deploy_env, %%  deploy_env|nfsroot|prod_env|virt
           erlang_args= "+A 16 -connect_all false +K true -rsh ssh -smp auto",
           last_boot  = bios, %%  bios|kexec|virt
           partition  = 3,    %%  deployment partition
-          timeout    = 900000,%% global timeout for deployement (in msec)
+          timeout    = 1200000,%% global timeout for deployement (in msec)
+          clean_tmp  = false, %% format /tmp
           minnodes  %% minimum nodes to deploy: stop deployment as soon as
                     %% minodes has been succesfully deployed.
          }).
