@@ -74,7 +74,12 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir))
     end
 
-
+    def parallel_wait_nodes_after_reboot_wrapper(timeout)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      classify_nodes(po.wait_nodes_after_reboot(timeout))
+    end
 
 
     public
@@ -158,5 +163,9 @@ module MicroStepsLibrary
       parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")
     end
 
+    def wait_reboot
+      parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot)
+    end
+    
   end
 end

@@ -54,6 +54,7 @@ module BootNewEnvironment
 
           #Here are the micro steps 
           @step.reboot("kexec")
+          @step.wait_reboot
           #End of micro steps
 
           @remaining_retries -= 1
