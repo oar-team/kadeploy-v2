@@ -16,8 +16,12 @@ module Nodes
       @state="OK"
     end
     
-    def to_s
-      return "#{@hostname}|#{@ip}"
+    def to_s(dbg = false)
+      if (dbg) then
+        return "#{@hostname} (#{@last_cmd_stderr})"
+      else
+        return "#{@hostname}"
+      end
     end
   end
 
@@ -69,10 +73,10 @@ module Nodes
       return res
     end
 
-    def to_s
+    def to_s(dbg = false)
       s = String.new
       @set.each_index { |i|
-        s += @set[i].to_s
+        s += @set[i].to_s(dbg)
         s += ", " if (i < @set.length - 1)
       }
       return s

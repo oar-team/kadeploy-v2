@@ -14,8 +14,8 @@ module ConfigInformation
     def initialize
       @common = CommonConfig.new
       @cluster_specific = Hash.new
-      add_cluster_specific_config("paravent")
-      add_cluster_specific_config("paraci")
+      add_cluster_specific_config("g5kdev-cluster")
+      add_cluster_specific_config("2")
     end
 
     def add_cluster_specific_config(cluster_name)
@@ -32,7 +32,7 @@ module ConfigInformation
     
     def bad_option_message(msg)
       puts msg
-      puts "Use --help option for correct use"
+      puts "Use --help option for correct use or --version option to get the version"
       return false
     end
 
@@ -53,7 +53,7 @@ module ConfigInformation
           return false
         else
           if not File.exist?(@common.tftp_repository + "/" + @common.tftp_cfg) then
-            puts "The #{@common.tftp_repository}/##{@common.tftp_cfg} directory does not exist"
+            puts "The #{@common.tftp_repository}/#{@common.tftp_cfg} directory does not exist"
             return false
           end
         end
@@ -108,6 +108,7 @@ module ConfigInformation
     attr_accessor :commands       #Hashtable of NodeCmd
     attr_accessor :taktuk_connector
     attr_accessor :taktuk_tree_arity
+    attr_accessor :taktuk_auto_propagate
     attr_accessor :tarball_dest_dir
     
     def initialize
@@ -121,12 +122,14 @@ module ConfigInformation
     end
 
     def init_config
-      @tftp_repository = Dir.pwd + "/test/pxe"
-      @tftp_images_path = "images"
+#      @tftp_repository = Dir.pwd + "/test/pxe"
+      @tftp_repository = "/var/lib/tftpboot"
+      @tftp_images_path = "kernels"
       @tftp_cfg = "pxelinux.cfg"
       @taktuk_connector = "ssh -o StrictHostKeyChecking=no -o BatchMode=yes"
       @taktuk_tree_arity = 1
       @tarball_dest_dir = "/tmp"
+      @taktuk_auto_propagate = true
     end
 
     def load_commands
@@ -173,10 +176,10 @@ module ConfigInformation
       init_automata
       @deploy_kernel = "deploy-linux-image-2.6.99"
       @deploy_initrd = "deploy-linux-initrd-2.6.99.img ETH_DRV=e1000 ETH_DEV=eth0 DISK_DRV=ahci console=tty0 console=ttyS1,38400n8 ramdisk_size=400000"
-      @block_device = "/dev/sda"
+      @block_device = "/dev/hda"
       @deploy_parts = Array.new
-      @deploy_parts.push("2")
-      @prod_part = "1"
+      @deploy_parts.push("3")
+      @prod_part = "2"
     end
 
     def init_automata
@@ -197,7 +200,7 @@ module ConfigInformation
     @array_of_instances = nil #specify the instances by order of use, if the first one fails, we use the second, and so on
     @current = nil
 
-    def initialize(name,array_of_instances)
+    def initialize(name, array_of_instances)
       @name = name
       @array_of_instances = array_of_instances
       @current = 0

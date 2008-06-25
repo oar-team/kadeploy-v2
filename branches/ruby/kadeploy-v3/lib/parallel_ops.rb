@@ -6,15 +6,18 @@ module ParallelOperations
     @nodes = nil
     @taktuk_connector = nil
     @taktuk_tree_arity = nil
+    @taktuk_auto_propagate = nil
 
     def initialize(nodes, config)
       @nodes = nodes
       @taktuk_connector = config.common.taktuk_connector
       @taktuk_tree_arity = config.common.taktuk_tree_arity
+      @taktuk_auto_propagate = config.common.taktuk_auto_propagate
     end
 
     def make_taktuk_exec_cmd(cmd)
       args = String.new
+      args += " -s" if @taktuk_auto_propagate
       args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
       @nodes.set.each { |node|
         args += " -m #{node.hostname}"
@@ -25,6 +28,7 @@ module ParallelOperations
 
     def make_taktuk_send_file_cmd(file, dest_dir)
       args = String.new
+      args += " -s" if @taktuk_auto_propagate
       args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
       args += " -d #{@taktuk_tree_arity}"
       @nodes.set.each { |node|
