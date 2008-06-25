@@ -8,6 +8,7 @@ module EnvironmentManagement
     attr_reader :postinstall_md5
     attr_reader :kernel
     attr_reader :initrd
+    attr_reader :kernel_params
     attr_reader :part
    
     def load_from_file(file)
@@ -32,6 +33,8 @@ module EnvironmentManagement
               @kernel = val
             when "initrd"
               @initrd = val
+            when "kernel_params"
+              @kernel_params = val
             when "part"
               @part = val
             else

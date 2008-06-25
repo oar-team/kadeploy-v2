@@ -19,6 +19,8 @@ module MicroStepsLibrary
       @cluster = cluster
     end
 
+    private
+
     #good_bad_array[0] are the good ones and good_bad_array[1] are the bad ones
     def classify_nodes(good_bad_array)
       if not good_bad_array[0].empty? then
@@ -72,6 +74,11 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir))
     end
 
+
+
+
+    public
+
     def switch_pxe(kind)
       ops = PXEOperations::PXEOps.new
       case kind
@@ -95,21 +102,27 @@ module MicroStepsLibrary
     end
     
     def reboot(kind)
-      node_set = Nodes::NodeSet.new
-      @nodes_ok.duplicate_and_free(node_set)
       case kind
       when "soft"
       when "hard"
       when "veryhard"
+      when "kexec"
+        kernel = "/mnt/dest/boot/#{@config.common.environment.kernel}"
+        initrd = "/mnt/dest/boot/#{@config.common.environment.initrd}"
+        kernel_params = "/mnt/dest/boot/#{@config.common.environment.kernel_params}"
+        root_part = @config.common.environment.part
+        #Warning, this require the /usr/local/bin/kexec_detach script
+        parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})")
       end
-      node_set.duplicate_and_free(@nodes_ok)
     end
     
     def check_nodes(kind)
-      
       case kind
       when "deploy_env_booted"
       when "deployed_env_booted"
+        #we look if the / mounted partition is the default production partition
+        parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
+                                                       @config.common.environment.part)        
       when "prod_env_booted"
         #we look if the / mounted partition is the default production partition
         parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
@@ -127,12 +140,13 @@ module MicroStepsLibrary
     end
 
     def format_deploy_part
-      parallel_exec_command_wrapper("date")
+      deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
+      parallel_exec_command_wrapper("mkfs.ext3 #{deploy_part}")
     end
     
     def mount_deploy_part
-      deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part)
-      parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; mount #{deploy_part} /mnt/dest)")
+      deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
+      parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; umount /mnt/dest 2>/dev/null ; mount #{deploy_part} /mnt/dest)")
     end
 
     def send_tarball
@@ -140,8 +154,8 @@ module MicroStepsLibrary
     end
 
     def uncompress_tarball
-      tarball_path = @config.common.tarball_dest_dir + "/" + @config.common.environment.tarball_file
-      parallel_send_file_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest")
+      tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.common.environment.tarball_file)
+      parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")
     end
 
   end

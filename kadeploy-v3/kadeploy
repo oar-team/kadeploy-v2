@@ -60,12 +60,6 @@ class QueueManager
     }
   end
 
-  def no_more_active_thread?
-    @mutex.synchronize {
-      return (@nb_active_threads == 0)
-    }
-  end
-
   def next_macro_step(current_step, nodes)
     if (nodes.set.empty?)
       raise "Empty node set"
@@ -161,7 +155,7 @@ class KadeployWorkflow
   
   def launch_thread_for_macro_step(kind)
     close_thread = false
-    @output.debugl(0, "#{kind} thread launched")
+    @output.debugl(4, "#{kind} thread launched")
     while (not close_thread) do
       nodes = @queue_manager.get_task(kind)
       #We receive the signal to exit
@@ -205,15 +199,14 @@ class KadeployWorkflow
           if not nodes.empty? then
             @nodes_ok.add(nodes)
           end
-          if ((nodes.empty? && @queue_manager.one_last_active_thread?) || \
-              ((not nodes.empty?) && @queue_manager.no_more_active_thread?)) then
+          if @queue_manager.one_last_active_thread? then
             @nodes_ok.group_by_cluster.each_pair { |cluster, set|
               puts "Nodes correctly deployed on cluster #{cluster}"
               puts set.to_s
             }
             @nodes_ko.group_by_cluster.each_pair { |cluster, set|
               puts "Nodes not Correctly deployed on cluster #{cluster}"
-              puts set.to_s
+              puts set.to_s(true)
             }
             @queue_manager.send_exit_signal
             @thread_set_deployment_environment.join
@@ -236,15 +229,11 @@ class KadeployWorkflow
   end
 end
 
-n1=Nodes::Node.new("virtual_host_1", "192.168.0.10", "paravent")
-#n2=Nodes::Node.new("virtual_host_2", "192.168.0.11", "paravent")
-#n3=Nodes::Node.new("virtual_host_3", "192.168.0.12", "paravent")
-n4=Nodes::Node.new("virtual_host_5", "192.168.0.13", "paravent")
+n1=Nodes::Node.new("vm-001", "172.16.160.2", "g5kdev-cluster")
+n2=Nodes::Node.new("vm-002", "172.16.160.3", "g5kdev-cluster")
 ns=Nodes::NodeSet.new
 ns.push(n1)
-#ns.push(n2)
-#ns.push(n3)
-ns.push(n4)
+ns.push(n2)
 
 Signal.trap("INT") do
   puts "SIGINT trapped, let's clean everything ..."
