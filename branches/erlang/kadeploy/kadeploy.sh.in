@@ -27,78 +27,93 @@ ERL_OPTS=" -smp auto +P 250000 +A 16 +K true @ERL_OPTS@ "
 COOKIE='kadeploy'
 ERTS_RUN=`$ERL -version 2>&1 | tr -cd 0123456789.`
 ERTS_BOOT=`grep erts $KADEPLOYPATH/../priv/$NAME.rel | tr -cd 0123456789.`
-NODEFILE=./mynodes
-OPTIONS=default
+OPTIONS="default"
+# 20mn default timeout
+TIMEOUT=1200
 
 start() {
     $ERL $ERL_OPTS $ERL_RSH -noinput -noshell $NAMETYPE $CLIENTNAME -setcookie $COOKIE \
     -pa $KADEPLOYPATH -run kadeploy_mgr deploy $SERVERNAME $USER $NODEFILE \
-        $ANONYMOUS_ENV $OPTIONS -s init stop
+        $ENV $OPTIONS
+    RET=$?
+    if [ "$RET" > 0 ]; then
+        exit $RET
+    else
+        if [ ! "XX$SCRIPT" = "XX" ]; then
+            exec $SCRIPT
+        fi
+    fi
+}
+
+debug() {
+    $ERL $ERL_OPTS $ERL_RSH $NAMETYPE $CLIENTNAME -setcookie $COOKIE \
+    -pa $KADEPLOYPATH -run kadeploy_mgr deploy $SERVERNAME $USER $NODEFILE \
+        $ENV $OPTIONS
 }
 
 version() {
     echo "Kadeploy version $VERSION"
 }
 
+check() {
+    if [ "XX$NODEFILE" = "XX" ]; then
+        echo "No nodefile, abort"
+        exit 1
+    fi
+    if [ "XX$ENV" = "XX" ]; then
+        echo "No environment, abort"
+        exit 1
+    fi
+}
+
 usage() {
     prog=`basename $0`
-    echo "$prog <options> start|stop|restart|debug|status|version"
+    echo "Use : kadeploy
+ [-m | --machine     hostname]
+ [-f | --file        node_file]                 Choose -m XOR -f
+ [-e | --environment environment_name]
+ [-d | --device   device]
+ [-p | --partition   partition]
+ [-h | --help]                                  This help message
+ [-k | --keys]                                  Add ssh keys at the end of the deployment
+ [-M ]               minnodes                   Minimum number of nodes to wait for
+ [-D | --debug-level level]                     4 : show all ...  0 : hide all
+ [-r | --reformat-tmp]                          Re-format the /tmp partition
+ [-F | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
+ [-u | --use-prod-env]                          Use the production environment to deploy
+ [-s | --script      script]                    Launch a script after a deployment
+"
     exit
 }
 
-while getopts ":f:m:p:l:d:r:n:e:" Option
+while getopts "m:f:e:d:p:k:M:D:rFustvah" Option
 do
     case $Option in
+        m)  echo "-m: not yet implemented"
+            exit 1 ;;
         f) NODEFILE=$OPTARG;;
-        l) # must add absolute path
-            echo "$OPTARG" | grep -q "^/"
-            RES=$?
-            if [ "$RES" == 0 ]; then
-                LOG_OPT="log_file \"$OPTARG\" "
-            else
-                LOG_OPT="log_file \"$PWD/$OPTARG\" "
-            fi
-            ;;
-        d) ANONYMOUS_ENV=" anonymous $OPTARG ";;
-        e) RECORDED_ENV=" recorded $OPTARG ";;
-        r) ERL_RSH=" -rsh $OPTARG ";;
-        n) RUN_NAME=$OPTARG;;
-        m)
-            MIN_NODES=$OPTARG
-            OPTIONS="minnodes:$MIN_NODES;$OPTIONS"
-            ;;
+        e) ENV=" recorded $OPTARG ";;
+        d) ENV=" anonymous $OPTARG ";;
+        p) OPTIONS="partition:$OPTARG;$OPTIONS";;
+        k) KEYFILE=$OPTARG
+            echo "-k: not yet implmented"
+            exit 1;;
+        M) OPTIONS="minnodes:$OPTARG;$OPTIONS" ;;
+        D) DEBUG_LEVEL=$OPTARG;;
+        r) OPTIONS="clean_tmp:true;$OPTIONS";;
+        F) OPTIONS="last_boot:kexec;$OPTIONS" ;;
+        u) OPTIONS="method:prod_env;$OPTIONS" ;;
+        s) SCRIPT=$OPTARG;;
+        t) OPTIONS="timeout:$OPTARG;$OPTIONS";;
+        v) version;;
+        a) ATTACH_BEAM=1;;
         *) usage ;;
     esac
 done
 shift $(($OPTIND - 1))
 
-case $1 in
-    start)
-#         checkconfig
-        start
-        ;;
-    debug)
-#         checkconfig
-        debug
-        ;;
-
-    stop)
-        stop
-        ;;
-    status)
-        recorder_status
-        status
-        ;;
-
-    restart)
-        stop
-        start
-        ;;
-    version)
-        version
-        ;;
-
-    *)
-        usage $0
-        ;;
-esac
+check
+if [ "XX$ATTACH_BEAM" = "XX1" ]; then
+    debug
+fi
+start
