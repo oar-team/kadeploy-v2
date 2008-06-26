@@ -100,6 +100,19 @@ init({NodeConfFile,GlobalConfFile}) ->
     {ok, ClusterConfig} = readclusters(NodeConfig,filename:dirname(GlobalConfFile)),
     ?LOGF("Reading global config file ~p~n",[GlobalConfFile],?NOTICE),
     {ok, GlobalConfig} = readglobalconf(GlobalConfFile),
+    case getval(builtin_tftp, GlobalConfig) of
+        {ok, 1} ->
+            {ok, RootDir} = getval(tftp_repository,GlobalConfig),
+            {ok, TFTPIp}  = getval(tftp_ip,GlobalConfig), %%FIXME check if exists
+            {ok, TFTPDebug}  = getval(tftp_debug_level,GlobalConfig), %%FIXME check if exists
+            ServiceConfig=[{debug, list_to_atom(TFTPDebug)},
+                           {udp, [{ip, katools:string_to_ip(TFTPIp)}]},
+                           {callback, {".*", tftp_file, [{root_dir,RootDir}]}}],
+            ?LOGF("start tftp with ~p~n",[ServiceConfig],?NOTICE),
+            Return = inets:start(tftpd, ServiceConfig);
+        Err ->
+            ?LOGF("Don't use builtin tftp server~p~n",[Err],?NOTICE)
+    end,
     {ok, #state{ config=GlobalConfig, configfile=GlobalConfFile,
                  clustersconfig=ClusterConfig,
                  nodeconfig=NodeConfig, nodeconfigfile=NodeConfFile

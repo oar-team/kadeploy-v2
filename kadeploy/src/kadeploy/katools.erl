@@ -27,7 +27,8 @@
 
 -export([debug/3, debug/4, get_val/1, elapsed/2, join/2, clean_str/1,
          chop/1, check_host/3, ip_tostr/1, split2/2, split2/3, ip_hex/1,
-         create_dir_ifnec/1, readnodes/1, read_unique_nodes/1]).
+         create_dir_ifnec/1, readnodes/1, read_unique_nodes/1,
+         string_to_ip/1]).
 
 level2int("debug")     -> ?DEB;
 level2int("info")      -> ?INFO;
@@ -141,6 +142,9 @@ split2(String,Chr,nostrip) ->
 
 ip_hex(A={IP1,IP2,IP3,IP4})->
     lists:flatten(io_lib:format(lists:flatten(lists:duplicate(4,"~2.16.0B")),tuple_to_list(A))).
+string_to_ip(A) when is_list(A) ->
+    list_to_tuple(lists:map(fun(A)-> list_to_integer(A) end, string:tokens(A,"."))).
+
 create_dir_ifnec(DestDir)->
     case file:read_file_info(DestDir) of
         {ok, FileInfo}  ->
@@ -153,7 +157,11 @@ create_dir_ifnec(DestDir)->
             {error,cant_create_dir,Error}
     end.
 
-readnodes(Nodefile)->
+readnodes({"nodelist", ""})->
+    { error, no_nodes};
+readnodes({"nodelist", Nodes})->
+    {ok, string:tokens(Nodes,";")};
+readnodes({"nodefile", Nodefile})->
     kaconfig:readconf(Nodefile, fun(A,B) -> [A|B] end, []).
 
 read_unique_nodes(Nodefile)->

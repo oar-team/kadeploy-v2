@@ -57,8 +57,12 @@ version() {
 
 check() {
     if [ "XX$NODEFILE" = "XX" ]; then
-        echo "No nodefile, abort"
-        exit 1
+        if [ "XX$NODES" = "XX" ]; then
+            echo "No nodefile or nodes, abort"
+            exit 1
+        else
+            NODEFILE=" nodelist $NODES "
+        fi
     fi
     if [ "XX$ENV" = "XX" ]; then
         echo "No environment, abort"
@@ -89,9 +93,8 @@ usage() {
 while getopts "m:f:e:d:p:k:M:D:rFustvah" Option
 do
     case $Option in
-        m)  echo "-m: not yet implemented"
-            exit 1 ;;
-        f) NODEFILE=$OPTARG;;
+        m) NODES="$OPTARG;$NODES" ;;
+        f) NODEFILE=" nodefile $OPTARG ";;
         e) ENV=" recorded $OPTARG ";;
         d) ENV=" anonymous $OPTARG ";;
         p) OPTIONS="partition:$OPTARG;$OPTIONS";;
