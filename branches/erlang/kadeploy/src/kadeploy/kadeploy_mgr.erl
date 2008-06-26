@@ -61,20 +61,20 @@ start_link(Args) ->
 %% @spec deploy([Server::string,User::string,NodeFile::filename,"anonymous"|"recorded",
 %%               Env::string,Options::string]) -> ok
 %% @doc deploy and put results in two files:
-deploy([Server,User,NodeFile,"anonymous",Env,Options]) ->
-    deploy([Server,User,NodeFile,{anonymous,Env},Options]);
+deploy([Server,User,NodeType,NodeFile,"anonymous",Env,Options]) ->
+    deploy([Server,User,{NodeType, NodeFile},{anonymous,Env},Options]);
 
-deploy([Server,User,NodeFile,"recorded",Env,Options]) ->
-    deploy([Server,User,NodeFile,{recorded,Env},Options]);
+deploy([Server,User,NodeType, NodeFile,"recorded",Env,Options]) ->
+    deploy([Server,User,{NodeType, NodeFile},{recorded,Env},Options]);
 
-deploy([Server,User,NodeFile,Env,Options]) ->
+deploy([Server,User,Nodes,Env,Options]) ->
     RealOptions= parse_options(Options),
     Cookie=erlang:get_cookie(),
     ErlArgs=RealOptions#deploy_opts.erlang_args ++ " -setcookie " ++ atom_to_list(Cookie),
-    deploy(list_to_atom(Server),User,NodeFile,Env,RealOptions#deploy_opts{erlang_args=ErlArgs}).
+    deploy(list_to_atom(Server),User,Nodes,Env,RealOptions#deploy_opts{erlang_args=ErlArgs}).
 
 
-deploy(Server,User,NodeFile,Env,Opts) ->
+deploy(Server,User,NodesData,Env,Opts) ->
     case { net_adm:ping(Server), node()} of
         {pang, _ }->
             io:format("Can't reach kadeploy server, abort~n"),
@@ -85,7 +85,7 @@ deploy(Server,User,NodeFile,Env,Opts) ->
             global:sync()
     end,
     Start=now(),
-    Nodes = case katools:read_unique_nodes(NodeFile) of
+    Nodes = case katools:read_unique_nodes(NodesData) of
                 {ok,Nodes1} ->
                     Nodes1;
                 _ ->
@@ -107,12 +107,12 @@ deploy(Server,User,NodeFile,Env,Opts) ->
     lists:foreach(PrintBad,Bad),
     Elapsed=round(katools:elapsed(Start,now())/1000),
     io:format("# Deployment duration ~p sec (~p:~p)~n", [ Elapsed,length(Good),length(Bad) ]),
-    case {Bad,Opts#deploy_opts.minnodes} of
+    case {Good,Opts#deploy_opts.minnodes} of
         {[],_} ->
             io:format("No deployed node, error~n"),
             halt(3);
         {_, undefined} ->
-            ok;
+            init:stop();
         {_, Min} ->
             case  length(Good) >= Min of
                 true  -> ok;
