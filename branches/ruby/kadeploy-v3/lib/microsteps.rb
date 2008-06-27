@@ -81,6 +81,16 @@ module MicroStepsLibrary
       classify_nodes(po.wait_nodes_after_reboot(timeout))
     end
 
+    def extract_files_from_archive(archive, file_array, dest_dir)
+      file_array.each { |f|
+        cmd = "tar -C #{dest_dir} --strip 1 -xzvf #{archive} #{f}"
+        if not system(cmd) then
+          puts "The file #{f} cannot be extracted"
+          return false
+        end
+      }
+      return true
+    end
 
     public
 
@@ -167,5 +177,12 @@ module MicroStepsLibrary
       parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot)
     end
     
+    def copy_kernel_initrd_to_pxe
+      archive = @config.common.environment.tarball_file
+      kernel = "boot/" + @config.common.environment.kernel
+      intird= "boot/" + @config.common.environment.initrd
+      dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+      extract_files_from_archive(archive, [kernel, initrd], dest_dir)
+    end
   end
 end

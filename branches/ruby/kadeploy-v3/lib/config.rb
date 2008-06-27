@@ -4,6 +4,7 @@ require "lib/nodes"
 module ConfigInformation
   CONFIGURATION_FOLDER = Dir.pwd + "/conf" #"/etc/kadeploy"
   COMMANDS_FILE = "cmd"
+  NODES_FILE = "nodes"
   COMMON_CONFIGURATION_FILE = "conf"
   SPECIFIC_CONFIGURATION_FILE_PREFIX = "specific_conf_"
 
@@ -15,7 +16,7 @@ module ConfigInformation
       @common = CommonConfig.new
       @cluster_specific = Hash.new
       add_cluster_specific_config("g5kdev-cluster")
-      add_cluster_specific_config("2")
+      add_cluster_specific_config("g5kdev-cluster2")
     end
 
     def add_cluster_specific_config(cluster_name)
@@ -43,6 +44,16 @@ module ConfigInformation
       return true
     end
     
+
+    def load_nodes_config_file(f)
+      IO::read(f).split("\n").each { |line|
+        if /(.*)\ (.*)\ (.*)/ =~ line
+          content = Regexp.last_match
+          @common.nodes_desc.push(Nodes::Node.new(content[1], content[2], content[3]))
+        end
+      }
+    end
+
     def check_config
       if not File.exist?(@common.tftp_repository) then
         puts "The #{@common.tftp_repository} directory does not exist"
@@ -58,12 +69,26 @@ module ConfigInformation
           end
         end
       end
+
       return check_options
     end
 
-    def load_cmdline_options
-      progname = File::basename($PROGRAM_NAME)
+    def add_to_node_list(hostname)
+      n = @common.nodes_desc.get_node_by_host(hostname)
+      if (n != nil) then
+        @common.node_list.push(Nodes::Node.new(n.hostname, n.ip, n.cluster))
+      end
+    end
 
+    def load_cmdline_options
+      if not File.exist?(CONFIGURATION_FOLDER + "/" + NODES_FILE) then
+        puts "The #{CONFIGURATION_FOLDER + "/" + NODES_FILE} file does not exist"
+        return false
+      else
+        load_nodes_config_file(CONFIGURATION_FOLDER + "/" + NODES_FILE)
+      end
+
+      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.version = "$Id$"
         opts.release = nil
@@ -74,12 +99,12 @@ module ConfigInformation
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-m", "--machine MACHINE", "Node to run on") { |node|
-          @common.node_list.push(node)
+        opts.on("-m", "--machine MACHINE", "Node to run on") { |hostname|
+          add_to_node_list(hostname)
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
           read_nodes(f).each { |node|
-            @common.node_list.push(node)
+            add_to_node_list(hostname)
           }
         }
         opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
@@ -103,7 +128,8 @@ module ConfigInformation
     attr_accessor :deploy_db_login
     attr_accessor :deploy_db_passwd
     attr_accessor :rights_kind
-    attr_accessor :node_list
+    attr_accessor :node_list      #list of nodes involved in the deployment
+    attr_accessor :nodes_desc     #information about all the nodes
     attr_accessor :environment
     attr_accessor :commands       #Hashtable of NodeCmd
     attr_accessor :taktuk_connector
@@ -113,10 +139,11 @@ module ConfigInformation
     
     def initialize
       @debug_level = 3
-      @node_list = Array.new
       @rights_kind = "dummy"
       @environment = EnvironmentManagement::Environment.new
       @commands = Hash.new
+      @node_list = Nodes::NodeSet.new
+      @nodes_desc = Nodes::NodeSet.new
       init_config
       load_commands
     end
