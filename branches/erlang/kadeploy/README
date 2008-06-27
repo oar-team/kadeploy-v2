@@ -61,16 +61,16 @@ test on g5k:
 - script to start a deployment
 - add options to script
 - option to mkfs /tmp
-
-** TODO
-- grub image creation
-- reboot server tuning (pool of concurrent reboots ?)
-- make a duke env with erlang
-- rights management
-- database management (logs, ...)
-- kexec reboot
-- virtualization
-- nfsroot
-- for prod env: check if partition is not the same as the current partition
 - tftp server in erlang
 
+** TODO
+- make a duke env with erlang
+- kexec reboot
+- virtualization
+- reboot server tuning (pool of concurrent reboots ?)
+- rights management
+- database management (logs, ...)
+- grub image creation
+- nfsroot
+- customize tftp server to communicate with deployment processes
+- for prod env: check if partition is not the same as the current partition
