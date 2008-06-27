@@ -101,7 +101,7 @@ pxedata_nogrub_test()->
     put(master, self()), % needed for failure call
     put(hostname, Host), % needed for failure call
     Data="PROMPT 1\nDEFAULT bootlabel\nDISPLAY messages\nTIMEOUT 50\n\n label bootlabel\n         KERNEL images_grub/folder_env_765/boot/vmlinuz-2.6.18-6-amd64\n         APPEND initrd=images_grub/folder_env_765/boot/initrd.img-2.6.18-6-amd64 root=/dev/hda3 console=tty0 console=ttyS0,9600n8",
-    Res=kaenv:setup_pxe_data(nogrub,Host,Conf,{env,Env},3),
+    Res=kaenv:setup_pxe_data(nogrub, Conf,{env,Env},3),
     ?assertMatch(Data,Res).
 
 ip_hex_test()->
@@ -118,7 +118,7 @@ pxedata_grub_test()->
     put(master, self()), % needed for failure call
     put(hostname, Host), % needed for failure call
     Data="PROMPT 1\nDEFAULT bootlabel\nDISPLAY messages\nTIMEOUT 50\n\n label bootlabel\n         KERNEL images_grub/memdisk\n         APPEND initrd=images_grub/grub_img_env765_hda3-azur",
-    Res=kaenv:setup_pxe_data(grub,Host,Conf,{env,Env},3),
+    Res=kaenv:setup_pxe_data(grub,Conf,{env,Env},3),
     ?assertMatch(Data,Res).
 
 pxe_grub_test()->
@@ -133,6 +133,15 @@ pxe_grub_test()->
     put(hostname, Host), % needed for failure call
     Data=ok,
     Res = kaenv:setup_pxe(grub,Host,Conf,{env,Env},3),
+    ?assertMatch(Data,Res).
+
+pxe_duke_test()->
+    Host="hyperion.inria.fr",
+    Conf=kaconfig:getnodeconf(Host),
+    put(master, self()), % needed for failure call
+    put(hostname, Host), % needed for failure call
+    Data=ok,
+    Res = kaenv:setup_pxe(nogrub,Host,Conf,deploykernel,3),
     ?assertMatch(Data,Res).
 
 chain_tar_test()->
@@ -196,9 +205,10 @@ deployenv_test()->
                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
     {ok, Hostname}=inet:gethostname(),
     Resp=kadeploy_mgr:deploy_call(root,[Hostname,"badconfig"],Env,Opts),
+    ?LOGF("TEST:deployenv: ~p~n",[Resp],?DEB),
     ?assertMatch({Good,
                   [
-                   {Hostname, {error,setup_pxe_failure}},
+                   {Hostname, {error,first_boot_failure}},
                    {"badconfig", {error,{node_badconfig, Key}}}
                    ]},
                  Resp).
@@ -243,32 +253,32 @@ readnodes_test()->
     Nodefile=filename:absname("./src/test/nodefile"),
     ?assertMatch({ok,["azur-22.sophia.grid5000.fr",
                       "helios-33.sophia.grid5000.fr",
-                      "sol-3.sophia.grid5000.fr"]},katools:read_unique_nodes(Nodefile)).
+                      "sol-3.sophia.grid5000.fr"]},katools:read_unique_nodes({"nodefile",Nodefile})).
 
 
-deployenv2_test_()->
-    myset_env(),
-    Good=[],
-    Env= #environment{filebase="./src/test/base.tgz",
-                      initrdpath = "erlang/chain.beam",
-                      kernelpath = "erlang/chain.erl",
-                      id=1,
-                      filesite="./src/test/base.tgz"},
-    Opts=#deploy_opts{timeout=4500,
-                      method=deploy_env,
-                      erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
-    Nodefile=filename:absname("./src/test/nodefile"),
-    ?LOG("Starting deployenv2 test with anonymous env~n",?DEB),
-   {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(node(),"root",Nodefile,Env,Opts))}.
+%% prodenv_file_test_()->
+%%     myset_env(),
+%%     Good=[],
+%%     Env= #environment{filebase="./src/test/base.tgz",
+%%                       initrdpath = "erlang/chain.beam",
+%%                       kernelpath = "erlang/chain.erl",
+%%                       id=1,
+%%                       filesite="./src/test/base.tgz"},
+%%     Opts=#deploy_opts{timeout=4500,
+%%                       method=prod_env,
+%%                       erlang_args="+A 16 -connect_all false +K true -rsh ssh -setcookie testcookie"},
+%%     Nodefile=filename:absname("./src/test/nodefile"),
+%%     ?LOG("Starting deployenv2 test with anonymous env~n",?DEB),
+%%    {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(node(),"root",{"nodefile",Nodefile},Env,Opts))}.
 
-parse_opts_test_()->
-    myset_env(),
-    Good=[],
-    Nodefile=filename:absname("./src/test/nodefile"),
-    Args=[atom_to_list(node()),"root",Nodefile,"anonymous",
-          "./src/test/","clean_tmp:true;method:prod_env;default"],
-    ?LOG("Starting parse_opts test ~n",?DEB),
-   {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(Args))}.
+%% parse_opts_test_()->
+%%     myset_env(),
+%%     Good=[],
+%%     Nodefile=filename:absname("./src/test/nodefile"),
+%%     Args=[atom_to_list(node()),"root","nodefile",Nodefile,"anonymous",
+%%           "./src/test/","clean_tmp:true;method:prod_env;default"],
+%%     ?LOG("Starting parse_opts test ~n",?DEB),
+%%    {timeout, 10, ?_assertMatch(ok, kadeploy_mgr:deploy(Args))}.
 
 %%%%%%%%%%%%%%%%% end of test funs
 

@@ -29,7 +29,7 @@
 %% @ doc everything related to environments
 
 %% API
--export([getenv/1, setup_pxe/5, setup_pxe_data/5, extract_kernel/2]).
+-export([getenv/1, setup_pxe/5, setup_pxe_data/4, extract_kernel/2]).
 
 -define(postinstall_file,"postinstall.tgz").
 -define(description_file,"description").
@@ -101,18 +101,25 @@ getenv({anonymous, User, Directory}) when is_list(Directory)->
 
 %% @spec setup_pxe(UseGrub::grub|nogrub,Hostname::string,
 %%                  Config, Env, Partition::integer) -> ok | {error,Reason}
-%% @doc returns an environment record from a name or a directory
-setup_pxe(UseGrub, Hostname, _Config,{deploykernel, Duke},Partition)->
-    %% @FIXME Temporary: Use external script to do this
-    case kaslave:myoscmd(Duke) of
-        {ok, Res} ->
-            ?LOGF("PXE ok~p~n",[Res],?DEB);
-        {error,ErrNo,Reason}->
-            {error,Reason}
-    end;
+%% @doc write pxe configuration for booting on given kernel
+setup_pxe(nogrub, Hostname, Config, deploykernel,_Part)->
+    PXERep    = getval(pxe_rep,Config),
+    TFTPDir   = getval(tftp_repository,Config),
+    {ok,IPtmp}= inet:getaddr(Hostname, inet), %% FIXME: IPV4 only
+    IPhex     = katools:ip_hex(IPtmp),
+    Filename  = filename:join([TFTPDir,PXERep,IPhex]),
+    TFTPRelPath=getval(tftp_relative_path,Config),
+    Kernel    = getval(deploy_kernel,Config),
+    InitRd    = getval(deploy_initrd,Config),
+    KernelParam=getval(deploy_kernel_param,Config),
+    Data = lists:append([?PXE_HEADER,TFTPRelPath,"/",Kernel,"\n",
+                         "         APPEND initrd=",TFTPRelPath, "/", InitRd,
+                         " ", KernelParam]),
+    ?LOGF("writing duke PXE file (~p) for host ~p~n",[Filename,Hostname],?NOTICE),
+    file:write_file(Filename,Data);
 
 setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
-    PXEData   = setup_pxe_data(UseGrub,Hostname, Config, Env,Partition),
+    PXEData   = setup_pxe_data(UseGrub, Config, Env,Partition),
     PXERep    = getval(pxe_rep,Config),
     TFTPDir   = getval(tftp_repository,Config),
     {ok,IPtmp}= inet:getaddr(Hostname, inet), %% FIXME: IPV4 only
@@ -122,10 +129,10 @@ setup_pxe(UseGrub,Hostname, Config, Env, Partition)->
     Data=list_to_binary(PXEData),
     file:write_file(Filename,Data).
 
-%% @spec setup_pxe_data(UseGrub::grub|nogrub,Hostname::string,
-%%                     Config, Env, Partition::integer) -> Data::string
+%% @spec setup_pxe_data(UseGrub::grub|nogrub, Config, Env, Partition::integer)
+%%                      -> Data::string
 %% @doc returns the pxe configuration
-setup_pxe_data(UseGrub,Hostname, Config, {env,Env}, Partition)->
+setup_pxe_data(UseGrub, Config, {env,Env}, Partition)->
     Id=getid(Env),
     TFTPRelPath=getval(tftp_relative_path,Config),
     Device    = getval(device,Config),

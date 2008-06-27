@@ -30,6 +30,8 @@
 
 -define(init_timeout, 1).
 
+%% FSM with 4 states: first_boot, setup_env, transfert, last_boot
+
 %% API
 -export([start_link/1, start/1, transfert_done/1, transfert_failed/1,
          reboot_done/1, reboot_failed/1]).
@@ -130,31 +132,30 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
     %% use process dictionnary for failure handling
     put(master,Master),
     put(hostname,Host),
-    put(chainsrv,ChainSrv),
     %% FIXME: get the timeout values from the kaconfig server ?
-    State = #state{hostname=Host,
-                   chainsrv=ChainSrv,
-                   master=Master,
-                   node=RemoteNode,
-                   max_retry=?config(max_retry),
-                   transfert_timeout =?config(transfert_timeout),
-                   first_boot_timeout=?config(first_boot_timeout),
-                   last_boot_timeout =?config(last_boot_timeout),
+    State = #state{hostname  = Host,
+                   chainsrv  = ChainSrv,
+                   master    = Master,
+                   node      = RemoteNode,
+                   env       = Env,
+                   options   = Opts,
+                   max_retry            =?config(max_retry),
+                   transfert_timeout    =?config(transfert_timeout),
+                   first_boot_timeout   =?config(first_boot_timeout),
+                   last_boot_timeout    =?config(last_boot_timeout),
                    first_check_interval =?config(first_check_interval),
-                   check_interval    =?config(check_interval),
-                   check_timeout     =?config(check_timeout),
-                   check_portno      =?config(check_portno),
-                   env=Env,
-                   options=Opts},
+                   check_interval       =?config(check_interval),
+                   check_timeout        =?config(check_timeout),
+                   check_portno         =?config(check_portno)},
     case Opts#deploy_opts.method of
         prod_env ->
             {ok, setup_env, State};
         deploy_env ->
             {ok, first_boot, State};
         nfsroot ->
-            {ok, setup_env, State};
+            {ok, first_boot, State};
         virt ->
-            {ok, setup_env, State}
+            {ok, setup_env, State} %TODO
     end.
 
 %%--------------------------------------------------------------------
@@ -171,16 +172,11 @@ init({Host, Env, Opts, ChainSrv,Master}) ->
 %%--------------------------------------------------------------------
 first_boot({start}, State=#state{options=Opts}) when Opts#deploy_opts.method == deploy_env->
     Config = kaconfig:getnodeconf(State#state.hostname),
-    Duke = getval(deployboot,Config),
-    Grub = case getval(use_nogrub,Config) of
-               1 -> nogrub;
-               0 -> grub
-           end,
-    Partition="FIXME",
-    case kaenv:setup_pxe(Grub,State#state.hostname,Config,{deploykernel, Duke},Partition) of
+    case kaenv:setup_pxe(nogrub,State#state.hostname,Config,deploykernel,[]) of
         ok ->
             kareboot_srv:reboot(State#state.hostname, get_reboot_cmds(Config)),
-            {next_state, first_boot, State#state{config=Config}, State#state.check_interval};
+            %% FIXME: handle failure of reboot server ?
+            {next_state, first_boot, State#state{config=Config}, State#state.first_boot_timeout};
         {error, Reason} ->
             ?LOGF("Error setup_pxe ~p~n",[Reason],?ERR),
             %% don't retry setup pxe
@@ -197,7 +193,7 @@ first_boot({reboot_done}, State=#state{})->
     %% start the timer
     ?LOG("First reboot command done, wait for node to reboot~n",?INFO),
     erlang:start_timer(State#state.first_boot_timeout,self(),first_boot_timeout),
-    {next_state, first_boot, State, State#state.check_interval};
+    {next_state, first_boot, State, State#state.first_check_interval};
 
 first_boot(timeout, State=#state{})->
     ?LOG("First boot timeout, check host~n",?DEB),
@@ -205,7 +201,7 @@ first_boot(timeout, State=#state{})->
                             State#state.hostname,
                             State#state.check_timeout) of
         ok ->
-            {next_state,setup_env,State#state{retry=0},1};
+            {next_state, setup_env, State#state{retry=0}, 1}; % switch to setup_env state
         {error, _Reason} ->
             {next_state, first_boot, State, State#state.check_interval}
     end;
@@ -220,7 +216,7 @@ first_boot(Event, State=#state{})->
 %%  {stop, Reason}
 %% @doc setup a deployment environment
 
-setup_env(timeout, State=#state{options=Opts,config=Config}) when Opts#deploy_opts.method == deploy_env ->
+setup_env(timeout, State=#state{options=Opts,config=Config}) when Opts#deploy_opts.method==deploy_env ->
 %% just switch from first_boot
     try setup_disk(State#state.config,State,Opts) of
       NewState ->
@@ -260,10 +256,10 @@ transfert({transfert_failed}, State=#state{config=Config})->
     Retry = State#state.retry,
     case Retry < State#state.max_retry of
         true ->
-            ?LOG("Retry~n",?INFO),
+            ?LOGF("~p: Retry transfert~n",[State#state.hostname],?INFO),
             Mount = getval(mount,Config),
             kachain_srv:retry_transfert(State#state.chainsrv, Mount, State#state.node),
-            {next_state, transfert, State#state{retry=Retry+1},?init_timeout};
+            {next_state, transfert, State#state{retry=Retry+1}, State#state.transfert_timeout};
         false->
             ?LOG("Max retries reached in state transfert, abort~n",?ERR),
             failure(?fail_transfert)
