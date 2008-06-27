@@ -129,13 +129,13 @@ class KadeployWorkflow
   attr_accessor :nodes_ok
   attr_accessor :nodes_ko
 
-  def initialize(config, nodeset)
+  def initialize(config)
     @config = config
     @output = Debug::OutputControl.new(@config.common.debug_level)
     @rights = CheckRights::CheckRightsFactory.new(@config.common.rights_kind).klass
     @nodes_ok = Nodes::NodeSet.new
     @nodes_ko = Nodes::NodeSet.new
-    @nodeset = nodeset
+    @nodeset = @config.common.node_list
     @queue_manager = QueueManager.new(@config, @nodes_ok, @nodes_ko)
     @window_manager = WindowManager.new
 
@@ -229,12 +229,6 @@ class KadeployWorkflow
   end
 end
 
-n1=Nodes::Node.new("vm-001", "172.16.160.2", "g5kdev-cluster")
-n2=Nodes::Node.new("vm-002", "172.16.160.3", "g5kdev-cluster")
-ns=Nodes::NodeSet.new
-ns.push(n1)
-ns.push(n2)
-
 Signal.trap("INT") do
   puts "SIGINT trapped, let's clean everything ..."
   #todo: clean some stuff
@@ -243,6 +237,6 @@ end
 
 config = ConfigInformation::Config.new
 if (config.load_cmdline_options == true)
-  workflow=KadeployWorkflow.new(config, ns)
+  workflow=KadeployWorkflow.new(config)
   workflow.run
 end

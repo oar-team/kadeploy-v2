@@ -1,7 +1,5 @@
-virtual_host_1|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_1 /sbin/reboot
+vm-001|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@vm-001 /sbin/reboot
+vm-001|reboot_hard|vmware-cmd /home/ejeanvoi/vmware/vm-001/vm-001.vmx reset hard
 
-virtual_host_2|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_2 /sbin/reboot
-
-virtual_host_3|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_3 /sbin/reboot
-
-virtual_host_4|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@virtual_host_4 /sbin/reboot
+vm-002|reboot_soft|ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@vm-002 /sbin/reboot
+vm-001|reboot_hard|vmware-cmd /home/ejeanvoi/vmware/vm-002/vm-002.vmx reset hard
