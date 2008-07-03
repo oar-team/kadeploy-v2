@@ -21,6 +21,7 @@ module PXEOperations
         end
         f = File.new(file, File::CREAT|File::RDWR, 0644)
         f.write(msg)
+        f.close
       }
     end
     
@@ -30,8 +31,8 @@ module PXEOperations
       timeout = 50
       baudrate = 38400
       template = "PROMPT #{prompt}\nSERIAL 0 #{baudrate}\nDEFAULT bootlabel\nDISPLAY #{display}\nTIMEOUT #{timeout}\n\nlabel bootlabel\n";
-      kernel_line = "\tKERNEL " + tftp_repository  + "/" + tftp_img + "/" + kernel + "\n"
-      initrd_line = "\tINTIRD initrd=" + tftp_repository  + "/" + tftp_img + "/" + initrd + " root=" + boot_part + "\n"
+      kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n"
+      initrd_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd + " root=" + boot_part + "\n"
       msg = template + kernel_line + initrd_line
       write_pxe(ips, msg, tftp_repository, tftp_cfg)
     end

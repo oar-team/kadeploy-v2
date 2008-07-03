@@ -27,11 +27,18 @@ module ParallelOperations
       return args.split(" ")
     end
 
-    def make_taktuk_send_file_cmd(file, dest_dir)
+    def make_taktuk_send_file_cmd(file, dest_dir, kind)
       args = String.new
       args += " -s" if @taktuk_auto_propagate
       args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
-      args += " -d #{@taktuk_tree_arity}"
+      case kind
+      when "chain"
+        args += " -d 1"
+      when "tree"
+        args += " -d #{@taktuk_tree_arity}"
+      else
+        raise "Invalid structure for broadcasting file"
+      end
       @nodes.set.each { |node|
         args += " -m #{node.hostname}"
       }
@@ -104,8 +111,8 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    def send_file(file, dest_dir)
-      tw = TaktukWrapper::new(make_taktuk_send_file_cmd(file, dest_dir))
+    def send_file(file, dest_dir, kind)
+      tw = TaktukWrapper::new(make_taktuk_send_file_cmd(file, dest_dir, kind))
       tw.run
       get_taktuk_send_file_command_infos(tw)
       good_nodes = Array.new
@@ -146,6 +153,5 @@ module ParallelOperations
       }
       return [good_nodes, bad_nodes]
     end
-
   end
 end

@@ -2,6 +2,7 @@ require 'lib/debug'
 require 'lib/nodes'
 require 'lib/parallel_ops'
 require 'lib/pxe_ops'
+require 'lib/cmdctrl_wrapper'
 
 module MicroStepsLibrary
   class MicroSteps
@@ -67,11 +68,11 @@ module MicroStepsLibrary
       classify_nodes_expecting_result(po.execute(cmd), result)
     end
 
-    def parallel_send_file_command_wrapper(file, dest_dir)
+    def parallel_send_file_command_wrapper(file, dest_dir, kind)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config)
-      classify_nodes(po.send_file(file, dest_dir))
+      classify_nodes(po.send_file(file, dest_dir, kind))
     end
 
     def parallel_wait_nodes_after_reboot_wrapper(timeout)
@@ -81,9 +82,20 @@ module MicroStepsLibrary
       classify_nodes(po.wait_nodes_after_reboot(timeout))
     end
 
+    def reboot_wrapper(kind)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      cmds = CmdCtrlWrapper::Cmd.new
+      node_set.set.each { |node|
+        cmds.add_cmd(node.cmd.reboot_soft + "&", node) #run detached
+      }
+      cmds.run
+      classify_nodes(cmds.get_results)
+    end
+
     def extract_files_from_archive(archive, file_array, dest_dir)
       file_array.each { |f|
-        cmd = "tar -C #{dest_dir} --strip 1 -xzvf #{archive} #{f}"
+        cmd = "tar -C #{dest_dir} --strip 1 -xzf #{archive} #{f}"
         if not system(cmd) then
           puts "The file #{f} cannot be extracted"
           return false
@@ -119,6 +131,7 @@ module MicroStepsLibrary
     def reboot(kind)
       case kind
       when "soft"
+        reboot_wrapper("soft")
       when "hard"
       when "veryhard"
       when "kexec"
@@ -164,8 +177,10 @@ module MicroStepsLibrary
       parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; umount /mnt/dest 2>/dev/null ; mount #{deploy_part} /mnt/dest)")
     end
 
-    def send_tarball
-      parallel_send_file_command_wrapper(@config.common.environment.tarball_file, @config.common.tarball_dest_dir)
+    def send_tarball(kind)
+      parallel_send_file_command_wrapper(@config.common.environment.tarball_file,
+                                         @config.common.tarball_dest_dir,
+                                         kind)
     end
 
     def uncompress_tarball
@@ -180,9 +195,14 @@ module MicroStepsLibrary
     def copy_kernel_initrd_to_pxe
       archive = @config.common.environment.tarball_file
       kernel = "boot/" + @config.common.environment.kernel
-      intird= "boot/" + @config.common.environment.initrd
+      initrd= "boot/" + @config.common.environment.initrd
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
       extract_files_from_archive(archive, [kernel, initrd], dest_dir)
     end
+
+    def produce_bad_nodes
+      @nodes_ok.duplicate_and_free(@nodes_ko)
+    end
+
   end
 end

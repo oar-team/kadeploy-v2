@@ -1,5 +1,6 @@
 require "lib/environment"
 require "lib/nodes"
+require "optparse"
 
 module ConfigInformation
   CONFIGURATION_FOLDER = Dir.pwd + "/conf" #"/etc/kadeploy"
@@ -25,7 +26,7 @@ module ConfigInformation
 
     def read_nodes(f)
       begin
-        return IO::read(f).split("\n").sort.uniq
+        return IO.readlines(f).sort.uniq
       rescue
         return []
       end
@@ -37,19 +38,48 @@ module ConfigInformation
       return false
     end
 
+    #Allow to load some specific commands for specific nodes that override generic commands
+    def load_commands
+      commands_file = CONFIGURATION_FOLDER + "/" + COMMANDS_FILE
+      if File.exist?(commands_file) then
+        IO.readlines(commands_file).each { |line|
+          if not (/^#/ =~ line) then #we ignore commented lines
+            if /(.+)\|(.+)\|(.+)/ =~ line then
+              content = Regexp.last_match
+              node = @common.node_list.get_node_by_host(content[1])
+              case content[2]
+              when "reboot_soft"
+                node.cmd.reboot_soft = content[3]
+              when "reboot_hard"
+                node.cmd.reboot_hard = content[3]
+              when "reboot_veryhard"
+              node.cmd.reboot_veryhard = content[3]
+              when "console"
+                node.cmd.console = content[3]
+              else
+                puts "Unknown command: #{content[2]}"
+              end
+            end
+          end
+        }
+      else
+        raise "Cannot find the command file"
+      end
+    end
+
     def check_options
       if @common.node_list.empty? then
         return bad_option_message("No nodes list found")
       end
+      load_commands
       return true
     end
     
-
     def load_nodes_config_file(f)
-      IO::read(f).split("\n").each { |line|
+      IO.readlines(f).each { |line|
         if /(.*)\ (.*)\ (.*)/ =~ line
           content = Regexp.last_match
-          @common.nodes_desc.push(Nodes::Node.new(content[1], content[2], content[3]))
+          @common.nodes_desc.push(Nodes::Node.new(content[1], content[2], content[3], nil))
         end
       }
     end
@@ -72,11 +102,31 @@ module ConfigInformation
 
       return check_options
     end
+    
+    #used to replace several occurence
+    def replace_hostname(str, hostname)
+      cmd_to_expand = str.clone # we must use this temporary variable since sub() modify the strings
+      save = str
+      while cmd_to_expand.sub!("HOSTNAME", hostname) != nil  do
+        save = cmd_to_expand
+      end
+      return save
+    end
+
+    def generate_commands(hostname, cluster)
+      cmd = Nodes::NodeCmd.new
+      cmd.reboot_soft = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot, hostname)
+      cmd.reboot_hard = replace_hostname(@cluster_specific[cluster].cmd_hard_reboot, hostname)
+      cmd.reboot_very_hard = replace_hostname(@cluster_specific[cluster].cmd_very_hard_reboot, hostname)
+      cmd.console = replace_hostname(@cluster_specific[cluster].cmd_console, hostname)
+      return cmd
+    end
 
     def add_to_node_list(hostname)
       n = @common.nodes_desc.get_node_by_host(hostname)
       if (n != nil) then
-        @common.node_list.push(Nodes::Node.new(n.hostname, n.ip, n.cluster))
+        new_node = Nodes::Node.new(n.hostname, n.ip, n.cluster, generate_commands(n.hostname, n.cluster))
+        @common.node_list.push(new_node)
       end
     end
 
@@ -131,7 +181,6 @@ module ConfigInformation
     attr_accessor :node_list      #list of nodes involved in the deployment
     attr_accessor :nodes_desc     #information about all the nodes
     attr_accessor :environment
-    attr_accessor :commands       #Hashtable of NodeCmd
     attr_accessor :taktuk_connector
     attr_accessor :taktuk_tree_arity
     attr_accessor :taktuk_auto_propagate
@@ -141,11 +190,9 @@ module ConfigInformation
       @debug_level = 3
       @rights_kind = "dummy"
       @environment = EnvironmentManagement::Environment.new
-      @commands = Hash.new
       @node_list = Nodes::NodeSet.new
       @nodes_desc = Nodes::NodeSet.new
       init_config
-      load_commands
     end
 
     def init_config
@@ -158,35 +205,6 @@ module ConfigInformation
       @tarball_dest_dir = "/tmp"
       @taktuk_auto_propagate = true
     end
-
-    def load_commands
-      commands_file = CONFIGURATION_FOLDER + "/" + COMMANDS_FILE
-      if File.exist?(commands_file) then
-        IO::read(commands_file).split("\n").each { |line|
-          if /(.+)\|(.+)\|(.+)/ =~ line then
-            content = Regexp.last_match
-            if not @commands.has_key?(content[1])
-            then
-              @commands[content[1]] = Nodes::NodeCmd.new
-            end
-            case content[2]
-            when "reboot_soft"
-              @commands[content[1]].reboot_soft = content[3]
-            when "reboot_hard"
-              @commands[content[1]].reboot_hard = content[3]
-            when "reboot_veryhard"
-              @commands[content[1]].reboot_veryhard = content[3]
-            when "console"
-              @commands[content[1]].console = content[3]
-            else
-              puts "Unknown command: #{content[2]}"
-            end
-          end
-        }
-      else
-        raise "Cannot find the command file"
-      end
-    end
   end
   
   class ClusterSpecificConfig
@@ -197,7 +215,10 @@ module ConfigInformation
     attr_accessor :prod_part
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :timeout_reboot
-
+    attr_accessor :cmd_soft_reboot
+    attr_accessor :cmd_hard_reboot
+    attr_accessor :cmd_very_hard_reboot
+    attr_accessor :cmd_console
     
     def initialize
       init_automata
@@ -208,6 +229,10 @@ module ConfigInformation
       @deploy_parts.push("3")
       @prod_part = "2"
       @timeout_reboot = 120
+      @cmd_soft_reboot = "ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@HOSTNAME /sbin/reboot"
+      @cmd_hard_reboot = "vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard"
+      @cmd_very_hard_reboot = ""
+      @cmd_console = ""
     end
 
     def init_automata
@@ -215,7 +240,8 @@ module ConfigInformation
       @workflow_steps = Array.new
       @workflow_steps.push(MacroStep.new("SetDeploymentEnv",[["SetDeploymentEnvProd",2]]))
       @workflow_steps.push(MacroStep.new("BroadcastEnv",[["BroadcastEnvChainWithFS",2]]))
-      @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvKexec",1], ["BootNewEnvClassical",2]]))
+#      @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvKexec",1], ["BootNewEnvClassical",2]]))
+      @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvClassical",1], ["BootNewEnvClassical",2]]))
     end
 
     def get_macro_step(name)
@@ -237,6 +263,9 @@ module ConfigInformation
     def use_next_instance
       if (@array_of_instances.length > (@current +1)) then
         @current += 1
+        return true
+      else
+        return false
       end
     end
 
