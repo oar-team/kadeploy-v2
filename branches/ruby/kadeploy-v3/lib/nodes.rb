@@ -1,4 +1,11 @@
 module Nodes
+  class NodeCmd
+    attr_accessor :reboot_soft
+    attr_accessor :reboot_hard
+    attr_accessor :reboot_very_hard
+    attr_accessor :console
+  end
+
   class Node
     attr_accessor :hostname   #fqdn
     attr_accessor :ip         #aaa.bbb.ccc.ddd
@@ -8,16 +15,18 @@ module Nodes
     attr_accessor :last_cmd_exit_status
     attr_accessor :last_cmd_stdout
     attr_accessor :last_cmd_stderr
-    
-    def initialize(hostname, ip, cluster)
+    attr_accessor :cmd
+
+    def initialize(hostname, ip, cluster, cmd)
       @hostname=hostname
       @ip=ip
       @cluster = cluster
       @state="OK"
+      @cmd = cmd
     end
     
     def to_s(dbg = false)
-      if (dbg) then
+      if (dbg) && (last_cmd_stderr != nil) then
         return "#{@hostname} (#{@last_cmd_stderr})"
       else
         return "#{@hostname}"
@@ -107,12 +116,5 @@ module Nodes
       }
       return nil
     end
-  end
-
-  class NodeCmd
-    attr_accessor :reboot_soft
-    attr_accessor :reboot_hard
-    attr_accessor :reboot_very_hard
-    attr_accessor :console
   end
 end
