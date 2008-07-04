@@ -15,13 +15,106 @@ module ConfigInformation
     
     def initialize
       @common = CommonConfig.new
+      load_common_config_file
       @cluster_specific = Hash.new
-      add_cluster_specific_config("g5kdev-cluster")
-      add_cluster_specific_config("g5kdev-cluster2")
+      load_specific_config_files
     end
 
-    def add_cluster_specific_config(cluster_name)
-      @cluster_specific[cluster_name] = ClusterSpecificConfig.new
+    def load_common_config_file
+      common_config_file = CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE
+      if File.exist?(common_config_file) then
+        IO.readlines(common_config_file).each { |line|
+          if not (/^#/ =~ line) then #we ignore commented lines
+            if /(.+)\ \=\ (.+)/ =~ line then
+              content = Regexp.last_match
+              case content[1]
+              when "debug_level"
+                @common.debug_level = content[2].to_i
+              when "tftp_repository"
+                @common.tftp_repository = content[2]
+              when "tftp_images_path"
+                @common.tftp_images_path = content[2]
+              when "tftp_cfg"
+                @common.tftp_cfg = content[2]
+              when "deploy_db_host"
+                @common.deploy_db_host = content[2]
+              when "deploy_db_name"
+                @common.deploy_db_name = content[2]
+              when "deploy_db_login"
+                @common.deploy_db_login = content[2]
+              when "deploy_db_passwd"
+                @common.deploy_db_passwd = content[2]
+              when "rights_kind"
+                @common.rights_kind = content[2]
+              when "taktuk_connector"
+                @common.taktuk_connector = content[2]
+              when "taktuk_tree_arity"
+                @common.taktuk_tree_arity = content[2].to_i
+              when "taktuk_auto_propagate"
+                if content[2] == "true"
+                  @common.taktuk_auto_propagate = true
+                else
+                  @common.taktuk_auto_propagate = false
+                end
+              when "tarball_dest_dir"
+                @common.tarball_dest_dir = content[2]
+              end
+            end
+          end
+        }
+      else
+        raise "Cannot find the common configuration file"
+      end
+    end
+
+    def load_specific_config_files
+      Dir[CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX + "*"].each { |f|
+        cluster = String.new(f).sub(CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX, "")
+        @cluster_specific[cluster] = ClusterSpecificConfig.new
+        IO.readlines(f).each { |line|
+          if not (/^#/ =~ line) then #we ignore commented lines
+            if /(.+)\ \=\ (.+)/ =~ line then
+              content = Regexp.last_match
+              case content[1]
+              when "deploy_kernel"
+                @cluster_specific[cluster].deploy_kernel = content[2]
+              when "deploy_initrd"
+                @cluster_specific[cluster].deploy_initrd = content[2]
+              when "block_device"
+                @cluster_specific[cluster].block_device = content[2]
+              when "deploy_parts"
+                content[2].split(",").each { |part|
+                  @cluster_specific[cluster].deploy_parts.push(part)
+                }
+              when "prod_part"
+                @cluster_specific[cluster].prod_part = content[2]
+              when "workflow_steps"
+                @cluster_specific[cluster].workflow_steps = content[2]
+              when "timeout_reboot"
+                @cluster_specific[cluster].timeout_reboot = content[2].to_i
+              when "cmd_soft_reboot"
+                @cluster_specific[cluster].cmd_soft_reboot = content[2]
+              when "cmd_hard_reboot"
+                @cluster_specific[cluster].cmd_hard_reboot = content[2]
+              when "cmd_very_hard_reboot"
+                @cluster_specific[cluster].cmd_very_hard_reboot = content[2]
+              when "cmd_console"
+                @cluster_specific[cluster].cmd_console = content[2]
+              when "macrostep"
+                macrostep_name = content[2].split("|")[0]
+                microstep_list = content[2].split("|")[1]
+                tmp = Array.new
+                microstep_list.split(",").each { |instance_infos|
+                  instance_name = instance_infos.split(":")[0]
+                  instance_max_retries = instance_infos.split(":")[1].to_i
+                  tmp.push([instance_name, instance_max_retries])
+                }
+                @cluster_specific[cluster].workflow_steps.push(MacroStep.new(macrostep_name, tmp))
+              end
+            end
+          end
+        }
+      }
     end
 
     def read_nodes(f)
@@ -172,7 +265,6 @@ module ConfigInformation
     attr_accessor :tftp_repository
     attr_accessor :tftp_images_path
     attr_accessor :tftp_cfg
-    attr_accessor :move_pxe_cfg
     attr_accessor :deploy_db_host
     attr_accessor :deploy_db_name
     attr_accessor :deploy_db_login
@@ -187,23 +279,9 @@ module ConfigInformation
     attr_accessor :tarball_dest_dir
     
     def initialize
-      @debug_level = 3
-      @rights_kind = "dummy"
       @environment = EnvironmentManagement::Environment.new
       @node_list = Nodes::NodeSet.new
       @nodes_desc = Nodes::NodeSet.new
-      init_config
-    end
-
-    def init_config
-#      @tftp_repository = Dir.pwd + "/test/pxe"
-      @tftp_repository = "/var/lib/tftpboot"
-      @tftp_images_path = "kernels"
-      @tftp_cfg = "pxelinux.cfg"
-      @taktuk_connector = "ssh -o StrictHostKeyChecking=no -o BatchMode=yes"
-      @taktuk_tree_arity = 1
-      @tarball_dest_dir = "/tmp"
-      @taktuk_auto_propagate = true
     end
   end
   
@@ -221,27 +299,8 @@ module ConfigInformation
     attr_accessor :cmd_console
     
     def initialize
-      init_automata
-      @deploy_kernel = "deploy-linux-image-2.6.99"
-      @deploy_initrd = "deploy-linux-initrd-2.6.99.img ETH_DRV=e1000 ETH_DEV=eth0 DISK_DRV=ahci console=tty0 console=ttyS1,38400n8 ramdisk_size=400000"
-      @block_device = "/dev/hda"
       @deploy_parts = Array.new
-      @deploy_parts.push("3")
-      @prod_part = "2"
-      @timeout_reboot = 120
-      @cmd_soft_reboot = "ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@HOSTNAME /sbin/reboot"
-      @cmd_hard_reboot = "vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard"
-      @cmd_very_hard_reboot = ""
-      @cmd_console = ""
-    end
-
-    def init_automata
-      #init example for the automata, this should be sourced from config file
       @workflow_steps = Array.new
-      @workflow_steps.push(MacroStep.new("SetDeploymentEnv",[["SetDeploymentEnvProd",2]]))
-      @workflow_steps.push(MacroStep.new("BroadcastEnv",[["BroadcastEnvChainWithFS",2]]))
-#      @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvKexec",1], ["BootNewEnvClassical",2]]))
-      @workflow_steps.push(MacroStep.new("BootNewEnv", [["BootNewEnvClassical",1], ["BootNewEnvClassical",2]]))
     end
 
     def get_macro_step(name)
