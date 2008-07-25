@@ -5,18 +5,16 @@ require 'lib/nodes'
 module SetDeploymentEnvironnment
 
   class SetDeploymentEnvFactory
-    attr_accessor :klass
-
-    def initialize(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
+    def SetDeploymentEnvFactory.create(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when "SetDeploymentEnvUntrusted"
-        @klass = SetDeploymentEnvUntrusted.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvUntrusted.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvNfsroot"
-        @klass = SetDeploymentEnvNfsroot.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvNfsroot.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvProd"
-        @klass = SetDeploymentEnvProd.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvProd.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvDummy"
-        @klass = SetDeploymentEnvDummy.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvDummy.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the environment deployment step"
       end

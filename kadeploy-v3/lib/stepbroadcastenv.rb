@@ -2,14 +2,12 @@ require 'lib/debug'
 
 module BroadcastEnvironment
   class BroadcastEnvFactory
-    attr_accessor :klass
-
-    def initialize(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
+    def BroadcastEnvFactory.create(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when "BroadcastEnvChainWithFS"
-        @klass = BroadcastEnvChainWithFS.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return BroadcastEnvChainWithFS.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when "BroadcastEnvTreeWithFS"
-        @klass = BroadcastEnvTreeWithFS.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return BroadcastEnvTreeWithFS.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the environment broadcast step"
       end

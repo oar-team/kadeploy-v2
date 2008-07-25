@@ -2,14 +2,12 @@ require 'lib/debug'
 
 module BootNewEnvironment
   class BootNewEnvFactory
-    attr_accessor :klass
-
-    def initialize(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
+    def BootNewEnvFactory.create(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when "BootNewEnvKexec"
-        @klass = BootNewEnvKexec.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return BootNewEnvKexec.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       when "BootNewEnvClassical"
-        @klass = BootNewEnvClassical.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return BootNewEnvClassical.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the new environment boot step"
       end
