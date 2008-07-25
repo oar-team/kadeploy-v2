@@ -1,6 +1,6 @@
 #!/usr/bin/ruby -w
 
-
+#Kadeploy libs
 require 'lib/debug'
 require 'lib/checkrights'
 require 'lib/nodes'
@@ -9,7 +9,10 @@ require 'lib/managers'
 require 'lib/stepdeployenv'
 require 'lib/stepbroadcastenv'
 require 'lib/stepbootnewenv'
+
+#Ruby libs
 require 'thread'
+require 'drb'
 
 class KadeployWorkflow
   @thread_set_deployment_environment = nil
@@ -21,17 +24,19 @@ class KadeployWorkflow
   @rights = nil
   @nodeset = nil
   @config = nil
+  @client = nil
   @window_manager = nil
   attr_accessor :nodes_ok
   attr_accessor :nodes_ko
 
-  def initialize(config)
+  def initialize(config, client)
     @config = config
+    @client = client
     @output = Debug::OutputControl.new(@config.common.debug_level)
     @rights = CheckRights::CheckRightsFactory.new(@config.common.rights_kind).klass
     @nodes_ok = Nodes::NodeSet.new
     @nodes_ko = Nodes::NodeSet.new
-    @nodeset = @config.common.node_list
+    @nodeset = @config.exec_specific.node_list
     @queue_manager = Managers::QueueManager.new(@config, @nodes_ok, @nodes_ko)
     @window_manager = Managers::WindowManager.new
 
@@ -61,31 +66,33 @@ class KadeployWorkflow
         if kind != "ProcessFinishedNodes" then
           nodes.group_by_cluster.each_pair { |cluster, set|
             macro_step_instance = @config.cluster_specific[cluster].get_macro_step(kind).get_instance
+            instance_name = macro_step_instance[0]
+            instance_max_retries = macro_step_instance[1]
             case kind
             when "SetDeploymentEnv"
-              SetDeploymentEnvironnment::SetDeploymentEnvFactory.new(macro_step_instance[0], 
-                                                                     macro_step_instance[1],
-                                                                     cluster,
-                                                                     set,
-                                                                     @queue_manager,
-                                                                     @window_manager,
-                                                                     @output).klass.run
+              SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
+                                                                        instance_max_retries,
+                                                                        cluster,
+                                                                        set,
+                                                                        @queue_manager,
+                                                                        @window_manager,
+                                                                        @output).run
             when "BroadcastEnv"
-              BroadcastEnvironment::BroadcastEnvFactory.new(macro_step_instance[0], 
-                                                            macro_step_instance[1], 
-                                                            cluster,
-                                                            set,
-                                                            @queue_manager,
-                                                            @window_manager,
-                                                            @output).klass.run
+              BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
+                                                               instance_max_retries, 
+                                                               cluster,
+                                                               set,
+                                                               @queue_manager,
+                                                               @window_manager,
+                                                               @output).run
             when "BootNewEnv"
-              BootNewEnvironment::BootNewEnvFactory.new(macro_step_instance[0], 
-                                                        macro_step_instance[1], 
-                                                        cluster,
-                                                        set,
-                                                        @queue_manager,
-                                                        @window_manager,
-                                                        @output).klass.run
+              BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
+                                                           instance_max_retries, 
+                                                           cluster,
+                                                           set,
+                                                           @queue_manager,
+                                                           @window_manager,
+                                                           @output).run
             else
               raise "Invalid macro step name"
             end
@@ -125,14 +132,45 @@ class KadeployWorkflow
   end
 end
 
+class KadeployServer
+  @config = nil
+  @client = nil
+  
+  def initialize(config)
+    @config = config
+  end
+
+  def get_common_config
+    return @config.common
+  end
+
+  def set_exec_specific_config(exec_specific)
+    @config.exec_specific = exec_specific
+  end
+
+  def launch_workflow(host, port)
+    puts "Let's launch an instance of Kadeploy"
+    DRb.start_service()
+    uri = "druby://#{host}:#{port}"
+    client = DRbObject.new(nil, uri)
+    workflow=KadeployWorkflow.new(@config, client)
+    workflow.run
+  end
+end
+
+
 Signal.trap("INT") do
   puts "SIGINT trapped, let's clean everything ..."
   #todo: clean some stuff
   exit 1
 end
 
-config = ConfigInformation::Config.new
-if (config.load_cmdline_options == true)
-  workflow=KadeployWorkflow.new(config)
-  workflow.run
+config = ConfigInformation::Config.new("kadeploy")
+if (config.check_config("kadeploy") == true)
+  kadeployServer = KadeployServer.new(config)
+  uri = "druby://#{config.common.kadeploy_server}:#{config.common.kadeploy_server_port}"
+  DRb.start_service(uri, kadeployServer)
+  DRb.thread.join
+else
+  puts "Bad configuration"
 end

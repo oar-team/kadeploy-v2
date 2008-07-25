@@ -1,8 +1,8 @@
 require 'lib/debug'
 require 'lib/nodes'
 require 'lib/parallel_ops'
-require 'lib/pxe_ops'
 require 'lib/cmdctrl_wrapper'
+require 'lib/pxe_ops'
 
 module MicroStepsLibrary
   class MicroSteps
@@ -85,12 +85,12 @@ module MicroStepsLibrary
     def reboot_wrapper(kind)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      cmds = CmdCtrlWrapper::Cmd.new
+      pr = CmdCtrlWrapper::init
       node_set.set.each { |node|
-        cmds.add_cmd(node.cmd.reboot_soft + "&", node) #run detached
+        CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft + "&", node) #run detached
       }
-      cmds.run
-      classify_nodes(cmds.get_results)
+      CmdCtrlWrapper::run(pr)
+      classify_nodes(CmdCtrlWrapper::get_results(pr))
     end
 
     def extract_files_from_archive(archive, file_array, dest_dir)
@@ -107,24 +107,26 @@ module MicroStepsLibrary
     public
 
     def switch_pxe(kind)
-      ops = PXEOperations::PXEOps.new
       case kind
       when "prod_to_deploy_env"
-        ops.set_pxe_for_linux(@nodes_ok.make_array_of_ip,
-                              @config.cluster_specific[@cluster].deploy_kernel,
-                              @config.cluster_specific[@cluster].deploy_initrd,
-                              @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0],
-                              @config.common.tftp_repository,
-                              @config.common.tftp_images_path,
-                              @config.common.tftp_cfg)
+        res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
+                                               @config.cluster_specific[@cluster].deploy_kernel,
+                                               @config.cluster_specific[@cluster].deploy_initrd,
+                                               @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0],
+                                               @config.common.tftp_repository,
+                                               @config.common.tftp_images_path,
+                                               @config.common.tftp_cfg)
       when "deploy_to_deployed_env"
-        ops.set_pxe_for_linux(@nodes_ok.make_array_of_ip,
-                              @config.common.environment.kernel,
-                              @config.common.environment.initrd,
-                              @config.common.environment.part,
-                              @config.common.tftp_repository,
-                              @config.common.tftp_images_path,
-                              @config.common.tftp_cfg)
+        res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
+                                               @config.exec_specific.environment.kernel,
+                                               @config.exec_specific.environment.initrd,
+                                               @config.exec_specific.environment.part,
+                                               @config.common.tftp_repository,
+                                               @config.common.tftp_images_path,
+                                               @config.common.tftp_cfg)
+      end
+      if (res != 0) then
+        raise "The PXE configuration has not been performed correctly: #{kind}"
       end
     end
     
@@ -135,10 +137,10 @@ module MicroStepsLibrary
       when "hard"
       when "veryhard"
       when "kexec"
-        kernel = "/mnt/dest/boot/#{@config.common.environment.kernel}"
-        initrd = "/mnt/dest/boot/#{@config.common.environment.initrd}"
-        kernel_params = "/mnt/dest/boot/#{@config.common.environment.kernel_params}"
-        root_part = @config.common.environment.part
+        kernel = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel}"
+        initrd = "/mnt/dest/boot/#{@config.exec_specific.environment.initrd}"
+        kernel_params = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel_params}"
+        root_part = @config.exec_specific.environment.part
         #Warning, this require the /usr/local/bin/kexec_detach script
         parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})")
       end
@@ -150,7 +152,7 @@ module MicroStepsLibrary
       when "deployed_env_booted"
         #we look if the / mounted partition is the default production partition
         parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
-                                                       @config.common.environment.part)        
+                                                       @config.exec_specific.environment.part)        
       when "prod_env_booted"
         #we look if the / mounted partition is the default production partition
         parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
@@ -178,13 +180,13 @@ module MicroStepsLibrary
     end
 
     def send_tarball(kind)
-      parallel_send_file_command_wrapper(@config.common.environment.tarball_file,
+      parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
                                          @config.common.tarball_dest_dir,
                                          kind)
     end
 
     def uncompress_tarball
-      tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.common.environment.tarball_file)
+      tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.exec_specific.environment.tarball_file)
       parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")
     end
 
@@ -193,9 +195,9 @@ module MicroStepsLibrary
     end
     
     def copy_kernel_initrd_to_pxe
-      archive = @config.common.environment.tarball_file
-      kernel = "boot/" + @config.common.environment.kernel
-      initrd= "boot/" + @config.common.environment.initrd
+      archive = @config.exec_specific.environment.tarball_file
+      kernel = "boot/" + @config.exec_specific.environment.kernel
+      initrd= "boot/" + @config.exec_specific.environment.initrd
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
       extract_files_from_archive(archive, [kernel, initrd], dest_dir)
     end
