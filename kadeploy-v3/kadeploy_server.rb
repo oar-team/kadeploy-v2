@@ -32,8 +32,8 @@ class KadeployWorkflow
   def initialize(config, client)
     @config = config
     @client = client
-    @output = Debug::OutputControl.new(@config.common.debug_level)
-    @rights = CheckRights::CheckRightsFactory.new(@config.common.rights_kind).klass
+    @output = Debug::OutputControl.new(@config.common.debug_level, client)
+    @rights = CheckRights::CheckRightsFactory.create(@config.common.rights_kind)
     @nodes_ok = Nodes::NodeSet.new
     @nodes_ko = Nodes::NodeSet.new
     @nodeset = @config.exec_specific.node_list
@@ -104,12 +104,12 @@ class KadeployWorkflow
           end
           if @queue_manager.one_last_active_thread? then
             @nodes_ok.group_by_cluster.each_pair { |cluster, set|
-              puts "Nodes correctly deployed on cluster #{cluster}"
-              puts set.to_s
+              @output.debugl(0, "Nodes correctly deployed on cluster #{cluster}")
+              @output.debugl(0, set.to_s)
             }
             @nodes_ko.group_by_cluster.each_pair { |cluster, set|
-              puts "Nodes not Correctly deployed on cluster #{cluster}"
-              puts set.to_s(true)
+              @output.debugl(0, "Nodes not Correctly deployed on cluster #{cluster}")
+              @output.debugl(0, set.to_s(true))
             }
             @queue_manager.send_exit_signal
             @thread_set_deployment_environment.join
@@ -121,13 +121,19 @@ class KadeployWorkflow
     end
   end
 
+  def grab_user_files
+    @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
+    @client.get_file(@config.exec_specific.environment.tarball_file)
+  end
+
   def run
-    puts "Launching Kadeploy ..."
+    @output.debugl(0, "Launching Kadeploy ...")
     if (@rights.granted? == true)
+      grab_user_files
       @queue_manager.next_macro_step(nil, @nodeset)
       @thread_process_finished_nodes.join
     else
-      puts "You do not have the deployment rights on all the nodes"
+      @output.debugl(0, "You do not have the deployment rights on all the nodes")
     end
   end
 end
@@ -135,9 +141,41 @@ end
 class KadeployServer
   @config = nil
   @client = nil
-  
+  attr_reader :mutex
+  attr_reader :tcp_buffer_size
+  attr_reader :dest_host
+  attr_reader :dest_port
+  @file_name = nil #any access to file_name must be protected with mutex
+
   def initialize(config)
     @config = config
+    @dest_host = @config.common.kadeploy_server
+    @dest_port = @config.common.kadeploy_file_server_port
+    @tcp_buffer_size = @config.common.kadeploy_tcp_buffer_size
+    puts "Launching the Kadeploy file server"
+    @mutex = Mutex.new
+    sock = TCPServer.open(@dest_host, @dest_port)
+    if (sock.kind_of? TCPSocket) then
+      Thread.new {
+        while (session = sock.accept)
+          file = File.new(@config.common.kadeploy_cache_dir + "/" + @file_name, "w")
+          while (buf = session.recvfrom(@tcp_buffer_size)[0])
+            file.write(buf)
+          end
+        end
+      }
+    else
+      raise "Can not open a socket on port #{@config.file_port}"
+    end
+  end
+
+  def pre_send_file(file_name)
+    @mutex.lock
+    @file_name = file_name
+  end
+
+  def post_send_file
+    @mutex.unlock
   end
 
   def get_common_config
@@ -167,8 +205,9 @@ end
 
 config = ConfigInformation::Config.new("kadeploy")
 if (config.check_config("kadeploy") == true)
-  kadeployServer = KadeployServer.new(config)
+  puts "Launching the Kadeploy RPC server"
   uri = "druby://#{config.common.kadeploy_server}:#{config.common.kadeploy_server_port}"
+  kadeployServer = KadeployServer.new(config)
   DRb.start_service(uri, kadeployServer)
   DRb.thread.join
 else

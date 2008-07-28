@@ -41,7 +41,7 @@ module SetDeploymentEnvironnment
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster, output)
     end
 
     def get_macro_step_name
@@ -57,11 +57,11 @@ module SetDeploymentEnvironnment
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           @nodes_ko.duplicate_and_free(@nodes_ok)
           @output.debugl(3, "Performing a SetDeploymentEnvUntrusted step on the nodes: #{@nodes_ok.to_s}")
-          
+          result = true
           #Here are the micro steps
-          @step.switch_pxe("prod_to_deploy_env")
-          @step.reboot("soft")
-          @step.check_nodes("deploy_env_booted")
+          result = result && @step.switch_pxe("prod_to_deploy_env")
+          result = result && @step.reboot("soft")
+          result = result && @step.check_nodes("deploy_env_booted")
           #End of micro steps
 
           @remaining_retries -= 1
@@ -91,12 +91,12 @@ module SetDeploymentEnvironnment
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           @nodes_ko.duplicate_and_free(@nodes_ok)
           @output.debugl(3, "Performing a SetDeploymentEnvProd step on the nodes: #{@nodes_ok.to_s}")
-
+          result = true
           #Here are the micro steps
-          @step.check_nodes("prod_env_booted")
-          @step.fdisk
-          @step.format_deploy_part
-          @step.mount_deploy_part
+          result = result && @step.check_nodes("prod_env_booted")
+          result = result && @step.fdisk
+          result = result && @step.format_deploy_part
+          result = result && @step.mount_deploy_part
           #End of micro steps
 
           @remaining_retries -= 1

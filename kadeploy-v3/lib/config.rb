@@ -149,6 +149,12 @@ module ConfigInformation
               @common.kadeploy_server = content[2]
             when "kadeploy_server_port"
               @common.kadeploy_server_port = content[2].to_i
+            when "kadeploy_file_server_port"
+              @common.kadeploy_file_server_port = content[2].to_i
+            when "kadeploy_tcp_buffer_size"
+              @common.kadeploy_tcp_buffer_size = content[2].to_i
+            when "kadeploy_cache_dir"
+              @common.kadeploy_cache_dir = content[2]
             end
           end
         end
@@ -392,6 +398,14 @@ module ConfigInformation
         puts "The #{@common.tftp_repository} directory does not exist"
         return false
       end
+      if not File.exist?(@common.kadeploy_cache_dir) then
+        puts "The #{@common.kadeploy_cache_dir} directory does not exist, let's create it"
+        res = Dir.mkdir(@common.kadeploy_cache_dir, 0700) rescue false
+        if res.kind_of? FalseClass then
+          puts "The directory cannot be created"
+          return false
+        end
+      end
       #tftp image directory
       if not File.exist?(@common.tftp_repository + "/" + @common.tftp_images_path) then
         puts "The #{@common.tftp_repository}/#{@common.tftp_images_path} directory does not exist"
@@ -497,6 +511,9 @@ module ConfigInformation
     attr_accessor :tarball_dest_dir
     attr_accessor :kadeploy_server
     attr_accessor :kadeploy_server_port
+    attr_accessor :kadeploy_file_server_port
+    attr_accessor :kadeploy_tcp_buffer_size
+    attr_accessor :kadeploy_cache_dir
 
     def initialize
       @nodes_desc = Nodes::NodeSet.new

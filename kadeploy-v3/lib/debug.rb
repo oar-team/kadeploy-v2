@@ -1,14 +1,17 @@
 module Debug
   class OutputControl
     @debug_level = 0
-    
-    def initialize(debug_level)
+    @client = nil
+
+    def initialize(debug_level, client)
       @debug_level=debug_level
+      @client = client
     end
 
-    def debugl(l,msg)
+    def debugl(l, msg)
       if (l <= @debug_level)
         puts msg
+        @client.print(msg)
       end
     end
     

@@ -11,13 +11,15 @@ module MicroStepsLibrary
     @window_manager = nil
     @config = nil
     @cluster = nil
+    @output = nil
 
-    def initialize(nodes_ok, nodes_ko, window_manager, config, cluster)
+    def initialize(nodes_ok, nodes_ko, window_manager, config, cluster, output)
       @nodes_ok = nodes_ok
       @nodes_ko = nodes_ko
       @window_manager = window_manager
       @config = config
       @cluster = cluster
+      @output = output
     end
 
     private
@@ -97,7 +99,7 @@ module MicroStepsLibrary
       file_array.each { |f|
         cmd = "tar -C #{dest_dir} --strip 1 -xzf #{archive} #{f}"
         if not system(cmd) then
-          puts "The file #{f} cannot be extracted"
+          @output.debugl(0, "The file #{f} cannot be extracted")
           return false
         end
       }
@@ -125,9 +127,10 @@ module MicroStepsLibrary
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
       end
-      if (res != 0) then
-        raise "The PXE configuration has not been performed correctly: #{kind}"
+      if (res == false) then
+        @output.debugl(0, "The PXE configuration has not been performed correctly: #{kind}")
       end
+      return res
     end
     
     def reboot(kind)
@@ -144,6 +147,7 @@ module MicroStepsLibrary
         #Warning, this require the /usr/local/bin/kexec_detach script
         parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})")
       end
+      return true
     end
     
     def check_nodes(kind)
@@ -159,52 +163,60 @@ module MicroStepsLibrary
                                                        @config.cluster_specific[@cluster].block_device + \
                                                        @config.cluster_specific[@cluster].prod_part)
       end
+      return true
     end
 
     def load_drivers
       parallel_exec_command_wrapper("date")
+      return true
     end
 
     def fdisk
       parallel_exec_command_wrapper("date")
+      return true
     end
 
     def format_deploy_part
       deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
       parallel_exec_command_wrapper("mkfs.ext3 #{deploy_part}")
+      return true
     end
     
     def mount_deploy_part
       deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
       parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; umount /mnt/dest 2>/dev/null ; mount #{deploy_part} /mnt/dest)")
+      return true
     end
 
     def send_tarball(kind)
       parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
                                          @config.common.tarball_dest_dir,
                                          kind)
+      return true
     end
 
     def uncompress_tarball
       tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.exec_specific.environment.tarball_file)
       parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")
+      return true
     end
 
     def wait_reboot
       parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot)
+      return true
     end
     
     def copy_kernel_initrd_to_pxe
       archive = @config.exec_specific.environment.tarball_file
       kernel = "boot/" + @config.exec_specific.environment.kernel
-      initrd= "boot/" + @config.exec_specific.environment.initrd
+      initrd = "boot/" + @config.exec_specific.environment.initrd
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      extract_files_from_archive(archive, [kernel, initrd], dest_dir)
+      return extract_files_from_archive(archive, [kernel, initrd], dest_dir)
     end
 
     def produce_bad_nodes
       @nodes_ok.duplicate_and_free(@nodes_ko)
+      return true
     end
-
   end
 end
