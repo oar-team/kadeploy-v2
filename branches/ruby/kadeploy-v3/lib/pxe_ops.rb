@@ -32,7 +32,7 @@ module PXEOperations
   # * tftp_repository: absolute path to the TFTP repository
   # * tftp_cfg: relative path to the TFTP configuration repository
   # Output
-  # * returns 0 in case of success, 1 otherwise
+  # * returns true in case of success, false otherwise
   # Fixme
   # * should do something if the PXE configuration cannot be written
   def PXEOperations::write_pxe(ips, msg, tftp_repository, tftp_cfg)
@@ -46,7 +46,7 @@ module PXEOperations
       f.write(msg)
       f.close
     }
-    return 0
+    return true
   end
   
   public

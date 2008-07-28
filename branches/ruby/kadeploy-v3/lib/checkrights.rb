@@ -1,14 +1,14 @@
-module CheckRights
+ module CheckRights
 
   class CheckRightsFactory
     attr_accessor :klass
 
-    def initialize(kind)
+    def CheckRightsFactory.create(kind)
       case kind
       when /dummy/
-        @klass = CheckDummy.new
+        return CheckDummy.new
       when /db/
-        @klass = CheckInDB.new
+        return CheckInDB.new
       else
         raise "Invalid kind of rigths check"
       end

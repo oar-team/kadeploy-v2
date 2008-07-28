@@ -34,7 +34,7 @@ module BootNewEnvironment
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster, output)
     end
 
     def get_macro_step_name
@@ -50,10 +50,10 @@ module BootNewEnvironment
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           @nodes_ko.duplicate_and_free(@nodes_ok)
           @output.debugl(3, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
-
+          result = true
           #Here are the micro steps 
-          @step.reboot("kexec")
-          @step.wait_reboot
+          result = result && @step.reboot("kexec")
+          result = result && @step.wait_reboot
           #End of micro steps
 
           @remaining_retries -= 1
@@ -83,12 +83,12 @@ module BootNewEnvironment
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           @nodes_ko.duplicate_and_free(@nodes_ok)
           @output.debugl(3, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
-
+          result = true
           #Here are the micro steps 
-          @step.copy_kernel_initrd_to_pxe
-          @step.switch_pxe("deploy_to_deployed_env")
-          @step.reboot("soft")
-          @step.wait_reboot
+          result = result && @step.copy_kernel_initrd_to_pxe
+          result = result && @step.switch_pxe("deploy_to_deployed_env")
+          result = result && @step.reboot("soft")
+          result = result && @step.wait_reboot
           #End of micro steps
 
           @remaining_retries -= 1
