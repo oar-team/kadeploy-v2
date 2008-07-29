@@ -27,6 +27,7 @@ my $CISCO_IP=".1.3.6.1.2.1.3.1.1.3"; # RFC1213-MIB::atNetAddress
 my $CISCO_MASK=".1.3.6.1.2.1.4.20.1.3"; #IP-MIB::ipAdEntNetMask IpAddress
 my $CISCO_LIST_PORT=".1.3.6.1.2.1.31.1.2.1.3";
 
+
 sub new {
     my ($pkg)= @_;
     my $self = bless KaVLAN::Switch->new("Cisco3750",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
