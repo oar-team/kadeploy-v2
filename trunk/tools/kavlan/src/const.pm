@@ -60,16 +60,16 @@ our $FUNC_NAME="main";
 ##########################################################################################
 sub verbose(){
 
-	my @args=@_;
+    my @args=@_;
 
-	if($const::VERBOSE!=0){
-		print $0."->".$const::FUNC_NAME."::";
-		foreach my $item (@args){
-			print $item;
-		}
+    if($const::VERBOSE!=0){
+        print $0."->".$const::FUNC_NAME."::";
+        foreach my $item (@args){
+            print $item;
+    }
 
-		print "\n";
-	}
+        print "\n";
+    }
 }
 
 1;
