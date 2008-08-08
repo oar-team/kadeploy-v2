@@ -49,7 +49,7 @@ my $SUMMIT_OFFSET_UNTAG_TAG=1;
 ##########################################################################################
 sub new(){
     my ($pkg)= @_;
-    my $self = bless KaVLAN::Switch->new("Cisco3750",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
+    my $self = bless KaVLAN::Switch->new("summit",$SUMMIT_VLAN_NAME, $SUMMIT_IP, $SUMMIT_MASK, $SUMMIT_TAG),$pkg;
     return $self;
 }
 

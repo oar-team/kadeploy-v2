@@ -190,10 +190,10 @@ sub getIPConfiguration(){
 
 
 ##########################################################################################
-# Get the tag of a vlan 
+# Get the tag of a vlan
 # arg : Integer -> the number of the vlan on the routeur session 
 #       Session -> a session on which we can get the tag information
-# ret : String -> the tag 
+# ret : String -> the tag
 # rmq :
 ##########################################################################################
 sub getTagConfiguration(){
@@ -403,7 +403,7 @@ sub getPortInformation(){
 #Add informations about this vlan if we find the port in the vlan
             if(defined  @{$res{"TAGGED"}}){
                 foreach my $j (0..$#{ @{ $res{"TAGGED"} } }){
-                    if( ${@{$res{"TAGGED"}}}[$j] == $port){
+                    if( ${@{$res{"TAGGED"}}}[$j] eq $port){
                         $ret[$indiceTagPort] = $val;
                         $indiceTagPort++;
                     }
@@ -411,7 +411,7 @@ sub getPortInformation(){
             }
             if(defined  @{$res{"UNTAGGED"}}){
                 foreach my $j (0..$#{ @{ $res{"UNTAGGED"} } }){
-                    if(${@{$res{"UNTAGGED"}}}[$j] == $port){
+                    if(${@{$res{"UNTAGGED"}}}[$j] eq $port){
                         $ret[0] = $val;
                     }
                 }
@@ -436,7 +436,8 @@ sub getPortInformation(){
 # rmq :
 ##########################################################################################
 sub setTag(){
-    die "not implemented \n";
+    my $class = shift;
+    die "setTag not implemented for class $class\n";
 }
 
 ##########################################################################################
@@ -448,7 +449,8 @@ sub setTag(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-    die "not implemented \n";
+    my $class = shift;
+    die "setUntag not implemented for class $class\n";
 }
 
 ##########################################################################################
@@ -460,7 +462,8 @@ sub setUntag(){
 # rmq :
 ##########################################################################################
 sub setRemove(){
-    die "not implemented \n";
+    my $class = shift;
+    die "setRemove not implemented for class $class\n";
 }
 
 ##########################################################################################
@@ -472,7 +475,8 @@ sub setRemove(){
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-    die "not implemented \n";
+    my $class = shift;
+    die "getPortsAffectedToVlan not implemented for class $class\n";
 }
 
 1;
