@@ -297,7 +297,7 @@ foreach (keys %options){
             if($options{"u"} =~ /\D+/){
                 &const::verbose("The port given is a computer name");
                 ($options{"u"},$switchName) = &getPortNumber($options{"u"},$site->{"Name"});
-                if($options{"u"} == -1){die "ERROR : Computer not present in the list";}
+                if($options{"u"} eq -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
