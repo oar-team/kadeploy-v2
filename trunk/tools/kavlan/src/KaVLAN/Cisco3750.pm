@@ -33,8 +33,10 @@ my $CISCO_IP        = ".1.3.6.1.2.1.3.1.1.3"; # RFC1213-MIB::atNetAddress
 my $CISCO_MASK      = ".1.3.6.1.2.1.4.20.1.3"; #IP-MIB::ipAdEntNetMask IpAddress
 my $CISCO_LIST_PORT = ".1.3.6.1.2.1.31.1.2.1.3";
 my $CISCO_LIST_UNTAG= ".1.3.6.1.4.1.9.5.1.9.3.1.3";
+my $CISCO_PORT_IFINDEX = ".1.3.6.1.2.1.47.1.1.1.1.14";
+
 # vlans list :       .1.3.6.1.4.1.9.9.46.1.3.1.1.2 (vtpVlanState)
-# .1.3.6.1.4.1.9.9.68.1.2.2.1.2 #vmvlan: untag vlan for every port
+my $CISCO_VMVLAN = ".1.3.6.1.4.1.9.9.68.1.2.2.1.2"; # access vlan for every port (if defined)
 # .1.3.6.1.4.1.9.9.68.1.2.2.1.4 #vmvlans
 # .1.3.6.1.4.1.9.9.46           #ciscoVtpMIB
 # .1.3.6.1.4.1.9.9.46.1.6.1.1.5 # native vlan
@@ -92,4 +94,64 @@ sub getPortsAffectedToVlan(){
     return \%res;
 }
 
+##########################################################################################
+# Set a port as untag 
+# arg : String -> the vlan name
+#       Integer -> the port
+#    Session -> a switch session
+# ret : 
+# rmq :
+##########################################################################################
+sub setUntag(){
+
+    my $OLD_FUNC_NAME=$const::FUNC_NAME;
+    $const::FUNC_NAME="setUntag";
+    &const::verbose();
+
+    # Check arguments
+    my $self = shift;
+    my ($vlanName,$port,$switchSession)=@_;
+    if(not defined $vlanName or not defined $port or not defined $switchSession){
+        die "ERROR : Not enough argument for $const::FUNC_NAME";
+    }
+
+    # Retrieve the vlan number of $vlanName
+    &const::verbose("Verifying that the vlan is available");
+    my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
+    my @vlanNumber = $self->getVlanNumber($realVlanName,$switchSession);
+    if ($#vlanNumber==-1){
+        die "ERROR : There is no vlan available";
+    }
+
+    # Change the port information
+    &const::verbose("Put the port ",$port," in untag mode to the vlan ",$vlanNumber[0]);
+    my $ifIndex = &getPortIfIndex($port,$switchSession);
+
+    my $var = new SNMP::Varbind([ $CISCO_VMVLAN, $ifIndex, $vlanNumber[0],"INTEGER"]);
+    $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
+    $const::FUNC_NAME=$OLD_FUNC_NAME;
+
+}
+
+sub getPortIfIndex {
+    my $OLD_FUNC_NAME=$const::FUNC_NAME;
+    $const::FUNC_NAME="getPortIfIndex";
+    &const::verbose();
+    my ($port,$switchSession) = @_;
+    # On 3750, 2/0/23 port number is 2028
+    # FIXME: why +5 ?
+    if ($port =~ m@(\d+/\d+)/(\d+)@) {
+        my ($sw,$p) = ($1,$2);
+        $sw =~ s@/@@;
+        $p +=5;
+        my $portnumber="$sw$p";
+        my $var = new SNMP::Varbind([$CISCO_PORT_IFINDEX,$portnumber]);
+        my $ifIndex = $switchSession->get($var);
+        &const::verbose("ifindex of port $port ($portnumber) is $ifIndex");
+        $const::FUNC_NAME=$OLD_FUNC_NAME;
+        return $ifIndex;
+    } else {
+        die "bad port format: $port";
+    }
+}
 1;
