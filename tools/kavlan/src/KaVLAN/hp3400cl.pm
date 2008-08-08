@@ -29,7 +29,7 @@ use const;
 
 my $HP3400CL_VLAN_NAME_FOR_MODIF=".1.3.6.1.2.1.17.7.1.4.3.1.1";
 my $HP3400CL_VLAN_NAME=".1.3.6.1.2.1.31.1.1.1.1";
-my $HP3400CL_TAG=".1.3.6.1.2.1.16.22.1.1.1.1.4.1.3.6.1.2.1.16.22.1.4.1";
+my $HP3400CL_TAG=".1.3.6.1.2.1.16.22.1.1.1.1.4.1.3.6.1.2.1.16.22.1.4.1"; # VLAN_EXTERNAL_TO_INTERNAL_IDS
 my $HP3400CL_IP=".1.3.6.1.4.1.11.2.14.11.1.4.8.1.1.1";
 my $HP3400CL_MASK=".1.3.6.1.4.1.11.2.14.11.1.4.8.1.1.2";
 my $HP3400CL_LIST_TAG=".1.3.6.1.2.1.17.7.1.4.3.1.2";
@@ -47,7 +47,7 @@ my $HP3400CL_REMOVE_VALUE="0";
 ##########################################################################################
 sub new(){
     my ($pkg)= @_;
-    my $self = bless KaVLAN::Switch->new("Cisco3750",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
+    my $self = bless KaVLAN::Switch->new("hp3400cl",$HP3400CL_VLAN_NAME, $HP3400CL_IP, $HP3400CL_MASK, $HP3400CL_TAG),$pkg;
     return $self;
 }
 
@@ -354,7 +354,7 @@ sub setRemove(){
     my $untag = new SNMP::Varbind([$HP3400CL_LIST_UNTAG,$vlanNumber[0]]);
 
     $switchSession->get($tag);
-    $switchSession->get($untag);    
+    $switchSession->get($untag);
 
     my $depTag = $tag->val;
     my $depUntag = $untag->val;

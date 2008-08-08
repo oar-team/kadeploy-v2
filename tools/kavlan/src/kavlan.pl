@@ -56,6 +56,11 @@ GetOptions(\%options,
         "v|verbose");
 
 
+if(defined $options{"h"}){
+    &usage();
+    exit 0;
+}
+
 #------------------------------
 # PARSE THE CONFIGURATION FILE
 #------------------------------
@@ -97,7 +102,7 @@ my $indiceSwitch;
 #Verifying if the -s option is activated to avoid loading routeur configuration
 if(not defined $options{"s"}){
     if($routeur->{"Type"} eq "summit"){$routeurConfig = KaVLAN::summit->new();}
-    elsif($routeur->{"Type"} eq "hp3400cl"){$routeurConfig = hp3400cl->new();}
+    elsif($routeur->{"Type"} eq "hp3400cl"){$routeurConfig =  KaVLAN::hp3400cl->new();}
     elsif($routeur->{"Type"} eq "Cisco3750"){$routeurConfig = KaVLAN::Cisco3750->new();}
     elsif($routeur->{"Type"} eq "fastiron"){$routeurConfig = KaVLAN::fastiron->new();}
     else{die "ERROR : The routeur type doesn't exist";}
@@ -109,7 +114,7 @@ for($i = 0 ; $i <  ($#{$switch}+1) ; $i++){
         $switchConfig[$i] = KaVLAN::summit->new();
     }
     elsif($switch->[$i]{"Type"} eq "hp3400cl"){
-        $switchConfig[$i] = hp3400cl->new();
+        $switchConfig[$i] =  KaVLAN::hp3400cl->new();
     }
     elsif($switch->[$i]{"Type"} eq "Cisco3750"){
         $switchConfig[$i] = KaVLAN::Cisco3750->new();
@@ -248,10 +253,10 @@ foreach (keys %options){
     elsif($_ eq "p"){
         if(defined $options{"p"}&& $#ARGV==-1){
             my $switchName;
-            if($options{"p"} =~ /\D+/){
+            if($options{"p"} !~ /^\d+$/ and $options{"p"} !~ /\d+\/0\/\d+/ ){
                 &const::verbose("The port given is a computer name");
                 ($options{"p"},$switchName) = &getPortNumber($options{"p"},$site->{"Name"});
-                if($options{"p"} == -1){die "ERROR : Computer not present in the list";}
+                if($options{"p"} eq -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
@@ -479,17 +484,15 @@ sub printPortInformation(){
 #Get information of the port
     my @info=$switchConfig->getPortInformation($port,$switchSession);
 
-    my $i;
-    my $name;    
-
     print "TAGGED :\n";
-    for($i=1;$i<($#info+1);$i++){
-        print $info[$i].",";
+    foreach my $i (1..$#info){
+        print $info[$i];
+        print "," unless $i == $#info;
     }
     print "\n";
     print "UNTAGGED :\n";
     if(defined $info[0]){
-        print $info[0].",";
+        print $info[0];
     }
     print "\n";
 
@@ -525,20 +528,19 @@ sub getPortNumber(){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-
-    if(open(CONF,"<",$name.".conf")){
+    if(open(CONF,"<".$const::PATH_TABLE_CORES."/".$name.".conf")){
         while( (defined ($line = <CONF>)) && ($trouve==0)){
             $line =~ s/\n//;
             ($lineName,$linePort,$lineSwitch) = split(/ /,$line);
             if(defined $lineName and $lineName eq $portName){
                 $trouve = 1;
                 &const::verbose("Port founded in the configuration file");
-            }        
+            }
 
         }
     }
 
-    close(CONF);        
+    close(CONF);
 
     $const::FUNC_NAME=$OLD_FUNC_NAME;
     if($trouve==0){
@@ -767,7 +769,7 @@ VLAN CONFIGURATION
 PORT CONFIGURATION (use \"DEFAULT\" as <vlanName> to use the default vlan) 
 =>Those options can to be used with the -s or the default switch will be choosen
 (The port argument can be a computer name)
- -p|--port <port> Get the the vlan on which the port is affected 
+ -p|--port <port> Get the vlan on which the port is affected 
  -t|--tag <port> <vlanName> Put a machine in a vlan in Tag mode 
  -u|--untag <port> <vlanName> Put a machine in a vlan in Untag mode
  -r|--remove <port> <vlanName> Remove a machine of a vlan
