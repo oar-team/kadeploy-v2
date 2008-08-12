@@ -25,8 +25,9 @@ use const;
 use vlan;
 
 use KaVLAN::summit;
-use hp3400cl;
+use KaVLAN::hp3400cl;
 use KaVLAN::Cisco3750;
+use KaVLAN::Foundry;
 #-----------------------
 # PARSE ARGUMENTS
 #-----------------------
@@ -104,7 +105,7 @@ if(not defined $options{"s"}){
     if($routeur->{"Type"} eq "summit"){$routeurConfig = KaVLAN::summit->new();}
     elsif($routeur->{"Type"} eq "hp3400cl"){$routeurConfig =  KaVLAN::hp3400cl->new();}
     elsif($routeur->{"Type"} eq "Cisco3750"){$routeurConfig = KaVLAN::Cisco3750->new();}
-    elsif($routeur->{"Type"} eq "fastiron"){$routeurConfig = KaVLAN::fastiron->new();}
+    elsif($routeur->{"Type"} eq "Foundry"){$routeurConfig = KaVLAN::Foundry->new();}
     else{die "ERROR : The routeur type doesn't exist";}
 }
 
@@ -118,6 +119,9 @@ for($i = 0 ; $i <  ($#{$switch}+1) ; $i++){
     }
     elsif($switch->[$i]{"Type"} eq "Cisco3750"){
         $switchConfig[$i] = KaVLAN::Cisco3750->new();
+    }
+    elsif($switch->[$i]{"Type"} eq "Foundry"){
+        $switchConfig[$i] = KaVLAN::Foundry->new();
     }
     else{
         die "ERROR : The switch type doesn't exist";
@@ -253,7 +257,7 @@ foreach (keys %options){
     elsif($_ eq "p"){
         if(defined $options{"p"}&& $#ARGV==-1){
             my $switchName;
-            if($options{"p"} !~ /^\d+$/ and $options{"p"} !~ /\d+\/0\/\d+/ ){
+            if( &is_computer_name($options{"p"})){
                 &const::verbose("The port given is a computer name");
                 ($options{"p"},$switchName) = &getPortNumber($options{"p"},$site->{"Name"});
                 if($options{"p"} eq -1){die "ERROR : Computer not present in the list";}
@@ -272,7 +276,7 @@ foreach (keys %options){
     elsif($_ eq "t"){
         if($#ARGV+1 == 1 && defined $options{"t"}){
             my $switchName;
-            if($options{"t"} =~ /\D+/){
+            if( &is_computer_name($options{"t"})){
                 &const::verbose("The port given is a computer name");
                 ($options{"t"},$switchName) = &getPortNumber($options{"t"},$site->{"Name"});
                 if($options{"t"} == -1){die "ERROR : Computer not present in the list";}
@@ -294,7 +298,7 @@ foreach (keys %options){
     elsif($_ eq "u"){
         if($#ARGV+1 == 1 && defined $options{"u"}){
             my $switchName;
-            if($options{"u"} =~ /\D+/){
+            if( &is_computer_name($options{"u"})){
                 &const::verbose("The port given is a computer name");
                 ($options{"u"},$switchName) = &getPortNumber($options{"u"},$site->{"Name"});
                 if($options{"u"} eq -1){die "ERROR : Computer not present in the list";}
@@ -316,7 +320,7 @@ foreach (keys %options){
     elsif($_ eq "r"){
         if($#ARGV+1 == 1 && defined $options{"r"}){
             my $switchName;
-            if($options{"r"} =~ /\D+/){
+            if( &is_computer_name($options{"r"})){
                 &const::verbose("The port given is a computer name");
                 ($options{"r"},$switchName) = &getPortNumber($options{"r"},$site->{"Name"});
                 if($options{"r"} == -1){die "ERROR : Computer not present in the list";}
@@ -338,7 +342,7 @@ foreach (keys %options){
     elsif($_ eq "z"){
         if(defined $options{"z"}&& $#ARGV==-1){
             my $switchName;
-            if($options{"z"} =~ /\D+/){
+            if( &is_computer_name($options{"z"})){
                 &const::verbose("The port given is a computer name");
                 ($options{"z"},$switchName) = &getPortNumber($options{"z"},$site->{"Name"});
                 if($options{"z"} == -1){die "ERROR : Computer not present in the list";}
@@ -366,6 +370,11 @@ foreach (keys %options){
         &usage();
     }
 
+}
+
+sub is_computer_name {
+    my $name = shift;
+    return ( $name  !~ /^\d+$/  and $name !~ /^\d+\/0\/\d+$/ and  $name !~ /^\d+\/\d+$/);
 }
 
 ##########################################################################################
@@ -425,35 +434,21 @@ sub printPortsAffectedToVlan(){
     }
 
     my $ret = $switchConfig->getPortsAffectedToVlan($vlanName,$switchSession);
-    my %res = %{$ret};
-
-    my $name;
-    my $i;
-#Print the information
-    print "TAGGED\n";
-    if(defined  @{$res{"TAGGED"}}){
-        for($i=0;$i<$#{ @{ $res{"TAGGED"} } }+1;$i++){
-            $name = &getPortName(${@{$res{"TAGGED"}}}[$i],$switchName,$site->{"Name"});
-            if($name ne ""){print $name.",";}
-            else{
-                print ${@{$res{"TAGGED"}}}[$i];
-                print ",";
+    #Print the information
+    foreach my $type ("TAGGED", "UNTAGGED") {
+        print "$type\n";
+        my $first=1;
+        if(defined  @{$ret->{$type}}){
+            foreach my $port (@{ $ret->{$type} }){
+                print "," unless $first;
+                $first = 0;
+                my $name = &getPortName($port,$switchName,$site->{"Name"});
+                $name = $port unless $name;
+                print $name;
             }
         }
+        print "\n";
     }
-    print "\n";
-    print "UNTAGGED\n";
-    if(defined  @{$res{"UNTAGGED"}}){
-        for($i=0;$i<$#{ @{ $res{"UNTAGGED"} } }+1;$i++){
-            $name = &getPortName(${@{$res{"UNTAGGED"}}}[$i],$switchName,$site->{"Name"});
-            if($name ne ""){print $name.",";}
-            else{
-                print ${@{$res{"UNTAGGED"}}}[$i];
-                print ",";
-            }
-        }
-    }
-    print "\n";
     $const::FUNC_NAME=$OLD_FUNC_NAME;
 
 }
@@ -583,7 +578,7 @@ sub getPortName(){
         while( (defined ($line = <CONF>)) && ($trouve==0)){
             $line =~ s/\n//;
             ($lineName,$linePort,$lineSwitch) = split(/ /,$line);
-            if(defined $lineSwitch and defined $linePort and $lineSwitch eq $switchName and $linePort == $portNumber){
+            if(defined $lineSwitch and defined $linePort and $lineSwitch eq $switchName and $linePort eq $portNumber){
                 $trouve = 1;
                 &const::verbose("Port founded in the configuration file");
             }        

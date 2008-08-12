@@ -117,16 +117,11 @@ sub getPortsAffectedToVlan(){
 
 
 #Get port informations
-    &const::verbose("Getting ports affected");    
+    &const::verbose("Getting ports affected");
 
-#Retreive the vlan number
-        my @vlanNumber;
-        if($vlanName eq $const::DEFAULT_NAME){
-                @vlanNumber= $self->getVlanNumber($const::VLAN_DEFAULT_NAME,$switchSession);
-        }
-        else{
-                @vlanNumber= $self->getVlanNumber($const::MODIFY_NAME_KAVLAN.$vlanName,$switchSession);
-        }
+    #Retreive the vlan number
+    my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
+    my @vlanNumber= $self->getVlanNumber($realVlanName,$switchSession);
     if($#vlanNumber == -1){
         die "ERROR : There is no vlan under this name";
     }
@@ -139,10 +134,10 @@ sub getPortsAffectedToVlan(){
 
         $switchSession->get($untag);
         $switchSession->get($tag);
-    
+
     my $untagInfo = unpack("B*",$untag->val);
     my $tagInfo = unpack("B*",$tag->val);
-    
+
 
 #Look if there are any ports affected in the tag or untag mode
         my $i;

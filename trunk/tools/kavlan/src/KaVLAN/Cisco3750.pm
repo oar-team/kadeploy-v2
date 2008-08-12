@@ -35,8 +35,8 @@ my $CISCO_LIST_PORT = ".1.3.6.1.2.1.31.1.2.1.3";
 my $CISCO_LIST_UNTAG= ".1.3.6.1.4.1.9.5.1.9.3.1.3";
 my $CISCO_PORT_IFINDEX = ".1.3.6.1.2.1.47.1.1.1.1.14";
 
-# vlans list :       .1.3.6.1.4.1.9.9.46.1.3.1.1.2 (vtpVlanState)
 my $CISCO_VMVLAN = ".1.3.6.1.4.1.9.9.68.1.2.2.1.2"; # access vlan for every port (if defined)
+# vlans list :      .1.3.6.1.4.1.9.9.46.1.3.1.1.2 (vtpVlanState)
 # .1.3.6.1.4.1.9.9.68.1.2.2.1.4 #vmvlans
 # .1.3.6.1.4.1.9.9.46           #ciscoVtpMIB
 # .1.3.6.1.4.1.9.9.46.1.6.1.1.5 # native vlan
@@ -45,6 +45,19 @@ sub new {
     my ($pkg)= @_;
     my $self = bless KaVLAN::Switch->new("Cisco3750",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
     return $self;
+}
+
+##########################################################################################
+# Get the IP Configuration of a vlan
+# arg : Integer -> the number of the vlan on the routeur session
+#       Session -> a session on which we can get the IP address
+# ret : String -> the IP configuration 'IP/MASK'
+# rmq :
+##########################################################################################
+sub getIPConfiguration {
+# -> no direct way with foundry; must get the vlan index first
+    warn "getIPConfiguration not implemented";
+    return;
 }
 
 ##########################################################################################

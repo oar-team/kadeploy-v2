@@ -180,7 +180,7 @@ sub getIPConfiguration(){
     my $ip=new SNMP::Varbind([$self->{IP},$vlanNumber,"","NETADDR"]);
     my $mask=new SNMP::Varbind([$self->{MASK},$vlanNumber,"","NETADDR"]);
     $session->get($ip) or die "ERROR : Can't retreive information about ip adress of the vlan";
-    $session->get($mask) or die "ERROR : Can't retreive information about mask format of the vlan";
+    $session->get($mask) or die "ERROR : Can't retreive information about mask format of the vlan ";
 
     $const::FUNC_NAME=$OLD_FUNC_NAME;
 
