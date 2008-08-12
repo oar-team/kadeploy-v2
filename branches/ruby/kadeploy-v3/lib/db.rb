@@ -42,10 +42,13 @@ module Database
     end
     
     def run_query(query)
-      res = @dbh.query(query)
-    rescue Mysql::Error => e
-      puts "Error code: #{e.errno}"
-      puts "Error message: #{e.error}"
+      res = nil
+      begin
+        res = @dbh.query(query)
+      rescue Mysql::Error => e
+        puts "Error code: #{e.errno}"
+        puts "Error message: #{e.error}"
+      end
       return res
     end
   

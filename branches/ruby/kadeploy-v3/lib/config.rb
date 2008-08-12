@@ -435,8 +435,10 @@ module ConfigInformation
       @exec_specific = OpenStruct.new
       @exec_specific.environment = EnvironmentManagement::Environment.new
       @exec_specific.operation = String.new
+      @exec_specific.file = String.new
+      @exec_specific.env_name = String.new
       @exec_specific.user = ENV['USER'] #By default, we us
-      @exec_specific.showallversion = false
+      @exec_specific.show_all_version = false
       load_kaenv_cmdline_options
     end
 
@@ -458,15 +460,21 @@ module ConfigInformation
         opts.separator "General options:"
         opts.on("-a", "--add ENVFILE", "Add the environment to the environment database") { |f|
           @exec_specific.operation = "add"
+          @exec_specific.file = f
         }
-        opts.on("-d", "--delete ENVNAME", "Delete the environment from the environment database") { |f|
-          @exec_specific.operation = "del"
+        opts.on("-d", "--delete ENVNAME", "Delete the environment from the environment database") { |n|
+          @exec_specific.operation = "delete"
+          @exec_specific.env_name = n
         }
         opts.on("-l", "--list", "List the environment recorded in the database for a given user") {
           @exec_specific.operation = "list"
         }
+        opts.on("-p", "--print ENVNAME", "Print the information about a given environment") { |n|
+          @exec_specific.operation = "print"
+          @exec_specific.env_name = n
+        }
         opts.on("-s", "--show-all-versions", "Show all versions of an environment") {
-          @exec_specific.operation = "list"
+          @exec_specific.show_all_version = true
         }
         opts.on("-u", "--user USERNAME", "Specify the user") { |u|
           @exec_specific.user = u
@@ -484,12 +492,20 @@ module ConfigInformation
     # Fixme
     # * should add more tests
     def check_kaenv_config
-      if @exec_specific.operation != "" then
-        return true
+      case @exec_specific.operation 
+      when "add"
+        if not(File.exist?(@exec_specific.file)) then
+          puts "The file #{@exec_specific.file} does not exist"
+          return false
+        end
+      when "delete"
+      when "list"
+      when "print"
       else
         puts "You should choose an operation"
         return false
       end
+      return true
     end
   end
   
