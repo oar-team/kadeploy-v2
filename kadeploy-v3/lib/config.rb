@@ -1,5 +1,6 @@
 require "lib/environment"
 require "lib/nodes"
+
 require "optparse"
 require "ostruct"
 
@@ -54,14 +55,32 @@ module ConfigInformation
     #
     # Arguments
     # * nodes_desc: set of nodes read from the configuration file
+    # * db: database handler
     # Output
     # * exec_specific: returns an open struct that contains the execution specific information
     #                  or nil if the command line is not correct
-    def Config.load_kadeploy_exec_specific(nodes_desc)
+    def Config.load_kadeploy_exec_specific(nodes_desc, db)
       exec_specific = OpenStruct.new
       exec_specific.environment = EnvironmentManagement::Environment.new
       exec_specific.node_list = Nodes::NodeSet.new
+      exec_specific.load_env_kind = String.new
+      exec_specific.load_env_arg = String.new
+      exec_specific.env_version = nil #By default we load the latest version
+      exec_specific.user = ENV['USER'] #By default, we use the current user
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
+        case exec_specific.load_env_kind
+        when "file"
+          exec_specific.environment.load_from_file(exec_specific.load_env_arg)
+        when "db"
+          if (exec_specific.environment.load_from_db(exec_specific.load_env_arg,
+                                                     exec_specific.env_version,
+                                                     exec_specific.user,
+                                                     db) == false) then
+            return nil
+          end
+        else
+          raise "Invalid method for environment loading"
+        end
         return exec_specific
       else
         return nil
@@ -354,7 +373,18 @@ module ConfigInformation
           }
         }
         opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
-          exec_specific.environment.load_from_file(f)
+          exec_specific.load_env_kind = "file"
+          exec_specific.load_env_arg = f
+        }
+        opts.on("-e", "--env-name ENVNAME", "Name of the recorded environment to deploy") { |n|
+          exec_specific.load_env_kind = "db"
+          exec_specific.load_env_arg = n
+        }
+        opts.on("-v", "--env-version NUMVERSION", "Number of version of the environment to deploy") { |n|
+          exec_specific.env_version = n
+        }
+        opts.on("-u", "--user USERNAME", "Specify the user") { |u|
+          exec_specific.user = u
         }
       end
       opts.parse!(ARGV)
@@ -437,7 +467,7 @@ module ConfigInformation
       @exec_specific.operation = String.new
       @exec_specific.file = String.new
       @exec_specific.env_name = String.new
-      @exec_specific.user = ENV['USER'] #By default, we us
+      @exec_specific.user = ENV['USER'] #By default, we use the current user
       @exec_specific.show_all_version = false
       load_kaenv_cmdline_options
     end
