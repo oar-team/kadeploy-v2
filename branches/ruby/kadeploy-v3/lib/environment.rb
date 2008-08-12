@@ -68,8 +68,25 @@ module EnvironmentManagement
       check_md5_digest
     end
 
-    def load_from_database(name, version, user)
-      
+    def load_from_db(name, version, user, dbh)
+      if (version == nil) then
+        query = "SELECT * FROM environment WHERE name=\"#{name}\" \
+                                             AND user=\"#{user}\" \
+                                             AND version=(SELECT MAX(version) FROM environment WHERE user=\"#{user}\")"
+      else
+        query = "SELECT * FROM environment WHERE name=\"#{name}\" \
+                                             AND user=\"#{user}\" \
+                                             AND version=\"#{version}\""
+      end
+      res = dbh.run_query(query)
+      row = res.fetch_hash
+      if (row != nil) #We only take the first result since no other result should be returned
+        load_from_hash(row)
+        return true
+      else
+        puts "The environment #{name} cannot be loaded. Maybe the version number does not exist or it belongs to another user"
+        return false
+      end
     end
 
     def load_from_hash(hash)

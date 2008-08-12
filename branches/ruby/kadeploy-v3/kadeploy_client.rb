@@ -3,6 +3,7 @@
 #Kadeploy libs
 require 'lib/checkrights'
 require 'lib/config'
+require 'lib/db'
 
 #Ruby libs
 require 'thread'
@@ -44,7 +45,17 @@ uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_
 kadeploy_server = DRbObject.new(nil, uri)
 puts "Successfully connected on the Kadeploy server on #{client_config.kadeploy_server}"
 common_config = kadeploy_server.get_common_config
-exec_specific_config = ConfigInformation::Config.load_kadeploy_exec_specific(common_config.nodes_desc)
+
+#Connect to the database
+db = Database::DbFactory.create(common_config.db_kind)
+db.connect(common_config.deploy_db_host,
+           common_config.deploy_db_login,
+           common_config.deploy_db_passwd,
+           common_config.deploy_db_name)
+
+exec_specific_config = ConfigInformation::Config.load_kadeploy_exec_specific(common_config.nodes_desc, db)
+
+
 
 #Launch the listener on the client
 kadeploy_client = KadeployClient.new(kadeploy_server)
@@ -63,3 +74,5 @@ if (exec_specific_config != nil) then
   kadeploy_server.set_exec_specific_config(exec_specific_config)
   kadeploy_server.launch_workflow(client_host, client_port)
 end
+
+db.disconnect
