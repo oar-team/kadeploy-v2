@@ -94,6 +94,10 @@ if (exec_specific_config) then
     if (exec_specific_config != nil) then
       kadeploy_server.set_exec_specific_config(exec_specific_config)
       kadeploy_server.launch_workflow(client_host, client_port)
+      #We execute a script at the end of the deployment if required
+      if (exec_specific_config.script != "") then
+        system(exec_specific_config.script)
+      end
     end
   else
     puts "You do not have the deployment rights on all the nodes"

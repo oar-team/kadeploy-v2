@@ -68,6 +68,8 @@ module ConfigInformation
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
       exec_specific.deploy_part = String.new
+      exec_specific.debug_level = nil
+      exec_specific.script = String.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -391,6 +393,27 @@ module ConfigInformation
         }
         opts.on("-p", "--partition PARTITION", "Specify the partition to use") { |p|
           exec_specific.deploy_part = p
+        }
+        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 3") { |d|
+          debug_level = d.to_i
+          if ((debug_level > 3) || (debug_level < 0)) then
+            puts "Invalid debug level"
+            return false
+          else
+            exec_specific.debug_level = debug_level
+          end
+        }
+        opts.on("-s", "--script FILE", "Execute a script at the end of the deployment") { |f|
+          if not File.exist?(f) then
+            puts "The file #{f} does not exist"
+            return false
+          else
+            if not File.stat(f).executable? then
+              puts "The file #{f} must be executable to be run at the end of the deployment"
+              return false
+            end
+          end
+          exec_specific.script = File.expand_path(f)
         }
       end
       opts.parse!(ARGV)

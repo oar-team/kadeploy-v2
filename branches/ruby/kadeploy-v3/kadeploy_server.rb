@@ -31,7 +31,11 @@ class KadeployWorkflow
   def initialize(config, client)
     @config = config
     @client = client
-    @output = Debug::OutputControl.new(@config.common.debug_level, client)
+    if (@config.exec_specific.debug_level != nil) then
+       @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client)
+    else
+      @output = Debug::OutputControl.new(@config.common.debug_level, client)
+    end
     @nodes_ok = Nodes::NodeSet.new
     @nodes_ko = Nodes::NodeSet.new
     @nodeset = @config.exec_specific.node_list
