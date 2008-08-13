@@ -111,10 +111,15 @@ module MicroStepsLibrary
     def switch_pxe(kind)
       case kind
       when "prod_to_deploy_env"
+        if (@config.exec_specific.deploy_part != "") then
+          deploy_part = @config.exec_specific.deploy_part
+        else
+          deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
+        end
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
                                                @config.cluster_specific[@cluster].deploy_kernel,
                                                @config.cluster_specific[@cluster].deploy_initrd,
-                                               @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0],
+                                               deploy_part,
                                                @config.common.tftp_repository,
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
@@ -177,13 +182,21 @@ module MicroStepsLibrary
     end
 
     def format_deploy_part
-      deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
+      if (@config.exec_specific.deploy_part != "") then
+        deploy_part = @config.exec_specific.deploy_part
+      else
+        deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
+      end
       parallel_exec_command_wrapper("mkfs.ext3 #{deploy_part}")
       return true
     end
     
     def mount_deploy_part
-      deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_parts[0]
+      if (@config.exec_specific.deploy_part != "") then
+        deploy_part = @config.exec_specific.deploy_part
+      else
+        deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
+      end
       parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; umount /mnt/dest 2>/dev/null ; mount #{deploy_part} /mnt/dest)")
       return true
     end

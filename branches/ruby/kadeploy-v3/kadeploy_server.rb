@@ -2,7 +2,6 @@
 
 #Kadeploy libs
 require 'lib/debug'
-require 'lib/checkrights'
 require 'lib/nodes'
 require 'lib/config'
 require 'lib/managers'
@@ -33,7 +32,6 @@ class KadeployWorkflow
     @config = config
     @client = client
     @output = Debug::OutputControl.new(@config.common.debug_level, client)
-    @rights = CheckRights::CheckRightsFactory.create(@config.common.rights_kind)
     @nodes_ok = Nodes::NodeSet.new
     @nodes_ko = Nodes::NodeSet.new
     @nodeset = @config.exec_specific.node_list
@@ -128,13 +126,9 @@ class KadeployWorkflow
 
   def run
     @output.debugl(0, "Launching Kadeploy ...")
-    if (@rights.granted? == true)
-      grab_user_files
-      @queue_manager.next_macro_step(nil, @nodeset)
-      @thread_process_finished_nodes.join
-    else
-      @output.debugl(0, "You do not have the deployment rights on all the nodes")
-    end
+    grab_user_files
+    @queue_manager.next_macro_step(nil, @nodeset)
+    @thread_process_finished_nodes.join
   end
 end
 
@@ -180,6 +174,10 @@ class KadeployServer
 
   def get_common_config
     return @config.common
+  end
+
+  def get_default_deploy_part(cluster)
+    return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].deploy_part
   end
 
   def set_exec_specific_config(exec_specific)

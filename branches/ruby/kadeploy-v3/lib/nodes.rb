@@ -91,6 +91,14 @@ module Nodes
       return res
     end
 
+    def make_array_of_hostname
+      res = Array.new
+      @set.each { |n|
+        res.push(n.hostname)
+      }
+      return res
+    end
+
     def to_s(dbg = false)
       s = String.new
       @set.each_index { |i|
@@ -99,7 +107,7 @@ module Nodes
       }
       return s
     end
-    
+
     #group the nodes by cluster and return an hashtable (each entry is an array of nodes)
     def group_by_cluster
       ht = Hash.new
