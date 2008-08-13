@@ -59,7 +59,7 @@ end
 def delete_environment(config,db)
   env = EnvironmentManagement::Environment.new
   query = "DELETE FROM environment WHERE name=\"#{config.exec_specific.env_name}\" \
-                                     AND user=\"#{ENV['USER']}\""
+                                   AND user=\"#{ENV['USER']}\""
   db.run_query(query)
 end
 

@@ -67,6 +67,7 @@ module ConfigInformation
       exec_specific.load_env_arg = String.new
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
+      exec_specific.deploy_part = String.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -225,10 +226,8 @@ module ConfigInformation
                 @cluster_specific[cluster].deploy_initrd = content[2]
               when "block_device"
                 @cluster_specific[cluster].block_device = content[2]
-              when "deploy_parts"
-                content[2].split(",").each { |part|
-                  @cluster_specific[cluster].deploy_parts.push(part)
-                }
+              when "deploy_part"
+                @cluster_specific[cluster].deploy_part = content[2]
               when "prod_part"
                 @cluster_specific[cluster].prod_part = content[2]
               when "workflow_steps"
@@ -365,11 +364,15 @@ module ConfigInformation
         opts.separator ""
         opts.separator "General options:"
         opts.on("-m", "--machine MACHINE", "Node to run on") { |hostname|
-          add_to_node_list(hostname, nodes_desc, exec_specific)
+          if not add_to_node_list(hostname, nodes_desc, exec_specific) then
+            return false
+          end
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
-          IO.readlines(f).sort.uniq.each { |node|
-            add_to_node_list(hostname, nodes_desc, exec_specific)
+          IO.readlines(f).sort.uniq.each { |hostname|
+            if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
+              return false
+            end
           }
         }
         opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
@@ -385,6 +388,9 @@ module ConfigInformation
         }
         opts.on("-u", "--user USERNAME", "Specify the user") { |u|
           exec_specific.user = u
+        }
+        opts.on("-p", "--partition PARTITION", "Specify the partition to use") { |p|
+          exec_specific.deploy_part = p
         }
       end
       opts.parse!(ARGV)
@@ -404,13 +410,15 @@ module ConfigInformation
     # * nodes_desc: set of nodes read from the configuration file
     # * exec_specific: open struct that contains some execution specific stuffs (modified)
     # Output
-    # * nothing
+    # * returns true if the node exists in the Kadeploy configuration, false otherwise
     def Config.add_to_node_list(hostname, nodes_desc, exec_specific)
       n = nodes_desc.get_node_by_host(hostname)
       if (n != nil) then
         exec_specific.node_list.push(n)
+        return true
       else
-        raise "The node #{hostname} does not exist in the Kadpeloy configuration"
+        puts "The node #{hostname} does not exist in the Kadpeloy configuration"
+        return false
       end
     end
 
@@ -570,7 +578,7 @@ module ConfigInformation
     attr_accessor :deploy_kernel
     attr_accessor :deploy_initrd
     attr_accessor :block_device
-    attr_accessor :deploy_parts     #Array of String, the first one is used by default
+    attr_accessor :deploy_part
     attr_accessor :prod_part
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :timeout_reboot
@@ -580,7 +588,6 @@ module ConfigInformation
     attr_accessor :cmd_console
     
     def initialize
-      @deploy_parts = Array.new
       @workflow_steps = Array.new
     end
     

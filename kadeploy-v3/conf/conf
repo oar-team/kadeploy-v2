@@ -7,7 +7,7 @@ deploy_db_host = g5kdev
 deploy_db_name = deploy
 deploy_db_login = deploy
 deploy_db_passwd = deploy
-rights_kind = dummy
+rights_kind = db
 taktuk_connector = ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o BatchMode=yes
 taktuk_tree_arity = 10
 taktuk_auto_propagate = true
