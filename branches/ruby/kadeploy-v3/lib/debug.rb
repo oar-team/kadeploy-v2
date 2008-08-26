@@ -4,7 +4,7 @@ module Debug
     @client = nil
 
     def initialize(debug_level, client)
-      @debug_level=debug_level
+      @debug_level = debug_level
       @client = client
     end
 

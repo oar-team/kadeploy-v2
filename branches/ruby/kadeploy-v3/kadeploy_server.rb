@@ -123,9 +123,19 @@ class KadeployWorkflow
     end
   end
 
+  def use_local_path_dirname(file)
+    return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
+  end
+
   def grab_user_files
     @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
     @client.get_file(@config.exec_specific.environment.tarball_file)
+    @config.exec_specific.environment.tarball_file = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
+    if @config.exec_specific.key != "" then
+    @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
+      @client.get_file(@config.exec_specific.key)
+      @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
+    end
   end
 
   def run
@@ -153,17 +163,27 @@ class KadeployServer
     puts "Launching the Kadeploy file server"
     @mutex = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
+
+#    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+#    opt = [1].pack("i")
+#    sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, opt)
+#    sockaddr = Socket.pack_sockaddr_in(@dest_port, @dest_host)
+#    sock.bind(sockaddr)
+#    sock.listen(10)
+
     if (sock.kind_of? TCPSocket) then
       Thread.new {
         while (session = sock.accept)
           file = File.new(@config.common.kadeploy_cache_dir + "/" + @file_name, "w")
-          while (buf = session.recvfrom(@tcp_buffer_size)[0])
+          while ((buf = session.recv(@tcp_buffer_size)) != "") do
             file.write(buf)
           end
+          file.close
+          session.close
         end
       }
     else
-      raise "Can not open a socket on port #{@config.file_port}"
+      raise "Can not open a socket on port #{@dest_port}"
     end
   end
 

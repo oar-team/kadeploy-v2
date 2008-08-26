@@ -70,6 +70,7 @@ module ConfigInformation
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
       exec_specific.script = String.new
+      exec_specific.key = String.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -394,9 +395,9 @@ module ConfigInformation
         opts.on("-p", "--partition PARTITION", "Specify the partition to use") { |p|
           exec_specific.deploy_part = p
         }
-        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 3") { |d|
+        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
           debug_level = d.to_i
-          if ((debug_level > 3) || (debug_level < 0)) then
+          if ((debug_level > 4) || (debug_level < 0)) then
             puts "Invalid debug level"
             return false
           else
@@ -414,6 +415,13 @@ module ConfigInformation
             end
           end
           exec_specific.script = File.expand_path(f)
+        }
+        opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
+          if not File.exist?(f) then
+            puts "The file #{f} does not exist"
+            return false
+          end
+          exec_specific.key = File.expand_path(f)
         }
       end
       opts.parse!(ARGV)

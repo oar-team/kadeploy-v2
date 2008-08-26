@@ -7,9 +7,9 @@ module EnvironmentManagement
     attr_reader :version
     attr_reader :description
     attr_reader :author
-    attr_reader :tarball_file
+    attr_accessor :tarball_file
     attr_reader :tarball_md5
-    attr_reader :postinstall_file
+    attr_accessor :postinstall_file
     attr_reader :postinstall_md5
     attr_reader :kernel
     attr_reader :kernel_params
