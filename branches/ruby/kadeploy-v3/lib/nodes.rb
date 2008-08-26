@@ -124,5 +124,11 @@ module Nodes
       }
       return nil
     end
+
+    def set_error_msg(msg)
+      @set.each { |node|
+        node.last_cmd_stderr = msg
+      }
+    end
   end
 end

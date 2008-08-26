@@ -252,7 +252,8 @@ module ConfigInformation
                 microstep_list.split(",").each { |instance_infos|
                   instance_name = instance_infos.split(":")[0]
                   instance_max_retries = instance_infos.split(":")[1].to_i
-                  tmp.push([instance_name, instance_max_retries])
+                  instance_timeout = instance_infos.split(":")[2].to_i
+                  tmp.push([instance_name, instance_max_retries, instance_timeout])
                 }
                 @cluster_specific[cluster].workflow_steps.push(MacroStep.new(macrostep_name, tmp))
               end
@@ -665,7 +666,9 @@ module ConfigInformation
     # Arguments
     # * nothing
     # Output
-    # * returns an array: [0] is the name of the instance, [1] is the number of retries available for the instance
+    # * returns an array: [0] is the name of the instance, 
+    #                     [1] is the number of retries available for the instance
+    #                     [2] is the timeout for the instance
     def get_instance
       return @array_of_instances[@current]
     end
