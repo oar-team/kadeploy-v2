@@ -70,10 +70,12 @@ class KadeployWorkflow
             macro_step_instance = @config.cluster_specific[cluster].get_macro_step(kind).get_instance
             instance_name = macro_step_instance[0]
             instance_max_retries = macro_step_instance[1]
+            instance_timeout = macro_step_instance[2]
             case kind
             when "SetDeploymentEnv"
               SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
                                                                         instance_max_retries,
+                                                                        instance_timeout,
                                                                         cluster,
                                                                         set,
                                                                         @queue_manager,
@@ -82,6 +84,7 @@ class KadeployWorkflow
             when "BroadcastEnv"
               BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
                                                                instance_max_retries, 
+                                                               instance_timeout,
                                                                cluster,
                                                                set,
                                                                @queue_manager,
@@ -89,7 +92,8 @@ class KadeployWorkflow
                                                                @output).run
             when "BootNewEnv"
               BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
-                                                           instance_max_retries, 
+                                                           instance_max_retries,
+                                                           instance_timeout,
                                                            cluster,
                                                            set,
                                                            @queue_manager,

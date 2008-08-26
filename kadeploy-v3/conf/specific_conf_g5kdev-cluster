@@ -10,6 +10,6 @@ cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx re
 cmd_console = no_cmd
 
 #Automata description
-macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2
-macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2
-macrostep = BootNewEnv|BootNewEnvKexec:1,BootNewEnvClassical:2
+macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
+macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:100
+macrostep = BootNewEnv|BootNewEnvKexec:1:100,BootNewEnvClassical:2:100

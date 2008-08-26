@@ -239,5 +239,22 @@ module MicroStepsLibrary
       @nodes_ok.duplicate_and_free(@nodes_ko)
       return true
     end
+    
+    #return true if the timeout is reached
+    def timeout?(timeout, instance_thread, step_name)
+      start = Time.now.to_i
+      while ((instance_thread.status != false) && (Time.now.to_i < (start + timeout)))
+        sleep 1
+      end
+      if (instance_thread.status != false) then
+        @output.debugl(4, "Timeout before the end of the step, let's kill the instance")
+        Thread.kill(instance_thread)
+        @nodes_ok.duplicate_and_free(@nodes_ko)
+        @nodes_ko.set_error_msg("Timeout in the #{step_name} step")
+        return true
+      else
+        return false
+      end
+    end
   end
 end

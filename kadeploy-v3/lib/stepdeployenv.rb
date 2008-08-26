@@ -5,16 +5,16 @@ require 'lib/nodes'
 module SetDeploymentEnvironnment
 
   class SetDeploymentEnvFactory
-    def SetDeploymentEnvFactory.create(kind, max_retries, cluster, nodes, queue_manager, window_manager, output)
+    def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       case kind
       when "SetDeploymentEnvUntrusted"
-        return SetDeploymentEnvUntrusted.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvNfsroot"
-        return SetDeploymentEnvNfsroot.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvProd"
-        return SetDeploymentEnvProd.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvProd.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       when "SetDeploymentEnvDummy"
-        return SetDeploymentEnvDummy.new(max_retries, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       else
         raise "Invalid kind of step value for the environment deployment step"
       end
@@ -23,6 +23,7 @@ module SetDeploymentEnvironnment
 
   class SetDeploymentEnv
     @remaining_retries = 0
+    @timeout = 0
     @queue_manager = nil
     @window_manager = nil
     @output = nil
@@ -32,8 +33,9 @@ module SetDeploymentEnvironnment
     @nodes_ko = nil
     @step = nil
 
-    def initialize(max_retries, cluster, nodes, queue_manager, window_manager, output)
+    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
       @remaining_retries = max_retries
+      @timeout = timeout
       @nodes = nodes
       @queue_manager = queue_manager
       @window_manager = window_manager
@@ -55,20 +57,23 @@ module SetDeploymentEnvironnment
         @queue_manager.increment_active_threads
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
-          @nodes_ko.duplicate_and_free(@nodes_ok)
-          @output.debugl(3, "Performing a SetDeploymentEnvUntrusted step on the nodes: #{@nodes_ok.to_s}")
-          result = true
-          #Here are the micro steps
-          result = result && @step.switch_pxe("prod_to_deploy_env")
-          result = result && @step.reboot("soft")
-          result = result && @step.check_nodes("deploy_env_booted")
-          #End of micro steps
-
-          @remaining_retries -= 1
-          if not @nodes_ok.empty? then
-            @nodes_ok.duplicate_and_free(@nodes)
-            @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+          instance_thread = Thread.new {
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(3, "Performing a SetDeploymentEnvUntrusted step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps
+            result = result && @step.switch_pxe("prod_to_deploy_env")
+            result = result && @step.reboot("soft")
+            result = result && @step.check_nodes("deploy_env_booted")
+            #End of micro steps
+          }
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+            if not @nodes_ok.empty? then
+              @nodes_ok.duplicate_and_free(@nodes)
+              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+            end
           end
+          @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
         if not @nodes_ko.empty? then
@@ -89,21 +94,24 @@ module SetDeploymentEnvironnment
         @queue_manager.increment_active_threads
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
-          @nodes_ko.duplicate_and_free(@nodes_ok)
-          @output.debugl(3, "Performing a SetDeploymentEnvProd step on the nodes: #{@nodes_ok.to_s}")
-          result = true
-          #Here are the micro steps
-          result = result && @step.check_nodes("prod_env_booted")
-          result = result && @step.fdisk
-          result = result && @step.format_deploy_part
-          result = result && @step.mount_deploy_part
-          #End of micro steps
-
-          @remaining_retries -= 1
-          if not @nodes_ok.empty? then
-            @nodes_ok.duplicate_and_free(@nodes)
-            @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+          instance_thread = Thread.new {
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(3, "Performing a SetDeploymentEnvProd step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps
+            result = result && @step.check_nodes("prod_env_booted")
+            result = result && @step.fdisk
+            result = result && @step.format_deploy_part
+            result = result && @step.mount_deploy_part
+            #End of micro steps
+          }
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+            if not @nodes_ok.empty? then
+              @nodes_ok.duplicate_and_free(@nodes)
+              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+            end            
           end
+          @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
         if not @nodes_ko.empty? then
