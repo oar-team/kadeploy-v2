@@ -36,25 +36,7 @@ module MicroStepsLibrary
           @nodes_ko.push(n)
         }
       end
-    end
-
-    #good_bad_array[0] are the good ones and good_bad_array[1] are the bad ones
-    def classify_nodes_expecting_result(good_bad_array, result)
-      if not good_bad_array[0].empty? then
-        good_bad_array[0].each { |n|
-          if n.last_cmd_stdout.split("\n")[0] == result then #we only grab the first line
-            @nodes_ok.push(n)
-          else
-            @nodes_ko.push(n)
-          end
-        }
-      end
-      if not good_bad_array[1].empty? then
-        good_bad_array[1].each { |n|
-          @nodes_ko.push(n)
-        }
-      end
-    end   
+    end  
 
     def parallel_exec_command_wrapper(cmd)
       node_set = Nodes::NodeSet.new
@@ -63,11 +45,18 @@ module MicroStepsLibrary
       classify_nodes(po.execute(cmd))
     end
 
-    def parallel_exec_command_wrapper_expecting_result(cmd, result)
+    def parallel_exec_command_wrapper_expecting_results(cmd, results)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config)
-      classify_nodes_expecting_result(po.execute(cmd), result)
+      classify_nodes(po.execute_expecting_results(cmd, results))
+    end    
+
+    def parallel_exec_command_wrapper_expecting_results_and_output(cmd, results, output)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      classify_nodes(po.execute_expecting_results_and_output(cmd, results, output))
     end
 
     def parallel_send_file_command_wrapper(file, dest_dir, kind)
@@ -76,6 +65,13 @@ module MicroStepsLibrary
       po = ParallelOperations::ParallelOps.new(node_set, @config)
       classify_nodes(po.send_file(file, dest_dir, kind))
     end
+
+    def parallel_concat_file_command_wrapper(file, dest_dir, kind)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      classify_nodes(po.concat_file(file, dest_dir, kind))
+    end   
 
     def parallel_wait_nodes_after_reboot_wrapper(timeout)
       node_set = Nodes::NodeSet.new
@@ -160,13 +156,15 @@ module MicroStepsLibrary
       when "deploy_env_booted"
       when "deployed_env_booted"
         #we look if the / mounted partition is the default production partition
-        parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
-                                                       @config.exec_specific.environment.part)        
+        parallel_exec_command_wrapper_expecting_results_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
+                                                                   ["0"],
+                                                                   @config.exec_specific.environment.part)
       when "prod_env_booted"
         #we look if the / mounted partition is the default production partition
-        parallel_exec_command_wrapper_expecting_result("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )", 
-                                                       @config.cluster_specific[@cluster].block_device + \
-                                                       @config.cluster_specific[@cluster].prod_part)
+        parallel_exec_command_wrapper_expecting_results_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
+                                                                   ["0"],
+                                                                   @config.cluster_specific[@cluster].block_device + \
+                                                                   @config.cluster_specific[@cluster].prod_part)
       end
       return true
     end
@@ -187,7 +185,8 @@ module MicroStepsLibrary
       else
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
-      parallel_exec_command_wrapper("mkfs.ext3 #{deploy_part}")
+
+      parallel_exec_command_wrapper("umount #{deploy_part} 2>/dev/null; mkfs.ext3 #{deploy_part}")
       return true
     end
     
@@ -197,7 +196,7 @@ module MicroStepsLibrary
       else
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
-      parallel_exec_command_wrapper("(mkdir -p /mnt/dest ; umount /mnt/dest 2>/dev/null ; mount #{deploy_part} /mnt/dest)")
+      parallel_exec_command_wrapper("(mkdir -p /mnt/dest; mount #{deploy_part} /mnt/dest)")
       return true
     end
 
@@ -208,6 +207,15 @@ module MicroStepsLibrary
       return true
     end
 
+    def send_key(kind)
+      if (@config.exec_specific.key != "") then
+        parallel_concat_file_command_wrapper(@config.exec_specific.key,
+                                             "/mnt/dest/root/.ssh/authorized_keys",
+                                             kind)
+      end
+      return true
+    end
+    
     def uncompress_tarball
       tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.exec_specific.environment.tarball_file)
       parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")

@@ -33,6 +33,7 @@ class KadeployClient
     while (buf = file.read(@kadeploy_server.tcp_buffer_size))
       sock.send(buf, 0)
     end
+    sock.close
     @kadeploy_server.post_send_file
   end
 end
@@ -54,8 +55,7 @@ db.connect(common_config.deploy_db_host,
            common_config.deploy_db_name)
 
 exec_specific_config = ConfigInformation::Config.load_kadeploy_exec_specific(common_config.nodes_desc, db)
-
-if (exec_specific_config) then
+if (exec_specific_config != nil) then
   #Rights check
   if (exec_specific_config.deploy_part != "") then 
     allowed_to_deploy = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
