@@ -80,15 +80,42 @@ module MicroStepsLibrary
       classify_nodes(po.wait_nodes_after_reboot(timeout, port))
     end
 
-    def reboot_wrapper(kind)
-      node_set = Nodes::NodeSet.new
-      @nodes_ok.duplicate_and_free(node_set)
+    def _reboot_wrapper(kind, node_set)
+      @output.debugl(4, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
       node_set.set.each { |node|
-        CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft + "&", node) #run detached
+        case kind
+        when "soft"
+          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft, node)
+        when "hard"
+          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_hard, node)
+        when "very_hard"
+          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_very_hard, node)
+        end
       }
       CmdCtrlWrapper::run(pr)
       classify_nodes(CmdCtrlWrapper::get_results(pr))
+    end
+
+    def reboot_wrapper(kind)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      map = Array.new
+      map.push("soft")
+      map.push("hard")
+      map.push("very_hard")
+      index = map.index(kind)
+      finished = false
+      while ((index < map.length) && (not finished))
+        _reboot_wrapper(map[index], node_set)
+        if (not @nodes_ko.empty?) then
+          node_set.free
+          @nodes_ko.duplicate_and_free(node_set)
+          index = index + 1
+        else
+          finished = true
+        end
+      end
     end
 
     def extract_files_from_archive(archive, file_array, dest_dir)
