@@ -8,12 +8,15 @@ deploy_db_name = deploy
 deploy_db_login = deploy
 deploy_db_passwd = deploy
 rights_kind = db
-taktuk_connector = ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o BatchMode=yes
+taktuk_ssh_connector = ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o BatchMode=yes
+taktuk_rsh_connector = rsh -l root
 taktuk_tree_arity = 10
 taktuk_auto_propagate = true
 tarball_dest_dir = /tmp
 kadeploy_server = g5kdev
 kadeploy_server_port = 25300
-kadeploy_file_server_port = 25301
+kadeploy_file_server_port = 25302
 kadeploy_tcp_buffer_size = 8192
 kadeploy_cache_dir = /tmp/kadeploy_cache
+ssh_port = 22
+rsh_port = 514

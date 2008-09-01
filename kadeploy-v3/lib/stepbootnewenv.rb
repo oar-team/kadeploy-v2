@@ -18,6 +18,7 @@ module BootNewEnvironment
     @remaining_retries = 0
     @timeout = 0
     @queue_manager = nil
+    @config = nil
     @window_manager = nil
     @output = nil
     @cluster = nil
@@ -31,12 +32,13 @@ module BootNewEnvironment
       @timeout = timeout
       @nodes = nodes
       @queue_manager = queue_manager
+      @config = @queue_manager.config
       @window_manager = window_manager
       @output = output
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster, output)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
     def get_macro_step_name
@@ -56,7 +58,7 @@ module BootNewEnvironment
             result = true
             #Here are the micro steps 
             result = result && @step.reboot("kexec")
-            result = result && @step.wait_reboot
+            result = result && @step.wait_reboot(@config.common.ssh_port)
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
@@ -94,7 +96,7 @@ module BootNewEnvironment
             result = result && @step.copy_kernel_initrd_to_pxe
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             result = result && @step.reboot("soft")
-            result = result && @step.wait_reboot
+            result = result && @step.wait_reboot(@config.common.ssh_port)
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
