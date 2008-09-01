@@ -72,7 +72,7 @@ module SetDeploymentEnvironnment
             result = result && @step.format_deploy_part
             result = result && @step.mount_deploy_part          
             result = result && @step.format_tmp_part
-            result = result && @step.mount_tmp_part             
+            result = result && @step.mount_tmp_part
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then

@@ -57,8 +57,9 @@ module BroadcastEnvironment
             @output.debugl(3, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
-            result = result && @step.send_tarball("chain")
-            result = result && @step.uncompress_tarball
+#            result = result && @step.send_tarball("chain")
+#            result = result && @step.uncompress_tarball
+            result = result && @step.send_tarball_and_uncompress("chain")
             result = result && @step.send_key("chain")
             result = result && @step.copy_kernel_initrd_to_pxe
             result = result && @step.switch_pxe("deploy_to_deployed_env")
@@ -96,8 +97,9 @@ module BroadcastEnvironment
             @output.debugl(3, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
-            result = result && @step.send_tarball("tree")
-            result = result && @step.uncompress_tarball
+#            result = result && @step.send_tarball("tree")
+#            result = result && @step.uncompress_tarball
+            result = result && @step.send_tarball_and_uncompress("tree")
             result = result && @step.send_key("tree")
             result = result && @step.copy_kernel_initrd_to_pxe
             result = result && @step.switch_pxe("deploy_to_deployed_env")

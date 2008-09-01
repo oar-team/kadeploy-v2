@@ -27,11 +27,11 @@ module ParallelOperations
       return args.split(" ")
     end
 
-    def make_taktuk_send_file_cmd(file, dest_dir, kind)
+    def make_taktuk_send_file_cmd(file, dest_dir, scattering_kind)
       args = String.new
       args += " -s" if @taktuk_auto_propagate
       args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
-      case kind
+      case scattering_kind
       when "chain"
         args += " -d 1"
       when "tree"
@@ -46,11 +46,38 @@ module ParallelOperations
       return args.split(" ")
     end
 
-    def make_taktuk_concat_file_cmd(local_file, dest_file, kind)
+    def make_taktuk_send_file_and_uncompress_cmd(file, dest_dir, scattering_kind, archive_kind)
       args = String.new
       args += " -s" if @taktuk_auto_propagate
       args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
-      case kind
+      case scattering_kind
+      when "chain"
+        args += " -d 1"
+      when "tree"
+        args += " -d #{@taktuk_tree_arity}"
+      else
+        raise "Invalid structure for broadcasting file"
+      end
+      @nodes.set.each { |node|
+        args += " -m #{node.hostname}"
+      }
+      case archive_kind
+      when "tgz"
+        args += " broadcast exec [ tar xz -C #{dest_dir} ];"
+      when "tbz2"
+        args += " broadcast exec [ tar xj -C #{dest_dir} ];"       
+      else
+        raise "Archive kind not supported yet"
+      end
+      args += " broadcast input file [ #{file} ]"
+      return args.split(" ")
+    end
+
+    def make_taktuk_concat_file_cmd(local_file, dest_file, scattering_kind)
+      args = String.new
+      args += " -s" if @taktuk_auto_propagate
+      args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
+      case scattering_kind
       when "chain"
         args += " -d 1"
       when "tree"
@@ -114,6 +141,21 @@ module ParallelOperations
        }
     end
 
+    def get_taktuk_send_file_and_uncompress_command_infos(tw)
+      tree = YAML.load((YAML.dump({"hosts"=>tw.hosts,
+                                    "connectors"=>tw.connectors,
+                                    "errors"=>tw.errors,
+                                    "infos"=>tw.infos})))
+      init_nodes_state_before_exec_command
+      tree['hosts'].each_value { |h|
+        h['commands'].each_value { |x|
+          @nodes.get_node_by_host(h['host_name']).last_cmd_exit_status = x['status']
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output']
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error']
+        }
+      }
+    end
+    
     def get_taktuk_concat_file_command_infos(tw)
       tree = YAML.load((YAML.dump({"hosts"=>tw.hosts,
                                     "connectors"=>tw.connectors,
@@ -181,8 +223,8 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    def send_file(file, dest_dir, kind)
-      tw = TaktukWrapper::new(make_taktuk_send_file_cmd(file, dest_dir, kind))
+    def send_file(file, dest_dir, scattering_kind)
+      tw = TaktukWrapper::new(make_taktuk_send_file_cmd(file, dest_dir, scattering_kind))
       tw.run
       get_taktuk_send_file_command_infos(tw)
       good_nodes = Array.new
@@ -197,8 +239,8 @@ module ParallelOperations
       return [good_nodes, bad_nodes]   
     end
 
-    def concat_file(local_file, dest_file, kind)
-      tw = TaktukWrapper::new(make_taktuk_concat_file_cmd(local_file, dest_file, kind))
+    def concat_file(local_file, dest_file, scattering_kind)
+      tw = TaktukWrapper::new(make_taktuk_concat_file_cmd(local_file, dest_file, scattering_kind))
       tw.run
       get_taktuk_concat_file_command_infos(tw)
       good_nodes = Array.new
@@ -212,6 +254,22 @@ module ParallelOperations
       }
       return [good_nodes, bad_nodes]   
     end    
+    
+    def send_file_and_uncompress(file, dest_dir, scattering_kind, archive_kind)
+      tw = TaktukWrapper::new(make_taktuk_send_file_and_uncompress_cmd(file, dest_dir, scattering_kind, archive_kind))
+      tw.run
+      get_taktuk_send_file_and_uncompress_command_infos(tw)
+      good_nodes = Array.new
+      bad_nodes = Array.new
+      @nodes.set.each { |node|
+        if node.last_cmd_exit_status == "0" then
+          good_nodes.push(node)
+        else
+          bad_nodes.push(node)
+        end
+      }
+      return [good_nodes, bad_nodes]    
+    end
 
     def wait_nodes_after_reboot(timeout, port)
       good_nodes = Array.new
