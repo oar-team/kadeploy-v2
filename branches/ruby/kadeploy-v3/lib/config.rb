@@ -156,8 +156,10 @@ module ConfigInformation
               @common.deploy_db_passwd = content[2]
             when "rights_kind"
               @common.rights_kind = content[2]
-            when "taktuk_connector"
-              @common.taktuk_connector = content[2]
+            when "taktuk_ssh_connector"
+              @common.taktuk_ssh_connector = content[2]
+            when "taktuk_rsh_connector"
+              @common.taktuk_rsh_connector = content[2]
             when "taktuk_tree_arity"
               @common.taktuk_tree_arity = content[2].to_i
             when "taktuk_auto_propagate"
@@ -178,6 +180,10 @@ module ConfigInformation
               @common.kadeploy_tcp_buffer_size = content[2].to_i
             when "kadeploy_cache_dir"
               @common.kadeploy_cache_dir = content[2]
+            when "ssh_port"
+              @common.ssh_port = content[2]
+            when "rsh_port"
+              @common.rsh_port = content[2]
             end
           end
         end
@@ -233,6 +239,8 @@ module ConfigInformation
                 @cluster_specific[cluster].deploy_part = content[2]
               when "prod_part"
                 @cluster_specific[cluster].prod_part = content[2]
+              when "tmp_part"
+                @cluster_specific[cluster].tmp_part = content[2]
               when "workflow_steps"
                 @cluster_specific[cluster].workflow_steps = content[2]
               when "timeout_reboot"
@@ -591,6 +599,8 @@ module ConfigInformation
     attr_accessor :deploy_db_passwd
     attr_accessor :rights_kind
     attr_accessor :nodes_desc     #information about all the nodes
+    attr_accessor :taktuk_ssh_connector
+    attr_accessor :taktuk_rsh_connector
     attr_accessor :taktuk_connector
     attr_accessor :taktuk_tree_arity
     attr_accessor :taktuk_auto_propagate
@@ -600,7 +610,8 @@ module ConfigInformation
     attr_accessor :kadeploy_file_server_port
     attr_accessor :kadeploy_tcp_buffer_size
     attr_accessor :kadeploy_cache_dir
-
+    attr_accessor :ssh_port
+    attr_accessor :rsh_port
     def initialize
       @nodes_desc = Nodes::NodeSet.new
     end
@@ -612,6 +623,7 @@ module ConfigInformation
     attr_accessor :block_device
     attr_accessor :deploy_part
     attr_accessor :prod_part
+    attr_accessor :tmp_part
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :timeout_reboot
     attr_accessor :cmd_soft_reboot

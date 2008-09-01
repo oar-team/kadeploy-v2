@@ -18,6 +18,7 @@ module BroadcastEnvironment
     @remaining_retries = 0
     @timeout = 0
     @queue_manager = nil
+    @config = nil
     @window_manager = nil
     @output = nil
     @cluster = nil
@@ -31,12 +32,13 @@ module BroadcastEnvironment
       @timeout = timeout
       @nodes = nodes
       @queue_manager = queue_manager
+      @config = @queue_manager.config
       @window_manager = window_manager
       @output = output
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @queue_manager.config, cluster, output)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
     def get_macro_step_name
@@ -54,7 +56,7 @@ module BroadcastEnvironment
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
             result = true
-            #Here are the micro steps 
+            #Here are the micro steps
             result = result && @step.send_tarball("chain")
             result = result && @step.uncompress_tarball
             result = result && @step.send_key("chain")

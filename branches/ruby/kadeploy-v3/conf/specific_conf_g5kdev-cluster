@@ -1,8 +1,9 @@
-deploy_kernel = deploy-linux-image-2.6.99
-deploy_initrd = deploy-linux-initrd-2.6.99.img ETH_DRV=e1000 ETH_DEV=eth0 DISK_DRV=ahci console=tty0 console=ttyS1,38400n8 ramdisk_size=400000
+deploy_kernel = deploy-vmlinuz-2.6.24
+deploy_initrd = deploy-initrd-2.6.24 ETH_DRV=pcnet32 ETH_DEV=eth0 DISK_DRV=ide-disk console=tty0 console=ttyS0,38400n8 ramdisk_size=90000 root=/dev/ram0 rw
 block_device = /dev/hda
-deploy_part = 3
 prod_part = 2
+deploy_part = 3
+tmp_part = 4
 timeout_reboot = 120
 cmd_soft_reboot = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o ConnectTimeout=2 root@HOSTNAME /sbin/reboot
 cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard
@@ -10,6 +11,7 @@ cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx re
 cmd_console = no_cmd
 
 #Automata description
-macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
-macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:100
-macrostep = BootNewEnv|BootNewEnvKexec:1:100,BootNewEnvClassical:2:100
+#macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
+macrostep = SetDeploymentEnv|SetDeploymentEnvUntrusted:2:150
+macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:300
+macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150

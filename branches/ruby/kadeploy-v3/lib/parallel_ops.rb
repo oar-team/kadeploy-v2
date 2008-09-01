@@ -9,9 +9,9 @@ module ParallelOperations
     @taktuk_tree_arity = nil
     @taktuk_auto_propagate = nil
 
-    def initialize(nodes, config)
+    def initialize(nodes, config, taktuk_connector)
       @nodes = nodes
-      @taktuk_connector = config.common.taktuk_connector
+      @taktuk_connector = taktuk_connector
       @taktuk_tree_arity = config.common.taktuk_tree_arity
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
     end
@@ -146,7 +146,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    def execute_expecting_results(cmd, results)
+    def execute_expecting_status(cmd, status)
       tw = TaktukWrapper::new(make_taktuk_exec_cmd(cmd))
       tw.run
       get_taktuk_exec_command_infos(tw)
@@ -154,8 +154,7 @@ module ParallelOperations
       bad_nodes = Array.new
 
       @nodes.set.each { |node|
-        puts cmd
-        if results.include?(node.last_cmd_exit_status) then
+        if status.include?(node.last_cmd_exit_status) then
           good_nodes.push(node)
         else
           bad_nodes.push(node)
@@ -164,7 +163,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    def execute_expecting_results_and_output(cmd, results, output)
+    def execute_expecting_status_and_output(cmd, status, output)
       tw = TaktukWrapper::new(make_taktuk_exec_cmd(cmd))
       tw.run
       get_taktuk_exec_command_infos(tw)
@@ -172,7 +171,7 @@ module ParallelOperations
       bad_nodes = Array.new
 
       @nodes.set.each { |node|
-        if (results.include?(node.last_cmd_exit_status) == true) && 
+        if (status.include?(node.last_cmd_exit_status) == true) && 
             (node.last_cmd_stdout.split("\n")[0] == output) then #we only grab the first line of output
           good_nodes.push(node)
         else
@@ -214,7 +213,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]   
     end    
 
-    def wait_nodes_after_reboot(timeout)
+    def wait_nodes_after_reboot(timeout, port)
       good_nodes = Array.new
       bad_nodes = Array.new
       init_nodes_state_before_wit_nodes_after_reboot_command
@@ -224,7 +223,7 @@ module ParallelOperations
         sleep 2
         @nodes.set.each { |node|
           if node.state == "KO" then
-            sock = TCPSocket.new(node.hostname, 22) rescue false
+            sock = TCPSocket.new(node.hostname, port) rescue false
             if sock.kind_of? TCPSocket then
               node.state = "OK"
             end

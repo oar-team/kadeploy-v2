@@ -38,46 +38,46 @@ module MicroStepsLibrary
       end
     end  
 
-    def parallel_exec_command_wrapper(cmd)
+    def parallel_exec_command_wrapper(cmd, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
       classify_nodes(po.execute(cmd))
     end
 
-    def parallel_exec_command_wrapper_expecting_results(cmd, results)
+    def parallel_exec_command_wrapper_expecting_status(cmd, status, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
-      classify_nodes(po.execute_expecting_results(cmd, results))
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      classify_nodes(po.execute_expecting_status(cmd, status))
     end    
 
-    def parallel_exec_command_wrapper_expecting_results_and_output(cmd, results, output)
+    def parallel_exec_command_wrapper_expecting_status_and_output(cmd, status, output, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
-      classify_nodes(po.execute_expecting_results_and_output(cmd, results, output))
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      classify_nodes(po.execute_expecting_status_and_output(cmd, status, output))
     end
 
-    def parallel_send_file_command_wrapper(file, dest_dir, kind)
+    def parallel_send_file_command_wrapper(file, dest_dir, kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
       classify_nodes(po.send_file(file, dest_dir, kind))
     end
 
-    def parallel_concat_file_command_wrapper(file, dest_dir, kind)
+    def parallel_concat_file_command_wrapper(file, dest_dir, kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
       classify_nodes(po.concat_file(file, dest_dir, kind))
     end   
 
-    def parallel_wait_nodes_after_reboot_wrapper(timeout)
+    def parallel_wait_nodes_after_reboot_wrapper(timeout, port)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config)
-      classify_nodes(po.wait_nodes_after_reboot(timeout))
+      po = ParallelOperations::ParallelOps.new(node_set, @config, nil)
+      classify_nodes(po.wait_nodes_after_reboot(timeout, port))
     end
 
     def reboot_wrapper(kind)
@@ -104,18 +104,13 @@ module MicroStepsLibrary
 
     public
 
-    def switch_pxe(kind)
-      case kind
+    def switch_pxe(step)
+      case step
       when "prod_to_deploy_env"
-        if (@config.exec_specific.deploy_part != "") then
-          deploy_part = @config.exec_specific.deploy_part
-        else
-          deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
-        end
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
                                                @config.cluster_specific[@cluster].deploy_kernel,
                                                @config.cluster_specific[@cluster].deploy_initrd,
-                                               deploy_part,
+                                               "",
                                                @config.common.tftp_repository,
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
@@ -134,8 +129,8 @@ module MicroStepsLibrary
       return res
     end
     
-    def reboot(kind)
-      case kind
+    def reboot(reboot_kind)
+      case reboot_kind
       when "soft"
         reboot_wrapper("soft")
       when "hard"
@@ -146,36 +141,43 @@ module MicroStepsLibrary
         kernel_params = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel_params}"
         root_part = @config.exec_specific.environment.part
         #Warning, this require the /usr/local/bin/kexec_detach script
-        parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})")
+        parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
+                                      @config.common.taktuk_connector)
       end
       return true
     end
     
-    def check_nodes(kind)
-      case kind
+    def check_nodes(step)
+      case step
       when "deploy_env_booted"
+        parallel_exec_command_wrapper_expecting_status_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
+                                                                  ["0"],
+                                                                  "/dev/ram1",
+                                                                  @config.common.taktuk_connector)
       when "deployed_env_booted"
         #we look if the / mounted partition is the default production partition
-        parallel_exec_command_wrapper_expecting_results_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
-                                                                   ["0"],
-                                                                   @config.exec_specific.environment.part)
+        parallel_exec_command_wrapper_expecting_status_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
+                                                                  ["0"],
+                                                                  @config.exec_specific.environment.part,
+                                                                  @config.common.taktuk_connector)
       when "prod_env_booted"
         #we look if the / mounted partition is the default production partition
-        parallel_exec_command_wrapper_expecting_results_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
-                                                                   ["0"],
-                                                                   @config.cluster_specific[@cluster].block_device + \
-                                                                   @config.cluster_specific[@cluster].prod_part)
+        parallel_exec_command_wrapper_expecting_status_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
+                                                                  ["0"],
+                                                                  @config.cluster_specific[@cluster].block_device + \
+                                                                  @config.cluster_specific[@cluster].prod_part,
+                                                                  @config.common.taktuk_connector)
       end
       return true
     end
 
     def load_drivers
-      parallel_exec_command_wrapper("date")
+#      parallel_exec_command_wrapper("date", @config.common.taktuk_connector)
       return true
     end
 
     def fdisk
-      parallel_exec_command_wrapper("date")
+#      parallel_exec_command_wrapper("date", @config.common.taktuk_connector)
       return true
     end
 
@@ -186,44 +188,63 @@ module MicroStepsLibrary
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
 
-      parallel_exec_command_wrapper("umount #{deploy_part} 2>/dev/null; mkfs.ext3 #{deploy_part}")
+      parallel_exec_command_wrapper("mkdir -p /mnt/dest; umount #{deploy_part} 2>/dev/null; mkfs.ext2 #{deploy_part}",
+                                    @config.common.taktuk_connector)
       return true
     end
     
+    def format_tmp_part
+      tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+      parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{tmp_part}",
+                                    @config.common.taktuk_connector)
+      return true
+    end
+
     def mount_deploy_part
       if (@config.exec_specific.deploy_part != "") then
         deploy_part = @config.exec_specific.deploy_part
       else
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
-      parallel_exec_command_wrapper("(mkdir -p /mnt/dest; mount #{deploy_part} /mnt/dest)")
+      parallel_exec_command_wrapper("mount #{deploy_part} /mnt/dest",
+                                    @config.common.taktuk_connector)
       return true
     end
 
-    def send_tarball(kind)
+    def mount_tmp_part
+      tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+      parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
+                                    @config.common.taktuk_connector)
+      return true
+    end
+
+    def send_tarball(scattering_kind)
       parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
                                          @config.common.tarball_dest_dir,
-                                         kind)
+                                         scattering_kind,
+                                         @config.common.taktuk_connector)
       return true
     end
 
-    def send_key(kind)
+    def send_key(scattering_kind)
       if (@config.exec_specific.key != "") then
         parallel_concat_file_command_wrapper(@config.exec_specific.key,
                                              "/mnt/dest/root/.ssh/authorized_keys",
-                                             kind)
+                                             scattering_kind,
+                                             @config.common.taktuk_connector)
       end
       return true
     end
     
     def uncompress_tarball
       tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.exec_specific.environment.tarball_file)
-      parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest") # ; umount /mnt/dest")
+      parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest",
+                                    @config.common.taktuk_connector)
       return true
     end
 
-    def wait_reboot
-      parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot)
+    def wait_reboot(port)
+      parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot, port)
       return true
     end
     
