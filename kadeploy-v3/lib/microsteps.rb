@@ -66,11 +66,18 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir, kind))
     end
 
-    def parallel_concat_file_command_wrapper(file, dest_dir, kind, taktuk_connector)
+    def parallel_send_file_and_uncompress_command_wrapper(file, dest_dir, scattering_kind, archive_kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
-      classify_nodes(po.concat_file(file, dest_dir, kind))
+      classify_nodes(po.send_file_and_uncompress(file, dest_dir, scattering_kind, archive_kind))
+    end
+
+    def parallel_concat_file_command_wrapper(file, dest_dir, scattering_kind, taktuk_connector)
+      node_set = Nodes::NodeSet.new
+      @nodes_ok.duplicate_and_free(node_set)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      classify_nodes(po.concat_file(file, dest_dir, scattering_kind))
     end   
 
     def parallel_wait_nodes_after_reboot_wrapper(timeout, port)
@@ -161,7 +168,9 @@ module MicroStepsLibrary
       when "soft"
         reboot_wrapper("soft")
       when "hard"
-      when "veryhard"
+        reboot_wrapper("hard")
+      when "very_hard"
+        reboot_wrapper("very_hard")
       when "kexec"
         kernel = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel}"
         initrd = "/mnt/dest/boot/#{@config.exec_specific.environment.initrd}"
@@ -251,6 +260,14 @@ module MicroStepsLibrary
                                          scattering_kind,
                                          @config.common.taktuk_connector)
       return true
+    end
+
+    def send_tarball_and_uncompress(scattering_kind)
+      parallel_send_file_and_uncompress_command_wrapper(@config.exec_specific.environment.tarball_file,
+                                                        "/mnt/dest",
+                                                        scattering_kind,
+                                                        @config.exec_specific.environment.tarball_kind,
+                                                        @config.common.taktuk_connector)
     end
 
     def send_key(scattering_kind)

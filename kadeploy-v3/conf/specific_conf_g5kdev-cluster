@@ -7,11 +7,11 @@ tmp_part = 4
 timeout_reboot = 120
 cmd_soft_reboot = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o ConnectTimeout=2 root@HOSTNAME /sbin/reboot
 cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard
-cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard
+cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx start hard
 cmd_console = no_cmd
 
 #Automata description
-#macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
-macrostep = SetDeploymentEnv|SetDeploymentEnvUntrusted:2:150
+macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
+#macrostep = SetDeploymentEnv|SetDeploymentEnvUntrusted:2:150
 macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:300
 macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150

@@ -8,8 +8,10 @@ module EnvironmentManagement
     attr_reader :description
     attr_reader :author
     attr_accessor :tarball_file
+    attr_reader :tarball_kind
     attr_reader :tarball_md5
     attr_accessor :postinstall_file
+    attr_reader :postinstall_kind
     attr_reader :postinstall_md5
     attr_reader :kernel
     attr_reader :kernel_params
@@ -39,10 +41,14 @@ module EnvironmentManagement
               @author = val
             when "tarball_file"
               @tarball_file = val
+            when "tarball_kind"
+              @tarball_kind = val
             when "tarball_md5"
               @tarball_md5 = val
             when "postinstall_file"
               @postinstall_file = val
+            when "postinstall_kind"
+              @postinstall_kind = val
             when "postinstall_md5"
               @postinstall_md5 = val
             when "kernel"
@@ -95,8 +101,10 @@ module EnvironmentManagement
       @description = hash["description"]
       @author = hash["author"]
       @tarball_file = hash["tarball_file"]
+      @tarball_kind = hash["tarball_kind"]
       @tarball_md5 = hash["tarball_md5"]
       @postinstall_file = hash["postinstall_file"]
+      @postinstall_kind = hash["postinstall_kind"]
       @postinstall_md5 = hash["postinstall_md5"]
       @kernel = hash["kernel"]
       @kernel_params = hash["kernel_params"]
@@ -128,8 +136,10 @@ module EnvironmentManagement
       puts "description : #{@description}"
       puts "author : #{@author}"
       puts "tarball_file : #{@tarball_file}"
+      puts "tarball_kind : #{@tarball_kind}"
       puts "tarball_md5 : #{@tarball_md5}"
       puts "postinstall_file : #{@postinstall_file}"
+      puts "postinstall_kind : #{@postinstall_kind}"
       puts "postinstall_md5 : #{@postinstall_md5}"
       puts "kernel : #{@kernel}"
       puts "kernel_params : #{@kernel_params}"
