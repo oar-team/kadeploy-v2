@@ -13,6 +13,7 @@ taktuk_rsh_connector = rsh -l root
 taktuk_tree_arity = 10
 taktuk_auto_propagate = true
 tarball_dest_dir = /tmp
+environment_extraction_dir = /mnt/dest
 kadeploy_server = g5kdev
 kadeploy_server_port = 25300
 kadeploy_file_server_port = 25302
