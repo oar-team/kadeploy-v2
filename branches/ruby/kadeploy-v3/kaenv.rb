@@ -37,7 +37,8 @@ def add_environment(config, db)
                                     initrd, \
                                     part, \
                                     fdisk_type, \
-                                    filesystem,user) \
+                                    filesystem, \
+                                    user) \
                             VALUES (\"#{env.name}\", \
                                     \"#{env.version}\", \
                                     \"#{env.description}\", \
