@@ -1,0 +1,93 @@
+#!/usr/bin/ruby -w
+require 'lib/config'
+require 'lib/db'
+
+def array_pretty_print(array)
+  s = String.new
+  array.each_index { |i|
+    s += array[i]
+    s += ", " if (i < (array.length - 1))
+  }
+  return s
+end
+
+def show_rights(config, db)
+  hash = Hash.new
+  query = "SELECT * FROM rights WHERE user=\"#{config.exec_specific.user}\""
+  res = db.run_query(query)
+  if res != nil then
+    res.each_hash { |row|
+      if (not hash.has_key?(row["node"])) then
+        hash[row["node"]] = Array.new
+      end
+      hash[row["node"]].push(row["part"])
+    }
+    if (res.num_rows > 0) then
+      puts "The user #{config.exec_specific.user} has the deployment rights on the following nodes:"
+      hash.each_pair { |node, part_list|
+        puts "### #{node}: #{array_pretty_print(part_list)}"
+      }
+    else
+      puts "No rigths have been given for the user #{config.exec_specific.user}"
+    end
+  end
+end
+
+def add_rights(config, db)
+  #check if other users have rights on some nodes
+  nodes_to_remove = Array.new
+  config.exec_specific.node_list.each { |node|
+    query = "SELECT * FROM rights WHERE user<>\"*\" AND user<>\"#{config.exec_specific.user}\" AND node=\"#{node}\""
+    res = db.run_query(query)
+    if (res.num_rows > 0) then
+      nodes_to_remove.push(node)
+    end
+  }
+  config.exec_specific.node_list.delete_if { |node|
+    nodes_to_remove.include?(node)
+  }
+  if (not nodes_to_remove.empty?) then
+    puts "The nodes #{array_pretty_print(nodes_to_remove)} have been removed from the rights assignation since another user has some rights on them"
+  end
+  config.exec_specific.node_list.each { |node|
+    config.exec_specific.part_list.each { |part|
+      #check if the rights are already inserted
+      query = "SELECT * FROM rights WHERE user=\"#{config.exec_specific.user}\" AND node=\"#{node}\" AND part=\"#{part}\""
+      res = db.run_query(query)
+      if (res.num_rows == 0) then      
+        #add the rights
+        query = "INSERT INTO rights (user, node, part) VALUES (\"#{config.exec_specific.user}\", \"#{node}\", \"#{part}\")"
+        db.run_query(query)
+      end
+    }
+  }
+end
+
+def delete_rights(config, db)
+  config.exec_specific.node_list.each { |node|
+    config.exec_specific.part_list.each { |part|
+      query = "DELETE FROM rights WHERE user=\"#{config.exec_specific.user}\" AND node=\"#{node}\" AND part=\"#{part}\""
+      db.run_query(query)
+    }
+  }
+end
+
+
+config = ConfigInformation::Config.new("karights")
+if (config.check_config("karights") == true)
+  db = Database::DbFactory.create(config.common.db_kind)
+  db.connect(config.common.deploy_db_host,
+             config.common.deploy_db_login,
+             config.common.deploy_db_passwd,
+             config.common.deploy_db_name)
+
+  case config.exec_specific.operation  
+  when "add"
+    add_rights(config, db)
+  when "delete"
+    delete_rights(config,db)
+  when "show"
+    show_rights(config, db)
+  end
+  db.disconnect
+end

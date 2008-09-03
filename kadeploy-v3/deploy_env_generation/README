@@ -1,4 +1,4 @@
-Here is a script designed to generate a deployment kernel for kadeploy 2.1.6.
+Here is a script designed to generate a deployment kernel for kadeploy 3.
 
 Before launching, you must customize it by setting the following values:
 -KERNEL_CONFIG : absolute path to a kernel config file

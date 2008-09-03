@@ -33,6 +33,10 @@ module ConfigInformation
           @common = CommonConfig.new
           load_common_config_file
           load_kaenv_exec_specific
+        when "karights"
+          @common = CommonConfig.new
+          load_common_config_file
+          load_karights_exec_specific          
         else
           raise "Invalid configuration kind: #{kind}"
         end
@@ -48,6 +52,8 @@ module ConfigInformation
         check_kadeploy_config
       when "kaenv"
         check_kaenv_config
+      when "karights"
+        check_karights_config
       end
     end
 
@@ -71,6 +77,7 @@ module ConfigInformation
       exec_specific.debug_level = nil
       exec_specific.script = String.new
       exec_specific.key = String.new
+      exec_specific.reformat_tmp = false
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -119,7 +126,7 @@ module ConfigInformation
           return false
         end
       when "kaenv"
-
+      when "karights"
       end
       return true
     end
@@ -432,6 +439,9 @@ module ConfigInformation
           end
           exec_specific.key = File.expand_path(f)
         }
+        opts.on("-r", "--reformat-tmp", "Reformat the /tmp partition") {
+          @exec_specific.reformat_tmp = true
+        }
       end
       opts.parse!(ARGV)
 
@@ -581,6 +591,74 @@ module ConfigInformation
       when "print"
       else
         puts "You should choose an operation"
+        return false
+      end
+      return true
+    end
+
+
+##################################
+#       Karights specific        #
+##################################
+    def load_karights_exec_specific
+      @exec_specific = OpenStruct.new
+      @exec_specific.operation = String.new
+      @exec_specific.user = String.new
+      @exec_specific.part_list = Array.new
+      @exec_specific.node_list = Array.new
+      load_karights_cmdline_options
+    end
+
+    def load_karights_cmdline_options
+      progname = File::basename($PROGRAM_NAME)
+      opts = OptionParser::new do |opts|
+        opts.summary_indent = "  "
+        opts.summary_width = 28
+        opts.program_name = progname
+        opts.banner = "Usage: #{progname} [options]"
+        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.separator ""
+        opts.separator "General options:"
+        opts.on("-a", "--add", "Add some rights to a user") {
+          @exec_specific.operation = "add"
+        }
+        opts.on("-d", "--delete", "Delete some rights to a user") {
+          @exec_specific.operation = "delete"
+        }
+        opts.on("-p", "--part PARTNAME", "Include the partition in the operation") { |p|
+          @exec_specific.part_list.push(p)
+        }
+        opts.on("-m", "--machine MACHINE", "Include the machine in the operation") { |m|
+          @exec_specific.node_list.push(m)
+        }        
+        opts.on("-s", "--show-rights", "Show the rights for a given user") {
+          @exec_specific.operation = "show"
+        }
+        opts.on("-u", "--user USERNAME", "Specify the user") { |u|
+          @exec_specific.user = u
+        }
+      end
+      opts.parse!(ARGV)
+    end
+
+    def check_karights_config
+      if (@exec_specific.user == "") then
+        puts "You must choose a user"
+        return false
+      end
+      case
+      when @exec_specific.operation == "add" || @exec_specific.operation  == "delete"
+        if (@exec_specific.part_list.empty?) then
+          puts "You must specify at list one partition"
+          return false
+        end
+        if (@exec_specific.node_list.empty?) then
+          puts "You must specify at list one node"
+          return false
+        end
+      when @exec_specific.operation == "show"
+      else
+        puts "You must choose an operation"
         return false
       end
       return true

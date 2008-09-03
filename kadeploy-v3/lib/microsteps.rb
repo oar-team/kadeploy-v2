@@ -230,9 +230,11 @@ module MicroStepsLibrary
     end
     
     def format_tmp_part
-      tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
-      parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{tmp_part}",
-                                    @config.common.taktuk_connector)
+      if (@config.exec_specific.reformat_tmp) then
+        tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+        parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{tmp_part}",
+                                      @config.common.taktuk_connector)
+      end
       return true
     end
 
@@ -248,9 +250,11 @@ module MicroStepsLibrary
     end
 
     def mount_tmp_part
-      tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
-      parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
-                                    @config.common.taktuk_connector)
+      if (@config.exec_specific.reformat_tmp) then      
+        tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+        parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
+                                      @config.common.taktuk_connector)
+      end
       return true
     end
 
