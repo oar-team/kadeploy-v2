@@ -66,19 +66,12 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir, kind))
     end
 
-    def parallel_send_file_and_uncompress_command_wrapper(file, dest_dir, scattering_kind, archive_kind, taktuk_connector)
+    def parallel_exec_cmd_with_input_file_wrapper(file, cmd, scattering_kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
-      classify_nodes(po.send_file_and_uncompress(file, dest_dir, scattering_kind, archive_kind))
+      classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind))
     end
-
-    def parallel_concat_file_command_wrapper(file, dest_dir, scattering_kind, taktuk_connector)
-      node_set = Nodes::NodeSet.new
-      @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
-      classify_nodes(po.concat_file(file, dest_dir, scattering_kind))
-    end   
 
     def parallel_wait_nodes_after_reboot_wrapper(timeout, port)
       node_set = Nodes::NodeSet.new
@@ -172,9 +165,9 @@ module MicroStepsLibrary
       when "very_hard"
         reboot_wrapper("very_hard")
       when "kexec"
-        kernel = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel}"
-        initrd = "/mnt/dest/boot/#{@config.exec_specific.environment.initrd}"
-        kernel_params = "/mnt/dest/boot/#{@config.exec_specific.environment.kernel_params}"
+        kernel = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel}"
+        initrd = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.initrd}"
+        kernel_params = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel_params}"
         root_part = @config.exec_specific.environment.part
         #Warning, this require the /usr/local/bin/kexec_detach script
         parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
@@ -224,7 +217,7 @@ module MicroStepsLibrary
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
 
-      parallel_exec_command_wrapper("mkdir -p /mnt/dest; umount #{deploy_part} 2>/dev/null; mkfs.ext2 #{deploy_part}",
+      parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; umount #{deploy_part} 2>/dev/null; mkfs.ext2 #{deploy_part}",
                                     @config.common.taktuk_connector)
       return true
     end
@@ -244,7 +237,7 @@ module MicroStepsLibrary
       else
         deploy_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
-      parallel_exec_command_wrapper("mount #{deploy_part} /mnt/dest",
+      parallel_exec_command_wrapper("mount #{deploy_part} #{@config.common.environment_extraction_dir}",
                                     @config.common.taktuk_connector)
       return true
     end
@@ -267,27 +260,26 @@ module MicroStepsLibrary
     end
 
     def send_tarball_and_uncompress(scattering_kind)
-      parallel_send_file_and_uncompress_command_wrapper(@config.exec_specific.environment.tarball_file,
-                                                        "/mnt/dest",
-                                                        scattering_kind,
-                                                        @config.exec_specific.environment.tarball_kind,
-                                                        @config.common.taktuk_connector)
+      case @config.exec_specific.environment.tarball_kind
+      when "tgz"
+        cmd = "tar xz -C #{@config.common.environment_extraction_dir}"
+      when "tbz2"
+        cmd = "tar xj -C #{@config.common.environment_extraction_dir}"
+      end
+      parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.environment.tarball_file,
+                                                cmd,
+                                                scattering_kind,
+                                                @config.common.taktuk_connector)
     end
 
     def send_key(scattering_kind)
       if (@config.exec_specific.key != "") then
-        parallel_concat_file_command_wrapper(@config.exec_specific.key,
-                                             "/mnt/dest/root/.ssh/authorized_keys",
-                                             scattering_kind,
-                                             @config.common.taktuk_connector)
+        cmd = "cat - >>#{@config.common.environment_extraction_dir}/root/.ssh/authorized_keys"
+        parallel_exec_cmd_with_input_file_wrapepr(@config.exec_specific.key,
+                                                  cmd,
+                                                  scattering_kind,
+                                                  @config.common.taktuk_connector)       
       end
-      return true
-    end
-    
-    def uncompress_tarball
-      tarball_path = @config.common.tarball_dest_dir + "/" + File.basename(@config.exec_specific.environment.tarball_file)
-      parallel_exec_command_wrapper("tar xzvf #{tarball_path} -C /mnt/dest",
-                                    @config.common.taktuk_connector)
       return true
     end
 

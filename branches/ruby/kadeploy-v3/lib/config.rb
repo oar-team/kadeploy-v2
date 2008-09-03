@@ -191,6 +191,8 @@ module ConfigInformation
               @common.ssh_port = content[2]
             when "rsh_port"
               @common.rsh_port = content[2]
+            when "environment_extraction_dir"
+              @common.environment_extraction_dir = content[2]
             end
           end
         end
@@ -690,6 +692,8 @@ module ConfigInformation
     attr_accessor :kadeploy_cache_dir
     attr_accessor :ssh_port
     attr_accessor :rsh_port
+    attr_accessor :environment_extraction_dir
+
     def initialize
       @nodes_desc = Nodes::NodeSet.new
     end
