@@ -66,11 +66,11 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir, kind))
     end
 
-    def parallel_exec_cmd_with_input_file_wrapper(file, cmd, scattering_kind, taktuk_connector)
+    def parallel_exec_cmd_with_input_file_wrapper(file, cmd, scattering_kind, taktuk_connector, status)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
-      classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind))
+      classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind, status))
     end
 
     def parallel_wait_nodes_after_reboot_wrapper(timeout, port)
@@ -206,7 +206,11 @@ module MicroStepsLibrary
     end
 
     def fdisk
-#      parallel_exec_command_wrapper("date", @config.common.taktuk_connector)
+      parallel_exec_cmd_with_input_file_wrapper(@config.cluster_specific[@cluster].fdisk_file,
+                                                "fdisk #{@config.cluster_specific[@cluster].block_device}",
+                                                "tree",
+                                                @config.common.taktuk_connector,
+                                                "256")  #Strange thing, fdisk can not reload the partition table so it exits with 256
       return true
     end
 
@@ -265,11 +269,20 @@ module MicroStepsLibrary
         cmd = "tar xz -C #{@config.common.environment_extraction_dir}"
       when "tbz2"
         cmd = "tar xj -C #{@config.common.environment_extraction_dir}"
+      when "ddgz"
+        cmd = "gzip -cd > #{@config.common.environment_extraction_dir}"
+      when "ddbz2"
+        cmd = "bzip2 -cd > #{@config.common.environment_extraction_dir}"
+      else
+        @output.debugl(0, "The #{@config.exec_specific.environment.tarball_kind} archive kind is not supported")
+        return false
       end
       parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.environment.tarball_file,
                                                 cmd,
                                                 scattering_kind,
-                                                @config.common.taktuk_connector)
+                                                @config.common.taktuk_connector,
+                                                "0")
+      return true
     end
 
     def send_key(scattering_kind)
@@ -278,7 +291,8 @@ module MicroStepsLibrary
         parallel_exec_cmd_with_input_file_wrapepr(@config.exec_specific.key,
                                                   cmd,
                                                   scattering_kind,
-                                                  @config.common.taktuk_connector)       
+                                                  @config.common.taktuk_connector,
+                                                  "0")       
       end
       return true
     end

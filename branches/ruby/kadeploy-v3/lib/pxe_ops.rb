@@ -69,7 +69,9 @@ module PXEOperations
     baudrate = 38400
     template = "PROMPT #{prompt}\nSERIAL 0 #{baudrate}\nDEFAULT bootlabel\nDISPLAY #{display}\nTIMEOUT #{timeout}\n\nlabel bootlabel\n";
     kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n"
-    initrd_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd + " root=" + boot_part + "\n"
+    initrd_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd 
+    initrd_line += " root=" + boot_part if (boot_part != "")
+    initrd_line += "\n"
     msg = template + kernel_line + initrd_line
     return write_pxe(ips, msg, tftp_repository, tftp_cfg)
   end
