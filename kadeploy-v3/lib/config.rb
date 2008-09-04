@@ -11,6 +11,7 @@ module ConfigInformation
   COMMON_CONFIGURATION_FILE = "conf"
   CLIENT_CONFIGURATION_FILE = "client_conf"
   SPECIFIC_CONFIGURATION_FILE_PREFIX = "specific_conf_"
+  FDISK_FILE_PREFIX = "fdisk_"
 
   class Config
     public
@@ -233,6 +234,7 @@ module ConfigInformation
       Dir[CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX + "*"].each { |f|
         cluster = String.new(f).sub(CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX, "")
         @cluster_specific[cluster] = ClusterSpecificConfig.new
+        @cluster_specific[cluster].fdisk_file = CONFIGURATION_FOLDER + "/" + FDISK_FILE_PREFIX + cluster
         IO.readlines(f).each { |line|
           if not (/^#/ =~ line) then #we ignore commented lines
             if /(.+)\ \=\ (.+)/ =~ line then
@@ -712,6 +714,7 @@ module ConfigInformation
     attr_accessor :cmd_hard_reboot
     attr_accessor :cmd_very_hard_reboot
     attr_accessor :cmd_console
+    attr_accessor :fdisk_file
     
     def initialize
       @workflow_steps = Array.new

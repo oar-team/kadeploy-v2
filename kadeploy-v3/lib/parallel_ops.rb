@@ -197,14 +197,14 @@ module ParallelOperations
       return [good_nodes, bad_nodes]   
     end
  
-    def exec_cmd_with_input_file(local_file, cmd, scattering_kind)
+    def exec_cmd_with_input_file(local_file, cmd, scattering_kind, status)
       tw = TaktukWrapper::new(make_taktuk_exec_cmd_with_input_file(local_file, cmd, scattering_kind))
       tw.run
       get_taktuk_exec_cmd_with_input_file_infos(tw)
       good_nodes = Array.new
       bad_nodes = Array.new
       @nodes.set.each { |node|
-        if node.last_cmd_exit_status == "0" then
+        if node.last_cmd_exit_status == status then
           good_nodes.push(node)
         else
           bad_nodes.push(node)
