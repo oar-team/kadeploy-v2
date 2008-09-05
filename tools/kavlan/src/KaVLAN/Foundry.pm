@@ -28,26 +28,17 @@ my $FOUNDRY_MASK      = ".1.3.6.1.4.1.1991.1.2.2.18.1.3"; # only used for router
 
 my $MAX_PORTS=1000;
 
+# Documentation: Foundry MIB Reference Guide
+
+# see also (but does not apply in our case):
+# http://www.notarus.net/networking/foundry_snmp.htmla
+
 # specific OIDs
-my $FOUNDRY_LIST_PORT = ".1.3.6.1.2.1.31.1.2.1.3"; # FIXME
-my $FOUNDRY_LIST_UNTAG= ".1.3.6.1.4.1.1991.1.1.3.3.5.1.24"; # FIXME
+my $FOUNDRY_LIST_UNTAG= ".1.3.6.1.4.1.1991.1.1.3.3.5.1.24"; # snSwIfVlanId
 my $FOUNDRY_PORT_IFINDEX = ".1.3.6.1.2.1.2.2.1.2"; # FIXME
-
-
-#.1.3.6.1.2.1.2.2.1.2.524 = STRING: GigabitEthernet9/12
-
-# grep 524 ~/fastiron.log  | grep 188
-# .1.3.6.1.2.1.17.7.1.2.2.1.2.188.0.20.79.120.199.48 = INTEGER: 524
-# .1.3.6.1.2.1.17.7.1.4.5.1.1.524 = Gauge32: 188
-# .1.3.6.1.4.1.1991.1.1.3.2.6.1.1.188.524 = INTEGER: 188
-# .1.3.6.1.4.1.1991.1.1.3.2.6.1.2.188.524 = INTEGER: 524
-# .1.3.6.1.4.1.1991.1.1.3.2.6.1.3.188.524 = INTEGER: 2
-
-# vlan of port 524: snSwIfVlanId
-#.1.3.6.1.4.1.1991.1.1.3.3.5.1.24.524 = INTEGER: 188
-
-# name if port 524:
-#.1.3.6.1.2.1.2.2.1.2.524 = STRING: GigabitEthernet9/12
+my $FOUNDRY_MEMBER_STATUS = ".1.3.6.1.4.1.1991.1.1.3.2.6.1.3"; #.<VLAN>.<PORTINDEX> : snVLanByPortMemberRowStatus
+my $FOUNDRY_DELETE_VLAN=3;
+my $FOUNDRY_CREATE_VLAN=4;
 
 sub new {
     my ($pkg)= @_;
@@ -69,7 +60,7 @@ sub getIPConfiguration {
 }
 
 ##########################################################################################
-# Get the ports affected to a vlan 
+# Get the ports affected to a vlan
 # arg : String -> the vlan name
 #       Session -> a switch session
 # ret : hash table reference : -> "TAGGED" array containing the tagged ports
@@ -116,12 +107,64 @@ sub getPortsAffectedToVlan(){
     return \%res;
 }
 
+
+##########################################################################################
+# Set a port as untag 
+# arg : String -> the vlan name
+#       Integer -> the port
+#    Session -> a switch session
+# ret : 
+# rmq :
+##########################################################################################
+sub setUntag(){
+
+    my $OLD_FUNC_NAME=$const::FUNC_NAME;
+    $const::FUNC_NAME="setUntag";
+    &const::verbose();
+
+    # Check arguments
+    my $self = shift;
+    my ($vlanName,$port,$switchSession)=@_;
+    if(not defined $vlanName or not defined $port or not defined $switchSession){
+        die "ERROR : Not enough argument for $const::FUNC_NAME";
+    }
+
+    # Retrieve the vlan number of $vlanName
+    &const::verbose("Verifying that the vlan is available");
+    my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
+    my @vlanNumber = $self->getVlanNumber($realVlanName,$switchSession);
+    if ($#vlanNumber==-1){
+        die "ERROR : There is no vlan available";
+    }
+
+    # Change the port information
+    &const::verbose("Put the port ",$port," in untag mode to the vlan ",$vlanNumber[0]);
+    # first, we must remove the port from its current VLAN
+    my @OldVLAN = $self->getPortInformation($port,$switchSession);
+    &const::verbose("The port is currently in the VLAN ",$OldVLAN[0]);
+    my $ifIndex = &getPortIfIndex($port,$switchSession);
+    # delete
+    my $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$OldVLAN[0].$ifIndex", $FOUNDRY_DELETE_VLAN,"INTEGER"]);
+    $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
+    # create
+    $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$vlanNumber[0].$ifIndex", $FOUNDRY_CREATE_VLAN,"INTEGER"]);
+    $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
+    $const::FUNC_NAME=$OLD_FUNC_NAME;
+
+}
+
+##########################################################################################
+# arg : integer -> the vlan index
+# ret : string -> the vlan name ( ex: 9/3 )
+##########################################################################################
 sub getPortFromIndex {
     my $OLD_FUNC_NAME=$const::FUNC_NAME;
     $const::FUNC_NAME="getPortFromIndex";
     &const::verbose();
     my $ifIndex;
     my ($index,$switchSession) = @_;
+
+   ## FIXME: compute index based on (X-1)*64+Y
     my $allports =new SNMP::VarList([$FOUNDRY_PORT_IFINDEX]);
     my $port;
     foreach my $i ($switchSession->bulkwalk(0,$MAX_PORTS,$allports)) {
@@ -136,6 +179,10 @@ sub getPortFromIndex {
     return $port;
 }
 
+##########################################################################################
+# arg : string -> the vlan name ( ex: 9/3 )
+# ret : integer -> the vlan index
+##########################################################################################
 sub getPortIfIndex {
     my $OLD_FUNC_NAME=$const::FUNC_NAME;
     $const::FUNC_NAME="getPortIfIndex";
@@ -143,18 +190,8 @@ sub getPortIfIndex {
     my $ifIndex;
     my ($port,$switchSession) = @_;
     if ($port =~ m@(\d+)/(\d+)@) {
-        my $allports =new SNMP::VarList([$FOUNDRY_PORT_IFINDEX]);
-        foreach my $i ($switchSession->bulkwalk(0,$MAX_PORTS,$allports)) {
-            foreach my $j (@ {$i}) {
-                Dumper($j);
-                if ($j->[2] =~ /$port$/) {
-                    my $ifIndex = $j->[0];
-                    &const::verbose("ifindex of port $port is $ifIndex");
-                }
-            }
-        }
-        $const::FUNC_NAME=$OLD_FUNC_NAME;
-        return $ifIndex;
+        # ifIndex of port X/Y is (X-1)*64+Y
+        return ($1-1)*64+$2;
     } else {
         die "bad port format: $port";
     }
