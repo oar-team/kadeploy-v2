@@ -5,16 +5,16 @@ require 'lib/nodes'
 module SetDeploymentEnvironnment
 
   class SetDeploymentEnvFactory
-    def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+    def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       case kind
       when "SetDeploymentEnvUntrusted"
-        return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       when "SetDeploymentEnvNfsroot"
-        return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       when "SetDeploymentEnvProd"
-        return SetDeploymentEnvProd.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvProd.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       when "SetDeploymentEnvDummy"
-        return SetDeploymentEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return SetDeploymentEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       else
         raise "Invalid kind of step value for the environment deployment step"
       end
@@ -33,8 +33,10 @@ module SetDeploymentEnvironnment
     @nodes_ko = nil
     @step = nil
     @config = nil
+    @logger = nil
+    @start = nil
 
-    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
       @nodes = nodes
@@ -45,11 +47,19 @@ module SetDeploymentEnvironnment
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
+      @logger = logger
+      @logger.set("step1", get_instance_name, @nodes)
+      @logger.set("timeout_step1", @timeout, @nodes)
+      @start = Time.now.to_i
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
     def get_macro_step_name
       return self.class.superclass.to_s.split("::")[1]
+    end
+
+    def get_instance_name
+      return self.class.to_s.split("::")[1]
     end
   end
 
@@ -61,6 +71,7 @@ module SetDeploymentEnvironnment
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           instance_thread = Thread.new {
+            @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a SetDeploymentEnvUntrusted step on the nodes: #{@nodes_ok.to_s}")
             result = true
@@ -77,7 +88,8 @@ module SetDeploymentEnvironnment
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
             if not @nodes_ok.empty? then
-              @nodes_ok.duplicate_and_free(@nodes)
+              @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
+              @nodes_ok.duplicate_and_free(@nodes)        
               @queue_manager.next_macro_step(get_macro_step_name, @nodes)
             end
           end
@@ -104,6 +116,7 @@ module SetDeploymentEnvironnment
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           instance_thread = Thread.new {
+            @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a SetDeploymentEnvProd step on the nodes: #{@nodes_ok.to_s}")
             result = true
@@ -118,6 +131,7 @@ module SetDeploymentEnvironnment
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
             if not @nodes_ok.empty? then
+              @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
               @nodes_ok.duplicate_and_free(@nodes)
               @queue_manager.next_macro_step(get_macro_step_name, @nodes)
             end            

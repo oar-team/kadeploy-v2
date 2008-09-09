@@ -194,6 +194,12 @@ module ConfigInformation
               @common.rsh_port = content[2]
             when "environment_extraction_dir"
               @common.environment_extraction_dir = content[2]
+            when "log_to_file"
+              @common.log_to_file = content[2]
+            when "log_to_syslog"
+              @common.log_to_syslog = true if (content[2] == "true")
+            when "log_to_db"
+              @common.log_to_db = true if (content[2] == "true")
             end
           end
         end
@@ -695,6 +701,9 @@ module ConfigInformation
     attr_accessor :ssh_port
     attr_accessor :rsh_port
     attr_accessor :environment_extraction_dir
+    attr_accessor :log_to_file
+    attr_accessor :log_to_syslog
+    attr_accessor :log_to_db
 
     def initialize
       @nodes_desc = Nodes::NodeSet.new

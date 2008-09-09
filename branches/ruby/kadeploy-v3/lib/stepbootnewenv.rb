@@ -2,12 +2,14 @@ require 'lib/debug'
 
 module BootNewEnvironment
   class BootNewEnvFactory
-    def BootNewEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+    def BootNewEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       case kind
       when "BootNewEnvKexec"
-        return BootNewEnvKexec.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return BootNewEnvKexec.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       when "BootNewEnvClassical"
-        return BootNewEnvClassical.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+        return BootNewEnvClassical.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+      when "BootNewEnvDummy"
+        return BootNewEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       else
         raise "Invalid kind of step value for the new environment boot step"
       end
@@ -26,8 +28,9 @@ module BootNewEnvironment
     @nodes_ok = nil
     @nodes_ko = nil
     @step = nil
+    @start = nil
     
-    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output)
+    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
       @nodes = nodes
@@ -38,11 +41,19 @@ module BootNewEnvironment
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
       @cluster = cluster
+      @logger = logger
+      @logger.set("step3", get_instance_name, @nodes)
+      @logger.set("timeout_step3", @timeout, @nodes)
+      @start = Time.now.to_i
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
     def get_macro_step_name
       return self.class.superclass.to_s.split("::")[1]
+    end
+
+    def get_instance_name
+      return self.class.to_s.split("::")[1]
     end
   end
 
@@ -53,6 +64,7 @@ module BootNewEnvironment
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           instance_thread = Thread.new {
+            @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
             result = true
@@ -63,6 +75,7 @@ module BootNewEnvironment
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
             if not @nodes_ok.empty? then
+              @logger.set("step3_duration", Time.now.to_i - @start, @nodes_ok)
               @nodes_ok.duplicate_and_free(@nodes)
               @queue_manager.next_macro_step(get_macro_step_name, @nodes)
             end
@@ -89,6 +102,7 @@ module BootNewEnvironment
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           instance_thread = Thread.new {
+            @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
             result = true
@@ -101,6 +115,7 @@ module BootNewEnvironment
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
             if not @nodes_ok.empty? then
+              @logger.set("step3_duration", Time.now.to_i - @start, @nodes_ok) 
               @nodes_ok.duplicate_and_free(@nodes)
               @queue_manager.next_macro_step(get_macro_step_name, @nodes)
             end
@@ -117,6 +132,15 @@ module BootNewEnvironment
           @queue_manager.decrement_active_threads
         end
       }  
+    end
+  end
+
+  class BootNewEnvDummy < BootNewEnv
+    def run
+      @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
+      @queue_manager.increment_active_threads
+      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+      @queue_manager.decrement_active_threads
     end
   end
 end
