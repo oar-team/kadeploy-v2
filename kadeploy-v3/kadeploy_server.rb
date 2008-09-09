@@ -25,6 +25,7 @@ class KadeployWorkflow
   @config = nil
   @client = nil
   @window_manager = nil
+  @logger = nil
   attr_accessor :nodes_ok
   attr_accessor :nodes_ko
 
@@ -41,7 +42,9 @@ class KadeployWorkflow
     @nodeset = @config.exec_specific.node_list
     @queue_manager = Managers::QueueManager.new(@config, @nodes_ok, @nodes_ko)
     @window_manager = Managers::WindowManager.new
-
+    @logger = Debug::Logger.new(@nodeset, @config)
+    @logger.set("start", Time.now)
+    @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
     @thread_set_deployment_environment = Thread.new {
       launch_thread_for_macro_step("SetDeploymentEnv")
     }
@@ -80,7 +83,8 @@ class KadeployWorkflow
                                                                         set,
                                                                         @queue_manager,
                                                                         @window_manager,
-                                                                        @output).run
+                                                                        @output,
+                                                                        @logger).run
             when "BroadcastEnv"
               BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
                                                                instance_max_retries, 
@@ -89,7 +93,8 @@ class KadeployWorkflow
                                                                set,
                                                                @queue_manager,
                                                                @window_manager,
-                                                               @output).run
+                                                               @output,
+                                                               @logger).run
             when "BootNewEnv"
               BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
                                                            instance_max_retries,
@@ -98,7 +103,8 @@ class KadeployWorkflow
                                                            set,
                                                            @queue_manager,
                                                            @window_manager,
-                                                           @output).run
+                                                           @output,
+                                                           @logger).run
             else
               raise "Invalid macro step name"
             end
@@ -109,14 +115,18 @@ class KadeployWorkflow
             @nodes_ok.add(nodes)
           end
           if @queue_manager.one_last_active_thread? then
+            @logger.set("success", true, @nodes_ok)
             @nodes_ok.group_by_cluster.each_pair { |cluster, set|
               @output.debugl(0, "Nodes correctly deployed on cluster #{cluster}")
               @output.debugl(0, set.to_s)
             }
+            @logger.set("success", false, @nodes_ko)
+            @logger.error(@nodes_ko)
             @nodes_ko.group_by_cluster.each_pair { |cluster, set|
               @output.debugl(0, "Nodes not Correctly deployed on cluster #{cluster}")
               @output.debugl(0, set.to_s(true))
             }
+            @logger.dump
             @queue_manager.send_exit_signal
             @thread_set_deployment_environment.join
             @thread_broadcast_environment.join
