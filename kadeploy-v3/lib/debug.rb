@@ -96,14 +96,15 @@ module Debug
     def dump_to_syslog
       sl = Syslog.open("Kadeploy")
       @nodes.each_pair { |hostname, node_infos|
-        str = node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
+        str = hostname + "," + @config.exec_specific.true_user
+        str += node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
         str += node_infos["timeout_step1"].to_s + "," + node_infos["timeout_step2"].to_s + "," + node_infos["timeout_step3"].to_s + ","
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","
         str += node_infos["start"].to_i.to_s + ","
         str += node_infos["step1_duration"].to_s + "," + node_infos["step2_duration"].to_s + "," + node_infos["step3_duration"].to_s + ","
         str += node_infos["env"] + "," + node_infos["md5"]
         str += node_infos["success"].to_s + "," + node_infos["error"].to_s
-        sl.log(Syslog::LOG_NOTICE, "#{hostname}: #{str}")
+        sl.log(Syslog::LOG_NOTICE, "#{str}")
       }
       sl.close
     end
@@ -115,7 +116,7 @@ module Debug
                  @config.common.deploy_db_passwd,
                  @config.common.deploy_db_name)
       @nodes.each_pair { |hostname, node_infos|
-        query = "INSERT INTO log (hostname, \
+        query = "INSERT INTO log (user, hostname, \
                                   step1, step2, step3, \
                                   timeout_step1, timeout_step2, timeout_step3, \
                                   retry_step1, retry_step2, retry_step3, \
@@ -123,7 +124,7 @@ module Debug
                                   step1_duration, step2_duration, step3_duration, \
                                   env, md5, \
                                   success, error) \
-                        VALUES (\"#{hostname}\", \
+                        VALUES (\"#{@config.exec_specific.true_user}\", \"#{hostname}\", \
                                 \"#{node_infos["step1"]}\", \"#{node_infos["step2"]}\", \"#{node_infos["step3"]}\", \
                                 \"#{node_infos["timeout_step1"]}\", \"#{node_infos["timeout_step2"]}\", \"#{node_infos["timeout_step3"]}\", \
                                 \"#{node_infos["retry_step1"]}\", \"#{node_infos["retry_step2"]}\", \"#{node_infos["retry_step3"]}\", \
@@ -140,15 +141,16 @@ module Debug
       fd = File.new(@config.common.log_to_file, File::CREAT | File::APPEND | File::WRONLY, 0644)
       fd.flock(File::LOCK_EX)
       @nodes.each_pair { |hostname, node_infos|
-        str = node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
+        str = hostname + "," + @config.exec_specific.true_user + ","
+        str += node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
         str += node_infos["timeout_step1"].to_s + "," + node_infos["timeout_step2"].to_s + "," + node_infos["timeout_step3"].to_s + ","
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","
         str += node_infos["start"].to_i.to_s + ","
         str += node_infos["step1_duration"].to_s + "," + node_infos["step2_duration"].to_s + "," + node_infos["step3_duration"].to_s + ","
         str += node_infos["env"] + "," + node_infos["md5"]
         str += node_infos["success"].to_s + "," + node_infos["error"].to_s
-        fd.write("#{Time.now.to_i}|#{hostname}: #{str}\n")
-      }      
+        fd.write("#{Time.now.to_i}: #{str}\n")
+      }
       fd.flock(File::LOCK_UN)
       fd.close
     end

@@ -37,7 +37,11 @@ module ConfigInformation
         when "karights"
           @common = CommonConfig.new
           load_common_config_file
-          load_karights_exec_specific          
+          load_karights_exec_specific
+        when "kastat"
+          @common = CommonConfig.new
+          load_common_config_file
+          load_kastat_exec_specific    
         else
           raise "Invalid configuration kind: #{kind}"
         end
@@ -55,6 +59,8 @@ module ConfigInformation
         check_kaenv_config
       when "karights"
         check_karights_config
+      when "kastat"
+        check_kastat_config
       end
     end
 
@@ -74,6 +80,7 @@ module ConfigInformation
       exec_specific.load_env_arg = String.new
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
+      exec_specific.true_user = ENV['USER']
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
       exec_specific.script = String.new
@@ -128,6 +135,7 @@ module ConfigInformation
         end
       when "kaenv"
       when "karights"
+      when "kastat"
       end
       return true
     end
@@ -673,6 +681,70 @@ module ConfigInformation
       end
       return true
     end
+
+
+
+##################################
+#        Kastat specific         #
+##################################
+    def load_kastat_exec_specific
+      @exec_specific = OpenStruct.new
+      @exec_specific.operation = String.new
+      @exec_specific.date_min = 0
+      @exec_specific.date_max = 0
+      @exec_specific.min_retries = 0
+      @exec_specific.min_rate = 0
+      @exec_specific.node_list = Array.new
+      @exec_specific.steps = Array.new
+      load_kastat_cmdline_options
+    end
+
+    def load_kastat_cmdline_options
+      progname = File::basename($PROGRAM_NAME)
+      opts = OptionParser::new do |opts|
+        opts.summary_indent = "  "
+        opts.summary_width = 28
+        opts.program_name = progname
+        opts.banner = "Usage: #{progname} [options]"
+        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.separator ""
+        opts.separator "General options:"
+        opts.on("-x", "--date-min DATE", "Get the stats from this date (yyyy:mm:dd:hh:mm:ss)") { |d|
+          str = d.split(":")
+          @exec_specific.date_min = Time.mktime(str[0], str[1], str[2], str[3] ,str[4], str[5]).to_i
+        }
+        opts.on("-y", "--date-max DATE", "Get the stats to this date") { |d|
+          str = d.split(":")
+          @exec_specific.date_max = Time.mktime(str[0], str[1], str[2], str[3], str[4], str[5]).to_i
+        }
+        opts.on("-a", "--list-min-retries NUMBER_OF_RETRIES", "Print the statistics about the nodes that need several attempts") { |n|
+          @exec_specific.operation = "list_retries"
+          @exec_specific.min_retries = n
+        }
+        opts.on("-b", "--list-failure-rate", "Print the failure rate for the nodes") { |n|
+          @exec_specific.operation = "list_failure_rate"
+        }
+        opts.on("-c", "--list-min-failure-rate RATE", "Print the nodes which have a minimum failure-rate of RATE (0 <= RATE <= 100") { |r|
+          @exec_specific.operation = "list_min_failure_rate"
+          @exec_specific.min_rate = r.to_i
+        }
+        opts.on("-d", "--list-all", "Print all the information") { |r|
+          @exec_specific.operation = "list_all"
+        }
+        opts.on("s", "--step STEP", "Only print information about the given steps (1, 2 or 3)") { |s|
+          @exec_specific.steps.push(s) 
+        }
+        opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
+          @exec_specific.node_list.push(m)
+        }
+      end
+      opts.parse!(ARGV)
+    end
+
+    def check_kastat_config
+      return true
+    end
+
   end
   
   class CommonConfig
