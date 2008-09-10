@@ -696,6 +696,7 @@ module ConfigInformation
       @exec_specific.min_rate = 0
       @exec_specific.node_list = Array.new
       @exec_specific.steps = Array.new
+      @exec_specific.fields = Array.new
       load_kastat_cmdline_options
     end
 
@@ -731,11 +732,14 @@ module ConfigInformation
         opts.on("-d", "--list-all", "Print all the information") { |r|
           @exec_specific.operation = "list_all"
         }
-        opts.on("s", "--step STEP", "Only print information about the given steps (1, 2 or 3)") { |s|
+        opts.on("-s", "--step STEP", "Only print information about the given steps (1, 2 or 3)") { |s|
           @exec_specific.steps.push(s) 
         }
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
           @exec_specific.node_list.push(m)
+        }
+        opts.on("-f", "--field FIELD", "Only print the given fields (user,hostname,step1,step2,step3,timeout_step1,timeout_step2,timeout_step3,retry_step1,retry_step2,retry_step3,start,step1_duration,step2_duration,step3_duration,env,md5,success,error)") { |f|
+          @exec_specific.fields.push(f)
         }
       end
       opts.parse!(ARGV)

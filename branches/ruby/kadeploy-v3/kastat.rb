@@ -35,6 +35,26 @@ def append_generic_where_clause(config)
   return generic_where_clause
 end
 
+def select_fields(row, config, default_fields)
+  fields = String.new  
+  if (not config.exec_specific.fields.empty?) then
+    config.exec_specific.fields.each_index { |i|
+      fields += row[config.exec_specific.fields[i]]
+      if (i < config.exec_specific.fields.length - 1) then
+        fields += ","
+      end    
+    }
+  else
+    default_fields.each_index { |i|
+      fields += row[default_fields[i]]
+      if (i < default_fields.length - 1) then
+        fields += ","
+      end
+    }
+  end
+  return fields
+end
+
 def list_retries(config, db)
   step_list = String.new
   if (not config.exec_specific.steps.empty?) then
@@ -65,7 +85,7 @@ def list_retries(config, db)
   end
   res = db.run_query(query)
   res.each_hash { |row|
-    puts "#{row["start"]} #{row["hostname"]} #{row["retry_step1"]},#{row["retry_step2"]},#{row["retry_step3"]}"
+    puts select_fields(row, config, ["start","hostname","retry_step1","retry_step2","retry_step3"])
   }
 end
 
@@ -93,7 +113,7 @@ def list_failure_rate(config, db, min = nil)
     }
     rate = 100 - (100 * success / array.length)
     if ((min == nil) || (rate >= min)) then
-      puts "#{hostname}: #{rate}%"
+      puts select_fields(row, config, ["hostname","rate"])
     end
   }
 end
@@ -105,17 +125,15 @@ def list_all(config, db)
   else
     query = "SELECT * FROM log"
   end
-   res = db.run_query(query)
+  res = db.run_query(query)
   res.each_hash { |row|
-    str = "#{row["user"]},#{row["hostname"]},"
-    str += "#{row["step1"]},#{row["step2"]},#{row["step3"]},"
-    str += "#{row["timeout_step1"]},#{row["timeout_step2"]},#{row["timeout_step3"]},"
-    str += "#{row["retry_step1"]},#{row["retry_step2"]},#{row["retry_step3"]},"
-    str += "#{row["start"]},"
-    str += "#{row["step1_duration"]},#{row["step2_duration"]},#{row["step3_duration"]},"
-    str += "#{row["env"]},#{row["md5"]},"
-    str += "#{row["success"]},#{row["error"]}"
-    puts str
+    puts select_fields(row, config, ["user","hostname","step1","step2","step3", \
+                                     "timeout_step1","timeout_step2","timeout_step3", \
+                                     "retry_step1","retry_step2","retry_step3", \
+                                     "start", \
+                                     "step1_duration","step2_duration","step3_duration", \
+                                     "env","md5", \
+                                     "success","error"])
   } 
 end
 
