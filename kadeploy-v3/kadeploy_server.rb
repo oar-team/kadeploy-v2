@@ -29,6 +29,13 @@ class KadeployWorkflow
   attr_accessor :nodes_ok
   attr_accessor :nodes_ko
 
+  # Constructor of KadeployWorkflow
+  #
+  # Arguments
+  # * config: instance of Config
+  # * client: Drb handler of the client
+  # Output
+  # * nothing
   def initialize(config, client)
     @config = config
     @client = client
@@ -58,7 +65,13 @@ class KadeployWorkflow
       launch_thread_for_macro_step("ProcessFinishedNodes")
     }
   end
-  
+
+  # Launches a thread for a macro step
+  #
+  # Arguments
+  # * kind: specifies the kind of macro step to launch
+  # Output
+  # * nothing  
   def launch_thread_for_macro_step(kind)
     close_thread = false
     @output.debugl(4, "#{kind} thread launched")
@@ -137,10 +150,22 @@ class KadeployWorkflow
     end
   end
 
+  # Creates a local dirname for a given file (usefull after a copy in a cache directory)
+  #
+  # Arguments
+  # * file: name of the file on the client side
+  # Output
+  # * returns the name of the file in the local cache directory
   def use_local_path_dirname(file)
     return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
   end
 
+  # Grabs files from the client side (tarball, ssh public key, ...)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
   def grab_user_files
     @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
     @client.get_file(@config.exec_specific.environment.tarball_file)
@@ -152,6 +177,12 @@ class KadeployWorkflow
     end
   end
 
+  # Main of KadeployWorkflow
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing  
   def run
     @output.debugl(0, "Launching Kadeploy ...")
     grab_user_files
@@ -169,6 +200,12 @@ class KadeployServer
   attr_reader :dest_port
   @file_name = nil #any access to file_name must be protected with mutex
 
+  # Constructor of KadeployServer
+  #
+  # Arguments
+  # * config: instance of Config
+  # Output
+  # * raises an exception if the file server can not open a socket
   def initialize(config)
     @config = config
     @dest_host = @config.common.kadeploy_server
@@ -201,27 +238,64 @@ class KadeployServer
     end
   end
 
+  # Prevents a shared object related to the file transfers from any modifications, it must be called before a file transfer (RPC)
+  #
+  # Arguments
+  # * file_name: name of the file that will be transfered
+  # Output
+  # * nothing
   def pre_send_file(file_name)
     @mutex.lock
     @file_name = file_name
   end
 
+  # Releases a lock on a shared object, it must be called after a file transfer (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
   def post_send_file
     @mutex.unlock
   end
 
+  # Gets the common configuration (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
   def get_common_config
     return @config.common
   end
 
+  # Gets the default deployment partition (RPC)
+  #
+  # Arguments
+  # * cluster: name of the cluster concerned
+  # Output
+  # * nothing
   def get_default_deploy_part(cluster)
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].deploy_part
   end
 
+  # Sets the exec_specific configuration from the client side (RPC)
+  #
+  # Arguments
+  # * exec_specific: instance of Config.exec_specific
+  # Output
+  # * nothing
   def set_exec_specific_config(exec_specific)
     @config.exec_specific = exec_specific
   end
 
+  # Launches the workflow from the client side (RPC)
+  #
+  # Arguments
+  # * host: hostname of the client
+  # * port: port on which the client listen to Drb
+  # Output
+  # * nothing
   def launch_workflow(host, port)
     puts "Let's launch an instance of Kadeploy"
     DRb.start_service()

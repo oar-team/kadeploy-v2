@@ -17,15 +17,33 @@ class KadeployClient
   def initialize(kadeploy_server)
     @kadeploy_server = kadeploy_server
   end
-
+  
+  # Print a message (RPC)
+  #
+  # Arguments
+  # * msg: string to print
+  # Output
+  # * prints a message
   def print(msg)
     puts msg
   end
 
+  # Stops the DRB service and to release the client (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
   def exit
     DRb.stop_service()
   end
-  
+
+  # Gets a file from the client (RPC)
+  #
+  # Arguments
+  # * file_name: name of the file on the client side
+  # Output
+  # * nothing  
   def get_file(file_name)
     @kadeploy_server.pre_send_file(File.basename(file_name))
     sock = TCPSocket.new(@kadeploy_server.dest_host, @kadeploy_server.dest_port)

@@ -41,7 +41,7 @@ module CmdCtrlWrapper
   # Arguments
   # * pr: instance of a ParallelRunner
   # Output
-  # * Array of two arrays. [0] contains the nodes where the command has been successfully executed. [1] contains the nodes where the command has not been successfully executed.
+  # * Array of two arrays ([0] contains the nodes OK and [1] contains the nodes KO)
   def CmdCtrlWrapper::get_results(pr)
     good_nodes = Array.new
     bad_nodes = Array.new

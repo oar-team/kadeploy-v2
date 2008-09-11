@@ -2,7 +2,12 @@
 require 'lib/config'
 require 'lib/db'
 
-
+# Generates some filters for the output according the options
+#
+# Arguments
+# * config: instance of Config
+# Output
+# * returns a string that contains the where clause corresponding to the filters required
 def append_generic_where_clause(config)
   generic_where_clause = String.new
   node_list = String.new
@@ -35,6 +40,15 @@ def append_generic_where_clause(config)
   return generic_where_clause
 end
 
+
+# Select the fields to output
+#
+# Arguments
+# * row: hashtable that contains a line of information fetched in the database
+# * config: instance of Config
+# * default_fields: array of fields used to produce the output if no fields are given in the command line
+# Output
+# * string that contains the selected fields in a result line
 def select_fields(row, config, default_fields)
   fields = String.new  
   if (not config.exec_specific.fields.empty?) then
@@ -55,6 +69,13 @@ def select_fields(row, config, default_fields)
   return fields
 end
 
+# List the information about the nodes that require a given number of retries to be deployed
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the filtred information about the nodes that require a given number of retries to be deployed
 def list_retries(config, db)
   step_list = String.new
   if (not config.exec_specific.steps.empty?) then
@@ -89,6 +110,15 @@ def list_retries(config, db)
   }
 end
 
+
+# List the information about the nodes that have at least a given failure rate
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# * min(opt): minimum failure rate
+# Output
+# * prints the filtred information about the nodes that have at least a given failure rate
 def list_failure_rate(config, db, min = nil)
   generic_where_clause = append_generic_where_clause(config)
   if (generic_where_clause != "") then
@@ -118,6 +148,13 @@ def list_failure_rate(config, db, min = nil)
   }
 end
 
+# List the information about all the nodes
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the information about all the nodes
 def list_all(config, db)
   generic_where_clause = append_generic_where_clause(config)
   if (generic_where_clause != "") then

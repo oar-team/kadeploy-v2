@@ -13,6 +13,17 @@ module MicroStepsLibrary
     @cluster = nil
     @output = nil
 
+    # Constructor of MicroSteps
+    #
+    # Arguments
+    # * nodes_ok: NodeSet of nodes OK
+    # * nodes_ko: NodeSet of nodes KO
+    # * window_manager: WindowManager instance
+    # * config: instance of Config
+    # * cluster: cluster name of the nodes
+    # * output: OutputControl instance
+    # Output
+    # * nothing
     def initialize(nodes_ok, nodes_ko, window_manager, config, cluster, output)
       @nodes_ok = nodes_ok
       @nodes_ko = nodes_ko
@@ -24,7 +35,12 @@ module MicroStepsLibrary
 
     private
 
-    #good_bad_array[0] are the good ones and good_bad_array[1] are the bad ones
+    # Classifies an array of nodes in two arrayes (good ones and bad nodes)
+    #
+    # Arguments
+    # * good_bad_array: array that contains nodes ok and ko ([0] are the good ones and [1] are the bad ones)
+    # Output
+    # * nothing
     def classify_nodes(good_bad_array)
       if not good_bad_array[0].empty? then
         good_bad_array[0].each { |n|
@@ -36,8 +52,15 @@ module MicroStepsLibrary
           @nodes_ko.push(n)
         }
       end
-    end  
-
+    end 
+ 
+    # Wraps a parallel command
+    #
+    # Arguments
+    # * cmd: command to execute on nodes_ok
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # Output
+    # * nothing
     def parallel_exec_command_wrapper(cmd, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
@@ -45,13 +68,30 @@ module MicroStepsLibrary
       classify_nodes(po.execute(cmd))
     end
 
+    # Wraps a parallel command and expects a given set of exit status
+    #
+    # Arguments
+    # * cmd: command to execute on nodes_ok
+    # * status: array of exit status expected
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # Output
+    # * nothing
     def parallel_exec_command_wrapper_expecting_status(cmd, status, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
       classify_nodes(po.execute_expecting_status(cmd, status))
-    end    
-
+    end 
+  
+    # Wraps a parallel command and expects a given set of exit status and an output
+    #
+    # Arguments
+    # * cmd: command to execute on nodes_ok
+    # * status: array of exit status expected
+    # * output: string that contains the output expected
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # Output
+    # * nothing
     def parallel_exec_command_wrapper_expecting_status_and_output(cmd, status, output, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
@@ -59,13 +99,33 @@ module MicroStepsLibrary
       classify_nodes(po.execute_expecting_status_and_output(cmd, status, output))
     end
 
-    def parallel_send_file_command_wrapper(file, dest_dir, kind, taktuk_connector)
+    # Wraps a parallel send of file
+    #
+    # Arguments
+    # * file: file to send
+    # * dest_dir: destination of the file on the nodes
+    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # Output
+    # * nothing
+    def parallel_send_file_command_wrapper(file, dest_dir, scattering_kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
-      classify_nodes(po.send_file(file, dest_dir, kind))
+      classify_nodes(po.send_file(file, dest_dir, scattering_kind))
     end
 
+    # Wraps a parallel command that uses an input file
+    #
+    # Arguments
+    # * file: file to send as input
+    # * cmd: command to execute on nodes_ok
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # * taktuk_connector: specifies the connector to use with Taktuk
+    # * status: array of exit status expected
+    # Output
+    # * nothing
     def parallel_exec_cmd_with_input_file_wrapper(file, cmd, scattering_kind, taktuk_connector, status)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
@@ -73,6 +133,13 @@ module MicroStepsLibrary
       classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind, status))
     end
 
+    # Wraps a parallel reboot command and wait a give time the effective reboot
+    #
+    # Arguments
+    # * timeout: time to wait
+    # * port: port probed on the rebooted nodes to test
+    # Output
+    # * nothing    
     def parallel_wait_nodes_after_reboot_wrapper(timeout, port)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
@@ -80,6 +147,13 @@ module MicroStepsLibrary
       classify_nodes(po.wait_nodes_after_reboot(timeout, port))
     end
 
+    # Sub function for reboot_wrapper
+    #
+    # Arguments
+    # * kind: kind of reboot to perform
+    # * node_set: NodeSet that must be rebooted 
+    # Output
+    # * nothing  
     def _reboot_wrapper(kind, node_set)
       @output.debugl(4, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
@@ -97,6 +171,12 @@ module MicroStepsLibrary
       classify_nodes(CmdCtrlWrapper::get_results(pr))
     end
 
+    # Wraps the reboot command
+    #
+    # Arguments
+    # * kind: kind of reboot to perform
+    # Output
+    # * nothing    
     def reboot_wrapper(kind)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
@@ -118,9 +198,25 @@ module MicroStepsLibrary
       end
     end
 
-    def extract_files_from_archive(archive, file_array, dest_dir)
+    # Extracts some file from an archive
+    #
+    # Arguments
+    # * archive: archive name
+    # * archive_kind: kind of archive
+    # * file_array: array of file to extract from the archive
+    # * dest_dir: destination dir for the files extracted
+    # Output
+    # * returns true if the file are extracted correctly, false otherwise
+    def extract_files_from_archive(archive, archive_kind, file_array, dest_dir)
       file_array.each { |f|
-        cmd = "tar -C #{dest_dir} --strip 1 -xzf #{archive} #{f}"
+        case archive_kind
+        when "tgz"
+          cmd = "tar -C #{dest_dir} --strip 1 -xzf #{archive} #{f}"          
+        when "tbz2"
+          cmd = "tar -C #{dest_dir} --strip 1 -xjf #{archive} #{f}"
+        else
+          raise "The kind #{archive_kind} of archive is not supported"
+        end
         if not system(cmd) then
           @output.debugl(0, "The file #{f} cannot be extracted")
           return false
@@ -131,6 +227,12 @@ module MicroStepsLibrary
 
     public
 
+    # Changes the PXE configuration
+    #
+    # Arguments
+    # * step: kind of change
+    # Output
+    # * returns true if the operation has been performed correctly, false otherwise
     def switch_pxe(step)
       case step
       when "prod_to_deploy_env"
@@ -155,7 +257,13 @@ module MicroStepsLibrary
       end
       return res
     end
-    
+
+    # Performs a reboot on the current set of nodes_ok
+    #
+    # Arguments
+    # * reboot_kind: kind of reboot (soft, hard, very_hard, kexec)
+    # Output
+    # * returns true (should be false sometimes :D)
     def reboot(reboot_kind)
       case reboot_kind
       when "soft"
@@ -175,7 +283,13 @@ module MicroStepsLibrary
       end
       return true
     end
-    
+
+    # Checks the state of a set of nodes
+    #
+    # Arguments
+    # * step: step in which the nodes are expected to be
+    # Output
+    # * returns true (should be false sometimes :D)    
     def check_nodes(step)
       case step
       when "deploy_env_booted"
@@ -200,11 +314,27 @@ module MicroStepsLibrary
       return true
     end
 
+    # Loads some specific drivers on the nodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D) 
     def load_drivers
-#      parallel_exec_command_wrapper("date", @config.common.taktuk_connector)
+      cmd = String.new
+      @config.cluster_specific[@cluster].drivers.each_index { |i|
+        cmd += "modprobe #{@config.cluster_specific[@cluster].drivers[i]};"
+      }
+      parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector)
       return true
     end
 
+    # Performs a fdisk on the ndoes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D) 
     def fdisk
       parallel_exec_cmd_with_input_file_wrapper(@config.cluster_specific[@cluster].fdisk_file,
                                                 "fdisk #{@config.cluster_specific[@cluster].block_device}",
@@ -214,6 +344,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Performs the deployment part on the nodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D) 
     def format_deploy_part
       if (@config.exec_specific.deploy_part != "") then
         deploy_part = @config.exec_specific.deploy_part
@@ -225,7 +361,13 @@ module MicroStepsLibrary
                                     @config.common.taktuk_connector)
       return true
     end
-    
+
+    # Format the /tmp part on the nodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D)     
     def format_tmp_part
       if (@config.exec_specific.reformat_tmp) then
         tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
@@ -235,6 +377,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Mounts the deployment part on the ndoes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D) 
     def mount_deploy_part
       if (@config.exec_specific.deploy_part != "") then
         deploy_part = @config.exec_specific.deploy_part
@@ -246,6 +394,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Mounts the /tmp part on the ndoes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D) 
     def mount_tmp_part
       if (@config.exec_specific.reformat_tmp) then      
         tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
@@ -255,6 +409,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Sends a tarball on the nodes (currently unused)
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # Output
+    # * returns true (should be false sometimes :D) 
     def send_tarball(scattering_kind)
       parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
                                          @config.common.tarball_dest_dir,
@@ -263,6 +423,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Sends a tarball and uncompress it on the nodes
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # Output
+    # * returns true if the operation is correctly performed, false 
     def send_tarball_and_uncompress(scattering_kind)
       case @config.exec_specific.environment.tarball_kind
       when "tgz"
@@ -285,6 +451,12 @@ module MicroStepsLibrary
       return true
     end
 
+    # Sends a tarball and uncompress it on the nodes
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # Output
+    # * returns true if the operation is correctly performed, false
     def send_key(scattering_kind)
       if (@config.exec_specific.key != "") then
         cmd = "cat - >>#{@config.common.environment_extraction_dir}/root/.ssh/authorized_keys"
@@ -297,25 +469,50 @@ module MicroStepsLibrary
       return true
     end
 
+    # Waits some nodes after a reboot
+    #
+    # Arguments
+    # * port: port used to perform a reach test on the nodes
+    # Output
+    # * returns true (should be false sometimes :D)
     def wait_reboot(port)
       parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot, port)
       return true
     end
     
+    # Copies the kernel and the initrd into the PXE directory
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the operation is correctly performed, false
     def copy_kernel_initrd_to_pxe
       archive = @config.exec_specific.environment.tarball_file
       kernel = "boot/" + @config.exec_specific.environment.kernel
       initrd = "boot/" + @config.exec_specific.environment.initrd
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      return extract_files_from_archive(archive, [kernel, initrd], dest_dir)
+      return extract_files_from_archive(archive, @config.exec_specific.environment.tarball_kind, [kernel, initrd], dest_dir)
     end
 
+    # Dummy method to put all the nodes in the node_ko set
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true (should be false sometimes :D)
     def produce_bad_nodes
       @nodes_ok.duplicate_and_free(@nodes_ko)
       return true
     end
-    
-    #return true if the timeout is reached
+
+    # Tests if a timeout is reached
+    #
+    # Arguments
+    # * timeout: timeout
+    # * instance_thread: instance of thread that waits for the timeout
+    # * step_name: name of the current step
+    # Output   
+    # * returns true if the timeout is reached, false otherwise
     def timeout?(timeout, instance_thread, step_name)
       start = Time.now.to_i
       while ((instance_thread.status != false) && (Time.now.to_i < (start + timeout)))

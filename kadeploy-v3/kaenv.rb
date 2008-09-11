@@ -3,7 +3,13 @@ require 'lib/config'
 require 'lib/db'
 require 'lib/environment'
 
-
+# List the environments of a user defined in Config.exec_specific.user
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the environments of a given user
 def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
@@ -21,6 +27,13 @@ def list_environments(config, db)
   }
 end
 
+# Add an environment described in the file Config.exec_specific.file
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
 def add_environment(config, db)
   env = EnvironmentManagement::Environment.new
   env.load_from_file(config.exec_specific.file)
@@ -57,13 +70,27 @@ def add_environment(config, db)
   db.run_query(query)
 end
 
-def delete_environment(config,db)
+# Delete the environment specified in Config.exec_specific.env_name
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
+def delete_environment(config, db)
   env = EnvironmentManagement::Environment.new
   query = "DELETE FROM environment WHERE name=\"#{config.exec_specific.env_name}\" \
                                    AND user=\"#{ENV['USER']}\""
   db.run_query(query)
 end
 
+# Prints the environment designed by Config.exec_specific.env_name and that belongs to the user specified in Config.exec_specific.user
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the specified environment that belongs to the specified user
 def print_environment(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then

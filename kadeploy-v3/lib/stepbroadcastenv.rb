@@ -2,6 +2,21 @@ require 'lib/debug'
 
 module BroadcastEnvironment
   class BroadcastEnvFactory
+    # Factory for the methods to broadcast an environment
+    #
+    # Arguments
+    # * kind: specifies the method to use (BroadcastEnvChainWithFS, BroadcastEnvTreeWithFS, BroadcastEnvDummy)
+    # * max_retries: maximum number of retries for the step
+    # * timeout: timeout for the step
+    # * cluster: name of the cluster
+    # * nodes: instance of NodeSet
+    # * queue_manager: instance of QueueManager
+    # * window_manager: instance of WindowManager
+    # * output: instance of OutputControl
+    # * logger: instance of Logger
+    # Output
+    # * returns a BroadcastEnv instance (BroadcastEnvChainWithFS, BroadcastEnvTreeWithFS, BroadcastEnvDummy)
+    # * raises an exception if an invalid kind of instance is given
     def BroadcastEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       case kind
       when "BroadcastEnvChainWithFS"
@@ -30,6 +45,19 @@ module BroadcastEnvironment
     @step = nil
     @start = nil
 
+    # Constructor of BroadcastEnv
+    #
+    # Arguments
+    # * max_retries: maximum number of retries for the step
+    # * timeout: timeout for the step
+    # * cluster: name of the cluster
+    # * nodes: instance of NodeSet
+    # * queue_manager: instance of QueueManager
+    # * window_manager: instance of WindowManager
+    # * output: instance of OutputControl
+    # * logger: instance of Logger
+    # Output
+    # * nothing
     def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
@@ -48,16 +76,34 @@ module BroadcastEnvironment
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
+    # Gets the name of the current macro step
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns the name of the current macro step  
     def get_macro_step_name
       return self.class.superclass.to_s.split("::")[1]
     end
 
+    # Gets the name of the current instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns the name of the current current instance
     def get_instance_name
       return self.class.to_s.split("::")[1]
     end
   end
 
   class BroadcastEnvChainWithFS < BroadcastEnv
+    # Main of the BroadcastEnvChainWithFS instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       Thread.new {
         @queue_manager.increment_active_threads
@@ -98,6 +144,12 @@ module BroadcastEnvironment
   end
 
   class BroadcastEnvTreeWithFS < BroadcastEnv
+    # Main of the BroadcastEnvTreeWithFS instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       Thread.new {
         @queue_manager.increment_active_threads
@@ -138,6 +190,12 @@ module BroadcastEnvironment
   end
 
   class BroadcastEnvDummy < BroadcastEnv
+    # Main of the BroadcastEnvDummy instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
       @queue_manager.increment_active_threads

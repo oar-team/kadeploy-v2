@@ -19,7 +19,13 @@ module ConfigInformation
     attr_reader :common
     attr_reader :cluster_specific
     attr_accessor :exec_specific
-    
+
+    #Constructor of Config
+    #
+    # Arguments
+    # * kind: tool (kadeploy, kaenv, karights, kastat)
+    # Output
+    # * nothing if all is OK, otherwise raises an exception
     def initialize(kind)
       if (sanity_check(kind) == true) then
         case kind
@@ -51,6 +57,12 @@ module ConfigInformation
       end
     end
 
+    # Check the config of the Kadeploy tools
+    #
+    # Arguments
+    # * kind: tool (kadeploy, kaenv, karights, kastat)
+    # Output
+    # * calls the chack_config method that correspond to the selected tool
     def check_config(kind)
       case kind
       when "kadeploy"
@@ -89,7 +101,9 @@ module ConfigInformation
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
-          exec_specific.environment.load_from_file(exec_specific.load_env_arg)
+          if (exec_specific.environment.load_from_file(exec_specific.load_env_arg) == false) then
+            return nil
+          end
         when "db"
           if (exec_specific.environment.load_from_db(exec_specific.load_env_arg,
                                                      exec_specific.env_version,
@@ -278,6 +292,10 @@ module ConfigInformation
                 @cluster_specific[cluster].cmd_very_hard_reboot = content[2]
               when "cmd_console"
                 @cluster_specific[cluster].cmd_console = content[2]
+              when "drivers"
+                content[2].split(",").each { |driver|
+                  @cluster_specific[cluster].drivers.push(driver)
+                }
               when "macrostep"
                 macrostep_name = content[2].split("|")[0]
                 microstep_list = content[2].split("|")[1]
@@ -553,7 +571,7 @@ module ConfigInformation
     # Arguments
     # * nothing
     # Output
-    # * returns true in case of success, false otherwise
+    # * nothing
     def load_kaenv_cmdline_options
       progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
@@ -618,6 +636,13 @@ module ConfigInformation
 ##################################
 #       Karights specific        #
 ##################################
+
+    # Loads the karights specific stuffs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def load_karights_exec_specific
       @exec_specific = OpenStruct.new
       @exec_specific.operation = String.new
@@ -627,6 +652,12 @@ module ConfigInformation
       load_karights_cmdline_options
     end
 
+    # Loads the command-line options of karights
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def load_karights_cmdline_options
       progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
@@ -659,6 +690,12 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
+    # Checks the whole configuration of the karigths execution
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the options used are correct, false otherwise
     def check_karights_config
       if (@exec_specific.user == "") then
         puts "You must choose a user"
@@ -687,6 +724,13 @@ module ConfigInformation
 ##################################
 #        Kastat specific         #
 ##################################
+
+    # Loads the kastat specific stuffs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def load_kastat_exec_specific
       @exec_specific = OpenStruct.new
       @exec_specific.operation = String.new
@@ -700,6 +744,12 @@ module ConfigInformation
       load_kastat_cmdline_options
     end
 
+    # Loads the command-line options of kastat
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true in case of success, false otherwise
     def load_kastat_cmdline_options
       progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
@@ -711,12 +761,10 @@ module ConfigInformation
         opts.separator ""
         opts.separator "General options:"
         opts.on("-x", "--date-min DATE", "Get the stats from this date (yyyy:mm:dd:hh:mm:ss)") { |d|
-          str = d.split(":")
-          @exec_specific.date_min = Time.mktime(str[0], str[1], str[2], str[3] ,str[4], str[5]).to_i
+          @exec_specific.date_min = d
         }
         opts.on("-y", "--date-max DATE", "Get the stats to this date") { |d|
-          str = d.split(":")
-          @exec_specific.date_max = Time.mktime(str[0], str[1], str[2], str[3], str[4], str[5]).to_i
+          @exec_specific.date_max = d
         }
         opts.on("-a", "--list-min-retries NUMBER_OF_RETRIES", "Print the statistics about the nodes that need several attempts") { |n|
           @exec_specific.operation = "list_retries"
@@ -732,7 +780,7 @@ module ConfigInformation
         opts.on("-d", "--list-all", "Print all the information") { |r|
           @exec_specific.operation = "list_all"
         }
-        opts.on("-s", "--step STEP", "Only print information about the given steps (1, 2 or 3)") { |s|
+        opts.on("-s", "--step STEP", "Applies the retry filter on the given steps (1, 2 or 3)") { |s|
           @exec_specific.steps.push(s) 
         }
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
@@ -745,7 +793,51 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
+    # Checks the whole configuration of the kastat execution
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the options used are correct, false otherwise
     def check_kastat_config
+      authorized_fields = ["user","hostname","step1","step2","step3", \
+                           "timeout_step1","timeout_step2","timeout_step3", \
+                           "retry_step1","retry_step2","retry_step3", \
+                           "start", \
+                           "step1_duration","step2_duration","step3_duration", \
+                           "env","md5", \
+                           "success","error"]
+      @exec_specific.fields.each { |f|
+        if (not authorized_fields.include?(f)) then
+          puts "The field \"#{f}\" does not exist"
+          return false
+        end
+      }
+      if (@exec_specific.date_min != 0) then
+        if not (/^\d{4}:\d{2}:\d{2}$/ === @exec_specific.date_min) then
+          puts "The date #{@exec_specific.date_min} is not correct"
+          return false
+        else
+          str = @exec_specific.date_min.split(":")
+          @exec_specific.date_min = Time.mktime(str[0], str[1], str[2], str[3], str[4], str[5]).to_i
+        end
+      end
+      if (@exec_specific.date_max != 0) then
+        if not (/^\d{4}:\d{2}:\d{2}$/ === @exec_specific.date_max) then
+          puts "The date #{@exec_specific.date_max} is not correct"
+          return false
+        else
+          str = @exec_specific.date_max.split(":")
+          @exec_specific.date_max = Time.mktime(str[0], str[1], str[2], str[3], str[4], str[5]).to_i
+        end
+      end
+      authorized_steps = ["1","2","3"]
+      @exec_specific.steps.each { |s|
+         if (not authorized_steps.include?(s)) then
+           puts "The step \"#{s}\" does not exist"
+           return false
+         end
+       }
       return true
     end
 
@@ -781,10 +873,20 @@ module ConfigInformation
     attr_accessor :log_to_syslog
     attr_accessor :log_to_db
 
+    # Constructor of CommonConfig
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing    
     def initialize
       @nodes_desc = Nodes::NodeSet.new
     end
   end
+
+
+
+
   
   class ClusterSpecificConfig
     attr_accessor :deploy_kernel
@@ -800,7 +902,14 @@ module ConfigInformation
     attr_accessor :cmd_very_hard_reboot
     attr_accessor :cmd_console
     attr_accessor :fdisk_file
-    
+    attr_accessor :drivers
+
+    # Constructor of ClusterSpecificConfig
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing        
     def initialize
       @workflow_steps = Array.new
     end
@@ -822,6 +931,13 @@ module ConfigInformation
     @array_of_instances = nil #specify the instances by order of use, if the first one fails, we use the second, and so on
     @current = nil
 
+    # Constructor of MacroStep
+    #
+    # Arguments
+    # * name: name of the macro-step (SetDeploymentEnv, BroadcastEnv, BootNewEnv)
+    # * array_of_instances: array of [instance_name, instance_max_retries, instance_timeout]
+    # Output
+    # * nothing 
     def initialize(name, array_of_instances)
       @name = name
       @array_of_instances = array_of_instances
