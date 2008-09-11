@@ -5,6 +5,21 @@ require 'lib/nodes'
 module SetDeploymentEnvironnment
 
   class SetDeploymentEnvFactory
+    # Factory for the methods to set a deployment environment
+    #
+    # Arguments
+    # * kind: specifies the method to use (BroadcastEnvChainWithFS, BroadcastEnvTreeWithFS, BroadcastEnvDummy)
+    # * max_retries: maximum number of retries for the step
+    # * timeout: timeout for the step
+    # * cluster: name of the cluster
+    # * nodes: instance of NodeSet
+    # * queue_manager: instance of QueueManager
+    # * window_manager: instance of WindowManager
+    # * output: instance of OutputControl
+    # * logger: instance of Logger
+    # Output
+    # * returns a SetDeploymentEnv instance (SetDeploymentEnvUntrusted, SetDeploymentEnvNfsroot, SetDeploymentEnvProd, SetDeploymentEnvDummy)
+    # * raises an exception if an invalid kind of instance is given
     def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       case kind
       when "SetDeploymentEnvUntrusted"
@@ -36,6 +51,19 @@ module SetDeploymentEnvironnment
     @logger = nil
     @start = nil
 
+    # Constructor ofSetDeploymentEnv
+    #
+    # Arguments
+    # * max_retries: maximum number of retries for the step
+    # * timeout: timeout for the step
+    # * cluster: name of the cluster
+    # * nodes: instance of NodeSet
+    # * queue_manager: instance of QueueManager
+    # * window_manager: instance of WindowManager
+    # * output: instance of OutputControl
+    # * logger: instance of Logger
+    # Output
+    # * nothing
     def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
@@ -54,16 +82,34 @@ module SetDeploymentEnvironnment
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
     end
 
+    # Gets the name of the current macro step
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns the name of the current macro step  
     def get_macro_step_name
       return self.class.superclass.to_s.split("::")[1]
     end
 
+    # Gets the name of the current instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns the name of the current current instance
     def get_instance_name
       return self.class.to_s.split("::")[1]
     end
   end
 
   class SetDeploymentEnvUntrusted < SetDeploymentEnv
+    # Main of the SetDeploymentEnvUntrusted instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
       Thread.new {
@@ -109,6 +155,12 @@ module SetDeploymentEnvironnment
   end
 
   class SetDeploymentEnvProd < SetDeploymentEnv
+    # Main of the SetDeploymentEnvProd instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
       Thread.new {
@@ -153,6 +205,12 @@ module SetDeploymentEnvironnment
 
   
   class SetDeploymentEnvNfsroot < SetDeploymentEnv
+    # Main of the SetDeploymentEnvNfsroot instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
       @queue_manager.increment_active_threads
@@ -162,6 +220,12 @@ module SetDeploymentEnvironnment
   end
 
   class SetDeploymentEnvDummy < SetDeploymentEnv
+    # Main of the SetDeploymentEnvDummy instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
       @queue_manager.increment_active_threads

@@ -2,6 +2,12 @@
 require 'lib/config'
 require 'lib/db'
 
+# Generate a comma-separated string from an array
+#
+# Arguments
+# * array: array of string
+# Output
+# * returns a comma-separated string of the array
 def array_pretty_print(array)
   s = String.new
   array.each_index { |i|
@@ -11,6 +17,13 @@ def array_pretty_print(array)
   return s
 end
 
+# Shows the rights of a user defined in Config.exec_specific.user
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the rights of a specific user
 def show_rights(config, db)
   hash = Hash.new
   query = "SELECT * FROM rights WHERE user=\"#{config.exec_specific.user}\""
@@ -33,6 +46,15 @@ def show_rights(config, db)
   end
 end
 
+# Add some rights on the nodes defined in Config.exec_specific.node_list
+# and on the parts defined in Config.exec_specific.part_list to a specific
+# user defined in Config.exec_specific.user
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
 def add_rights(config, db)
   #check if other users have rights on some nodes
   nodes_to_remove = Array.new
@@ -63,6 +85,15 @@ def add_rights(config, db)
   }
 end
 
+# Remove some rights on the nodes defined in Config.exec_specific.node_list
+# and on the parts defined in Config.exec_specific.part_list to a specific
+# user defined in Config.exec_specific.user
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
 def delete_rights(config, db)
   config.exec_specific.node_list.each { |node|
     config.exec_specific.part_list.each { |part|

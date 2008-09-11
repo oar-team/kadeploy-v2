@@ -5,20 +5,30 @@ module Debug
     @debug_level = 0
     @client = nil
 
+    # Constructor of OutputControl
+    #
+    # Arguments
+    # * debug_level: debug level at the runtime
+    # * client: Drb handler of the client
+    # Output
+    # * nothing
     def initialize(debug_level, client)
       @debug_level = debug_level
       @client = client
     end
 
+    # Prints a message according to a specified debug level
+    #
+    # Arguments
+    # * l: debug level of the message
+    # * msg: message
+    # Output
+    # * prints the message on the server and on the client
     def debugl(l, msg)
       if (l <= @debug_level)
         puts msg
         @client.print(msg)
       end
-    end
-    
-    def system_wrapper(l,cmd)
-      puts "todo"
     end
   end
 
@@ -26,6 +36,13 @@ module Debug
     @nodes = nil
     @config = nil
 
+    # Constructor of Logger
+    #
+    # Arguments
+    # * node_set: NodeSet that contains the nodes implied in the deployment
+    # * config: instance of Config
+    # Output
+    # * nothing
     def initialize(node_set, config)
       @nodes = Hash.new
       node_set.make_array_of_hostname.each { |n|
@@ -34,6 +51,13 @@ module Debug
       @config = config
     end
 
+    # Creates an hashtable that contains all the information to log
+    #
+    # Arguments
+    # * nothing
+    # * msg: message
+    # Output
+    # * returns an Hash instance
     def create_node_infos
       node_infos = Hash.new
       node_infos["step1"] = String.new
@@ -57,6 +81,14 @@ module Debug
       return node_infos
     end
 
+    # Sets a value for some nodes in the Logger
+    #
+    # Arguments
+    # * op: information to set
+    # * val: value for the information
+    # * node_set(opt): Array of nodes
+    # Output
+    # * nothing
     def set(op, val, node_set = nil)
       if (node_set != nil)
         node_set.make_array_of_hostname.each { |n|
@@ -68,13 +100,26 @@ module Debug
         }
       end
     end
-    
+
+    # Sets the error value for a set of nodes
+    #
+    # Arguments
+    # * node_set: Array of nodes
+    # Output
+    # * nothing      
     def error(node_set)
       node_set.make_array_of_hostname.each { |n|
         @nodes[n]["error"] = node_set.get_node_by_host(n).last_cmd_stderr
       }
     end
 
+    # Increments an information for a set of nodes
+    #
+    # Arguments
+    # * op: information to increment
+    # * node_set(opt): Array of nodes
+    # Output
+    # * nothing 
     def increment(op, node_set = nil)
       if (node_set != nil)
         node_set.make_array_of_hostname.each { |n|
@@ -86,13 +131,25 @@ module Debug
         }
       end
     end
-    
+
+    # Generic method to dump the logged information
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing     
     def dump
       dump_to_file if (@config.common.log_to_file != "")
       dump_to_syslog if (@config.common.log_to_syslog)
       dump_to_db if (@config.common.log_to_db)
     end
-    
+
+    # Dumps the logged information to syslog
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def dump_to_syslog
       sl = Syslog.open("Kadeploy")
       @nodes.each_pair { |hostname, node_infos|
@@ -109,6 +166,12 @@ module Debug
       sl.close
     end
 
+    # Dumps the logged information to the database
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def dump_to_db
       db = Database::DbFactory.create(@config.common.db_kind)
       db.connect(@config.common.deploy_db_host,
@@ -137,6 +200,12 @@ module Debug
       db.disconnect
     end
 
+    # Dumps the logged information to a file
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def dump_to_file
       fd = File.new(@config.common.log_to_file, File::CREAT | File::APPEND | File::WRONLY, 0644)
       fd.flock(File::LOCK_EX)

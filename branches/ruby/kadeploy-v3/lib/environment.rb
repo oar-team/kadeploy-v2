@@ -21,9 +21,17 @@ module EnvironmentManagement
     attr_reader :filesystem
     attr_reader :user
 
+    # Loads an environment file
+    #
+    # Arguments
+    # * file: filename
+    # Output
+    # * returns true if the environment can be loaded correctly, false otherwise
+    # * raises an exception if the file does not exist
     def load_from_file(file)
       if not File.exist?(file)
-        raise "#{file} does not exist"
+        put "#{file} does not exist"
+        return false
       else
         IO::read(file).split("\n").each { |line|
           if /^(\w+)\ :\ (.+)/ =~ line then
@@ -67,13 +75,23 @@ module EnvironmentManagement
               @user = val
             else
               puts "#{attr} is an invalid attribute"
+              return false
             end
           end
         }
       end
-      check_md5_digest
+      return check_md5_digest
     end
 
+    # Loads an environment from a database
+    #
+    # Arguments
+    # * name: environment name
+    # * version: environment version
+    # * user: environment owner
+    # * dbh: database handler
+    # Output
+    # * returns true if the environment can be loaded, false otherwise
     def load_from_db(name, version, user, dbh)
       if (version == nil) then
         query = "SELECT * FROM environment WHERE name=\"#{name}\" \
@@ -95,6 +113,12 @@ module EnvironmentManagement
       end
     end
 
+    # Loads an environment from an Hash
+    #
+    # Arguments
+    # * hash: hashtable
+    # Output
+    # * nothing
     def load_from_hash(hash)
       @name = hash["name"]
       @version = hash["version"]
@@ -115,21 +139,43 @@ module EnvironmentManagement
       @user = hash["user"]
     end
 
+    # Checks the MD5 digest of a file
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the digest is OK, false otherwise
     def check_md5_digest
-      if not ((Digest::MD5.hexdigest(File.read(@tarball_file)) == @tarball_md5) && (Digest::MD5.hexdigest(File.read(@postinstall_file)) == @postinstall_md5))
-        raise "Invalid md5 checksum"
-      end
+      return ((Digest::MD5.hexdigest(File.read(@tarball_file)) == @tarball_md5) && (Digest::MD5.hexdigest(File.read(@postinstall_file)) == @postinstall_md5))
     end
 
+    # Prints the header
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def short_view_header
       puts "Name         Version     User            Description"
       puts "####         #######     ####            ###########"
     end
 
+    # Prints the short view
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def short_view
       printf("%-15s %-7s %-10s %-40s\n", @name, @version, @user, @description)
     end
 
+    # Prints the full view
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def full_view
       puts "name : #{@name}"
       puts "version : #{@version}"

@@ -9,6 +9,7 @@ cmd_soft_reboot = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o Preferr
 cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard
 cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx start hard
 cmd_console = no_cmd
+#drivers = ata_piix,ata_generic
 
 #Automata description
 macrostep = SetDeploymentEnv|SetDeploymentEnvDummy:2:100

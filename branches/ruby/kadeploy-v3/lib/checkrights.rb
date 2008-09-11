@@ -1,5 +1,14 @@
  module CheckRights
   class CheckRightsFactory
+
+    # Factory for the methods to check the rights
+    #
+    # Arguments
+    # * kind: specifies the method to use
+    # * node_list(opt): instance of NodeSet that contains the nodes on which the rights must be checked
+    # * part(opt): string that specifies the partition on which the rights must be checked
+    # Output
+    # * returns a Check instance (CheckDummy or CheckInDB)
     def CheckRightsFactory.create(kind, node_list = nil, db = nil, part = nil)
       case kind
       when "dummy"
@@ -15,10 +24,22 @@
   class Check
     @granted = nil
     
+    # Constructor of Check
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def initialize
       @granted = false
     end
 
+    # Checks if the rights are granted
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the rights are granted, false otherwise
     def granted?
       return @granted
     end
@@ -26,6 +47,12 @@
 
   class CheckDummy < Check
 
+    # Constructor of CheckDummy
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def initialize
       @granted = true
     end
@@ -36,6 +63,14 @@
     @host_list = nil
     @part = nil
 
+    # Constructor of CheckInDB
+    #
+    # Arguments
+    # * node_list: NodeSet involved in the deployment
+    # * db: database handler
+    # * part: partition required for the deployment
+    # Output
+    # * nothing
     def initialize(node_list, db, part)
       @host_list = node_list.make_array_of_hostname
       @db = db
@@ -43,6 +78,12 @@
       @granted = false
     end
 
+    # Checks if the rights are granted
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the rights are granted, false otherwise
     def granted?
       query = "SELECT * FROM rights WHERE user=\"#{ENV['USER']}\" AND (part=\"#{@part}\" OR part=\"*\")"
       @host_list.each { |host|
