@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -w
 require 'lib/config'
 require 'lib/db'
+require 'drb'
 
 # Generate a comma-separated string from an array
 #
@@ -103,8 +104,15 @@ def delete_rights(config, db)
   }
 end
 
-
 config = ConfigInformation::Config.new("karights")
+
+#Connect to the Kadeploy server to get the common configuration
+client_config = ConfigInformation::Config.load_client_config_file
+DRb.start_service()
+uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_port}"
+kadeploy_server = DRbObject.new(nil, uri)
+config.common = kadeploy_server.get_common_config
+
 if (config.check_config("karights") == true)
   db = Database::DbFactory.create(config.common.db_kind)
   db.connect(config.common.deploy_db_host,

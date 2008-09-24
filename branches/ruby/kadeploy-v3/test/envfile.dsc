@@ -4,7 +4,7 @@ description : Testing environment based on Etch
 author : Emmanuel Jeanvoine
 tarball_file : /home/ejeanvoi/etch.tgz
 tarball_kind : tgz
-tarball_md5 : 2ec7cc8071259c9db4bb155542b6df45
+tarball_md5 : 165a7d8f0f3011f4d576bcb72c9f6286
 postinstall_file : /home/ejeanvoi/post.tgz
 postinstall_kind : tgz
 postinstall_md5 : 2b3c9e21e9a1ed70c4d7337617a0c354

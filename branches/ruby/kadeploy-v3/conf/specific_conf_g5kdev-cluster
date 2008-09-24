@@ -1,3 +1,5 @@
+prod_kernel = vmlinuz-2.6.24-1-686
+prod_initrd = initrd.img-2.6.24-1-686 root=/dev/hda2
 deploy_kernel = deploy-vmlinuz-2.6.24
 deploy_initrd = deploy-initrd-2.6.24 ETH_DRV=pcnet32 ETH_DEV=eth0 DISK_DRV=ide-disk console=tty0 console=ttyS0,38400n8 ramdisk_size=90000 root=/dev/ram0 rw
 block_device = /dev/hda
@@ -12,10 +14,10 @@ cmd_console = no_cmd
 #drivers = ata_piix,ata_generic
 
 #Automata description
-macrostep = SetDeploymentEnv|SetDeploymentEnvDummy:2:100
-#macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
-#macrostep = SetDeploymentEnv|SetDeploymentEnvUntrusted:2:150
-macrostep = BroadcastEnv|BroadcastEnvDummy:2:300
-#macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:300
-macrostep = BootNewEnv|BootNewEnvDummy:1:150,BootNewEnvClassical:2:150
-#macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150
+#macrostep = SetDeploymentEnv|SetDeploymentEnvDummy:2:100
+macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
+#macrostep = SetDeploymentEnv|SetDeploymentEnvUntrusted:2:200
+#macrostep = BroadcastEnv|BroadcastEnvDummy:2:300
+macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:300
+#macrostep = BootNewEnv|BootNewEnvDummy:1:150,BootNewEnvClassical:2:150
+macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150
