@@ -16,7 +16,7 @@ module ConfigInformation
   class Config
     public
 
-    attr_reader :common
+    attr_accessor :common
     attr_reader :cluster_specific
     attr_accessor :exec_specific
 
@@ -24,30 +24,27 @@ module ConfigInformation
     #
     # Arguments
     # * kind: tool (kadeploy, kaenv, karights, kastat)
+    # * nodes_desc(opt): set of nodes read from the configuration file
     # Output
     # * nothing if all is OK, otherwise raises an exception
-    def initialize(kind)
+    def initialize(kind, nodes_desc = nil)
       if (sanity_check(kind) == true) then
         case kind
         when "kadeploy"
           @common = CommonConfig.new
           load_common_config_file
           @cluster_specific = Hash.new
-          load_specific_config_files
+          load_cluster_specific_config_files
           load_nodes_config_file
           load_commands
         when "kaenv"
-          @common = CommonConfig.new
-          load_common_config_file
           load_kaenv_exec_specific
         when "karights"
-          @common = CommonConfig.new
-          load_common_config_file
           load_karights_exec_specific
         when "kastat"
-          @common = CommonConfig.new
-          load_common_config_file
-          load_kastat_exec_specific    
+          load_kastat_exec_specific
+        when "kareboot"
+          load_kareboot_exec_specific(nodes_desc)
         else
           raise "Invalid configuration kind: #{kind}"
         end
@@ -73,6 +70,8 @@ module ConfigInformation
         check_karights_config
       when "kastat"
         check_kastat_config
+      when "kareboot"
+        check_kareboot_config
       end
     end
 
@@ -112,6 +111,9 @@ module ConfigInformation
                                                      db) == false) then
             return nil
           end
+        when ""
+          puts "You must choose an environment"
+          return nil
         else
           raise "Invalid method for environment loading"
         end
@@ -151,6 +153,7 @@ module ConfigInformation
       when "kaenv"
       when "karights"
       when "kastat"
+      when "kareboot"
       end
       return true
     end
@@ -259,7 +262,7 @@ module ConfigInformation
     # * nothing
     # Output
     # * nothing    
-    def load_specific_config_files
+    def load_cluster_specific_config_files
       Dir[CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX + "*"].each { |f|
         cluster = String.new(f).sub(CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX, "")
         @cluster_specific[cluster] = ClusterSpecificConfig.new
@@ -273,6 +276,10 @@ module ConfigInformation
                 @cluster_specific[cluster].deploy_kernel = content[2]
               when "deploy_initrd"
                 @cluster_specific[cluster].deploy_initrd = content[2]
+              when "prod_kernel"
+                @cluster_specific[cluster].prod_kernel = content[2]
+              when "prod_initrd"
+                @cluster_specific[cluster].prod_initrd = content[2]
               when "block_device"
                 @cluster_specific[cluster].block_device = content[2]
               when "deploy_part"
@@ -856,6 +863,82 @@ module ConfigInformation
       return true
     end
 
+##################################
+#       Kareboot specific        #
+##################################
+
+    # Loads the kareboot specific stuffs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def load_kareboot_exec_specific(nodes_desc)
+      @exec_specific = OpenStruct.new
+      @exec_specific.partition = String.new
+      @exec_specific.debug_level = String.new
+      @exec_specific.node_list = Nodes::NodeSet.new
+      load_kareboot_cmdline_options(nodes_desc)
+    end
+
+    # Loads the command-line options of kareboot
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true in case of success, false otherwise
+    def load_kareboot_cmdline_options(nodes_desc)
+      progname = File::basename($PROGRAM_NAME)
+      opts = OptionParser::new do |opts|
+        opts.summary_indent = "  "
+        opts.summary_width = 28
+        opts.program_name = progname
+        opts.banner = "Usage: #{progname} [options]"
+        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.separator ""
+        opts.separator "General options:"
+        opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
+          if not Config.add_to_node_list(hostname, nodes_desc, @exec_specific) then
+            return false
+          end
+        }
+        opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
+          IO.readlines(f).sort.uniq.each { |hostname|
+            if not Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific) then
+              return false
+            end
+          }
+        }
+        opts.on("-p", "--partition PARTITION", "Specify the partition to reboot on") { |p|
+          @exec_specific.partition = p
+        }
+        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
+          debug_level = d.to_i
+          if ((debug_level > 4) || (debug_level < 0)) then
+            puts "Invalid debug level"
+            return false
+          else
+            @exec_specific.debug_level = debug_level
+          end
+        }
+      end
+      opts.parse!(ARGV)
+    end
+
+    # Checks the whole configuration of the kareboot execution
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the options used are correct, false otherwise
+    def check_kareboot_config
+      if @exec_specific.node_list.empty? then
+        puts "Use --help option for correct use"
+        return false
+      end
+       return true
+    end
+
   end
   
   class CommonConfig
@@ -909,6 +992,8 @@ module ConfigInformation
     attr_accessor :block_device
     attr_accessor :deploy_part
     attr_accessor :prod_part
+    attr_accessor :prod_kernel
+    attr_accessor :prod_initrd
     attr_accessor :tmp_part
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :timeout_reboot

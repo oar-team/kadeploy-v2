@@ -90,7 +90,6 @@ client_config = ConfigInformation::Config.load_client_config_file
 DRb.start_service()
 uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_port}"
 kadeploy_server = DRbObject.new(nil, uri)
-puts "Successfully connected on the Kadeploy server on #{client_config.kadeploy_server}"
 common_config = kadeploy_server.get_common_config
 
 #Connect to the database
@@ -114,7 +113,7 @@ if (exec_specific_config != nil) then
     exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
       default_part = kadeploy_server.get_default_deploy_part(cluster)
       rights = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
-                                                      exec_specific_config.node_list,
+                                                      set,
                                                       db,
                                                       default_part).granted?
       if (rights == false) then

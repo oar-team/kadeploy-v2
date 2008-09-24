@@ -2,6 +2,7 @@
 require 'lib/config'
 require 'lib/db'
 require 'lib/environment'
+require 'drb'
 
 # List the environments of a user defined in Config.exec_specific.user
 #
@@ -117,6 +118,14 @@ def print_environment(config, db)
 end
 
 config = ConfigInformation::Config.new("kaenv")
+
+#Connect to the Kadeploy server to get the common configuration
+client_config = ConfigInformation::Config.load_client_config_file
+DRb.start_service()
+uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_port}"
+kadeploy_server = DRbObject.new(nil, uri)
+config.common = kadeploy_server.get_common_config
+
 if (config.check_config("kaenv") == true)
   db = Database::DbFactory.create(config.common.db_kind)
   db.connect(config.common.deploy_db_host,

@@ -251,6 +251,15 @@ module MicroStepsLibrary
                                                @config.common.tftp_repository,
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
+      when "back_to_prod_env"
+        res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
+                                               @config.cluster_specific[@cluster].prod_kernel,
+                                               @config.cluster_specific[@cluster].prod_initrd,
+                                               "",
+                                               @config.common.tftp_repository,
+                                               @config.common.tftp_images_path,
+                                               @config.common.tftp_cfg)
+        
       end
       if (res == false) then
         @output.debugl(0, "The PXE configuration has not been performed correctly: #{kind}")

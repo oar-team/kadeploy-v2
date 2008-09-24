@@ -1,199 +1,7 @@
 #!/usr/bin/ruby -w
-
-#Kadeploy libs
-require 'lib/debug'
-require 'lib/nodes'
-require 'lib/config'
-require 'lib/managers'
-require 'lib/stepdeployenv'
-require 'lib/stepbroadcastenv'
-require 'lib/stepbootnewenv'
-
-#Ruby libs
-require 'thread'
 require 'drb'
-
-class KadeployWorkflow
-  @thread_set_deployment_environment = nil
-  @thread_broadcast_environment = nil
-  @thread_boot_new_environment = nil 
-  @thread_process_finished_nodes = nil
-  @queue_manager = nil
-  @output = nil
-  @rights = nil
-  @nodeset = nil
-  @config = nil
-  @client = nil
-  @window_manager = nil
-  @logger = nil
-  attr_accessor :nodes_ok
-  attr_accessor :nodes_ko
-
-  # Constructor of KadeployWorkflow
-  #
-  # Arguments
-  # * config: instance of Config
-  # * client: Drb handler of the client
-  # Output
-  # * nothing
-  def initialize(config, client)
-    @config = config
-    @client = client
-    if (@config.exec_specific.debug_level != nil) then
-       @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client)
-    else
-      @output = Debug::OutputControl.new(@config.common.debug_level, client)
-    end
-    @nodes_ok = Nodes::NodeSet.new
-    @nodes_ko = Nodes::NodeSet.new
-    @nodeset = @config.exec_specific.node_list
-    @queue_manager = Managers::QueueManager.new(@config, @nodes_ok, @nodes_ko)
-    @window_manager = Managers::WindowManager.new
-    @logger = Debug::Logger.new(@nodeset, @config)
-    @logger.set("start", Time.now)
-    @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
-    @thread_set_deployment_environment = Thread.new {
-      launch_thread_for_macro_step("SetDeploymentEnv")
-    }
-    @thread_broadcast_environment = Thread.new {
-      launch_thread_for_macro_step("BroadcastEnv")
-    }
-    @thread_boot_new_environment = Thread.new {
-      launch_thread_for_macro_step("BootNewEnv")
-    }
-    @thread_process_finished_nodes = Thread.new {
-      launch_thread_for_macro_step("ProcessFinishedNodes")
-    }
-  end
-
-  # Launches a thread for a macro step
-  #
-  # Arguments
-  # * kind: specifies the kind of macro step to launch
-  # Output
-  # * nothing  
-  def launch_thread_for_macro_step(kind)
-    close_thread = false
-    @output.debugl(4, "#{kind} thread launched")
-    while (not close_thread) do
-      nodes = @queue_manager.get_task(kind)
-      #We receive the signal to exit
-      if (nodes.kind_of?(Managers::MagicCookie)) then
-        close_thread = true
-      else
-        if kind != "ProcessFinishedNodes" then
-          nodes.group_by_cluster.each_pair { |cluster, set|
-            macro_step_instance = @config.cluster_specific[cluster].get_macro_step(kind).get_instance
-            instance_name = macro_step_instance[0]
-            instance_max_retries = macro_step_instance[1]
-            instance_timeout = macro_step_instance[2]
-            case kind
-            when "SetDeploymentEnv"
-              SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
-                                                                        instance_max_retries,
-                                                                        instance_timeout,
-                                                                        cluster,
-                                                                        set,
-                                                                        @queue_manager,
-                                                                        @window_manager,
-                                                                        @output,
-                                                                        @logger).run
-            when "BroadcastEnv"
-              BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
-                                                               instance_max_retries, 
-                                                               instance_timeout,
-                                                               cluster,
-                                                               set,
-                                                               @queue_manager,
-                                                               @window_manager,
-                                                               @output,
-                                                               @logger).run
-            when "BootNewEnv"
-              BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
-                                                           instance_max_retries,
-                                                           instance_timeout,
-                                                           cluster,
-                                                           set,
-                                                           @queue_manager,
-                                                           @window_manager,
-                                                           @output,
-                                                           @logger).run
-            else
-              raise "Invalid macro step name"
-            end
-          }
-        else
-          #in this case, all is ok
-          if not nodes.empty? then
-            @nodes_ok.add(nodes)
-          end
-          if @queue_manager.one_last_active_thread? then
-            @logger.set("success", true, @nodes_ok)
-            @nodes_ok.group_by_cluster.each_pair { |cluster, set|
-              @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
-              @output.debugl(1, set.to_s)
-            }
-            @logger.set("success", false, @nodes_ko)
-            @logger.error(@nodes_ko)
-            @nodes_ko.group_by_cluster.each_pair { |cluster, set|
-              @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
-              @output.debugl(1, set.to_s(true))
-            }
-            @client.generate_files(@nodes_ok, @nodes_ko)
-            @logger.dump
-            @queue_manager.send_exit_signal
-            @thread_set_deployment_environment.join
-            @thread_broadcast_environment.join
-            @thread_boot_new_environment.join
-          end
-        end
-      end
-    end
-  end
-
-  # Creates a local dirname for a given file (usefull after a copy in a cache directory)
-  #
-  # Arguments
-  # * file: name of the file on the client side
-  # Output
-  # * returns the name of the file in the local cache directory
-  def use_local_path_dirname(file)
-    return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
-  end
-
-  # Grabs files from the client side (tarball, ssh public key, ...)
-  #
-  # Arguments
-  # * nothing
-  # Output
-  # * nothing
-  def grab_user_files
-    local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
-    if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
-      @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
-      @client.get_file(@config.exec_specific.environment.tarball_file)
-    end
-    @config.exec_specific.environment.tarball_file = local_tarball #now, we use the cached file
-    if @config.exec_specific.key != "" then
-    @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
-      @client.get_file(@config.exec_specific.key)
-      @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
-    end
-  end
-
-  # Main of KadeployWorkflow
-  #
-  # Arguments
-  # * nothing
-  # Output
-  # * nothing  
-  def run
-    @output.debugl(1, "Launching Kadeploy ...")
-    grab_user_files
-    @queue_manager.next_macro_step(nil, @nodeset)
-    @thread_process_finished_nodes.join
-  end
-end
+require 'lib/managers'
+require 'lib/debug'
 
 class KadeployServer
   @config = nil
@@ -283,6 +91,17 @@ class KadeployServer
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].deploy_part
   end
 
+
+  # Gets the production partition (RPC)
+  #
+  # Arguments
+  # * cluster: name of the cluster concerned
+  # Output
+  # * nothing
+  def get_prod_part(cluster)
+    return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].prod_part
+  end
+
   # Sets the exec_specific configuration from the client side (RPC)
   #
   # Arguments
@@ -311,8 +130,37 @@ class KadeployServer
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
-    workflow=KadeployWorkflow.new(@config, client)
+    workflow=Managers::WorkflowManager.new(@config, client)
     workflow.run
+  end
+
+  # Reboot a set of nodes from the client side (RPC)
+  #
+  # Arguments
+  # * host: hostname of the client
+  # * port: port on which the client listen to Drb
+  # Output
+  # * nothing  
+  def launch_reboot(node_list, partition, host, port, debug_level)
+    DRb.start_service()
+    uri = "druby://#{host}:#{port}"
+    client = DRbObject.new(nil, uri)
+    if (debug_level != nil) then
+      dl = debug_level
+    else
+      dl = @config.common.debug_level
+    end
+    output = Debug::OutputControl.new(dl, client)
+    node_list.group_by_cluster.each_pair { |cluster, set|
+      step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, nil, @config, cluster, output)
+      if (partition == "") then
+        step.switch_pxe("back_to_prod_env")
+        step.reboot("soft")
+      else
+        step.reboot("hard")
+      end
+      step.wait_reboot(@config.common.ssh_port)
+    }
   end
 end
 
