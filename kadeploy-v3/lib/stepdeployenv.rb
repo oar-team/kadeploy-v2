@@ -125,9 +125,9 @@ module SetDeploymentEnvironnment
             result = result && @step.switch_pxe("prod_to_deploy_env")
             result = result && @step.reboot("soft")
             result = result && @step.wait_reboot(@config.common.rsh_port)
-            result = result && @step.fdisk
+            result = result && @step.fdisk("untrusted_env")
             result = result && @step.format_deploy_part
-            result = result && @step.mount_deploy_part          
+            result = result && @step.mount_deploy_part
             result = result && @step.format_tmp_part
             result = result && @step.mount_tmp_part
             #End of micro steps
@@ -174,7 +174,7 @@ module SetDeploymentEnvironnment
             result = true
             #Here are the micro steps
             result = result && @step.check_nodes("prod_env_booted")
-            result = result && @step.fdisk
+            result = result && @step.fdisk("prod_env")
             result = result && @step.format_deploy_part
             result = result && @step.mount_deploy_part
             result = result && @step.format_tmp_part

@@ -51,11 +51,35 @@ module CmdCtrlWrapper
       node.last_cmd_stdout = result.stdout
       node.last_cmd_stderr = result.stderr
       if result.status.exitstatus == 0 then
-        good_nodes.push(cb.data)
+        good_nodes.push(node)
       else
-        bad_nodes.push(cb.data)
+        bad_nodes.push(node)
       end
     }
     return [good_nodes, bad_nodes]
-    end
+  end
+
+  # Get the results of the execution
+  #
+  # Arguments
+  # * pr: instance of a ParallelRunner
+  # * output: string that contains the expected output
+  # Output
+  # * Array of two arrays ([0] contains the nodes OK and [1] contains the nodes KO)
+  def CmdCtrlWrapper::get_results_expecting_output(pr, output)
+    good_nodes = Array.new
+    bad_nodes = Array.new
+    pr.results.each_pair { |cb, result|
+      node = cb.data
+      node.last_cmd_exit_status = result.status.exitstatus
+      node.last_cmd_stdout = result.stdout
+      node.last_cmd_stderr = result.stderr
+      if ((result.status.exitstatus == 0) && (result.stdout.split("\n")[0] == output)) then
+        good_nodes.push(node)
+      else
+        bad_nodes.push(node)
+      end
+    }
+    return [good_nodes, bad_nodes]
+  end
 end

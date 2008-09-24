@@ -42,8 +42,10 @@ def add_environment(config, db)
                                     description, \
                                     author, \
                                     tarball_file, \
+                                    tarball_kind, \
                                     tarball_md5, \
                                     postinstall_file, \
+                                    postinstall_kind, \
                                     postinstall_md5, \
                                     kernel, \
                                     kernel_params, \
@@ -57,8 +59,10 @@ def add_environment(config, db)
                                     \"#{env.description}\", \
                                     \"#{env.author}\", \
                                     \"#{env.tarball_file}\", \
+                                    \"#{env.tarball_kind}\", \
                                     \"#{env.tarball_md5}\", \
                                     \"#{env.postinstall_file}\", \
+                                    \"#{env.postinstall_kind}\", \
                                     \"#{env.postinstall_md5}\", \
                                     \"#{env.kernel}\", \
                                     \"#{env.kernel_params}\", \

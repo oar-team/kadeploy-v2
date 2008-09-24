@@ -130,15 +130,16 @@ class KadeployWorkflow
           if @queue_manager.one_last_active_thread? then
             @logger.set("success", true, @nodes_ok)
             @nodes_ok.group_by_cluster.each_pair { |cluster, set|
-              @output.debugl(0, "Nodes correctly deployed on cluster #{cluster}")
-              @output.debugl(0, set.to_s)
+              @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
+              @output.debugl(1, set.to_s)
             }
             @logger.set("success", false, @nodes_ko)
             @logger.error(@nodes_ko)
             @nodes_ko.group_by_cluster.each_pair { |cluster, set|
-              @output.debugl(0, "Nodes not Correctly deployed on cluster #{cluster}")
-              @output.debugl(0, set.to_s(true))
+              @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
+              @output.debugl(1, set.to_s(true))
             }
+            @client.generate_files(@nodes_ok, @nodes_ko)
             @logger.dump
             @queue_manager.send_exit_signal
             @thread_set_deployment_environment.join
@@ -167,9 +168,12 @@ class KadeployWorkflow
   # Output
   # * nothing
   def grab_user_files
-    @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
-    @client.get_file(@config.exec_specific.environment.tarball_file)
-    @config.exec_specific.environment.tarball_file = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
+    local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
+    if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
+      @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
+      @client.get_file(@config.exec_specific.environment.tarball_file)
+    end
+    @config.exec_specific.environment.tarball_file = local_tarball #now, we use the cached file
     if @config.exec_specific.key != "" then
     @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
       @client.get_file(@config.exec_specific.key)
@@ -184,7 +188,7 @@ class KadeployWorkflow
   # Output
   # * nothing  
   def run
-    @output.debugl(0, "Launching Kadeploy ...")
+    @output.debugl(1, "Launching Kadeploy ...")
     grab_user_files
     @queue_manager.next_macro_step(nil, @nodeset)
     @thread_process_finished_nodes.join
@@ -287,6 +291,12 @@ class KadeployServer
   # * nothing
   def set_exec_specific_config(exec_specific)
     @config.exec_specific = exec_specific
+    #overide the configuration if the steps are specified in the command line
+    if (not @config.exec_specific.steps.empty?) then
+      @config.exec_specific.node_list.group_by_cluster.each_key { |cluster|
+        @config.cluster_specific[cluster].workflow_steps = @config.exec_specific.steps
+      }
+    end
   end
 
   # Launches the workflow from the client side (RPC)
