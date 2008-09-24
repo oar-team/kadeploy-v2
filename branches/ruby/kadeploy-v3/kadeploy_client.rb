@@ -54,6 +54,34 @@ class KadeployClient
     sock.close
     @kadeploy_server.post_send_file
   end
+
+  # Prints the results of the deployment (RPC)
+  #
+  # Arguments
+  # * nodes_ok: instance of NodeSet that contains the nodes correctly deployed
+  # * nodes_ko: instance of NodeSet that contains the nodes not correctly deployed
+  # Output
+  # * nothing    
+  def generate_files(nodes_ok, nodes_ko)
+    File.delete("nodes_ok") if File.exist?("nodes_ok")
+    File.delete("nodes_ko") if File.exist?("nodes_ko")
+    t = nodes_ok.make_array_of_hostname
+    if (not t.empty?) then
+      file = File.new("nodes_ok", "w")
+      t.each { |n|
+        file.write("#{n}\n")
+      }
+      file.close
+    end
+    t = nodes_ko.make_array_of_hostname
+    if (not t.empty?) then
+      file = File.new("nodes_ko", "w")
+      t.each { |n|
+        file.write("#{n}\n")
+      }
+      file.close
+    end
+  end
 end
 
 client_config = ConfigInformation::Config.load_client_config_file

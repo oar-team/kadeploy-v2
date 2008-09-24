@@ -98,6 +98,7 @@ module ConfigInformation
       exec_specific.script = String.new
       exec_specific.key = String.new
       exec_specific.reformat_tmp = false
+      exec_specific.steps = Array.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -477,6 +478,20 @@ module ConfigInformation
         }
         opts.on("-r", "--reformat-tmp", "Reformat the /tmp partition") {
           @exec_specific.reformat_tmp = true
+        }
+        opts.on("-z", "--force-steps STRING", "Undocumented, for administration purpose only") { |s|
+          s.split("&").each { |macrostep|
+            macrostep_name = macrostep.split("|")[0]
+            microstep_list = macrostep.split("|")[1]
+            tmp = Array.new
+            microstep_list.split(",").each { |instance_infos|
+              instance_name = instance_infos.split(":")[0]
+              instance_max_retries = instance_infos.split(":")[1].to_i
+              instance_timeout = instance_infos.split(":")[2].to_i
+              tmp.push([instance_name, instance_max_retries, instance_timeout])
+            }
+            exec_specific.steps.push(MacroStep.new(macrostep_name, tmp))
+          }
         }
       end
       opts.parse!(ARGV)

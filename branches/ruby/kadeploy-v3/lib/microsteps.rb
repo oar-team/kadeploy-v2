@@ -335,12 +335,21 @@ module MicroStepsLibrary
     # * nothing
     # Output
     # * returns true (should be false sometimes :D) 
-    def fdisk
+    def fdisk(kind)
+      case kind
+      when "prod_env"
+        expected_status = "256" #Strange thing, fdisk can not reload the partition table so it exits with 256
+      when "untrusted_env"
+        expected_status = "0"
+      else
+        @output.debugl(0, "Invalid kind of deploy environment: #{kind}")
+        return false
+      end
       parallel_exec_cmd_with_input_file_wrapper(@config.cluster_specific[@cluster].fdisk_file,
                                                 "fdisk #{@config.cluster_specific[@cluster].block_device}",
                                                 "tree",
                                                 @config.common.taktuk_connector,
-                                                "256")  #Strange thing, fdisk can not reload the partition table so it exits with 256
+                                                expected_status)
       return true
     end
 
@@ -460,7 +469,7 @@ module MicroStepsLibrary
     def send_key(scattering_kind)
       if (@config.exec_specific.key != "") then
         cmd = "cat - >>#{@config.common.environment_extraction_dir}/root/.ssh/authorized_keys"
-        parallel_exec_cmd_with_input_file_wrapepr(@config.exec_specific.key,
+        parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.key,
                                                   cmd,
                                                   scattering_kind,
                                                   @config.common.taktuk_connector,
