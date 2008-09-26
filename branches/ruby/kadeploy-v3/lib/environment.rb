@@ -3,6 +3,7 @@ require 'lib/db'
 
 module EnvironmentManagement
   class Environment
+    attr_reader :id
     attr_reader :name
     attr_reader :version
     attr_reader :description
@@ -80,6 +81,7 @@ module EnvironmentManagement
           end
         }
       end
+      id = 0
       return check_md5_digest
     end
 
@@ -120,6 +122,7 @@ module EnvironmentManagement
     # Output
     # * nothing
     def load_from_hash(hash)
+      @id = hash["id"]
       @name = hash["name"]
       @version = hash["version"]
       @description = hash["description"]

@@ -3,6 +3,9 @@ require 'lib/nodes'
 require 'lib/parallel_ops'
 require 'lib/cmdctrl_wrapper'
 require 'lib/pxe_ops'
+require 'lib/cache'
+
+require 'ftools'
 
 module MicroStepsLibrary
   class MicroSteps
@@ -225,6 +228,7 @@ module MicroStepsLibrary
       return true
     end
 
+    
     public
 
     # Changes the PXE configuration
@@ -244,13 +248,24 @@ module MicroStepsLibrary
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
       when "deploy_to_deployed_env"
-        res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
-                                               @config.exec_specific.environment.kernel,
-                                               @config.exec_specific.environment.initrd,
-                                               @config.exec_specific.environment.part,
-                                               @config.common.tftp_repository,
-                                               @config.common.tftp_images_path,
-                                               @config.common.tftp_cfg)
+        suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
+        kernel = @config.exec_specific.environment.kernel + suffix_in_cache
+        initrd = @config.exec_specific.environment.initrd + suffix_in_cache
+        images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+        res = system("touch #{images_dir}/#{kernel}")
+        res = res && system("touch #{images_dir}/#{initrd}")
+        res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
+                                                      kernel,
+                                                      initrd,
+                                                      @config.exec_specific.environment.part,
+                                                      @config.common.tftp_repository,
+                                                      @config.common.tftp_images_path,
+                                                      @config.common.tftp_cfg)
+        Cache::clean_cache(@config,
+                           @config.common.tftp_repository + "/" + @config.common.tftp_images_path,
+                           @config.common.tftp_images_max_size * 1024 * 1024,
+                           6,
+                           /^.+--e\d+v\d+$/)
       when "back_to_prod_env"
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
                                                @config.cluster_specific[@cluster].prod_kernel,
@@ -505,11 +520,35 @@ module MicroStepsLibrary
     # Output
     # * returns true if the operation is correctly performed, false
     def copy_kernel_initrd_to_pxe
+      must_extract = false
       archive = @config.exec_specific.environment.tarball_file
       kernel = "boot/" + @config.exec_specific.environment.kernel
       initrd = "boot/" + @config.exec_specific.environment.initrd
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      return extract_files_from_archive(archive, @config.exec_specific.environment.tarball_kind, [kernel, initrd], dest_dir)
+      suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
+      cached_kernel = dest_dir + "/" + @config.exec_specific.environment.kernel + suffix_in_cache
+      cached_initrd = dest_dir + "/" + @config.exec_specific.environment.initrd + suffix_in_cache
+      if not (File.exist?(cached_kernel) && File.exist?(cached_initrd)) then
+        must_extract = true
+      else
+        #If the archive has been modified, re-extraction required
+        if (File.mtime(archive).to_i > File.atime(cached_kernel).to_i) ||
+            (File.mtime(archive).to_i > File.atime(cached_initrd).to_i) then
+          must_extract = true
+        end
+      end
+
+      if must_extract then
+        res = extract_files_from_archive(archive,
+                                         @config.exec_specific.environment.tarball_kind,
+                                         [kernel, initrd],
+                                         @config.common.kadeploy_cache_dir)
+        res = res && File.move(@config.common.kadeploy_cache_dir + "/" + @config.exec_specific.environment.kernel, cached_kernel)
+        res = res && File.move(@config.common.kadeploy_cache_dir + "/" + @config.exec_specific.environment.initrd, cached_initrd)
+        return res
+      else
+        return true
+      end
     end
 
     # Dummy method to put all the nodes in the node_ko set

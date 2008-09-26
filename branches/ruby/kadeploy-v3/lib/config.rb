@@ -178,6 +178,8 @@ module ConfigInformation
               @common.tftp_images_path = content[2]
             when "tftp_cfg"
               @common.tftp_cfg = content[2]
+            when "tftp_images_max_size"
+              @common.tftp_images_max_size = content[2].to_i
             when "db_kind"
               @common.db_kind = content[2]
             when "deploy_db_host"
@@ -946,6 +948,7 @@ module ConfigInformation
     attr_accessor :tftp_repository
     attr_accessor :tftp_images_path
     attr_accessor :tftp_cfg
+    attr_accessor :tftp_images_max_size
     attr_accessor :db_kind
     attr_accessor :deploy_db_host
     attr_accessor :deploy_db_name

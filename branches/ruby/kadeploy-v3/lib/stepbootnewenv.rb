@@ -114,7 +114,7 @@ module BootNewEnvironment
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
             result = true
-            #Here are the micro steps 
+            #Here are the micro steps
             result = result && @step.reboot("kexec")
             result = result && @step.wait_reboot(@config.common.ssh_port)
             #End of micro steps
@@ -159,8 +159,6 @@ module BootNewEnvironment
             @output.debugl(3, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
-            result = result && @step.copy_kernel_initrd_to_pxe
-            result = result && @step.switch_pxe("deploy_to_deployed_env")
             result = result && @step.reboot("soft")
             result = result && @step.wait_reboot(@config.common.ssh_port)
             #End of micro steps
