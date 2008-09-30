@@ -65,7 +65,7 @@ module Database
 
   class DbMysql < Db
 
-    # Connects to the MySQL database
+    # Connect to the MySQL database
     #
     # Arguments
     # * host: hostname
@@ -81,7 +81,7 @@ module Database
       puts "Error message: #{e.error}"
     end
 
-    # Disconnects from the MySQL database
+    # Disconnect from the MySQL database
     #
     # Arguments
     # * nothing
@@ -91,7 +91,7 @@ module Database
       @dbh.close
     end
 
-    # Runs a query
+    # Run a query
     #
     # Arguments
     # * query: string that contains the sql query

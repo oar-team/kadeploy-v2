@@ -1,6 +1,6 @@
 module PXEOperations
   private
-  # Computes the hexalized value of a decimal number
+  # Compute the hexalized value of a decimal number
   #
   # Arguments
   # * n: decimal number to hexalize
@@ -10,7 +10,7 @@ module PXEOperations
     return sprintf("%02X", n)
   end
 
-  # Computes the hexalized representation of an IP
+  # Compute the hexalized representation of an IP
   #
   # Arguments
   # * ip: string that contains the ip to hexalize
@@ -24,7 +24,7 @@ module PXEOperations
     return res
   end
   
-  # Writes the PXE information related to the group of nodes involved in the deployment
+  # Write the PXE information related to the group of nodes involved in the deployment
   #
   # Arguments
   # * ips: array of ip (aaa.bbb.ccc.ddd string representation)
@@ -50,7 +50,7 @@ module PXEOperations
   end
   
   public
-  # Modifies the PXE configuration
+  # Modify the PXE configuration
   #
   # Arguments
   # * ips: array of ip (aaa.bbb.ccc.ddd string representation)

@@ -15,6 +15,82 @@ module Managers
   end
 
   class WindowManager
+    @mutex = nil
+    @resources_used = nil
+    @resources_max = nil
+    @sleep_time = nil
+
+    # Constructor of WindowManager
+    #
+    # Arguments
+    # * max: max size of the window
+    # * sleep_time: sleeping time before releasing resources
+    # Output
+    # * nothing
+    def initialize(max, sleep_time)
+      @mutex = Mutex.new
+      @resources_used = 0
+      @resources_max = max
+      @sleep_time = sleep_time
+    end
+
+    private
+    # Try to acquire a given number of resources
+    #
+    # Arguments
+    # * n: number of resources to acquire
+    # Output
+    # * returns two values: the number of resources not acquires and the number of taken resources
+    def acquire(n)
+      @mutex.synchronize {
+        remaining_resources = @resources_max - @resources_used
+        if (remaining_resources == 0) then
+          return 0, 0
+        else
+          if (n <= remaining_resources) then
+            @resources_used += n
+            return 0, n
+          else
+            not_acquired = n - remaining_resources
+            @resources_used = @resources_max
+            return not_acquired, remaining_resources
+          end
+        end
+      }
+    end
+
+    # Release a given number of resources
+    #
+    # Arguments
+    # * n: number of resources to release
+    # Output
+    # * nothing
+    def release(n)
+      @mutex.synchronize {
+        @resources_used -= n
+      }
+    end
+
+    public
+    # Launch a windowed reboot
+    #
+    # Arguments
+    # * node_set: instance of NodeSet that contains the set of nodes to reboot
+    # * callback: reference on block that takes a NodeSet as argument
+    # Output
+    # * nothing
+    def launch_reboot(node_set, &callback)
+      remaining = node_set.length
+      while (remaining != 0)
+        remaining, taken = acquire(remaining)
+        if (taken > 0) then
+          partial_set = node_set.extract(taken)
+          callback.call(partial_set)
+          release(taken)
+        end
+        sleep(@sleep_time) if remaining != 0
+      end
+    end
   end
 
   class QueueManager
@@ -48,7 +124,7 @@ module Managers
       @queue_process_finished_nodes = Queue.new
     end
 
-    # Increments the number of active threads
+    # Increment the number of active threads
     #
     # Arguments
     # * nothing
@@ -60,7 +136,7 @@ module Managers
       }
     end
 
-    # Decrements the number of active threads
+    # Decrement the number of active threads
     #
     # Arguments
     # * nothing
@@ -72,7 +148,7 @@ module Managers
       }
     end
 
-    # Tests if the there is only one active thread
+    # Test if the there is only one active thread
     #
     # Arguments
     # * nothing
@@ -84,7 +160,7 @@ module Managers
       }
     end
 
-    # Goes to the next macro step in the automata
+    # Go to the next macro step in the automata
     #
     # Arguments
     # * current: name of the current macro step (SetDeploymentEnv, BroadcastEnv, BootNewEnv)
@@ -110,7 +186,7 @@ module Managers
       end
     end
 
-    # Replays a step with another instance
+    # Replay a step with another instance
     #
     # Arguments
     # * current: name of the current macro step (SetDeploymentEnv, BroadcastEnv, BootNewEnv)
@@ -153,7 +229,7 @@ module Managers
       end
     end
 
-    # Gets a new task in the given queue
+    # Get a new task in the given queue
     #
     # Arguments
     # * queue: name of the queue in which a new task must be taken (SetDeploymentEnv, BroadcastEnv, BootNewEnv, ProcessFinishedNodes)
@@ -174,7 +250,7 @@ module Managers
       end
     end
 
-    # Sends an exit signal in order to ask the terminaison of the threads (used to avoid deadlock)
+    # Send an exit signal in order to ask the terminaison of the threads (used to avoid deadlock)
     #
     # Arguments
     # * nothing
@@ -199,7 +275,7 @@ module Managers
     @nodeset = nil
     @config = nil
     @client = nil
-    @window_manager = nil
+    @reboot_window = nil
     @logger = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
@@ -211,7 +287,7 @@ module Managers
     # * client: Drb handler of the client
     # Output
     # * nothing
-    def initialize(config, client)
+    def initialize(config, client, reboot_window)
       @config = config
       @client = client
       if (@config.exec_specific.debug_level != nil) then
@@ -223,7 +299,7 @@ module Managers
       @nodes_ko = Nodes::NodeSet.new
       @nodeset = @config.exec_specific.node_list
       @queue_manager = QueueManager.new(@config, @nodes_ok, @nodes_ko)
-      @window_manager = WindowManager.new
+      @reboot_window = reboot_window
       @logger = Debug::Logger.new(@nodeset, @config)
       @logger.set("start", Time.now)
       @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
@@ -241,7 +317,7 @@ module Managers
       }
     end
 
-    # Launches a thread for a macro step
+    # Launch a thread for a macro step
     #
     # Arguments
     # * kind: specifies the kind of macro step to launch
@@ -270,7 +346,7 @@ module Managers
                                                                           cluster,
                                                                           set,
                                                                           @queue_manager,
-                                                                          @window_manager,
+                                                                          @reboot_window,
                                                                           @output,
                                                                           @logger).run
               when "BroadcastEnv"
@@ -280,7 +356,7 @@ module Managers
                                                                  cluster,
                                                                  set,
                                                                  @queue_manager,
-                                                                 @window_manager,
+                                                                 @reboot_window,
                                                                  @output,
                                                                  @logger).run
               when "BootNewEnv"
@@ -290,7 +366,7 @@ module Managers
                                                              cluster,
                                                              set,
                                                              @queue_manager,
-                                                             @window_manager,
+                                                             @reboot_window,
                                                              @output,
                                                              @logger).run
               else
@@ -326,7 +402,7 @@ module Managers
       end
     end
 
-    # Creates a local dirname for a given file (usefull after a copy in a cache directory)
+    # Create a local dirname for a given file (usefull after a copy in a cache directory)
     #
     # Arguments
     # * file: name of the file on the client side
@@ -336,7 +412,7 @@ module Managers
       return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
     end
 
-    # Grabs files from the client side (tarball, ssh public key, ...)
+    # Grab files from the client side (tarball, ssh public key, ...)
     #
     # Arguments
     # * nothing

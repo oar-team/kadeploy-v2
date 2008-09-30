@@ -3,7 +3,7 @@ require 'ftools'
 module Cache
   private
 
-  # Gets the size of a directory (including sub-dirs)
+  # Get the size of a directory (including sub-dirs)
   # Arguments
   # * dir: dirname
   # Output
@@ -26,7 +26,7 @@ module Cache
 
   public
 
-  # Cleans a cache according an LRU policy
+  # Clean a cache according an LRU policy
   #
   # Arguments
   # * config: instance of Config
@@ -43,7 +43,6 @@ module Cache
       lru = ""
       Dir.foreach(dir) { |f|
         if (f =~ pattern) == 0 then
-          p f
           access_time = File.atime(dir + "/" + f).to_i
           now = Time.now.to_i
           #We only delete the file older than a given number of hours

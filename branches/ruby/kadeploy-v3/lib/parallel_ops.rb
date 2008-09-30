@@ -9,7 +9,7 @@ module ParallelOperations
     @taktuk_tree_arity = nil
     @taktuk_auto_propagate = nil
 
-    # Constructors of ParallelOps
+    # Constructor of ParallelOps
     #
     # Arguments
     # * nodes: instance of NodeSet
@@ -24,7 +24,7 @@ module ParallelOperations
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
     end
 
-    # Creates a Taktuk string for an exec command
+    # Create a Taktuk string for an exec command
     #
     # Arguments
     # * cmd: command to execute
@@ -41,7 +41,7 @@ module ParallelOperations
       return args.split(" ")
     end
 
-    # Creates a Taktuk string for a send file command
+    # Create a Taktuk string for a send file command
     #
     # Arguments
     # * file: file to send
@@ -68,7 +68,7 @@ module ParallelOperations
       return args.split(" ")
     end
 
-    # Creates a Taktuk string for an exec command with an input file
+    # Create a Taktuk string for an exec command with an input file
     #
     # Arguments
     # * file: file to send as an input
@@ -96,7 +96,7 @@ module ParallelOperations
       return args.split(" ")      
     end
  
-    # Inits a the state of a NodeSet before a send file command
+    # Init a the state of a NodeSet before a send file command
     #
     # Arguments
     # * nothing
@@ -109,7 +109,7 @@ module ParallelOperations
       }
     end
 
-    # Inits a the state of a NodeSet before an exec command
+    # Init a the state of a NodeSet before an exec command
     #
     # Arguments
     # * nothing
@@ -122,7 +122,7 @@ module ParallelOperations
       }
     end
 
-    # Inits a the state of a NodeSet before a reboot command
+    # Init a the state of a NodeSet before a reboot command
     #
     # Arguments
     # * nothing
@@ -135,7 +135,7 @@ module ParallelOperations
       }
     end
 
-    # Gets the return information about an exec command with Taktuk
+    # Get the return information about an exec command with Taktuk
     #
     # Arguments
     # * tw: instance of TaktukWrapper
@@ -156,7 +156,7 @@ module ParallelOperations
       }
     end
 
-    # Gets the return information about a send file command with Taktuk
+    # Get the return information about a send file command with Taktuk
     #
     # Arguments
     # * tw: instance of TaktukWrapper
@@ -174,7 +174,7 @@ module ParallelOperations
        }
     end
 
-    # Gets the return information about an exec command with an input file with Taktuk
+    # Get the return information about an exec command with an input file with Taktuk
     #
     # Arguments
     # * tw: instance of TaktukWrapper
@@ -195,7 +195,7 @@ module ParallelOperations
       }
     end
 
-    # Executes a command in parallel
+    # Execute a command in parallel
     #
     # Arguments
     # * cmd: command to execute
@@ -218,7 +218,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    # Executes a command in parallel and expects some exit status
+    # Execute a command in parallel and expects some exit status
     #
     # Arguments
     # * cmd: command to execute
@@ -242,7 +242,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    # Executes a command in parallel and expects some exit status and an output
+    # Execute a command in parallel and expects some exit status and an output
     #
     # Arguments
     # * cmd: command to execute
@@ -268,7 +268,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]
     end
 
-    # Sends a file in parallel
+    # Send a file in parallel
     #
     # Arguments
     # * file: file to send
@@ -292,7 +292,7 @@ module ParallelOperations
       return [good_nodes, bad_nodes]   
     end
 
-    # Executes a command in parallel with an input file
+    # Execute a command in parallel with an input file
     #
     # Arguments
     # * file: file to send

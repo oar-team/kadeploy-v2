@@ -75,7 +75,7 @@ module ConfigInformation
       end
     end
 
-    # Loads the kadeploy specific stuffs
+    # Load the kadeploy specific stuffs
     #
     # Arguments
     # * nodes_desc: set of nodes read from the configuration file
@@ -129,7 +129,7 @@ module ConfigInformation
 #         Generic part           #
 ##################################
 
-    # Performs a test to check the consistancy of the installation
+    # Perform a test to check the consistancy of the installation
     #
     # Arguments
     # * kind: specifies the program launched (kadeploy|kaenv)
@@ -158,7 +158,7 @@ module ConfigInformation
       return true
     end
 
-    # Loads the common configuration file
+    # Load the common configuration file
     #
     # Arguments
     # * nothing
@@ -228,13 +228,17 @@ module ConfigInformation
               @common.log_to_syslog = true if (content[2] == "true")
             when "log_to_db"
               @common.log_to_db = true if (content[2] == "true")
+            when "reboot_window"
+              @common.reboot_window = content[2].to_i
+            when "reboot_window_sleep_time"
+              @common.reboot_window_sleep_time = content[2].to_i
             end
           end
         end
       }
     end
 
-    # Loads the client configuration file
+    # Load the client configuration file
     #
     # Arguments
     # * nothing
@@ -258,7 +262,7 @@ module ConfigInformation
       return client_config
     end
 
-    # Loads the specific configuration files
+    # Load the specific configuration files
     #
     # Arguments
     # * nothing
@@ -324,7 +328,7 @@ module ConfigInformation
       }
     end
 
-    # Loads the nodes configuration file
+    # Load the nodes configuration file
     #
     # Arguments
     # * nothing
@@ -342,7 +346,7 @@ module ConfigInformation
       }
     end
 
-    # Eventually loads some specific commands for specific nodes that override generic commands
+    # Eventually load some specific commands for specific nodes that override generic commands
     #
     # Arguments
     # * nothing
@@ -374,7 +378,7 @@ module ConfigInformation
       end
     end
 
-    # Replaces the substring HOSTNAME in a string by a value
+    # Replace the substring HOSTNAME in a string by a value
     #
     # Arguments
     # * str: string in which the HOSTNAME value must be replaced
@@ -390,7 +394,7 @@ module ConfigInformation
       return save
     end
 
-    # Generates the commands used for a node
+    # Generate the commands used for a node
     #
     # Arguments
     # * hostname: hostname of the node
@@ -411,7 +415,7 @@ module ConfigInformation
 #       Kadeploy specific        #
 ##################################
 
-    # Loads the command-line options of kadeploy
+    # Load the command-line options of kadeploy
     #
     # Arguments
     # * nodes_desc: set of nodes read from the configuration file
@@ -513,7 +517,7 @@ module ConfigInformation
       return true
     end
 
-    # Adds a node involved in the deployment to the exec_specific.node_list
+    # Add a node involved in the deployment to the exec_specific.node_list
     #
     # Arguments
     # * hostname: hostname of the node
@@ -532,7 +536,7 @@ module ConfigInformation
       end
     end
 
-    # Checks the whole configuration of the kadeploy execution
+    # Check the whole configuration of the kadeploy execution
     #
     # Arguments
     # * nothing
@@ -573,7 +577,7 @@ module ConfigInformation
 #         Kaenv specific         #
 ##################################
 
-    # Loads the kaenv specific stuffs
+    # Load the kaenv specific stuffs
     #
     # Arguments
     # * nothing
@@ -590,7 +594,7 @@ module ConfigInformation
       load_kaenv_cmdline_options
     end
 
-    # Loads the command-line options of kaenv
+    # Load the command-line options of kaenv
     #
     # Arguments
     # * nothing
@@ -631,7 +635,7 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
-    # Checks the whole configuration of the kaenv execution
+    # Check the whole configuration of the kaenv execution
     #
     # Arguments
     # * nothing
@@ -661,7 +665,7 @@ module ConfigInformation
 #       Karights specific        #
 ##################################
 
-    # Loads the karights specific stuffs
+    # Load the karights specific stuffs
     #
     # Arguments
     # * nothing
@@ -676,7 +680,7 @@ module ConfigInformation
       load_karights_cmdline_options
     end
 
-    # Loads the command-line options of karights
+    # Load the command-line options of karights
     #
     # Arguments
     # * nothing
@@ -714,7 +718,7 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
-    # Checks the whole configuration of the karigths execution
+    # Check the whole configuration of the karigths execution
     #
     # Arguments
     # * nothing
@@ -749,7 +753,7 @@ module ConfigInformation
 #        Kastat specific         #
 ##################################
 
-    # Loads the kastat specific stuffs
+    # Load the kastat specific stuffs
     #
     # Arguments
     # * nothing
@@ -768,7 +772,7 @@ module ConfigInformation
       load_kastat_cmdline_options
     end
 
-    # Loads the command-line options of kastat
+    # Load the command-line options of kastat
     #
     # Arguments
     # * nothing
@@ -817,7 +821,7 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
-    # Checks the whole configuration of the kastat execution
+    # Check the whole configuration of the kastat execution
     #
     # Arguments
     # * nothing
@@ -869,7 +873,7 @@ module ConfigInformation
 #       Kareboot specific        #
 ##################################
 
-    # Loads the kareboot specific stuffs
+    # Load the kareboot specific stuffs
     #
     # Arguments
     # * nothing
@@ -883,7 +887,7 @@ module ConfigInformation
       load_kareboot_cmdline_options(nodes_desc)
     end
 
-    # Loads the command-line options of kareboot
+    # Load the command-line options of kareboot
     #
     # Arguments
     # * nothing
@@ -927,7 +931,7 @@ module ConfigInformation
       opts.parse!(ARGV)
     end
 
-    # Checks the whole configuration of the kareboot execution
+    # Check the whole configuration of the kareboot execution
     #
     # Arguments
     # * nothing
@@ -973,6 +977,8 @@ module ConfigInformation
     attr_accessor :log_to_file
     attr_accessor :log_to_syslog
     attr_accessor :log_to_db
+    attr_accessor :reboot_window
+    attr_accessor :reboot_window_sleep_time
 
     # Constructor of CommonConfig
     #
@@ -1017,7 +1023,7 @@ module ConfigInformation
       @workflow_steps = Array.new
     end
     
-    # Gets the list of the macro step instances associed to a macro step
+    # Get the list of the macro step instances associed to a macro step
     #
     # Arguments
     # * name: name of the macro step
@@ -1047,7 +1053,7 @@ module ConfigInformation
       @current = 0
     end
 
-    # Selects the next instance implementation for a macro step
+    # Select the next instance implementation for a macro step
     #
     # Arguments
     # * nothing
@@ -1062,7 +1068,7 @@ module ConfigInformation
       end
     end
 
-    # Gets the current instance implementation of a macro step
+    # Get the current instance implementation of a macro step
     #
     # Arguments
     # * nothing

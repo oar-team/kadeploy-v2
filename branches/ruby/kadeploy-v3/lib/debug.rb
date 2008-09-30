@@ -17,7 +17,7 @@ module Debug
       @client = client
     end
 
-    # Prints a message according to a specified debug level
+    # Print a message according to a specified debug level
     #
     # Arguments
     # * l: debug level of the message
@@ -51,7 +51,7 @@ module Debug
       @config = config
     end
 
-    # Creates an hashtable that contains all the information to log
+    # Create an hashtable that contains all the information to log
     #
     # Arguments
     # * nothing
@@ -81,7 +81,7 @@ module Debug
       return node_infos
     end
 
-    # Sets a value for some nodes in the Logger
+    # Set a value for some nodes in the Logger
     #
     # Arguments
     # * op: information to set
@@ -101,7 +101,7 @@ module Debug
       end
     end
 
-    # Sets the error value for a set of nodes
+    # Set the error value for a set of nodes
     #
     # Arguments
     # * node_set: Array of nodes
@@ -113,7 +113,7 @@ module Debug
       }
     end
 
-    # Increments an information for a set of nodes
+    # Increment an information for a set of nodes
     #
     # Arguments
     # * op: information to increment
@@ -144,7 +144,7 @@ module Debug
       dump_to_db if (@config.common.log_to_db)
     end
 
-    # Dumps the logged information to syslog
+    # Dump the logged information to syslog
     #
     # Arguments
     # * nothing
@@ -166,7 +166,7 @@ module Debug
       sl.close
     end
 
-    # Dumps the logged information to the database
+    # Dump the logged information to the database
     #
     # Arguments
     # * nothing
@@ -200,7 +200,7 @@ module Debug
       db.disconnect
     end
 
-    # Dumps the logged information to a file
+    # Dump the logged information to a file
     #
     # Arguments
     # * nothing
