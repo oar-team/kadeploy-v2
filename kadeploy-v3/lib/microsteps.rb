@@ -11,7 +11,7 @@ module MicroStepsLibrary
   class MicroSteps
     @nodes_ok = nil
     @nodes_ko = nil
-    @window_manager = nil
+    @reboot_window = nil
     @config = nil
     @cluster = nil
     @output = nil
@@ -21,16 +21,16 @@ module MicroStepsLibrary
     # Arguments
     # * nodes_ok: NodeSet of nodes OK
     # * nodes_ko: NodeSet of nodes KO
-    # * window_manager: WindowManager instance
+    # * reboot_window: WindowManager instance
     # * config: instance of Config
     # * cluster: cluster name of the nodes
     # * output: OutputControl instance
     # Output
     # * nothing
-    def initialize(nodes_ok, nodes_ko, window_manager, config, cluster, output)
+    def initialize(nodes_ok, nodes_ko, reboot_window, config, cluster, output)
       @nodes_ok = nodes_ok
       @nodes_ko = nodes_ko
-      @window_manager = window_manager
+      @reboot_window = reboot_window
       @config = config
       @cluster = cluster
       @output = output
@@ -38,7 +38,7 @@ module MicroStepsLibrary
 
     private
 
-    # Classifies an array of nodes in two arrayes (good ones and bad nodes)
+    # Classify an array of nodes in two arrayes (good ones and bad nodes)
     #
     # Arguments
     # * good_bad_array: array that contains nodes ok and ko ([0] are the good ones and [1] are the bad ones)
@@ -57,7 +57,7 @@ module MicroStepsLibrary
       end
     end 
  
-    # Wraps a parallel command
+    # Wrap a parallel command
     #
     # Arguments
     # * cmd: command to execute on nodes_ok
@@ -71,7 +71,7 @@ module MicroStepsLibrary
       classify_nodes(po.execute(cmd))
     end
 
-    # Wraps a parallel command and expects a given set of exit status
+    # Wrap a parallel command and expects a given set of exit status
     #
     # Arguments
     # * cmd: command to execute on nodes_ok
@@ -86,7 +86,7 @@ module MicroStepsLibrary
       classify_nodes(po.execute_expecting_status(cmd, status))
     end 
   
-    # Wraps a parallel command and expects a given set of exit status and an output
+    # Wrap a parallel command and expects a given set of exit status and an output
     #
     # Arguments
     # * cmd: command to execute on nodes_ok
@@ -102,7 +102,7 @@ module MicroStepsLibrary
       classify_nodes(po.execute_expecting_status_and_output(cmd, status, output))
     end
 
-    # Wraps a parallel send of file
+    # Wrap a parallel send of file
     #
     # Arguments
     # * file: file to send
@@ -118,7 +118,7 @@ module MicroStepsLibrary
       classify_nodes(po.send_file(file, dest_dir, scattering_kind))
     end
 
-    # Wraps a parallel command that uses an input file
+    # Wrap a parallel command that uses an input file
     #
     # Arguments
     # * file: file to send as input
@@ -136,7 +136,7 @@ module MicroStepsLibrary
       classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind, status))
     end
 
-    # Wraps a parallel reboot command and wait a give time the effective reboot
+    # Wrap a parallel reboot command and wait a give time the effective reboot
     #
     # Arguments
     # * timeout: time to wait
@@ -156,7 +156,7 @@ module MicroStepsLibrary
     # * kind: kind of reboot to perform
     # * node_set: NodeSet that must be rebooted 
     # Output
-    # * nothing  
+    # * nothing
     def _reboot_wrapper(kind, node_set)
       @output.debugl(4, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
@@ -174,7 +174,7 @@ module MicroStepsLibrary
       classify_nodes(CmdCtrlWrapper::get_results(pr))
     end
 
-    # Wraps the reboot command
+    # Wrap the reboot command
     #
     # Arguments
     # * kind: kind of reboot to perform
@@ -183,25 +183,30 @@ module MicroStepsLibrary
     def reboot_wrapper(kind)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      map = Array.new
-      map.push("soft")
-      map.push("hard")
-      map.push("very_hard")
-      index = map.index(kind)
-      finished = false
-      while ((index < map.length) && (not finished))
-        _reboot_wrapper(map[index], node_set)
-        if (not @nodes_ko.empty?) then
-          node_set.free
-          @nodes_ko.duplicate_and_free(node_set)
-          index = index + 1
-        else
-          finished = true
+
+      callback = Proc.new { |ns|
+        map = Array.new
+        map.push("soft")
+        map.push("hard")
+        map.push("very_hard")
+        index = map.index(kind)
+        finished = false
+
+        while ((index < map.length) && (not finished))
+          _reboot_wrapper(map[index], ns)
+          if (not @nodes_ko.empty?) then
+            ns.free
+            @nodes_ko.duplicate_and_free(ns)
+            index = index + 1
+          else
+            finished = true
+          end
         end
-      end
+      }
+      @reboot_window.launch_reboot(node_set, &callback)
     end
 
-    # Extracts some file from an archive
+    # Extract some file from an archive
     #
     # Arguments
     # * archive: archive name
@@ -231,7 +236,7 @@ module MicroStepsLibrary
     
     public
 
-    # Changes the PXE configuration
+    # Change the PXE configuration
     #
     # Arguments
     # * step: kind of change
@@ -282,7 +287,7 @@ module MicroStepsLibrary
       return res
     end
 
-    # Performs a reboot on the current set of nodes_ok
+    # Perform a reboot on the current set of nodes_ok
     #
     # Arguments
     # * reboot_kind: kind of reboot (soft, hard, very_hard, kexec)
@@ -308,7 +313,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Checks the state of a set of nodes
+    # Check the state of a set of nodes
     #
     # Arguments
     # * step: step in which the nodes are expected to be
@@ -338,7 +343,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Loads some specific drivers on the nodes
+    # Load some specific drivers on the nodes
     #
     # Arguments
     # * nothing
@@ -353,7 +358,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Performs a fdisk on the ndoes
+    # Perform a fdisk on the ndoes
     #
     # Arguments
     # * nothing
@@ -377,7 +382,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Performs the deployment part on the nodes
+    # Perform the deployment part on the nodes
     #
     # Arguments
     # * nothing
@@ -410,7 +415,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Mounts the deployment part on the ndoes
+    # Mount the deployment part on the ndoes
     #
     # Arguments
     # * nothing
@@ -427,7 +432,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Mounts the /tmp part on the ndoes
+    # Mount the /tmp part on the ndoes
     #
     # Arguments
     # * nothing
@@ -442,7 +447,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Sends a tarball on the nodes (currently unused)
+    # Send a tarball on the nodes (currently unused)
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
@@ -456,7 +461,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Sends a tarball and uncompress it on the nodes
+    # Send a tarball and uncompress it on the nodes
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
@@ -484,7 +489,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Sends a tarball and uncompress it on the nodes
+    # Send a tarball and uncompress it on the nodes
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
@@ -502,7 +507,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Waits some nodes after a reboot
+    # Wait some nodes after a reboot
     #
     # Arguments
     # * port: port used to perform a reach test on the nodes
@@ -513,7 +518,7 @@ module MicroStepsLibrary
       return true
     end
     
-    # Copies the kernel and the initrd into the PXE directory
+    # Copie the kernel and the initrd into the PXE directory
     #
     # Arguments
     # * nothing
@@ -562,7 +567,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Tests if a timeout is reached
+    # Test if a timeout is reached
     #
     # Arguments
     # * timeout: timeout

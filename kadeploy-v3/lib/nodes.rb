@@ -62,7 +62,7 @@ module Nodes
       @set = Array.new
     end
 
-    # Adds a node to the set
+    # Add a node to the set
     #
     # Arguments
     # * node: instance of Node
@@ -72,7 +72,7 @@ module Nodes
       @set.push(node)
     end
 
-    # Tests if the node set is empty
+    # Test if the node set is empty
     #
     # Arguments
     # * nothing
@@ -107,7 +107,7 @@ module Nodes
       free
     end
 
-    # Adds a NodeSet to an existing one
+    # Add a NodeSet to an existing one
     #
     # Arguments
     # * node_set: NodeSet to add to the current one
@@ -121,7 +121,25 @@ module Nodes
       end
     end
 
-    # Tests if the state of all the nodes in the set is OK
+    # Extract a given number of elements from a NodeSet
+    #
+    # Arguments
+    # * n: number of element to extract
+    # Output
+    #  * returns a new NodeSet if there are enough elements in the source NodeSet, nil otherwise
+    def extract(n)
+      if (n <= @set.length) then
+        new_set = NodeSet.new
+        n.times {
+          new_set.push(@set.shift)
+        }
+        return new_set
+      else
+        return nil
+      end
+    end
+
+    # Test if the state of all the nodes in the set is OK
     #
     # Arguments
     # * nothing
@@ -146,7 +164,7 @@ module Nodes
       @set.delete_if { |node| true }
     end
 
-    # Creates an array from the IP of the nodes in a NodeSet
+    # Create an array from the IP of the nodes in a NodeSet
     #
     # Arguments
     # * nothing
@@ -160,7 +178,7 @@ module Nodes
       return res
     end
 
-    # Creates an array from the hostname of the nodes in a NodeSet
+    # Create an array from the hostname of the nodes in a NodeSet
     #
     # Arguments
     # * nothing
@@ -189,6 +207,16 @@ module Nodes
       return s
     end
 
+    # Get the number of elements
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns the number of elements
+    def length
+      return @set.length
+    end
+
     # Make a hashtable that groups the nodes in a NodeSet by cluster
     #
     # Arguments
@@ -204,7 +232,7 @@ module Nodes
       return ht
     end
 
-    # Gets a Node in a NodeSet by its hostname
+    # Get a Node in a NodeSet by its hostname
     #
     # Arguments
     # * hostname: name of the node searched

@@ -89,7 +89,7 @@ def delete_environment(config, db)
   db.run_query(query)
 end
 
-# Prints the environment designed by Config.exec_specific.env_name and that belongs to the user specified in Config.exec_specific.user
+# Print the environment designed by Config.exec_specific.env_name and that belongs to the user specified in Config.exec_specific.user
 #
 # Arguments
 # * config: instance of Config

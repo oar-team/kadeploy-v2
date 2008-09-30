@@ -28,7 +28,7 @@ class KadeployClient
     puts msg
   end
 
-  # Stops the DRB service and to release the client (RPC)
+  # Stop the DRB service and to release the client (RPC)
   #
   # Arguments
   # * nothing
@@ -38,7 +38,7 @@ class KadeployClient
     DRb.stop_service()
   end
 
-  # Gets a file from the client (RPC)
+  # Get a file from the client (RPC)
   #
   # Arguments
   # * file_name: name of the file on the client side
@@ -55,7 +55,7 @@ class KadeployClient
     @kadeploy_server.post_send_file
   end
 
-  # Prints the results of the deployment (RPC)
+  # Print the results of the deployment (RPC)
   #
   # Arguments
   # * nodes_ok: instance of NodeSet that contains the nodes correctly deployed

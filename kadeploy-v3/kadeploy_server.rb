@@ -11,6 +11,7 @@ class KadeployServer
   attr_reader :dest_host
   attr_reader :dest_port
   @file_name = nil #any access to file_name must be protected with mutex
+  @reboot_window = nil
 
   # Constructor of KadeployServer
   #
@@ -18,11 +19,12 @@ class KadeployServer
   # * config: instance of Config
   # Output
   # * raises an exception if the file server can not open a socket
-  def initialize(config)
+  def initialize(config, reboot_window)
     @config = config
     @dest_host = @config.common.kadeploy_server
     @dest_port = @config.common.kadeploy_file_server_port
     @tcp_buffer_size = @config.common.kadeploy_tcp_buffer_size
+    @reboot_window = reboot_window
     puts "Launching the Kadeploy file server"
     @mutex = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
@@ -50,7 +52,7 @@ class KadeployServer
     end
   end
 
-  # Prevents a shared object related to the file transfers from any modifications, it must be called before a file transfer (RPC)
+  # Prevent a shared object related to the file transfers from any modifications, it must be called before a file transfer (RPC)
   #
   # Arguments
   # * file_name: name of the file that will be transfered
@@ -61,7 +63,7 @@ class KadeployServer
     @file_name = file_name
   end
 
-  # Releases a lock on a shared object, it must be called after a file transfer (RPC)
+  # Release a lock on a shared object, it must be called after a file transfer (RPC)
   #
   # Arguments
   # * nothing
@@ -71,7 +73,7 @@ class KadeployServer
     @mutex.unlock
   end
 
-  # Gets the common configuration (RPC)
+  # Get the common configuration (RPC)
   #
   # Arguments
   # * nothing
@@ -81,7 +83,7 @@ class KadeployServer
     return @config.common
   end
 
-  # Gets the default deployment partition (RPC)
+  # Get the default deployment partition (RPC)
   #
   # Arguments
   # * cluster: name of the cluster concerned
@@ -92,7 +94,7 @@ class KadeployServer
   end
 
 
-  # Gets the production partition (RPC)
+  # Get the production partition (RPC)
   #
   # Arguments
   # * cluster: name of the cluster concerned
@@ -102,7 +104,7 @@ class KadeployServer
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].prod_part
   end
 
-  # Sets the exec_specific configuration from the client side (RPC)
+  # Set the exec_specific configuration from the client side (RPC)
   #
   # Arguments
   # * exec_specific: instance of Config.exec_specific
@@ -118,7 +120,7 @@ class KadeployServer
     end
   end
 
-  # Launches the workflow from the client side (RPC)
+  # Launch the workflow from the client side (RPC)
   #
   # Arguments
   # * host: hostname of the client
@@ -130,7 +132,7 @@ class KadeployServer
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
-    workflow=Managers::WorkflowManager.new(@config, client)
+    workflow=Managers::WorkflowManager.new(@config, client, @reboot_window)
     workflow.run
   end
 
@@ -152,7 +154,7 @@ class KadeployServer
     end
     output = Debug::OutputControl.new(dl, client)
     node_list.group_by_cluster.each_pair { |cluster, set|
-      step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, nil, @config, cluster, output)
+      step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @config, cluster, output)
       if (partition == "") then
         step.switch_pxe("back_to_prod_env")
         step.reboot("soft")
@@ -175,7 +177,8 @@ config = ConfigInformation::Config.new("kadeploy")
 if (config.check_config("kadeploy") == true)
   puts "Launching the Kadeploy RPC server"
   uri = "druby://#{config.common.kadeploy_server}:#{config.common.kadeploy_server_port}"
-  kadeployServer = KadeployServer.new(config)
+  kadeployServer = KadeployServer.new(config, 
+                                      Managers::WindowManager.new(config.common.reboot_window, config.common.reboot_window_sleep_time))
   DRb.start_service(uri, kadeployServer)
   DRb.thread.join
 else

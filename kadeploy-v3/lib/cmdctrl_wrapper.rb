@@ -3,7 +3,7 @@ include CmdCtrl
 include CmdCtrl::Commands
 
 module CmdCtrlWrapper
-  # Initializes a ParallelRunner for CmdCtrl
+  # Initialize a ParallelRunner for CmdCtrl
   #
   # Arguments
   # * nothing
@@ -13,7 +13,7 @@ module CmdCtrlWrapper
     return CmdCtrl::ParallelRunner.new
   end
 
-  # Adds a command to the ParallelRunner
+  # Add a command to the ParallelRunner
   #
   # Arguments
   # * pr: instance of a ParallelRunner

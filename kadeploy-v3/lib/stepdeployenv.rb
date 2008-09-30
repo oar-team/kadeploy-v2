@@ -14,22 +14,22 @@ module SetDeploymentEnvironnment
     # * cluster: name of the cluster
     # * nodes: instance of NodeSet
     # * queue_manager: instance of QueueManager
-    # * window_manager: instance of WindowManager
+    # * reboot_window: instance of WindowManager
     # * output: instance of OutputControl
     # * logger: instance of Logger
     # Output
     # * returns a SetDeploymentEnv instance (SetDeploymentEnvUntrusted, SetDeploymentEnvNfsroot, SetDeploymentEnvProd, SetDeploymentEnvDummy)
     # * raises an exception if an invalid kind of instance is given
-    def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+    def SetDeploymentEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       case kind
       when "SetDeploymentEnvUntrusted"
-        return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+        return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       when "SetDeploymentEnvNfsroot"
-        return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+        return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       when "SetDeploymentEnvProd"
-        return SetDeploymentEnvProd.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+        return SetDeploymentEnvProd.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       when "SetDeploymentEnvDummy"
-        return SetDeploymentEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+        return SetDeploymentEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       else
         raise "Invalid kind of step value for the environment deployment step"
       end
@@ -40,7 +40,7 @@ module SetDeploymentEnvironnment
     @remaining_retries = 0
     @timeout = 0
     @queue_manager = nil
-    @window_manager = nil
+    @reboot_window = nil
     @output = nil
     @cluster = nil
     @nodes = nil
@@ -59,18 +59,18 @@ module SetDeploymentEnvironnment
     # * cluster: name of the cluster
     # * nodes: instance of NodeSet
     # * queue_manager: instance of QueueManager
-    # * window_manager: instance of WindowManager
+    # * reboot_window: instance of WindowManager
     # * output: instance of OutputControl
     # * logger: instance of Logger
     # Output
     # * nothing
-    def initialize(max_retries, timeout, cluster, nodes, queue_manager, window_manager, output, logger)
+    def initialize(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
       @nodes = nodes
       @queue_manager = queue_manager
       @config = @queue_manager.config
-      @window_manager = window_manager
+      @reboot_window = reboot_window
       @output = output
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
@@ -79,10 +79,10 @@ module SetDeploymentEnvironnment
       @logger.set("step1", get_instance_name, @nodes)
       @logger.set("timeout_step1", @timeout, @nodes)
       @start = Time.now.to_i
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @window_manager, @config, cluster, output)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @config, cluster, output)
     end
 
-    # Gets the name of the current macro step
+    # Get the name of the current macro step
     #
     # Arguments
     # * nothing
@@ -92,7 +92,7 @@ module SetDeploymentEnvironnment
       return self.class.superclass.to_s.split("::")[1]
     end
 
-    # Gets the name of the current instance
+    # Get the name of the current instance
     #
     # Arguments
     # * nothing

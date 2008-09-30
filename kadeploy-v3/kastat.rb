@@ -3,7 +3,7 @@ require 'lib/config'
 require 'lib/db'
 require 'drb'
 
-# Generates some filters for the output according the options
+# Generate some filters for the output according the options
 #
 # Arguments
 # * config: instance of Config

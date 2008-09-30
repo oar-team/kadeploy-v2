@@ -22,7 +22,7 @@ module EnvironmentManagement
     attr_reader :filesystem
     attr_reader :user
 
-    # Loads an environment file
+    # Load an environment file
     #
     # Arguments
     # * file: filename
@@ -85,7 +85,7 @@ module EnvironmentManagement
       return check_md5_digest
     end
 
-    # Loads an environment from a database
+    # Load an environment from a database
     #
     # Arguments
     # * name: environment name
@@ -115,7 +115,7 @@ module EnvironmentManagement
       end
     end
 
-    # Loads an environment from an Hash
+    # Load an environment from an Hash
     #
     # Arguments
     # * hash: hashtable
@@ -142,7 +142,7 @@ module EnvironmentManagement
       @user = hash["user"]
     end
 
-    # Checks the MD5 digest of a file
+    # Check the MD5 digest of a file
     #
     # Arguments
     # * nothing
@@ -152,7 +152,7 @@ module EnvironmentManagement
       return ((Digest::MD5.hexdigest(File.read(@tarball_file)) == @tarball_md5) && (Digest::MD5.hexdigest(File.read(@postinstall_file)) == @postinstall_md5))
     end
 
-    # Prints the header
+    # Print the header
     #
     # Arguments
     # * nothing
@@ -163,7 +163,7 @@ module EnvironmentManagement
       puts "####         #######     ####            ###########"
     end
 
-    # Prints the short view
+    # Print the short view
     #
     # Arguments
     # * nothing
@@ -173,7 +173,7 @@ module EnvironmentManagement
       printf("%-15s %-7s %-10s %-40s\n", @name, @version, @user, @description)
     end
 
-    # Prints the full view
+    # Print the full view
     #
     # Arguments
     # * nothing

@@ -34,7 +34,7 @@
       @granted = false
     end
 
-    # Checks if the rights are granted
+    # Check if the rights are granted
     #
     # Arguments
     # * nothing
@@ -78,7 +78,7 @@
       @granted = false
     end
 
-    # Checks if the rights are granted
+    # Check if the rights are granted
     #
     # Arguments
     # * nothing
