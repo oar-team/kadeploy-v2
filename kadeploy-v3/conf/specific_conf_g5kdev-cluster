@@ -20,4 +20,5 @@ macrostep = SetDeploymentEnv|SetDeploymentEnvProd:2:100
 #macrostep = BroadcastEnv|BroadcastEnvDummy:2:300
 macrostep = BroadcastEnv|BroadcastEnvChainWithFS:2:300
 #macrostep = BootNewEnv|BootNewEnvDummy:1:150,BootNewEnvClassical:2:150
-macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150
+#macrostep = BootNewEnv|BootNewEnvKexec:1:150,BootNewEnvClassical:2:150
+macrostep = BootNewEnv|BootNewEnvKexec:1:100

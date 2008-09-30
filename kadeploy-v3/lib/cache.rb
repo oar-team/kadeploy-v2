@@ -29,15 +29,13 @@ module Cache
   # Clean a cache according an LRU policy
   #
   # Arguments
-  # * config: instance of Config
   # * dir: cache directory
   # * max_size: maximum size for the cache in Bytes
   # * time_before_delete: time in hours before a file can be deleted
   # * pattern: pattern of the files that might be deleted
   # Output
   # * nothing
-  def Cache::clean_cache(config, dir, max_size, time_before_delete, pattern)
-    dir = config.common.tftp_repository + "/" + config.common.tftp_images_path
+  def Cache::clean_cache(dir, max_size, time_before_delete, pattern)
     no_change = false
     while (get_dir_size(dir) > max_size) && (not no_change)
       lru = ""

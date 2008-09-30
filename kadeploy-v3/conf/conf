@@ -20,6 +20,7 @@ kadeploy_server_port = 25300
 kadeploy_file_server_port = 25302
 kadeploy_tcp_buffer_size = 8192
 kadeploy_cache_dir = /tmp/kadeploy_cache
+kadeploy_cache_size = 5000
 ssh_port = 22
 rsh_port = 514
 log_to_file = /tmp/kadeploy.log

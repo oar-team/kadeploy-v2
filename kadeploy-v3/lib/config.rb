@@ -216,6 +216,8 @@ module ConfigInformation
               @common.kadeploy_tcp_buffer_size = content[2].to_i
             when "kadeploy_cache_dir"
               @common.kadeploy_cache_dir = content[2]
+            when "kadeploy_cache_size"
+              @common.kadeploy_cache_size = content[2].to_i
             when "ssh_port"
               @common.ssh_port = content[2]
             when "rsh_port"
@@ -971,6 +973,7 @@ module ConfigInformation
     attr_accessor :kadeploy_file_server_port
     attr_accessor :kadeploy_tcp_buffer_size
     attr_accessor :kadeploy_cache_dir
+    attr_accessor :kadeploy_cache_size
     attr_accessor :ssh_port
     attr_accessor :rsh_port
     attr_accessor :environment_extraction_dir

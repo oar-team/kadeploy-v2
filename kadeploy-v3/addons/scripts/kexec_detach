@@ -1,0 +1,16 @@
+#!/bin/sh
+
+kernelPath=$1
+initrdPath=$2
+shift
+shift
+destPartAndParams=$@
+
+echo "KEXEC: Make sure no other kernel has been loaded"
+kexec -u
+
+echo "KEXEC: Setting Kexec parameters"
+kexec -l $kernelPath --initrd=$initrdPath --append="root=$destPartAndParams"
+
+echo "KEXEC: Running Kexec"
+/sbin/start-stop-daemon -S -x /usr/local/bin/run_kexec -b

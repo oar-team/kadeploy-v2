@@ -131,7 +131,7 @@ module BootNewEnvironment
         #After several retries, some nodes may still be in an incorrect state
         if not @nodes_ko.empty? then
           #Maybe some other instances are defined
-          if not replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
           end
         else
