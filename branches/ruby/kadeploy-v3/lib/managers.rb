@@ -3,6 +3,7 @@ require 'lib/debug'
 require 'lib/nodes'
 require 'lib/config'
 require 'lib/managers'
+require 'lib/cache'
 require 'lib/stepdeployenv'
 require 'lib/stepbroadcastenv'
 require 'lib/stepbootnewenv'
@@ -423,6 +424,8 @@ module Managers
       if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
         @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
         @client.get_file(@config.exec_specific.environment.tarball_file)
+      else
+        system("touch #{local_tarball}")
       end
       @config.exec_specific.environment.tarball_file = local_tarball #now, we use the cached file
       if @config.exec_specific.key != "" then
@@ -430,6 +433,7 @@ module Managers
         @client.get_file(@config.exec_specific.key)
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
       end
+      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
     end
 
     # Main of WorkflowManager

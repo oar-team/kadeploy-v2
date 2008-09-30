@@ -1,0 +1,2 @@
+The files kexec_detach and run_kexec must be copied in the 
+/usr/local/bin directory of the production environment.

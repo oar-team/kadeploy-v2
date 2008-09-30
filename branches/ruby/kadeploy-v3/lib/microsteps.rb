@@ -266,8 +266,7 @@ module MicroStepsLibrary
                                                       @config.common.tftp_repository,
                                                       @config.common.tftp_images_path,
                                                       @config.common.tftp_cfg)
-        Cache::clean_cache(@config,
-                           @config.common.tftp_repository + "/" + @config.common.tftp_images_path,
+        Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
                            @config.common.tftp_images_max_size * 1024 * 1024,
                            6,
                            /^.+--e\d+v\d+$/)
@@ -279,7 +278,6 @@ module MicroStepsLibrary
                                                @config.common.tftp_repository,
                                                @config.common.tftp_images_path,
                                                @config.common.tftp_cfg)
-        
       end
       if (res == false) then
         @output.debugl(0, "The PXE configuration has not been performed correctly: #{kind}")

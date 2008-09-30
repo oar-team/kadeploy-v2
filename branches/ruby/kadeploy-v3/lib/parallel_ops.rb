@@ -128,7 +128,7 @@ module ParallelOperations
     # * nothing
     # Output
     # * nothing
-    def init_nodes_state_before_wit_nodes_after_reboot_command
+    def init_nodes_state_before_wait_nodes_after_reboot_command
       @nodes.set.each { |node|
         node.last_cmd_stderr = "The node #{node.hostname} is unreachable after the reboot"
         node.state = "KO"
@@ -327,11 +327,11 @@ module ParallelOperations
     def wait_nodes_after_reboot(timeout, port)
       good_nodes = Array.new
       bad_nodes = Array.new
-      init_nodes_state_before_wit_nodes_after_reboot_command
-      sleep 10
+      init_nodes_state_before_wait_nodes_after_reboot_command
+      sleep(10)
       start = Time.now.tv_sec
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
-        sleep 2
+        sleep(2)
         @nodes.set.each { |node|
           if node.state == "KO" then
             sock = TCPSocket.new(node.hostname, port) rescue false

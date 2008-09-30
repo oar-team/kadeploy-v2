@@ -1,0 +1,17 @@
+#!/bin/sh
+
+sleep 1
+
+echo "KEXEC: Sync"
+sync
+
+echo "KEXEC: Killing all running processes ..."
+[ -x /etc/init.d/sendsigs ] && /etc/init.d/sendsigs stop
+
+echo "KEXEC: Umount all ..."
+[ -x /etc/init.d/umountfs ] && /etc/init.d/umountfs stop
+
+echo "KEXEC: Mounting root read-only ..."
+[ -x /etc/init.d/umountroot ] && /etc/init.d/umountroot stop
+
+echo "KEXEC: fire !!!!!!!!!!!" kexec -e
