@@ -60,7 +60,10 @@ sub getVlanNumber {
     if(not defined $vlanName or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
+    # default vlan, get the real name of the vlan
+    $vlanName = $const::VLAN_DEFAULT_NAME if $vlanName eq $const::DEFAULT_NAME;
 
+    &const::verbose("Get vlan number of ",$vlanName);
     my @res;
 
 #Retrieve the number and the name of each vlan
