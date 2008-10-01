@@ -40,7 +40,7 @@ module Cache
     while (get_dir_size(dir) > max_size) && (not no_change)
       lru = ""
       Dir.foreach(dir) { |f|
-        if (f =~ pattern) == 0 then
+        if ((f =~ pattern) == 0) && (f != "..") && (f != ".") then
           access_time = File.atime(dir + "/" + f).to_i
           now = Time.now.to_i
           #We only delete the file older than a given number of hours
