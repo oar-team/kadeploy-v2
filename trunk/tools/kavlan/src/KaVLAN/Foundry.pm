@@ -144,11 +144,13 @@ sub setUntag(){
     &const::verbose("The port is currently in the VLAN ",$OldVLAN[0]);
     my $ifIndex = &getPortIfIndex($port,$switchSession);
     # delete
-    my $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$OldVLAN[0].$ifIndex", $FOUNDRY_DELETE_VLAN,"INTEGER"]);
-    $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
+    my ($old_vlan_number)= $self->getVlanNumber($OldVLAN[0],$switchSession);
+    &const::verbose("old vlan number is $old_vlan_number");
+    my $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$old_vlan_number.$ifIndex", $FOUNDRY_DELETE_VLAN,"INTEGER"]);
+    $switchSession->set($var) or die "ERROR : Can't delete the port from the old vlan ($OldVLAN[0].$ifIndex)";
     # create
     $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$vlanNumber[0].$ifIndex", $FOUNDRY_CREATE_VLAN,"INTEGER"]);
-    $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
+    $switchSession->set($var) or die "ERROR : Can't add the port to the new vlan";
     $const::FUNC_NAME=$OLD_FUNC_NAME;
 
 }
@@ -187,7 +189,6 @@ sub getPortIfIndex {
     my $OLD_FUNC_NAME=$const::FUNC_NAME;
     $const::FUNC_NAME="getPortIfIndex";
     &const::verbose();
-    my $ifIndex;
     my ($port,$switchSession) = @_;
     if ($port =~ m@(\d+)/(\d+)@) {
         # ifIndex of port X/Y is (X-1)*64+Y
