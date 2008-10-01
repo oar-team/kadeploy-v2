@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ -x /etc/kadeploy/load_kadeploy_env ]
+then
+    KADEPLOY_CONFIG_DIR=/etc/kadeploy
+    export KADEPLOY_CONFIG_DIR
+elif [ ! -x $KADEPLOY_CONFIG_DIR/load_kadeploy_env ]
+then
+    echo "The Kadeploy environment cannot be loaded, please check your configuration"
+    exit 1
+fi
+
+source $KADEPLOY_CONFIG_DIR/load_kadeploy_env
+$KADEPLOY_INSTALL_DIR/src/kadeploy_client.rb "$@"

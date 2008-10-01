@@ -1,7 +1,11 @@
 #!/usr/bin/ruby -w
-require 'lib/config'
-require 'lib/db'
-require 'lib/environment'
+
+#Kadeploy libs
+require 'config'
+require 'db'
+require 'environment'
+
+#Ruby libs
 require 'drb'
 
 # List the environments of a user defined in Config.exec_specific.user

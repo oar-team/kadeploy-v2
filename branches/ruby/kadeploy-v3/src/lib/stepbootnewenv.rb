@@ -1,4 +1,5 @@
-require 'lib/debug'
+#Kadelpoy libs
+require 'debug'
 
 module BootNewEnvironment
   class BootNewEnvFactory

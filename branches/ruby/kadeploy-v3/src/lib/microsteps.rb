@@ -1,10 +1,12 @@
-require 'lib/debug'
-require 'lib/nodes'
-require 'lib/parallel_ops'
-require 'lib/cmdctrl_wrapper'
-require 'lib/pxe_ops'
-require 'lib/cache'
+#Kadeploy libs
+require 'debug'
+require 'nodes'
+require 'parallel_ops'
+require 'cmdctrl_wrapper'
+require 'pxe_ops'
+require 'cache'
 
+#Ruby libs
 require 'ftools'
 
 module MicroStepsLibrary

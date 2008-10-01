@@ -1,12 +1,12 @@
 #Kadeploy libs
-require 'lib/debug'
-require 'lib/nodes'
-require 'lib/config'
-require 'lib/managers'
-require 'lib/cache'
-require 'lib/stepdeployenv'
-require 'lib/stepbroadcastenv'
-require 'lib/stepbootnewenv'
+require 'debug'
+require 'nodes'
+require 'config'
+require 'managers'
+require 'cache'
+require 'stepdeployenv'
+require 'stepbroadcastenv'
+require 'stepbootnewenv'
 
 #Ruby libs
 require 'thread'

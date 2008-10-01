@@ -1,4 +1,5 @@
-require "mysql"
+#Ruby libs
+require 'mysql'
 
 module Database
   class DbFactory

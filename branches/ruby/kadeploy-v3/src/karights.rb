@@ -1,6 +1,10 @@
 #!/usr/bin/ruby -w
-require 'lib/config'
-require 'lib/db'
+
+#Kadeploy libs
+require 'config'
+require 'db'
+
+#Ruby libs
 require 'drb'
 
 # Generate a comma-separated string from an array

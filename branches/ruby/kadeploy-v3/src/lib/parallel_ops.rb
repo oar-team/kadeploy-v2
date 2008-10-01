@@ -1,4 +1,7 @@
-require 'contrib/taktuk_wrapper'
+#Contrib libs
+require 'taktuk_wrapper'
+
+#Ruby libs
 require 'yaml'
 require 'socket'
 

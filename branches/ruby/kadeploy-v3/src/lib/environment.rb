@@ -1,5 +1,8 @@
+#Kadeploy libs
+require 'db'
+
+#Ruby libs
 require 'digest/md5'
-require 'lib/db'
 
 module EnvironmentManagement
   class Environment

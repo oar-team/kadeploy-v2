@@ -1,9 +1,9 @@
 #!/usr/bin/ruby -w
 
 #Kadeploy libs
-require 'lib/checkrights'
-require 'lib/config'
-require 'lib/db'
+require 'checkrights'
+require 'config'
+require 'db'
 
 #Ruby libs
 require 'thread'

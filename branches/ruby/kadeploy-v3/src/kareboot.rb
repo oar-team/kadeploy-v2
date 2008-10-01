@@ -1,7 +1,11 @@
 #!/usr/bin/ruby -w
-require 'lib/config'
-require 'lib/db'
-require 'lib/checkrights'
+
+#Kadeploy libs
+require 'config'
+require 'db'
+require 'checkrights'
+
+#Ruby libs
 require 'drb'
 
 class KarebootClient
