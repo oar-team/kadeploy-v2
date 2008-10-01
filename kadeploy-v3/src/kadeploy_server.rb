@@ -1,7 +1,12 @@
 #!/usr/bin/ruby -w
+
+#Kadeploy libs
+require 'managers'
+require 'debug'
+require 'microsteps'
+
+#Ruby libs
 require 'drb'
-require 'lib/managers'
-require 'lib/debug'
 
 class KadeployServer
   @config = nil

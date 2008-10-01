@@ -1,6 +1,10 @@
 #!/usr/bin/ruby -w
-require 'lib/config'
-require 'lib/db'
+
+#Kadeploy libs
+require 'config'
+require 'db'
+
+#Ruby libs
 require 'drb'
 
 # Generate some filters for the output according the options

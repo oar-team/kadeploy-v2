@@ -1,6 +1,5 @@
-require 'lib/debug'
-require 'lib/microsteps'
-require 'lib/nodes'
+#Kadelpoy libs
+require 'debug'
 
 module SetDeploymentEnvironnment
 

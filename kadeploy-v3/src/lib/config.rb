@@ -1,11 +1,13 @@
-require "lib/environment"
-require "lib/nodes"
+#Kadeploy libs
+require 'environment'
+require 'nodes'
 
-require "optparse"
-require "ostruct"
+#Ruby libs
+require 'optparse'
+require 'ostruct'
 
 module ConfigInformation
-  CONFIGURATION_FOLDER = Dir.pwd + "/conf" #"/etc/kadeploy"
+  CONFIGURATION_FOLDER = ENV['KADEPLOY_CONFIG_DIR']
   COMMANDS_FILE = "cmd"
   NODES_FILE = "nodes"
   COMMON_CONFIGURATION_FILE = "conf"
