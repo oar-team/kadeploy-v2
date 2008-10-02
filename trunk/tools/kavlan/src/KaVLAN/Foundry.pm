@@ -140,8 +140,6 @@ sub setUntag(){
     # create
     $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$vlanNumber[0].$ifIndex", $FOUNDRY_CREATE_VLAN,"INTEGER"]);
     $switchSession->set($var) or die "ERROR : Can't add the port to the new vlan";
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -149,9 +147,6 @@ sub setUntag(){
 # ret : string -> the vlan name ( ex: 9/3 )
 ##########################################################################################
 sub getPortFromIndex {
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortFromIndex";
-    &const::verbose();
     my $ifIndex;
     my ($index,$switchSession) = @_;
 
