@@ -1,0 +1,8 @@
+Package: kadeploy-v3
+Version: 0.1
+Section: base
+Priority: optional
+Architecture: all
+Depends: libmysql-ruby,libopenssl-ruby,libneedle-ruby1.8,libnet-ssh-ruby1.8,libtermios-ruby1.8,ruby1.8
+Maintainer: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Description: Kadeploy: the cluster deployment tool
