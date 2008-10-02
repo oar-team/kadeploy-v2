@@ -60,11 +60,6 @@ sub new(){
 # rmq : The number have to be retrieved by using the 'getVlanNumber' function
 ##########################################################################################
 sub modifyVlanName(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="modifyVlanName";
-    &const::verbose();
-
     my $self = shift;
 #Check arguement
     my ($oldVlanName,$newVlanName,$session)=@_;
@@ -87,9 +82,6 @@ sub modifyVlanName(){
     &const::verbose("Applying modification");
 
     $session->set($var) or die "ERROR : Can't modify vlan (there is probably another vlan with the same name)\n";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -101,11 +93,6 @@ sub modifyVlanName(){
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortsAffectedToVlan";
-    &const::verbose();
-
     my %res;
 
 #Check arguement
@@ -152,11 +139,7 @@ sub getPortsAffectedToVlan(){
         elsif($valTag eq $HP3400CL_AFFECTED_VALUE){
             push @{$res{"TAGGED"}}, ($i+1);
         }
-        
       }
-
-     $const::FUNC_NAME=$OLD_FUNC_NAME;
-
     return \%res;
 }
 
@@ -170,10 +153,6 @@ sub getPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub setTag(){
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setTag";
-    &const::verbose();
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -236,8 +215,6 @@ sub setTag(){
     $switchSession->set($newTag) or die "ERROR : Can't affect the port to the vlan";
     $switchSession->set($newUntag) or die "ERROR : Can't affect the port to the vlan";
 
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -249,11 +226,6 @@ sub setTag(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setUntag";
-    &const::verbose();
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -301,9 +273,6 @@ sub setUntag(){
 
     $switchSession->set($newUntag) or die "ERROR : Can't affect the port to the vlan";
     $switchSession->set($newTag) or die "ERROR : Can't affect the port to the vlan";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -315,12 +284,6 @@ sub setUntag(){
 # rmq :
 ##########################################################################################
 sub setRemove(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="removePort";
-    &const::verbose();
-
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -368,16 +331,7 @@ sub setRemove(){
 
     $switchSession->set($newUntag) or die "ERROR : Can't remove the port from the vlan";
     $switchSession->set($newTag) or die "ERROR : Can't remove the port from the vlan";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
-
-
-
-
-
-
 
 1;
 

@@ -72,11 +72,6 @@ sub new(){
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortsAffectedToVlan";
-    &const::verbose();
-
     my %res;
 
     my $self = shift;
@@ -129,17 +124,13 @@ sub getPortsAffectedToVlan(){
                 if(not defined $val or $val eq ""){
                         $val = ${@{${@{$info[1]}}[$i]}}[0];
                 }
-        
+
         $val =~ s/\w+\.//g;
         $val =~ s/\D+//g;
         if(${@{$info[1]}}[$i]->val eq $SUMMIT_AFFECTED_UNTAG_VALUE){
                 push @{$res{"TAGGED"}}, $val;
         }
     }
-
-
-     $const::FUNC_NAME=$OLD_FUNC_NAME;
-
     return \%res;
 }
 
@@ -152,10 +143,6 @@ sub getPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub setTag(){
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setTag";
-    &const::verbose();
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -184,9 +171,6 @@ sub setTag(){
     &const::verbose("Put the port in tag mode ",$port," to the vlan ",$vlanNumber[0]);    
     my $var = new SNMP::Varbind([$SUMMIT_LIST_PORT.".".$vlanNumber[0],$port,$SUMMIT_TAG_VALUE,"INTEGER"]);
     $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -198,11 +182,6 @@ sub setTag(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setUntag";
-    &const::verbose();
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -232,8 +211,6 @@ sub setUntag(){
 
     $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
 
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -245,11 +222,6 @@ sub setUntag(){
 # rmq :
 ##########################################################################################
 sub setRemove(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="removePort";
-    &const::verbose();
-
 #Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -279,8 +251,6 @@ sub setRemove(){
 #If the port was untagged we put him in the default vlan
 
     $switchSession->set($varUntagged) or $switchSession->set($varTagged) or die "ERROR : Can't remove port ".$port." from vlan ".$vlanName;
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
 
 }
 

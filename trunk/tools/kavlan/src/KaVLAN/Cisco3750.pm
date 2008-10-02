@@ -69,10 +69,6 @@ sub getIPConfiguration {
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortsAffectedToVlan";
-    &const::verbose();
-
     my %res;
     my $self = shift;
     #Check arguments
@@ -102,8 +98,6 @@ sub getPortsAffectedToVlan(){
     }
     ## FIXME: handle tagged port
     warn "TAGGED vlan not implemented";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
     return \%res;
 }
 
@@ -116,11 +110,6 @@ sub getPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setUntag";
-    &const::verbose();
-
     # Check arguments
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -142,14 +131,9 @@ sub setUntag(){
 
     my $var = new SNMP::Varbind([ $CISCO_VMVLAN, $ifIndex, $vlanNumber[0],"INTEGER"]);
     $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 sub getPortIfIndex {
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortIfIndex";
-    &const::verbose();
     my ($port,$switchSession) = @_;
     # On 3750, 2/0/23 port number is 2028
     # FIXME: why +5 ?
@@ -161,10 +145,10 @@ sub getPortIfIndex {
         my $var = new SNMP::Varbind([$CISCO_PORT_IFINDEX,$portnumber]);
         my $ifIndex = $switchSession->get($var);
         &const::verbose("ifindex of port $port ($portnumber) is $ifIndex");
-        $const::FUNC_NAME=$OLD_FUNC_NAME;
         return $ifIndex;
     } else {
         die "bad port format: $port";
     }
 }
+
 1;

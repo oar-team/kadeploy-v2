@@ -29,9 +29,6 @@ use const;
 ##########################################################################################
 sub new {
     my ($class,$name,$vlan_name_oid,$ip,$mask,$tag)= @_;
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="new";
-    &const::verbose();
     my $self = {};
     $self->{name} = $name;
     $self->{VLAN_NAME} = $vlan_name_oid;
@@ -39,7 +36,6 @@ sub new {
     $self->{MASK} = $mask;
     $self->{TAG} = $tag;
     bless ($self,$class);
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
     return $self;
 }
 
@@ -51,12 +47,8 @@ sub new {
 # rmq :
 ##########################################################################################
 sub getVlanNumber {
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getVlanNumber";
-    &const::verbose();
-
-#Check arguments
     my ($self,$vlanName,$session)=@_;
+#Check arguments
     if(not defined $vlanName or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
@@ -91,10 +83,8 @@ sub getVlanNumber {
 
 #Return the value which correspond to the vlan name
     &const::verbose("Vlan's availables ",@res);
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
 
     return @res;
-
 }
 
 ##########################################################################################
@@ -105,11 +95,6 @@ sub getVlanNumber {
 # rmq :
 ##########################################################################################
 sub getVlanName(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getVlanName";
-    &const::verbose();
-
     my ($self,$vlanNumber,$session)=@_;
     if(not defined $vlanNumber or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
@@ -117,8 +102,6 @@ sub getVlanName(){
 #Retrieve the number and the name of each vlan
     my $var = new SNMP::Varbind([$self->{VLAN_NAME},$vlanNumber]);
     my $resp = $session->get($var);
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
 
     return $resp;
 
@@ -132,11 +115,6 @@ sub getVlanName(){
 # rmq : The number have to be retrieved by using the 'getVlanNumber' function
 ##########################################################################################
 sub modifyVlanName(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="modifyVlanName";
-    &const::verbose();
-
     my ($self,$oldVlanName,$newVlanName,$session)=@_;
     if(not defined $oldVlanName or not defined $newVlanName or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
@@ -155,8 +133,6 @@ sub modifyVlanName(){
     &const::verbose("Applying modification");
     $session->set($var) or die "ERROR : Can't modify vlan (there is probably another vlan with the same name)\n";
 
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 ##########################################################################################
 # Get the IP Configuration of a vlan 
@@ -166,11 +142,6 @@ sub modifyVlanName(){
 # rmq :
 ##########################################################################################
 sub getIPConfiguration(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getIPConfiguration";
-    &const::verbose();
-
     my $self = shift;
 #Check arguement
     my ($vlanNumber,$session)=@_;
@@ -185,8 +156,6 @@ sub getIPConfiguration(){
     $session->get($ip) or die "ERROR : Can't retreive information about ip adress of the vlan";
     $session->get($mask) or die "ERROR : Can't retreive information about mask format of the vlan ";
 
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
     return $ip->val."/".$mask->val;
 
 }
@@ -200,11 +169,6 @@ sub getIPConfiguration(){
 # rmq :
 ##########################################################################################
 sub getTagConfiguration(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getTagConfiguration";
-    &const::verbose();
-
     my $self = shift;
 #Check arguement
     my ($vlanNumber,$session)=@_;
@@ -236,7 +200,6 @@ sub getTagConfiguration(){
         }
 
     }
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
     return $res;
 }
 
@@ -249,14 +212,9 @@ sub getTagConfiguration(){
 # rmq :
 ##########################################################################################
 sub listVlanOnRouteur(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="listVlanOnRouteur";
-    &const::verbose();
-
-#Check arguement
     my $self = shift;
     my ($vlanName,$routeurSession)=@_;
+    # Check arguement
     if(not defined $vlanName or not defined $routeurSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
@@ -295,9 +253,6 @@ sub listVlanOnRouteur(){
             print "VLAN TAG : $tag\n";
         }
     }
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 
@@ -309,12 +264,7 @@ sub listVlanOnRouteur(){
 # rmq :
 ##########################################################################################
 sub listVlanOnSwitch(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="listVlanOnSwitch";
-    &const::verbose();
-
-#Check arguement
+    #Check arguement
     my $self = shift;
     my ($vlanName,$switchSession,$switchConfig)=@_;
     if(not defined $vlanName or not defined $switchSession){
@@ -347,9 +297,6 @@ sub listVlanOnSwitch(){
             print "VLAN NAME : $val\n";
         }
     }
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 
@@ -362,11 +309,6 @@ sub listVlanOnSwitch(){
 # rmq :
 ##########################################################################################
 sub getPortInformation(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortInformation";
-    &const::verbose();
-
     my @ret;
     my $val;
 
@@ -423,9 +365,6 @@ sub getPortInformation(){
         }
 
     }
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
     return @ret;
 }
 
