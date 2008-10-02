@@ -68,17 +68,13 @@ sub getIPConfiguration {
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortsAffectedToVlan";
-    &const::verbose();
-
-    my %res;
     my $self = shift;
     #Check arguments
     my ($vlanName,$switchSession)=@_;
     if(not defined $vlanName or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
+    my %res;
 
     #Get port informations
     &const::verbose("Getting ports affected");
@@ -101,9 +97,7 @@ sub getPortsAffectedToVlan(){
          }
      }
     ## FIXME: handle tagged port
-    warn "TAGGED vlan not implemented";
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
+    &const::verbose("TAGGED vlan not implemented");
     return \%res;
 }
 
@@ -117,11 +111,6 @@ sub getPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="setUntag";
-    &const::verbose();
-
     # Check arguments
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
@@ -177,7 +166,6 @@ sub getPortFromIndex {
             }
         }
     }
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
     return $port;
 }
 
@@ -186,9 +174,6 @@ sub getPortFromIndex {
 # ret : integer -> the vlan index
 ##########################################################################################
 sub getPortIfIndex {
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortIfIndex";
-    &const::verbose();
     my ($port,$switchSession) = @_;
     if ($port =~ m@(\d+)/(\d+)@) {
         # ifIndex of port X/Y is (X-1)*64+Y

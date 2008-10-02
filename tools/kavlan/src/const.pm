@@ -63,7 +63,8 @@ sub verbose(){
     my @args=@_;
 
     if($const::VERBOSE!=0){
-        print $0."->".$const::FUNC_NAME."::";
+        my $function = (caller(1))[3];
+        print $function."::";
         foreach my $item (@args){
             print $item;
     }

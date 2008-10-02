@@ -24,6 +24,7 @@ use SNMP;
 use const;
 use vlan;
 
+use KaVLAN::Config qw[parseConfigurationFile];
 use KaVLAN::summit;
 use KaVLAN::hp3400cl;
 use KaVLAN::Cisco3750;
@@ -74,7 +75,7 @@ if(defined $options{"v"}){
     $const::VERBOSE=1;
 }
 
-my ($site,$routeur,$switch) = &parseConfigurationFile();
+my ($site,$routeur,$switch) = &KaVLAN::Config::parseConfigurationFile();
 
 
 $const::VLAN_DEFAULT_NAME=$site->{"VlanDefaultName"};
@@ -259,7 +260,7 @@ foreach (keys %options){
             my $switchName;
             if( &is_computer_name($options{"p"})){
                 &const::verbose("The port given is a computer name");
-                ($options{"p"},$switchName) = &getPortNumber($options{"p"},$site->{"Name"});
+                ($options{"p"},$switchName) = KaVLAN::Config::getPortNumber($options{"p"},$site->{"Name"});
                 if($options{"p"} eq -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
@@ -278,7 +279,7 @@ foreach (keys %options){
             my $switchName;
             if( &is_computer_name($options{"t"})){
                 &const::verbose("The port given is a computer name");
-                ($options{"t"},$switchName) = &getPortNumber($options{"t"},$site->{"Name"});
+                ($options{"t"},$switchName) = KaVLAN::Config::getPortNumber($options{"t"},$site->{"Name"});
                 if($options{"t"} == -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
@@ -300,7 +301,7 @@ foreach (keys %options){
             my $switchName;
             if( &is_computer_name($options{"u"})){
                 &const::verbose("The port given is a computer name");
-                ($options{"u"},$switchName) = &getPortNumber($options{"u"},$site->{"Name"});
+                ($options{"u"},$switchName) = KaVLAN::Config::getPortNumber($options{"u"},$site->{"Name"});
                 if($options{"u"} eq -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
@@ -322,7 +323,7 @@ foreach (keys %options){
             my $switchName;
             if( &is_computer_name($options{"r"})){
                 &const::verbose("The port given is a computer name");
-                ($options{"r"},$switchName) = &getPortNumber($options{"r"},$site->{"Name"});
+                ($options{"r"},$switchName) = KaVLAN::Config::getPortNumber($options{"r"},$site->{"Name"});
                 if($options{"r"} == -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
@@ -344,7 +345,7 @@ foreach (keys %options){
             my $switchName;
             if( &is_computer_name($options{"z"})){
                 &const::verbose("The port given is a computer name");
-                ($options{"z"},$switchName) = &getPortNumber($options{"z"},$site->{"Name"});
+                ($options{"z"},$switchName) = KaVLAN::Config::getPortNumber($options{"z"},$site->{"Name"});
                 if($options{"z"} == -1){die "ERROR : Computer not present in the list";}
                 $indiceSwitch = &getSwitchIdByName($switchName);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
@@ -378,10 +379,10 @@ sub is_computer_name {
 }
 
 ##########################################################################################
-# Search the id of the switch in the switch table  
+# Search the id of the switch in the switch table
 # arg : String -> the name of the switch
 # ret : the number or -1
-# rmq : 
+# rmq :
 ##########################################################################################
 sub getSwitchIdByName(){
     my $OLD_FUNC_NAME=$const::FUNC_NAME;
@@ -442,7 +443,7 @@ sub printPortsAffectedToVlan(){
             foreach my $port (@{ $ret->{$type} }){
                 print "," unless $first;
                 $first = 0;
-                my $name = &getPortName($port,$switchName,$site->{"Name"});
+                my $name = KaVLAN::Config::getPortName($port,$switchName,$site->{"Name"});
                 $name = $port unless $name;
                 print $name;
             }
@@ -495,193 +496,6 @@ sub printPortInformation(){
     $const::FUNC_NAME=$OLD_FUNC_NAME;
 
 }
-
-
-
-
-##########################################################################################
-# Get the port number via a name 
-# arg : String -> the name of the computer 
-#    String -> the site name
-# ret : two variable : the number or -1 / the switch name 
-# rmq :
-##########################################################################################
-sub getPortNumber(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortNumber";
-    &const::verbose();
-
-    my $trouve = 0;
-    my $lineName;
-    my $linePort;
-    my $lineSwitch;
-    my $line;
-#Check arguement
-    my ($portName,$name)=@_;
-    if(not defined $portName or not defined $name){
-        die "ERROR : Not enough argument for $const::FUNC_NAME";
-    }
-
-    if(open(CONF,"<".$const::PATH_TABLE_CORES."/".$name.".conf")){
-        while( (defined ($line = <CONF>)) && ($trouve==0)){
-            $line =~ s/\n//;
-            ($lineName,$linePort,$lineSwitch) = split(/ /,$line);
-            if(defined $lineName and $lineName eq $portName){
-                $trouve = 1;
-                &const::verbose("Port founded in the configuration file");
-            }
-
-        }
-    }
-
-    close(CONF);
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-    if($trouve==0){
-        return (-1,-1);
-    }
-    else{
-        return ($linePort,$lineSwitch);
-    }
-
-}
-
-
-##########################################################################################
-# Get the port name via a number 
-# arg : Integer -> the port number 
-#     String -> the switch name
-#     String -> the site name    
-# ret : the port name or "" 
-# rmq :
-##########################################################################################
-sub getPortName(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getPortName";
-    &const::verbose();
-
-    my $trouve = 0;
-    my $lineName;
-    my $linePort;
-    my $lineSwitch;
-    my $line;
-#Check arguement
-    my ($portNumber,$switchName,$siteName)=@_;
-    if(not defined $portNumber or not defined $switchName or not defined $siteName){
-        die "ERROR : Not enough argument for $const::FUNC_NAME";
-    }
-
-
-    if(open(CONF,"<",$const::PATH_TABLE_CORES.$siteName.".conf")){
-        while( (defined ($line = <CONF>)) && ($trouve==0)){
-            $line =~ s/\n//;
-            ($lineName,$linePort,$lineSwitch) = split(/ /,$line);
-            if(defined $lineSwitch and defined $linePort and $lineSwitch eq $switchName and $linePort eq $portNumber){
-                $trouve = 1;
-                &const::verbose("Port founded in the configuration file");
-            }        
-
-        }
-    }
-
-    close(CONF);        
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-    if($trouve==0){
-        return "";
-    }
-    else{
-        return $lineName; 
-    }
-
-}
-
-
-##########################################################################################
-# Parse the configuration file
-# arg :
-# ret : two hash tables references : 1-site, 2-routeur
-#       an array reference containing hash tables : 3-switch
-# rmq :
-##########################################################################################
-sub parseConfigurationFile(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="parseConfigurationFile";
-    &const::verbose();
-
-    my $key;
-    my $value;
-    my %site;
-    my @switch;
-    my %routeur;
-    my $typeLine="";
-
-    my $nbSwitch = -1;
-
-    open(CONF,"<",$const::CONFIGURATION_FILE) or die "ERROR : Can't open configuration file";
-
-    while(<CONF>){
-#Verify if a line is not a comment (begin with #) and is a good line (contain a '=' or a '@') 
-        if( $_ !~ /#\w*/ and ($_ =~ m/=/ or $_ =~ m/@/) ){
-#Verify if it is a global information line
-            if($_ =~ /@\w*/){
-#remove @
-                $_ =~ s/@//;
-#Inform that the following lines will be for the block name we have just read
-                $typeLine=$_;
-
-                if($typeLine =~m/Switch/){
-                    $nbSwitch++;
-                }
-
-            }
-            else{
-#Remove spaces from the line
-                $_ =~ s/ //g;
-#Remove the \n and the \t
-                $_ =~ s/\n//;
-                $_ =~ s/\t//g;
-#Split the informations around the '='
-                ($key,$value) = split(/=/,$_);
-#Do the association between the line and the upper block which is the information for
-                if($typeLine =~ m/Switch/){
-                    $switch[$nbSwitch]{$key}=$value;
-                }
-                elsif($typeLine =~ m/Routeur/){
-                    $routeur{$key}=$value;
-                }
-                elsif($typeLine =~ m/Site/){
-                    $site{$key}=$value;
-                }
-                else{
-                    print "Configuration line not associated with an upper block (Switch, Routeur or Information):\n";
-                }
-            }
-        }
-    }
-    close(CONF);
-
-    if(not defined $routeur{"Name"} or not defined $routeur{"IP"} or not defined $routeur{"Type"}){
-        die "ERROR : You have to enter value for the routeur in the configuration file : Name, IP, Type";
-    }
-
-    for(my $i = 0 ; $i <  ($nbSwitch+1); $i++){    
-        if(not defined $switch[$i]{"Name"} or not defined $switch[$i]{"IP"} or not defined $switch[$i]{"Type"} or not defined $switch[$i]{"Ports"}){
-            die "ERROR : You have to enter value for the switch in the configuration file : Name, IP, Type";
-        }
-    }
-    if(not defined $site{"VlanDefaultName"} or not defined $site{"Name"}){
-        die "ERROR : You have to enter value for the site in the configuration file : VlanDefaultName, Name. You can also enter a value for the SNMPCommunity";
-    }
-
-#Return references of the three hash
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-    return \%site,\%routeur,\@switch;
-}
-
 
 
 
