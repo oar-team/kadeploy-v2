@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS `environment` (
   `filesystem` varchar(9) default NULL,
   `user` varchar(255) default 'nobody',
   `part` varchar(20) NOT NULL,
+  `allowed_users` varchar(512) NOT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
@@ -66,3 +67,4 @@ CREATE TABLE IF NOT EXISTS `rights` (
   `node` varchar(30) NOT NULL,
   `part` varchar(10) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+

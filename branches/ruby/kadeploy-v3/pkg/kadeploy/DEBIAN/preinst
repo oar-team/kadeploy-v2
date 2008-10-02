@@ -1,0 +1,4 @@
+#!/bin/bash
+
+now=`date +"%s"`
+[ -d /etc/kadeploy ] && mv /etc/kadeploy /etc/kadeploy-save-$now || exit 0

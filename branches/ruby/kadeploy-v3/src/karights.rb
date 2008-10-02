@@ -22,7 +22,7 @@ def array_pretty_print(array)
   return s
 end
 
-# Shows the rights of a user defined in Config.exec_specific.user
+# Show the rights of a user defined in Config.exec_specific.user
 #
 # Arguments
 # * config: instance of Config
