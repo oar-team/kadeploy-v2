@@ -5,10 +5,14 @@
 use Getopt::Long;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::conflib;
+use libkadeploy2::confroot;
  
 use strict;
 use warnings;
 
+#-----------
+# Functions
+#-----------
 sub loadnodesfile($);
 sub loadpartitionfile($);
 sub updatedeployedtable();
@@ -17,8 +21,9 @@ sub listnodes();
 sub delpartitiontable();
 sub listpartition();
 
-my $nodesfile="/etc/kadeploy/clusternodes.conf";
-my $nodespartitionfile="/etc/kadeploy/clusterpartition.conf";
+#------------------
+# Global variables
+#------------------
 my $add;
 my @nodestodel;
 my $help;
@@ -26,10 +31,11 @@ my $listnode;
 my $listpartition;
 my $iwanthelp=1;
 my $clustername;
+my $conf_root_dir;
 
-# Configuration
-my $configuration = libkadeploy2::conflib->new();
-
+#---------------
+# Parse options
+#---------------
 GetOptions('c=s'            => \$clustername,
 	   'cluster=s'      => \$clustername,
 	   'add!'           => \$add,
@@ -37,8 +43,9 @@ GetOptions('c=s'            => \$clustername,
 	   'h!'             => \$help,
 	   'listnode!'      => \$listnode,
 	   'listpartition!' => \$listpartition,
+     'C=s'            => \$conf_root_dir,
+     'configuration=s' => \$conf_root_dir
 	   );
-
 
 my $disk_id;
 my @host_id_list = ();
@@ -46,6 +53,20 @@ my @part_env_id_list = ();
 my $ok=1;
 
 if ($help) { usage(); $iwanthelp=0; }
+
+#-------------------------------------------
+# Set Kadeploy configuration root directory
+#-------------------------------------------
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+my $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
+my $nodesfile=$kadeploy_config_dir."/"."clusternodes.conf";
+my $nodespartitionfile=$kadeploy_config_dir."/"."clusterpartition.conf";
 
 
 if (!$clustername eq "") {
@@ -126,11 +147,12 @@ if ($iwanthelp)
 sub usage()
 {
     print "$0
-\t-c | --cluster        cluster name to which nodes should be added (by default added to default cluster)
-\t-add                  add nodes from $nodesfile $nodespartitionfile
-\t-del [myhostname]     delete specified hostname
-\t-listnode             list node from db
-\t-listpartition        list partition from db 
+\t-c | --cluster                                 Cluster name to which nodes should be added (by default added to default cluster)
+\t-add                                           Add nodes from $nodesfile $nodespartitionfile
+\t-del [myhostname]                              Delete specified hostname
+\t-listnode                                      List node from DB
+\t-listpartition                                 list partition from DB
+\t[-C | --configuration <conf root directory>]   Configuration root directory
 \t-h                    this help
 
 -c option is IMPORTANT in the case of multicluster, to register the nodes to cluster specific databases. If there is only one database for all the site's clusters the default configuration is based on /etc/kadeploy/deploy.conf configuration file. Please refer to man page for additional information.

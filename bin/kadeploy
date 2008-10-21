@@ -8,6 +8,7 @@ use libkadeploy2::conflib;
 use libkadeploy2::bootlib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
+use libkadeploy2::confroot;
 use libkadeploy2::debug;
 use warnings;
 use strict;
@@ -39,10 +40,8 @@ my $node_file = '';         # file describing nodes to be deployed
 my $base;                   # database reference
 my $deployment;             # deployment identifier
 my $environment;            # environment identifier
-
 my $username;               # real user
-
-my $envid=0;		    # environment id
+my $envid=0;		            # environment id
 my @db_checked_hosts = ();  # nodes existing in database
 my $dev;                    # device e.g. hda
 my $part;                   # partition number e.g. 1
@@ -76,14 +75,10 @@ my $entry_pipe;
 my $destdd_pipe;
 my $rmnodefilesintmp;
 my $cluster;
-my $useprodenvtodeploy=0;     # use the production environment to deploy (avoid the first reboot on Duke)
-
+my $useprodenvtodeploy=0;   # use the production environment to deploy (avoid the first reboot on Duke)
+my $kadeploy_config_dir="";
 #Debug stuff
-my $debug_level=0;            # no debug by default
-
-
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
+my $debug_level=0;          # no debug by default
 ## Nodes sets used during deployment process
 my $nodes_set;
 my $deployed_nodes_set;
@@ -95,7 +90,7 @@ my $verbose;
 my $rambinpath="/mnt/rambin/";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
-
+my $conf_root_dir;
 
 my $reformattmp=0; #by default, we don't reformat the /tmp partition
 my $fastkernelreboot=0;
@@ -109,7 +104,6 @@ else
 #Start syslog
 libkadeploy2::debug::start_syslog();
 
-
 ## to prevent zombie processes
 ## SIGCHLD is ignored and when the child dies, his father does not care...
 #$SIG{CHLD} = 'IGNORE';
@@ -121,8 +115,10 @@ my $defaulttargetdevice="";
 my $defaulttargetpartition="";
 
 ## checks the options and load configuration file
-if(!check_options()) {     exit 0; }
+if (!check_options()) { exit 0; }
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 ## continue with variables requiring configuration file
 my $do_fdisk_on_deploy="no"; # default behaviour
@@ -131,8 +127,14 @@ my $kadeploydir=$configuration->get_conf("kadeploy2_directory");
 my $deployuser=$configuration->get_conf("deploy_user");
 my $help;
 my $version;
-my $defaultpartitionfile="/etc/kadeploy/clusterpartition.conf"; #a partition file default /etc/kadeploy/clusterpartition.conf
-my $partitionfile;       #a partition file default /etc/kadeploy/clusterpartition.conf
+
+#--------------------------------
+# Search for configuration files
+#--------------------------------
+
+# Default partitioning file
+my $defaultpartitionfile=$kadeploy_config_dir."/"."clusterpartition.conf"; 
+my $partitionfile;
 
 if (!$fastkernelreboot)
 {
@@ -380,7 +382,7 @@ $nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe);
 
 if (($useprodenvtodeploy == 0) && ($do_fdisk_on_deploy eq "yes"))
 {
-    # TODO: à remplacer par une autre commande
+    # TODO: ï¿½ remplacer par une autre commande
     $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file");
 }
 
@@ -724,6 +726,7 @@ sub usages()
 \t[-F   | --fast-kernel-reboot]                    Use kexec to reboot quickly (only works with Linux env)
 \t[-u   | --use-prod-env]                          Use the production environment to deploy
 \t[-s   | --script      script]                    Launch a script after a deployment
+\t[-C   | --configuration <conf root directory>]   Configuration root directory
 ";
 
 }
@@ -740,47 +743,56 @@ sub version()
 # return value : 1 if successful
 sub check_options(){
 
-    if (!@ARGV){
-	usages();
-	exit 0;
-    }
+  if (!@ARGV){
+	 usages();
+	 exit 0;
+  }
     
-    ## gets the options
-    GetOptions('e=s'                 => \$env,
-	       'environment=s'       => \$env,
-	       'm=s'                 => \@host_list,
-	       'machine=s'           => \@host_list,
-	       'f=s'                 => \$node_file,
-	       'file=s'              => \$node_file,
-	       'p=s'                 => \$part,
-	       'partition=s'         => \$part,
-	       'd=s'                 => \$dev,
-	       'device=s'            => \$dev,
-	       'l=s'                 => \$user,
-	       'loadpartitionfile=s' => \$partitionfile,
-	       'lpf=s'               => \$partitionfile,
-	       'h'                   => \$help,       
-	       'help!'               => \$help,
-	       'V'                   => \$version,
-	       'version'             => \$version,
-	       'D=i'                 => \$debug_level,
-	       'debug-level=i'       => \$debug_level,
-	       'c=s'                 => \$cluster, #crappy, undocumented because it's called from the sudowrapper.
-	       'rmnodefilesintmp=s'  => \$rmnodefilesintmp, #crappy, undocumented because it's called from the sudowrapper.
-	       'r'                   => \$reformattmp,
-	       'reformat-tmp'        => \$reformattmp,
-	       'F'                   => \$fastkernelreboot,
-	       'fast-kernel-reboot'  => \$fastkernelreboot,
-	       'u'                   => \$useprodenvtodeploy,
-	       'use-prod-env'        => \$useprodenvtodeploy,
-	       );
+  ## gets the options
+  GetOptions('e=s'        => \$env,
+    'environment=s'       => \$env,
+    'm=s'                 => \@host_list,
+    'machine=s'           => \@host_list,
+    'f=s'                 => \$node_file,
+    'file=s'              => \$node_file,
+    'p=s'                 => \$part,
+    'partition=s'         => \$part,
+    'd=s'                 => \$dev,
+    'device=s'            => \$dev,
+    'l=s'                 => \$user,
+    'loadpartitionfile=s' => \$partitionfile,
+    'lpf=s'               => \$partitionfile,
+    'h'                   => \$help,
+    'help!'               => \$help,
+    'V'                   => \$version,
+    'version'             => \$version,
+    'D=i'                 => \$debug_level,
+    'debug-level=i'       => \$debug_level,
+    'c=s'                 => \$cluster,           #crappy, undocumented because it's called from the sudowrapper.
+    'rmnodefilesintmp=s'  => \$rmnodefilesintmp,  #crappy, undocumented because it's called from the sudowrapper.
+    'r'                   => \$reformattmp,
+    'reformat-tmp'        => \$reformattmp,
+    'F'                   => \$fastkernelreboot,
+    'fast-kernel-reboot'  => \$fastkernelreboot,
+    'u'                   => \$useprodenvtodeploy,
+    'use-prod-env'        => \$useprodenvtodeploy,
+    'C=s'                 => \$conf_root_dir,
+    'configuration=s'     => \$conf_root_dir
+  );
 
-    #crappy
-    if ($rmnodefilesintmp) {
-	my $cmd="rm -f /tmp/kadeploy-".$username."*";
-	system($cmd);
-	exit 1;
-    }
+  # Get configuration root directory
+  if (!$conf_root_dir eq "") {
+    libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+  }
+  $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+  libkadeploy2::confroot::info();
+
+  #crappy
+  if ($rmnodefilesintmp) {
+    my $cmd="rm -f /tmp/kadeploy-".$username."*";
+    system($cmd);
+    exit 1;
+  }
 
     ## first read command options    
     if ($help) { usages(); exit(0); }

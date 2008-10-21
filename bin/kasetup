@@ -1,13 +1,12 @@
 #!/usr/bin/perl
+
+use libkadeploy2::confroot;
 use strict;
 use warnings;
 use Getopt::Long;
 
-my $kadeployconfdir="/etc/kadeploy";
-my $deployconf=$kadeployconfdir."/deploy.conf";
-my $deploycmdconf=$kadeployconfdir."/deploy_cmd.conf";
-my $partitionfile=$kadeployconfdir."/clusterpartition.conf";
-my $nodesfile=$kadeployconfdir."/clusternodes.conf";
+
+my $kadeploy_config_dir="";
 
 my @listfiletowrapuser=(
 			"kaconsole",
@@ -30,6 +29,7 @@ my @listfiletowraproot=(
 			"kasetup",
 			);
 
+my $conf_root_dir;
 my $checkdeployconf;
 my $checksudoers;
 my $printvalidsudoers;
@@ -71,25 +71,40 @@ sub getlinuxswapdevicenumber($);
 sub exportenv();
 sub chmodconf();
 
-GetOptions('checkdeployconf!'         => \$checkdeployconf,
-           'checksudoers!'            => \$checksudoers,
-	   'printvalidsudoers!'       => \$printvalidsudoers,
-	   'printvalidfdisk!'         => \$printvalidfdisk,
-	   'loadpartitionfile=s'      => \$partitionfile,
-	   'lpf=s'                    => \$partitionfile,
-	   'printvalidfstab!'         => \$printvalidfstablinux,
-	   'rootdev=s'                => \$rootdev,
-	   'rootpartnumber=i'         => \$rootpartnumber,
-	   'checkwriteaccess!'        => \$checkwriteaccess,
-	   'checkbinfiles!'           => \$checkbinfiles,
-	   'copybinfiles!'            => \$copybinfiles,
-	   'printpreinstallconf!'     => \$printpreinstallconf,
-	   'sudowrapping'             => \$sudowrapping,
-	   'createtftp'               => \$createtftp,
-	   'exportenv'                => \$exportenv,
-	   'chmodconf'                => \$chmodconf,
-	   'h!'                       => \$help,
-	   );
+GetOptions('checkdeployconf!' => \$checkdeployconf,
+  'checksudoers!'             => \$checksudoers,
+  'printvalidsudoers!'        => \$printvalidsudoers,
+  'printvalidfdisk!'          => \$printvalidfdisk,
+  'loadpartitionfile=s'       => \$partitionfile,
+  'lpf=s'                     => \$partitionfile,
+  'printvalidfstab!'          => \$printvalidfstablinux,
+  'rootdev=s'                 => \$rootdev,
+  'rootpartnumber=i'          => \$rootpartnumber,
+  'checkwriteaccess!'         => \$checkwriteaccess,
+  'checkbinfiles!'            => \$checkbinfiles,
+  'copybinfiles!'             => \$copybinfiles,
+  'printpreinstallconf!'      => \$printpreinstallconf,
+  'sudowrapping'              => \$sudowrapping,
+  'createtftp'                => \$createtftp,
+  'exportenv'                 => \$exportenv,
+  'chmodconf'                 => \$chmodconf,
+  'h!'                        => \$help,
+  'C=s'                       => \$conf_root_dir,
+  'configuration=s'           => \$conf_root_dir
+);
+
+# Get configuration root directory
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+$kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+my $deployconf=$kadeploy_config_dir."/"."deploy.conf";
+my $deploycmdconf=$kadeploy_config_dir."/"."deploy_cmd.conf";
+my $partitionfile=$kadeploy_config_dir."/"."clusterpartition.conf";
+my $nodesfile=$kadeploy_config_dir."/"."clusternodes.conf";
+
 
 if ($help)
 {
@@ -114,7 +129,7 @@ if ($checkdeployconf      ||
 {
 
 
-    if (!check_etc_deploy()) { print "there is problem with /etc/kadeploy\n"; exit 1; }
+    if (!check_etc_deploy()) { print "there is problem with ".$kadeploy_config_dir."\n"; exit 1; }
 
 
     use libkadeploy2::conflib;
@@ -155,8 +170,8 @@ sub chmodconf()
 	system("chmod 400 $partitionfile");
 	system("chmod 400 $nodesfile");
 	
-	system("chmod 700 $kadeployconfdir");
-	system("chown $kadeployuser $kadeployconfdir");   # la conf appartient a deploy
+	system("chmod 700 $kadeploy_config_dir");
+	system("chown $kadeployuser $kadeploy_config_dir");   # la conf appartient a deploy
 	
 	system("chmod 755 $kasudowrapperfile");           # le wrapper doit pouvoir etre ecris par deploy
 	system("chown $kadeployuser $kasudowrapperfile"); 
@@ -860,24 +875,23 @@ root ALL = (ALL) ALL
 
 sub check_etc_deploy()
 {
-    my $ok=1;
+  my $ok=1;
 
-    if (! -d $kadeployconfdir)
-    {
-	print "kadeploy configuration directory $kadeployconfdir is not created\n";
-	$ok=0;
-    }
-    if ( ! -e $deployconf)
-    {
-	print "$deployconf not found\n";
-	$ok=0;
-    }
-    if ( ! -e $deploycmdconf)
-    {
-	print "$deploycmdconf not found\n";
-	$ok=0;
-    }
-    return($ok);
+  if (! -d $kadeploy_config_dir) {
+    print "kadeploy configuration directory $kadeploy_config_dir is not created\n";
+    $ok=0;
+  }
+
+  if (! -e $deployconf) {
+    print "$deployconf not found\n";
+    $ok=0;
+  }
+
+  if ( ! -e $deploycmdconf) {
+    print "$deploycmdconf not found\n";
+    $ok=0;
+  }
+  return($ok);
 }
 
 sub checkbinfiles()
@@ -1246,22 +1260,21 @@ sub checkwriteaccess()
 sub help()
 {
 	print "$0
-\t-checkdeployconf               check $deployconf
-\t-checksudoers                  print a valid sudoers
-\t-copybinfiles                  copy required files in /usr/local/bin
-\t-sudowrapping                  wrap files with kasudowrapper.sh
-\t-printvalidsudoers             generate a sudoers from deploy.conf
-\t-createtftp                    copy all the files required for tftp boot
-\t-exportenv                     export environment variable file for sudowrapping (this is done after sudowrapping)
-\t-chmodconf                     put correct write on configuration files
-
-\t-printpreinstallconf           print preinstall configuration file
-\t-printvalidfdisk               print a fdisk file from 
-\t-loadpartitionfile             load a custom partition file
-
-\t-printvalidfstab               generate a fstab for linux with rootfs parameters
-\t\t-rootdev               boot device (ex: /dev/hda)
-\t\t-rootpartnumber        boot device partnumber (ex : 2)
+\t-checkdeployconf                                      Check $deployconf
+\t-checksudoers                                         Print a valid sudoers
+\t-copybinfiles                                         Copy required files in /usr/local/bin
+\t-sudowrapping                                         Wrap files with kasudowrapper.sh
+\t-printvalidsudoers                                    Generate a sudoers from deploy.conf
+\t-createtftp                                           Copy all the files required for tftp boot
+\t-exportenv                                            Export environment variable file for sudowrapping (this is done after sudowrapping)
+\t-chmodconf                                            Put correct write on configuration files
+\t-printpreinstallconf                                  Print preinstall configuration file
+\t-printvalidfdisk                                      Print a fdisk file from
+\t-loadpartitionfile                                    Load a custom partition file
+\t-printvalidfstab                                      Generate a fstab for linux with rootfs parameters
+\t\t-rootdev                                              Boot device (ex: /dev/hda)
+\t\t-rootpartnumber                                       Boot device partnumber (ex : 2)
+\t[-C|--configuration <configuration root directory>]   Configuration root directory\n
 ";
 }
 

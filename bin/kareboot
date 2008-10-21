@@ -1,7 +1,12 @@
 #!/usr/bin/perl
 
-# needs a configuration file that should be found at /etc/kadeploy/deploy_cmd.conf
+#-------------------------------------------------------------
+# Search for config file : <config directory>/deploy_cmd.conf
+#-------------------------------------------------------------
 
+#-----------
+# Functions
+#-----------
 use File::Copy;
 use Getopt::Long;
 use libkadeploy2::conflib;
@@ -10,11 +15,13 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
+use libkadeploy2::confroot;
 use strict;
 
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
-
+#------------------
+# Global variables
+#------------------
+my $conf_root_dir;
 my $soft = 0;
 my $hard = 0;
 my $deploy = 0;
@@ -31,34 +38,56 @@ my $verbose = 0;
 my $debug = 1;
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
-my $kareboot_usage = "Usage : kareboot [-s|--soft] [-h|--hard] [-d|--deploy] [-n|--noreboot] [-m|--machine hostname] -f nodefile [-e|--environment name] [-p|--partition partition] [-kp|--kernel-parameters \"kernel parameters\"]\n";
+my $kareboot_usage = "Usage : kareboot [-s|--soft] \
+[-h|--hard] \
+[-d|--deploy] \
+[-n|--noreboot] \
+[-m|--machine hostname] \
+-f nodefile \
+[-e|--environment name] \
+[-p|--partition partition] \
+[-kp|--kernel-parameters \"kernel parameters\"]\
+[-C|--configuration <configuration root directory>]\n";
 
 if (!@ARGV){
     print $kareboot_usage;
     exit 0;
 }
 
-## gets the options
-GetOptions('m=s'           => \@host_list,
-	   'machine=s'     => \@host_list,
-           'f=s'           => \$node_file,
-	   'e=s'           => \$env,
-	   'environment=s' => \$env,
-	   's'             => \$soft,
-	   'soft'          => \$soft,
-	   'h'             => \$hard,
-	   'hard'          => \$hard,
-	   'd'             => \$deploy,
-	   'deploy'        => \$deploy,
-	   'n'             => \$noreboot,
-	   'noreboot'      => \$noreboot,
-	   'p=s'           => \$device,
-	   'partition=s'   => \$device,
-	   'kp=s'	   => \$kernel_parameters,
-	   'kernel-parameters=s' => \$kernel_parameters,
-	   'verbose'       => \$verbose,
-	   'v'             => \$verbose
-	   );
+#-------------
+# Get options
+#-------------
+GetOptions('m=s'        => \@host_list,
+  'machine=s'           => \@host_list,
+  'f=s'                 => \$node_file,
+  'e=s'                 => \$env,
+  'environment=s'       => \$env,
+  's'                   => \$soft,
+  'soft'                => \$soft,
+  'h'                   => \$hard,
+  'hard'                => \$hard,
+  'd'                   => \$deploy,
+  'deploy'              => \$deploy,
+  'n'                   => \$noreboot,
+  'noreboot'            => \$noreboot,
+  'p=s'                 => \$device,
+  'partition=s'         => \$device,
+  'kp=s'	              => \$kernel_parameters,
+  'kernel-parameters=s' => \$kernel_parameters,
+  'verbose'             => \$verbose,
+  'v'                   => \$verbose,
+  'C=s'                 => \$conf_root_dir,
+  'configuration=s'     => \$conf_root_dir
+);
+
+if ( defined($conf_root_dir) ) {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 
 if ($node_file)

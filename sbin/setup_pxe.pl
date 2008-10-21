@@ -4,24 +4,43 @@ use Getopt::Long;
 
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
+use libkadeploy2::confroot;
 
+my $conf_root_dir;
 my @host_list; # machine name is prefered since it allows to change only the configuration directive to pass a node from one cluster to another, in the deploy_cmd.conf file otherwise 2 lines would have been required
 
-# Configuration
-my $configuration = libkadeploy2::conflib->new();
-
-my $usage = "Usage : setup_pxe.pl range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\twhere range can be a hostname declared in kadeploy database (should be prefered for multi cluster sites with several databases), a single IP adress e.g. '192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
+my $usage = "Usage : setup_pxe.pl \
+range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\
+[-C|--configuration <configuration root directory>]\n\
+\twhere range can be a hostname declared in kadeploy database \
+(should be prefered for multi cluster sites with several databases), \
+a single IP adress e.g. '192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
 
 $PROMPT = 1;
 $DISPLAY = "messages";
 $TIMEOUT = 50;
 $BAUDRATE = 38400;
 
-if (!@ARGV){
-    print $usage;
-    exit 0;
+if (!@ARGV) {
+  print $usage;
+  exit 0;
 }
 
+#------------
+# Get option
+#------------
+GetOptions( 'C=s'   => \$conf_root_dir,
+  'configuration=s' => \$conf_root_dir
+);
+
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 if (!$configuration->check_conf()) {
     print "ERROR : problem occured loading configuration file\n";
@@ -152,12 +171,7 @@ sub test {
 
 }
 
-
-
-
-
 $template_default_content="PROMPT $PROMPT\nSERIAL 0 $BAUDRATE\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
-
 
 # perform tests on arguments and fill arrays
 ARG: foreach $argument (@args) {
@@ -194,8 +208,6 @@ ARG: foreach $argument (@args) {
 	die "wrong syntax";
     }
 }
-
-
 
 # generate files in pxe directories and overwrite old ones
 for ($i=0; $i<scalar(@kernels); $i++) {

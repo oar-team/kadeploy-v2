@@ -64,6 +64,7 @@ TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
 $(info $(DISTRIB) : using default LPD XSL stylesheet : $(TLDPOPXSL) )
 endif
 
+KADIR=kadeploy$(KADEPLOY_VERSION)
 # Kadeploy main configuration directory
 CONFDIR=/etc/kadeploy
 KADEPLOYCONFDIR=$(CONFDIR)$(KADEPLOY_VERSION)
@@ -71,13 +72,13 @@ KADEPLOYCONFDIR=$(CONFDIR)$(KADEPLOY_VERSION)
 
 MANDIR=$(PREFIX)/man
 INFODIR=$(PREFIX)/info
-BINDIR=$(PREFIX)/bin
-SBINDIR=$(PREFIX)/sbin
+BINDIR=$(PREFIX)/bin/$(KADIR)
+SBINDIR=$(PREFIX)/sbin/$(KADIR)
 
 KABINDIR=$(KADEPLOYHOMEDIR)/bin
 KASBINDIR=$(KADEPLOYHOMEDIR)/sbin
 KAADDONSDIR=$(KADEPLOYHOMEDIR)/addons
-KAPERLDIR=$(KADEPLOYHOMEDIR)/share/perl/5.8
+KAPERLDIR=$(KADEPLOYHOMEDIR)
 KADBDIR=$(KADEPLOYHOMEDIR)/db
 
 KADEPLOY_BINFILES=kaconsole kaenvironments karecordenv kadeploy kareboot karemote kaaddkeys kadatabase
@@ -169,6 +170,7 @@ installdirs:
 	@mkdir -p $(KABINDIR)	
 	@mkdir -p $(KASBINDIR)
 	@mkdir -p $(KAPERLDIR)/libkadeploy2
+	@mkdir -p $(PERLDIR)/$(KADIR)
 	@mkdir -p -m 700 $(KADEPLOYCONFDIR)
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(SBINDIR)
@@ -200,7 +202,7 @@ files_install:
 
 # Perl modules 
 	@install -m 755 libkadeploy2/* $(KAPERLDIR)/libkadeploy2/
-	@ln -sf $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/libkadeploy2
+	@ln -sf $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/$(KADIR)/libkadeploy2
 
 # database scripts
 	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
@@ -211,27 +213,31 @@ files_install:
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 
 conflink_install:
-	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
+#	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
 	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
 	
 #Kadeploy installation in main directory
-install: installcheck installdirs files_install links_install conflink_install sudo_install man_install
-	@chown -R deploy: $(KADEPLOYCONFDIR) 		  
+install: installcheck installdirs files_install links_install conflink_install sudo_install man_install final_msg
+	@chown -R deploy: $(KADEPLOYCONFDIR)
 
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" && exit 1 )
-	@sed -i "s%DEPLOYDIR=.*%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
-	@sed -i "s%DEPLOYUSER=.*%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
-	@sed -i "s%PERL5LIBDEPLOY=.*%PERL5LIBDEPLOY=$(PERLDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%DEPLOYDIR=__SUBST__%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%DEPLOYUSER=__SUBST__%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%PERL5LIBDEPLOY=__SUBST__%PERL5LIBDEPLOY=$(KAPERLDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 	@scripts/install/sudoers_install.pl $(KADEPLOYHOMEDIR)
-
-
+	
 #Install and creation of mans
 man_install:
 	@mkdir -p $(MANDIR)/man1
 	@install -m 755 $(MANPAGES)/* $(MANDIR)/man1/
+
+final_msg:
+	@echo -e "\n*** WARNING"
+	@echo -e "- To select correct configuration (with Bash) : \nexport KADEPLOY_CONFIG_DIR="$(KADEPLOYCONFDIR)
+	@echo -e "- Otherwise use '-C "$(KADEPLOYCONFDIR)"' with ka* commands.\n"
 
 #Install info documentation
 #info_install:
@@ -249,7 +255,10 @@ files_uninstall :
 	@echo "Removing system-wide installed files ..."
 	@cd $(BINDIR) && rm -f $(KADEPLOY_BINFILES)
 	@cd $(SBINDIR) && rm -f $(KADEPLOY_SBINFILES)
+	@rm -rf $(BINDIR)
+	@rm -rf $(SBINDIR)
 	@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
+	@rm -rf $(PERLDIR)/$(KADIR)
      
 	@echo "Uninstalling sudowrapper ..."
 	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
@@ -276,42 +285,48 @@ uninstall : root_check files_uninstall
 # 
 #############################
 
-dist: manpages_arc documentation_arc scripts_arc addons_arc tools_arc
+dist: dist_prepare dist_all
+
+dist_prepare:
+	@( cd .. && [ ! -L $(KADIR) ] && ln -s trunk $(KADIR) || echo Existing $(KADIR) found. )
+	
+dist_all: manpages_arc documentation_arc scripts_arc addons_arc tools_arc
 	@echo "Archiving Kadeploy main files ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) bin/
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) sbin/
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) libkadeploy2/
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) conf/
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) AUTHORS
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) COPYING
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) README
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) Makefile
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/bin/
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/sbin/
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/libkadeploy2/
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/conf/
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/AUTHORS
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/COPYING
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/README
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/Makefile
 	@echo "Compressing archive ..."
 	@gzip $(KADEPLOY_ARC)
+	@( cd .. && rm -f $(KADIR) )
 	@echo "Done."
 
 scripts_arc:
 	@echo "Archiving scripts ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(SCRIPTS)
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/$(SCRIPTS)
 	
 addons_arc:
 	@echo "Archiving addons ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(ADDONS)
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/$(ADDONS)
 	
 tools_arc:
 	@echo "Archiving tools ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(TOOLS)
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/$(TOOLS)
 	
 manpages_arc: manpages
 	@echo "Archiving Manpages ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(MANPAGES)
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/$(MANPAGES)
 	
 manpages:
 	@make -C $(MANPAGES_SRC) 2>&1 >/dev/null
 	
 documentation_arc: documentation
 	@echo "Archiving documentation ..."
-	@tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(PDF_DOCS)
+	@tar $(EXCLUDED) -C ../ -rf $(KADEPLOY_ARC) $(KADIR)/$(PDF_DOCS)
 # @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) INSTALL
 # @tar $(EXCLUDED) -C $(DOCUMENTATION_SRC) -rf $(KADEPLOY_ARC) changelog.txt
 # @tar $(EXCLUDED) -rf $(KADEPLOY_ARC) $(DOCUMENTATION)

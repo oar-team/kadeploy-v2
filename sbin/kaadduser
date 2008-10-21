@@ -4,6 +4,7 @@ use Getopt::Long;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
 use libkadeploy2::conflib;
+use libkadeploy2::confroot;
  
 use strict;
 
@@ -11,13 +12,15 @@ sub check_nodes($$);
 sub check_dev($$);
 sub check_partition($$$);
 
-if (!@ARGV){
-    print "Usage : kaadduser [-l|--login login] [-m|--machine hostname] [-p|--partition partition]\n";
-    exit 0;
-}
+my $conf_root_dir;
 
-## Configuration
-my $configuration = libkadeploy2::conflib->new(); 
+if (!@ARGV) {
+  print "Usage : kaadduser [-l|--login login]
+[-m|--machine hostname]
+[-p|--partition partition]
+[-C|--configuration <configuration root directory>]\n";
+  exit 0;
+}
 
 ## declares the options
 my @user_list = ();
@@ -27,13 +30,21 @@ my @part_list = ();
 my @checked_hosts = ();
 
 ## gets the options
-GetOptions('l=s'               => \@user_list,
-	   'login=s'           => \@user_list,
-	   'm=s'               => \@host_list,
-	   'machine=s'         => \@host_list,
-	   'p=s'               => \@part_list,
-	   'partition=s'       => \@part_list
-	   );
+GetOptions('l=s'    => \@user_list,
+  'login=s'         => \@user_list,
+  'm=s'             => \@host_list,
+  'machine=s'       => \@host_list,
+  'p=s'             => \@part_list,
+  'partition=s'     => \@part_list,
+  'C=s'             => \$conf_root_dir,
+  'configuration=s' => \$conf_root_dir
+);
+
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
 
 ## sets default values if needed
 if (!@user_list) {
@@ -44,6 +55,9 @@ if (!@host_list){
     print STDERR "ERROR : no host specified\n";
     exit 1;
 }
+
+## Configuration
+my $configuration = libkadeploy2::conflib->new(); 
 
 # load configuration files
 if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
@@ -155,7 +169,7 @@ sub check_nodes($$){
 # checks if the partition exists
 # parameters : base, disk, partition
 # return value : 0 if disk or partition does not exist
-# NB : version très simpliste ; to be improved...
+# NB : version trï¿½s simpliste ; to be improved...
 #      disk_dev_to_id & part_nb_to_id should make a join
 #      with the deployed table...
 sub check_partition($$$){

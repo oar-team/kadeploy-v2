@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 
-# needs a configuration file that should be found at /etc/kadeploy/deploy_cmd.conf
+#-------------------------------------------------------------
+# Search for config file : <config directory>/deploy_cmd.conf
+#-------------------------------------------------------------
+
 use strict;
 use warnings;
 
@@ -8,28 +11,36 @@ use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
+use libkadeploy2::confroot;
 
+sub usage();
+
+my $conf_root_dir;
 my @host_list = ();
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
+if (!@ARGV) { usage; }
 
-if (!@ARGV){
-    print "Usage : kaconsole -m|--machine hostname\n";
-    exit 0;
-}
-
-## gets the options
-GetOptions('m=s' => \@host_list,
-	   'machine=s' => \@host_list,
-	   );
+#-------------
+# Get options
+#-------------
+GetOptions('m=s'      => \@host_list,
+  'machine=s'         => \@host_list,
+  'C=s'               => \$conf_root_dir,
+  'configuration=s'   => \$conf_root_dir
+);
 
 ## checks if option is defined
-if (!@host_list){
-    print "Usage : kaconsole -m|--machine hostname\n";
-    exit 0;
+if (!@host_list) { usage; }
+
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
 }
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 # load configuration files
 if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
@@ -68,3 +79,10 @@ foreach my $host (@host_list){
     }
 }
 libkadeploy2::deploy_iolib::disconnect($base);
+
+
+sub usage()
+{
+  print "Usage : kaconsole -m|--machine hostname [-C|--configuration <configuration root directory>]\n";
+  exit 0;
+}

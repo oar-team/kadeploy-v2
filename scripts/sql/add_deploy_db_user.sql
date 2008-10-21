@@ -41,9 +41,9 @@ INSERT INTO db (Host, Db, User, Select_priv, Insert_priv, Update_priv, Delete_pr
 
 FLUSH PRIVILEGES;
 
-GRANT ALL ON SUBSTmydeploydbSUBST.* TO SUBSTmydeployloginSUBST@localhost;
-GRANT ALL ON SUBSTmydeploydbSUBST.* TO SUBSTmydeployloginSUBST@'%';
+# GRANT ALL ON SUBSTmydeploydbSUBST.* TO SUBSTmydeployloginSUBST@localhost;
+# GRANT ALL ON SUBSTmydeploydbSUBST.* TO SUBSTmydeployloginSUBST@'%';
 
-FLUSH PRIVILEGES;
+# FLUSH PRIVILEGES;
 
 
