@@ -32,8 +32,11 @@
 
 package kadeploy_conflib;
 
+use libkadeploy2::confroot;
+
 use strict;
 use warnings;
+
 require Exporter;
 our (@ISA,@EXPORT,@EXPORT_OK);
 @ISA = qw(Exporter);
@@ -46,6 +49,7 @@ my %params;
 ## configuration file regexp (one line).
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
+  
 ## Initialization of the configuration
 # param: configuration file pathname
 # Result: 0 if conf was already loaded
@@ -57,14 +61,16 @@ sub init_conf ($){
   $file = shift;
   (defined $file) or return 2;
   unless ( -r $file ) {
-      if ( -r "/etc/kadeploy/".$file ) {
-          $file = "/etc/kadeploy/".$file;
-      } else {
-          warn "Configuration file not found.";
-          $file = undef;
-          return 2;
-      }
+    my $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+    if ( -r $kadeploy_config_dir."/".$file ) {
+      $file = $kadeploy_config_dir."/".$file;
+    } else {
+      warn "Configuration file not found.";
+      $file = undef;
+      return 2;
+    }
   }
+  
   open CONF, $file or die "Open configuration file";
   %params = ();
   foreach my $line (<CONF>) {

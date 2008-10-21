@@ -10,35 +10,48 @@ use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
 use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
+use libkadeploy2::confroot;
 use strict;
 
-
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
-
+my $conf_root_dir;
 my @host_list = ();
 my $host;
 my $verbose = 0;
 my $remote_command = "";
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
-my $kareboot_usage = "Usage : karemote [-m|--machine hostname] -f nodefile [-c|--command] \"remote command\"\n";
+my $kareboot_usage = "Usage : karemote [-m|--machine hostname] \
+-f nodefile  [-c|--command] \"remote command\"\
+[-C|--configuration <configuration root directory>]\n";
 
-if (!@ARGV){
-    print $kareboot_usage;
-    exit 0;
+if (!@ARGV) {
+  print $kareboot_usage;
+  exit 0;
 }
 
-## gets the options
-GetOptions('m=s'           => \@host_list,
-	   'machine=s'     => \@host_list,
-           'f=s'           => \$node_file,
-	   'c=s'           => \$remote_command,
-	   'command=s'     => \$remote_command,
-	   'verbose'       => \$verbose,
-	   'v'             => \$verbose
-	   );
+#-------------
+# Get options
+#-------------
+GetOptions('m=s'        => \@host_list,
+  'machine=s'           => \@host_list,
+  'f=s'                 => \$node_file,
+  'c=s'                 => \$remote_command,
+  'command=s'           => \$remote_command,
+  'verbose'             => \$verbose,
+  'v'                   => \$verbose,
+  'C=s'                 => \$conf_root_dir,
+  'configuration=s'     => \$conf_root_dir
+);
 
+# Get configuration root directory
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 if ($node_file)
 {

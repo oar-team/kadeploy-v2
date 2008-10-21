@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-# needs a configuration file that should be found at /etc/kadeploy/deploy_cmd.conf
+#-----------------------------------------------------------
+# Config file searched : <config directory>/deploy_cmd.conf
+#-----------------------------------------------------------
 
 use File::Copy;
 use Getopt::Long;

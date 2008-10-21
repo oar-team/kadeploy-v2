@@ -6,6 +6,7 @@ use warnings;
 use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
+use libkadeploy2::confroot;
 
 # local functions declaration
 sub usage;
@@ -16,20 +17,28 @@ my $clustername;
 
 # Globals
 my $deployment_number;
+my $conf_root_dir;
 
-# Configuration
-my $configuration = libkadeploy2::conflib->new();
+GetOptions('c=s'    => \$clustername,
+  'cluster=s'       => \$clustername,
+  'h!'              => \$help,
+  'C=s'             => \$conf_root_dir,
+  'configuration=s' => \$conf_root_dir
+);
 
-GetOptions('c=s'            => \$clustername,
-           'cluster=s'      => \$clustername,
-           'h!'             => \$help,
-           );
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
 
 if ($help) {
     usage();
     exit 0;
 }
 
+# Configuration
+my $configuration = libkadeploy2::conflib->new();
 
 if (!$clustername eq "") {
         $configuration->set_clustername($clustername);
@@ -100,10 +109,10 @@ print "\nnumber of deployments:", $deployment_number, "\n";
 libkadeploy2::deploy_iolib::disconnect($base);
 
 
-sub usage {
-    print "$0
-\t-c | --cluster        cluster name about which statistics should be returned
-\t-h                    this help
-
-";
+sub usage
+{
+  print "$0
+\t-c | --cluster              Cluster name about which statistics should be returned
+\t-h                          This help
+\t-C | --configuration <dir>  Configuration root directory";
 }

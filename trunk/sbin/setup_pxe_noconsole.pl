@@ -1,17 +1,44 @@
 #!/usr/bin/perl
 
 use lib::conflib;
+use libkadeploy2::confroot;
+
+my $conf_root_dir;
+my $error;
+my @hexnetworks;
+my @ranges1;
+my @ranges2;
+my @kernels;
+my @initrds;
 
 $PROMPT = 1;
 $DISPLAY = "messages";
 $TIMEOUT = 50;
 $BAUDRATE = 38400;
 
-if (!@ARGV){
-    print "Usage : setup_pxe.pl range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\twhere range can be a single IP adress e.g. '192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
+if (!@ARGV) {
+  print "Usage : setup_pxe.pl \
+range1:kernel1:initrd1 [range2:kernel2:initrd2 ...]\n\
+[-C|--configuration <configuration root directory>]\n\
+\twhere range can be a single IP adress e.g. \
+'192.168.10.19' or an interval e.g. '192.168.10.5-17'\n";
 	exit 0;
 }
 
+(@args) = @ARGV;
+
+#------------
+# Get option
+#------------
+GetOptions( 'C=s'   => \$conf_root_dir,
+  'configuration=s' => \$conf_root_dir
+);
+
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
 
 ## gets appropriate parameters from configuration file
 $network = conflib::get_conf("network");
@@ -27,15 +54,6 @@ $images_repository = $tftp_repository . $tftp_relative_path;
 ###
 # Let's GO!
 ###
-my $error;
-my @hexnetworks;
-my @ranges1;
-my @ranges2;
-my @kernels;
-my @initrds;
-
-(@args) = @ARGV;
-
 
 sub hexalize {
     $number = shift;
@@ -108,15 +126,10 @@ sub test {
 
 }
 
-
-
 # copy grub_file to grub repositories
 #-f $grub_file or die "grub image file does not exist!";
 
-
-
 $template_default_content="PROMPT $PROMPT\nDEFAULT bootlabel\nDISPLAY $DISPLAY\nTIMEOUT $TIMEOUT\n\nlabel bootlabel\n";
-
 
 # compute network hex address
 #if ($network=~/(\d+)\.(\d+)\.(\d+)\.(\d+)/) {
@@ -166,8 +179,6 @@ ARG: foreach $argument (@args) {
 	die "wrong syntax";
     }
 }
-
-
 
 # generate files in pxe directories and overwrite old ones
 for ($i=0; $i<scalar(@kernels); $i++) {

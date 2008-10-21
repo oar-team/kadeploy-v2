@@ -25,6 +25,7 @@ package libkadeploy2::conflib;
 use strict;
 use warnings;
 use libkadeploy2::debug;
+use libkadeploy2::confroot;
 
 require Exporter;
 
@@ -43,11 +44,19 @@ sub dump_conf;
 ## regex pour une ligne valide du fichier de conf.
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
-## default values
-my $default_clusterconf = "/etc/kadeploy/deploy_cluster.conf";
+
+#-------------------------------------------
+# Set Kadeploy configuration root directory
+#-------------------------------------------
+my $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+
+#------------------------------------
+# Default pathnames for config files
+#------------------------------------
+my $default_clusterconf = $kadeploy_config_dir."/"."deploy_cluster.conf";
 my $default_clustername = "default"; # reserved name for default configuration files
-my $default_deployconf = "/etc/kadeploy/deploy.conf";
-my $default_deploycmdconf = "/etc/kadeploy/deploy_cmd.conf";
+my $default_deployconf = $kadeploy_config_dir."/"."deploy.conf";
+my $default_deploycmdconf = $kadeploy_config_dir."/"."deploy_cmd.conf";
 
 
 
@@ -70,15 +79,17 @@ sub new {
 
 ## usefull to generate bootfiles
 sub get_clustername {
-    my $self = shift;
-    my $result = "default";
-    if ($self->{deployconf} eq $default_deployconf) { # no default value to avoid bugs
-	return "";
-    }
-    if ($self->{deployconf} =~ /^\/etc\/kadeploy\/deploy-(.*).conf$/) {
-	    $result = $1;
-    }
-    return $result;
+  my $self = shift;
+  my $result = "default";
+
+  if ($self->{deployconf} eq $default_deployconf) {
+    # no default value to avoid bugs
+    return "";
+  }
+  if ($self->{deployconf} =~ /^$kadeploy_config_dir\/deploy-(.*).conf$/) {
+    $result = $1;
+  }
+  return $result;
 }
 
 # usefull to manage commands without nodes file
@@ -93,8 +104,8 @@ sub set_clustername {
             $self->{deploycmdconf} = $default_deploycmdconf;
 	    return 1;
     }
-    $self->{deployconf} = "/etc/kadeploy/deploy-" . $clustername . ".conf";
-    $self->{deploycmdconf} = "/etc/kadeploy/deploy_cmd-" . $clustername . ".conf";
+    $self->{deployconf} = $kadeploy_config_dir."/"."deploy-".$clustername.".conf";
+    $self->{deploycmdconf} = $kadeploy_config_dir."/"."deploy_cmd-".$clustername.".conf";
     return 1;
 }
 
