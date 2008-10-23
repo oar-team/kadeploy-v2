@@ -44,36 +44,38 @@ sub dump_conf;
 ## regex pour une ligne valide du fichier de conf.
 my $regex = qr{^\s*([^#=\s]+)\s*=\s*([^#]*)};
 
-
-#-------------------------------------------
-# Set Kadeploy configuration root directory
-#-------------------------------------------
-my $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
-
 #------------------------------------
 # Default pathnames for config files
 #------------------------------------
-my $default_clusterconf = $kadeploy_config_dir."/"."deploy_cluster.conf";
-my $default_clustername = "default"; # reserved name for default configuration files
-my $default_deployconf = $kadeploy_config_dir."/"."deploy.conf";
-my $default_deploycmdconf = $kadeploy_config_dir."/"."deploy_cmd.conf";
+my $kadeploy_config_dir;
+my $default_clusterconf;
+my $default_deployconf;
+my $default_deploycmdconf;
+# reserved name for default configuration files
+my $default_clustername = "default"; 
 
 
-
-
-sub new {
-    my ($class) = @_;
-    my $self = {};
-    $self->{clusterconf} = $default_clusterconf;
-    $self->{deployconf} = $default_deployconf;
-    $self->{deploycmdconf} = $default_deploycmdconf;
-    $self->{checked_conf} = 0; # initialy unread
-    $self->{checked_cmd} = 0; # initialy unread
-    $self->{cluster} =();
-    $self->{params} = ();
-    $self->{commands} = ();
-    bless ($self, $class);
-    return $self;
+sub new
+{
+  my ($class) = @_;
+  my $self = {};
+  
+  $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
+  libkadeploy2::confroot::info();
+  $default_clusterconf = $kadeploy_config_dir."/"."deploy_cluster.conf";
+  $default_deployconf = $kadeploy_config_dir."/"."deploy.conf";
+  $default_deploycmdconf = $kadeploy_config_dir."/"."deploy_cmd.conf";
+  
+  $self->{clusterconf} = $default_clusterconf;
+  $self->{deployconf} = $default_deployconf;
+  $self->{deploycmdconf} = $default_deploycmdconf;
+  $self->{checked_conf} = 0; # initialy unread
+  $self->{checked_cmd} = 0; # initialy unread
+  $self->{cluster} =();
+  $self->{params} = ();
+  $self->{commands} = ();
+  bless ($self, $class);
+  return $self;
 }
 
 

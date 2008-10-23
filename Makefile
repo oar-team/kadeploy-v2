@@ -216,10 +216,6 @@ conflink_install:
 #	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
 	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
 	
-#Kadeploy installation in main directory
-install: installcheck installdirs files_install links_install conflink_install sudo_install man_install final_msg
-	@chown -R deploy: $(KADEPLOYCONFDIR)
-
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" && exit 1 )
@@ -229,15 +225,21 @@ sudo_install:
 	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
 	@scripts/install/sudoers_install.pl $(KADEPLOYHOMEDIR)
 	
-#Install and creation of mans
+# Manpages installation
 man_install:
 	@mkdir -p $(MANDIR)/man1
 	@install -m 755 $(MANPAGES)/* $(MANDIR)/man1/
 
+#Kadeploy installation in main directory
+install: installcheck installdirs files_install links_install conflink_install sudo_install final_msg
+	@chown -R deploy: $(KADEPLOYCONFDIR)
+
 final_msg:
 	@echo -e "\n*** WARNING"
-	@echo -e "- To select correct configuration (with Bash) : \nexport KADEPLOY_CONFIG_DIR="$(KADEPLOYCONFDIR)
+	@echo -e "- To select correct configuration (with Bash) : \n\texport KADEPLOY_CONFIG_DIR="$(KADEPLOYCONFDIR)
 	@echo -e "- Otherwise use '-C "$(KADEPLOYCONFDIR)"' with ka* commands.\n"
+	@echo -e "\n*** INFO"
+	@echo -e "- To install man pages :\n\tmake man_install\n"
 
 #Install info documentation
 #info_install:

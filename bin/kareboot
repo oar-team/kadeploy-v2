@@ -80,7 +80,7 @@ GetOptions('m=s'        => \@host_list,
   'configuration=s'     => \$conf_root_dir
 );
 
-if ( defined($conf_root_dir) ) {
+if (!$conf_root_dir eq "") {
   libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
 }
 libkadeploy2::confroot::get_conf_rootdir();
