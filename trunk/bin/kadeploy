@@ -114,11 +114,11 @@ $SIG{INT} = \&tsktsk;
 my $defaulttargetdevice="";
 my $defaulttargetpartition="";
 
+## Configuration
+my $configuration;
+
 ## checks the options and load configuration file
 if (!check_options()) { exit 0; }
-
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
 
 ## continue with variables requiring configuration file
 my $do_fdisk_on_deploy="no"; # default behaviour
@@ -741,8 +741,8 @@ sub version()
 # make all sort of checks
 # parameters :
 # return value : 1 if successful
-sub check_options(){
-
+sub check_options()
+{
   if (!@ARGV){
 	 usages();
 	 exit 0;
@@ -787,6 +787,8 @@ sub check_options(){
   $kadeploy_config_dir = libkadeploy2::confroot::get_conf_rootdir();
   libkadeploy2::confroot::info();
 
+  $configuration = libkadeploy2::conflib->new();
+
   #crappy
   if ($rmnodefilesintmp) {
     my $cmd="rm -f /tmp/kadeploy-".$username."*";
@@ -822,8 +824,8 @@ sub check_options(){
     
     # load configuration files
     if (!$configuration->check_nodes_conf(\@host_list) || !$configuration->check_conf()) {
-	print "ERROR : problem occured loading configuration file\n";
-	exit 1;
+      print "ERROR : problem occured loading configuration file\n";
+      exit 1;
     }
 
     if (!$user) { $user=$username;  }
