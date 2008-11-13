@@ -162,7 +162,8 @@ links_install:
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kaadduser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kadeluser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kanodes
-
+	@( [ ! -e $(PERLDIR)/libkadeploy2 ] && ( ln -s $(PERLDIR)/$(KADIR)/libkadeploy2 $(PERLDIR)/libkadeploy2 ) || echo $(PERLDIR)/libkadeploy2 already exists ; not linked over. )
+	
 installdirs:
 	@echo "Making directories ..."
 	@mkdir -p $(KADEPLOYHOMEDIR)/db
@@ -214,7 +215,7 @@ files_install:
 
 conflink_install:
 #	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
-	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
+	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists ; not linked over. )
 	
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
@@ -259,7 +260,7 @@ files_uninstall :
 	@cd $(SBINDIR) && rm -f $(KADEPLOY_SBINFILES)
 	@rm -rf $(BINDIR)
 	@rm -rf $(SBINDIR)
-	@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
+	#@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
 	@rm -rf $(PERLDIR)/$(KADIR)
      
 	@echo "Uninstalling sudowrapper ..."

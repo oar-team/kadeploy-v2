@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use Getopt::Long;
+
 use lib::conflib;
 use libkadeploy2::confroot;
 

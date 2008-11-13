@@ -1,8 +1,11 @@
 #!/usr/bin/perl
 
 use Getopt::Long;
+use libkadeploy2::confroot;
 
-my $usage = "Usage : kaaddkey [-k|--key-file public_keyfile] [-m|--machine hostname] -f nodefile\n";
+my $authorized_file="/root/.ssh/authorized_keys";
+my $conf_root_dir="";
+my $usage = "Usage : $0 [-k|--key-file public_keyfile] [-m|--machine hostname] [-C|--configuration <directory>] -f nodefile\n";
 
 if (!@ARGV){
     print $usage;
@@ -10,17 +13,27 @@ if (!@ARGV){
 }
 
 ## gets the options
-GetOptions('m=s'           => \@host_list,
-           'machine=s'     => \@host_list,
-           'f=s'           => \$node_file,
-           'k=s'           => \$keyfile,
-           'key-file=s'    => \$keyfile,
-           'verbose'       => \$verbose,
-           'v'             => \$verbose
+GetOptions('m=s'             => \@host_list,
+           'machine=s'       => \@host_list,
+           'f=s'             => \$node_file,
+           'k=s'             => \$keyfile,
+           'key-file=s'      => \$keyfile,
+           'verbose'         => \$verbose,
+           'v'               => \$verbose,
+           'C=s'             => \$conf_root_dir,
+           'configuration=s' => \$conf_root_dir
            );
 
+# Get configuration root directory
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+} else {
+  $conf_root_dir = libkadeploy2::confroot::get_conf_rootdir();
+}
+libkadeploy2::confroot::info();
 
 my $test = 0;
+my $karemote_args = "";
 my $command = "";
 
 if (! -r $keyfile) {
@@ -29,20 +42,28 @@ if (! -r $keyfile) {
 }
 
 if ($node_file eq "") {
-	foreach my $i (@host_list) {
- 		$test = 1;
-		$command .= "-m $i "; 
-        }
+  foreach my $i (@host_list) {
+    $test = 1;
+    $karemote_args .= "-m $i ";
+  }
 } else {
-		$test = 1;
-		$command .= "-f $node_file ";
+  $test = 1;
+  $karemote_args .= "-f $node_file ";
 }
 
-if ($verbose) { $command .= "-v ";}
+if ($verbose) { $command .= "-v "; }
+
+if (!$conf_root_dir eq "") {
+  $karemote_args .= "-C $conf_root_dir ";
+}
 
 if ($test == 0 ) {
-	print $usage;
-	exit 0;
+  print $usage;
+  exit 0;
 }
 
-return (exec("karemote -c \"echo \$(cat $keyfile) >> /root/.ssh/authorized_keys\" "  . $command)); 
+$karemote_args .= "-d \"cat - >> $authorized_file \"";
+$command = "cat $keyfile";
+exec "$command | karemote $karemote_args";
+
+return 1;
