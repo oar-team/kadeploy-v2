@@ -44,8 +44,6 @@ GetOptions('m=s'        => \@host_list,
 );
 
 # Get configuration root directory
-print "\nkaremote : conf_root_dir = ".$conf_root_dir."\n";
-print "\nkaremote : remote_command = ".$remote_command."\n";
 if (!$conf_root_dir eq "") {
   libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
 }
