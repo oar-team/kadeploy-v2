@@ -302,8 +302,10 @@ module ConfigInformation
                 @cluster_specific[cluster].workflow_steps = content[2]
               when "timeout_reboot"
                 @cluster_specific[cluster].timeout_reboot = content[2].to_i
-              when "cmd_soft_reboot"
-                @cluster_specific[cluster].cmd_soft_reboot = content[2]
+              when "cmd_soft_reboot_rsh"
+                @cluster_specific[cluster].cmd_soft_reboot_rsh = content[2]
+              when "cmd_soft_reboot_ssh"
+                @cluster_specific[cluster].cmd_soft_reboot_ssh = content[2]
               when "cmd_hard_reboot"
                 @cluster_specific[cluster].cmd_hard_reboot = content[2]
               when "cmd_very_hard_reboot"
@@ -365,8 +367,10 @@ module ConfigInformation
               content = Regexp.last_match
               node = @common.nodes_desc.get_node_by_host(content[1])
               case content[2]
-              when "reboot_soft"
-                node.cmd.reboot_soft = content[3]
+              when "reboot_soft_rsh"
+                node.cmd.reboot_soft_rsh = content[3]
+              when "reboot_soft_ssh"
+                node.cmd.reboot_soft_ssh = content[3]
               when "reboot_hard"
                 node.cmd.reboot_hard = content[3]
               when "reboot_veryhard"
@@ -382,17 +386,20 @@ module ConfigInformation
       end
     end
 
-    # Replace the substring HOSTNAME in a string by a value
+    # Replace the substrings HOSTNAME_FQDN and HOSTNAME_SHORT in a string by a value
     #
     # Arguments
-    # * str: string in which the HOSTNAME value must be replaced
+    # * str: string in which the HOSTNAME_FQDN and HOSTNAME_SHORT values must be replaced
     # * hostname: value used for the replacement
     # Output
     # * returns the new string       
     def replace_hostname(str, hostname)
       cmd_to_expand = str.clone # we must use this temporary variable since sub() modify the strings
       save = str
-      while cmd_to_expand.sub!("HOSTNAME", hostname) != nil  do
+      while cmd_to_expand.sub!("HOSTNAME_FQDN", hostname) != nil  do
+        save = cmd_to_expand
+      end
+      while cmd_to_expand.sub!("HOSTNAME_SHORT", hostname.split(".")[0]) != nil  do
         save = cmd_to_expand
       end
       return save
@@ -407,7 +414,8 @@ module ConfigInformation
     # * returns an instance of NodeCmd
     def generate_commands(hostname, cluster)
       cmd = Nodes::NodeCmd.new
-      cmd.reboot_soft = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot, hostname)
+      cmd.reboot_soft_rsh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_rsh, hostname)
+      cmd.reboot_soft_ssh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_ssh, hostname)
       cmd.reboot_hard = replace_hostname(@cluster_specific[cluster].cmd_hard_reboot, hostname)
       cmd.reboot_very_hard = replace_hostname(@cluster_specific[cluster].cmd_very_hard_reboot, hostname)
       cmd.console = replace_hostname(@cluster_specific[cluster].cmd_console, hostname)
@@ -1011,7 +1019,8 @@ module ConfigInformation
     attr_accessor :tmp_part
     attr_accessor :workflow_steps   #Array of MacroStep
     attr_accessor :timeout_reboot
-    attr_accessor :cmd_soft_reboot
+    attr_accessor :cmd_soft_reboot_rsh
+    attr_accessor :cmd_soft_reboot_ssh
     attr_accessor :cmd_hard_reboot
     attr_accessor :cmd_very_hard_reboot
     attr_accessor :cmd_console

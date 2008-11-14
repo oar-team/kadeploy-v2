@@ -7,9 +7,10 @@ prod_part = 2
 deploy_part = 3
 tmp_part = 4
 timeout_reboot = 120
-cmd_soft_reboot = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o ConnectTimeout=2 root@HOSTNAME /sbin/reboot
-cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx reset hard
-cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME/HOSTNAME.vmx start hard
+cmd_soft_reboot_ssh = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey -o ConnectTimeout=2 root@HOSTNAME_FQDN /sbin/reboot
+cmd_soft_reboot_rsh = rsh -l root HOSTNAME_FQDN /sbin/reboot -f
+cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT.vmx reset hard
+cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT.vmx start hard
 cmd_console = no_cmd
 #drivers = ata_piix,ata_generic
 

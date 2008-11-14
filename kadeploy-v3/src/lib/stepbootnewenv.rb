@@ -155,12 +155,16 @@ module BootNewEnvironment
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?)
           instance_thread = Thread.new {
+            use_rsh_for_reboot = false
+            if (@config.common.taktuk_connector == @config.common.taktuk_rsh_connector) then
+              use_rsh_for_reboot = true
+            end
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
             @output.debugl(3, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
-            result = result && @step.reboot("soft")
+            result = result && @step.reboot("soft", use_rsh_for_reboot)
             result = result && @step.wait_reboot(@config.common.ssh_port)
             #End of micro steps
           }

@@ -157,15 +157,20 @@ module MicroStepsLibrary
     # Arguments
     # * kind: kind of reboot to perform
     # * node_set: NodeSet that must be rebooted 
+    # * use_rsh_for_reboot (opt): specify if rsh must be use for soft reboot
     # Output
     # * nothing
-    def _reboot_wrapper(kind, node_set)
+    def _reboot_wrapper(kind, node_set, use_rsh_for_reboot = false)
       @output.debugl(4, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
       node_set.set.each { |node|
         case kind
         when "soft"
-          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft, node)
+          if (use_rsh_for_reboot) then
+            CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_rsh, node)
+          else
+            CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_ssh, node)
+          end
         when "hard"
           CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_hard, node)
         when "very_hard"
@@ -180,9 +185,10 @@ module MicroStepsLibrary
     #
     # Arguments
     # * kind: kind of reboot to perform
+    # * use_rsh_for_reboot (opt): specify if rsh must be use for soft reboot
     # Output
     # * nothing    
-    def reboot_wrapper(kind)
+    def reboot_wrapper(kind, use_rsh_for_reboot = false)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
 
@@ -195,7 +201,7 @@ module MicroStepsLibrary
         finished = false
 
         while ((index < map.length) && (not finished))
-          _reboot_wrapper(map[index], ns)
+          _reboot_wrapper(map[index], ns, use_rsh_for_reboot)
           if (not @nodes_ko.empty?) then
             ns.free
             @nodes_ko.duplicate_and_free(ns)
@@ -291,12 +297,13 @@ module MicroStepsLibrary
     #
     # Arguments
     # * reboot_kind: kind of reboot (soft, hard, very_hard, kexec)
+    # * use_rsh_for_reboot (opt): specify if rsh must be used for soft reboot
     # Output
     # * returns true (should be false sometimes :D)
-    def reboot(reboot_kind)
+    def reboot(reboot_kind, use_rsh_for_reboot = false)
       case reboot_kind
       when "soft"
-        reboot_wrapper("soft")
+        reboot_wrapper("soft", use_rsh_for_reboot)
       when "hard"
         reboot_wrapper("hard")
       when "very_hard"
@@ -304,7 +311,7 @@ module MicroStepsLibrary
       when "kexec"
         kernel = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel}"
         initrd = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.initrd}"
-        kernel_params = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel_params}"
+        kernel_params = @config.exec_specific.environment.kernel_params
         root_part = @config.exec_specific.environment.part
         #Warning, this require the /usr/local/bin/kexec_detach script
         parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
