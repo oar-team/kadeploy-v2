@@ -1,6 +1,7 @@
 module Nodes
   class NodeCmd
-    attr_accessor :reboot_soft
+    attr_accessor :reboot_soft_rsh
+    attr_accessor :reboot_soft_ssh
     attr_accessor :reboot_hard
     attr_accessor :reboot_very_hard
     attr_accessor :console
