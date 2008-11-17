@@ -3,8 +3,11 @@
 use Getopt::Long;
 use libkadeploy2::confroot;
 
+Getopt::Long::Configure ("gnu_getopt");
+
 my $authorized_file="/root/.ssh/authorized_keys";
 my $conf_root_dir="";
+my $debuglevel=0;
 my $usage = "Usage : $0 [-k|--key-file public_keyfile] [-m|--machine hostname] [-C|--configuration <directory>] -f nodefile\n";
 
 if (!@ARGV){
@@ -21,8 +24,13 @@ GetOptions('m=s'             => \@host_list,
            'verbose'         => \$verbose,
            'v'               => \$verbose,
            'C=s'             => \$conf_root_dir,
-           'configuration=s' => \$conf_root_dir
+           'configuration=s' => \$conf_root_dir,
+           'D=i'             => \$debuglevel,
+           'debug-level=i'   => \$debuglevel
            );
+
+
+$ENV{KADEPLOY_DEBUG_LEVEL}  = $debug_level if ($debug_level =~ /[0-4]/);
 
 # Get configuration root directory
 if (!$conf_root_dir eq "") {
@@ -62,7 +70,7 @@ if ($test == 0 ) {
   exit 0;
 }
 
-$karemote_args .= "-d \"cat - >> $authorized_file \"";
+$karemote_args .= "-c \"cat - >> $authorized_file \"";
 $command = "cat $keyfile";
 exec "$command | karemote $karemote_args";
 

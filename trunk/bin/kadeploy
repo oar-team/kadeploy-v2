@@ -380,10 +380,15 @@ libkadeploy2::debug::debugl(3, "Retrieving preinstall\n");
 
 $nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe);
 
+libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+$nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+
 if (($useprodenvtodeploy == 0) && ($do_fdisk_on_deploy eq "yes"))
 {
     # TODO: � remplacer par une autre commande
     $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file");
+    libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
 }
 
 libkadeploy2::debug::debugl(3, "Executing preinstall...\n");
@@ -426,7 +431,10 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
     # send the environment!!
     libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
     $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
-
+    
+    libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+    
     # test
     # $nodes_set->runRemoteCommandBackground(" sleep 10000 ","sleep");
     # end_test
@@ -441,6 +449,9 @@ if ($filebase =~ /^.+\.dd\.gz$/)
     $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe");
     #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port); 
     libkadeploy2::debug::debugl(3, "Done\n");
+
+    libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
 }
 
 $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
@@ -454,10 +465,11 @@ if ($usetar)
 # post-installation
     libkadeploy2::debug::debugl(3, "Executing postinstall...\n");
 
-
-    libkadeploy2::debug::debugl(1, "### Execute post-install on the nodes\n");
-
     $nodes_set->runCommandMcat("cat $filesite", $post_pipe);
+    libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+    
+    libkadeploy2::debug::debugl(1, "### Execute post-install on the nodes\n");
     $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
     libkadeploy2::debug::debugl(3, "Done\n");
 
@@ -490,13 +502,15 @@ if ($fastkernelreboot) #We use kexec to reboot faster
 }
 else
 {
-    if ($usetar)
-    {
-	libkadeploy2::debug::debugl(3, "Umounting fs...\n");
-	$nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-	sleep(1);
-	libkadeploy2::debug::debugl(3, "Done\n");
-    }
+  if ($usetar) {
+    libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+    
+    libkadeploy2::debug::debugl(3, "Umounting fs...\n");
+    $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
+	  sleep(1);
+    libkadeploy2::debug::debugl(3, "Done\n");
+  }
     if ($useprodenvtodeploy == 1)
     {
 	$nodes_set->rebootThoseNodes();
