@@ -13,6 +13,8 @@ use libkadeploy2::nodes;
 use libkadeploy2::confroot;
 use strict;
 
+Getopt::Long::Configure ("gnu_getopt");
+
 my $conf_root_dir = "";
 my @host_list = ();
 my $host;
@@ -21,7 +23,7 @@ my $remote_command = "";
 my $node_file;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 my $kareboot_usage = "Usage : karemote [-m|--machine hostname] \
--f nodefile  [-d|--command] \"remote command\"\
+-f nodefile  [-c|--command] \"remote command\"\
 [-C|--configuration <configuration root directory>]\n";
 
 if (!@ARGV) {
@@ -35,7 +37,7 @@ if (!@ARGV) {
 GetOptions('m=s'        => \@host_list,
   'machine=s'           => \@host_list,
   'f=s'                 => \$node_file,
-  'd=s'                 => \$remote_command,
+  'c=s'                 => \$remote_command,
   'command=s'           => \$remote_command,
   'verbose'             => \$verbose,
   'v'                   => \$verbose,
