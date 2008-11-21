@@ -1,0 +1,21 @@
+Here is a script designed to generate a debootstrap based NFSROOT environment for kadeploy 3.
+
+Before launching, you must customize it by setting the following values at the beginning of the script:
+- DEBOOTSTRAP: path of the deboostrap binary
+- NFSROOT: destination NFSROOT path
+- TFTPROOT: TFTPROOT path
+- KERNEL_VERSION: version of the 2.6 kernel you want
+- CONFIG_FILE: path of a working config file
+- TMP: temporary path
+- NAMESERVER: ip of the DNS server
+
+Then, with root rights just execute on your NFS server: sh make_nfsroot.sh.
+
+Please note that some options must be "hard" activated in the kernel configuration ("y" value and not "m"). In particular:
+- the driver of your network card (eg. CONFIG_E1000)
+- CONFIG_IP_PNP
+- CONFIG_IP_PNP_DHCP
+- CONFIG_NFS_FS
+- CONFIG_ROOT_NFS
+
+A working kernel configuration file is also provided.
