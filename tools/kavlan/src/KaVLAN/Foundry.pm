@@ -91,7 +91,7 @@ sub getPortsAffectedToVlan(){
          foreach my $j (@ {$i}) {
              if ($j->[2] == $vlanNumber[0] and  $j->[0] =~ /(\d+)$/) {
                  my $port = &getPortFromIndex($1,$switchSession);
-                 &const::verbose("port $port is in vlan  $vlanNumber[0]");
+                 &const::verbose("port $port is in vlan $vlanNumber[0]");
                  push @{$res{"UNTAGGED"}}, $port;
              }
          }
@@ -130,6 +130,9 @@ sub setUntag(){
     &const::verbose("Put the port ",$port," in untag mode to the vlan ",$vlanNumber[0]);
     # first, we must remove the port from its current VLAN
     my @OldVLAN = $self->getPortInformation($port,$switchSession);
+    if ($#OldVLAN==-1){
+        die "ERROR : Can't find current VLAN of port $port";
+    }
     &const::verbose("The port is currently in the VLAN ",$OldVLAN[0]);
     my $ifIndex = &getPortIfIndex($port,$switchSession);
     # delete

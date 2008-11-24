@@ -40,6 +40,9 @@ our $DEFAULT_NAME="DEFAULT";
 #Default name of the vlan on the site
 our $VLAN_DEFAULT_NAME;
 
+# VLAN NAME use an id starting from 1 to $VLAN_MAX_ID
+our $VLAN_MAX_ID=8;
+
 #Name of vlan when kavlan have modify them we are using the USER env variable to put it in the name of the vlan
 #in order to know which vlan this user have modified and allow other people not to change configuration of our vlan
 our $MODIFY_NAME_KAVLAN="KAVLAN-";

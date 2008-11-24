@@ -8,7 +8,7 @@
 
 package KaVLAN::Config;
 
-@EXPORT = qw(parseConfigurationFile getPortNumber getPortName);
+@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort);
 
 use warnings;
 use strict;
@@ -114,7 +114,7 @@ sub getPortNumber {
             ($lineName,$linePort,$lineSwitch) = split(/ /,$line);
             if(defined $lineName and $lineName eq $portName){
                 $trouve = 1;
-                &const::verbose("Port founded in the configuration file");
+                &const::verbose("Port found in the configuration file");
             }
 
         }
@@ -160,6 +160,74 @@ sub getPortName{
     close(CONF);
     return "" unless ($trouve);
     return $lineName;
+}
+
+##########################################################################################
+# Search the id of the switch in the switch table
+# arg : String -> the name of the switch
+# ret : the number or -1
+# rmq : 
+##########################################################################################
+sub getSwitchIdByName(){
+    my ($name,$switch)=@_;
+
+#Check argument
+    if(not defined $name){
+        die "ERROR : Not enough argument for $const::FUNC_NAME";
+    }
+    my $indice=-1;
+    foreach my $i (0..$#{$switch}) {
+        &const::verbose("name : ".$switch->[$i]{"Name"});
+        if ($switch->[$i]{"Name"} eq  $name) {
+            &const::verbose("found switch $name !");
+            $indice = $i;
+            last;
+        }
+    }
+    return $indice;
+}
+
+##########################################################################################
+# Know if we can modify this port
+# arg : Integer -> the port
+#       Integer -> the switch indice
+#       Switch -> a switch tab of reference
+# ret : 0 if it's ok OR -1
+# rmq :
+##########################################################################################
+sub canModifyPort(){
+    my ($port,$indice,$switch)=@_;
+    # Check argument
+    if(not defined $port or not defined $indice or not defined $switch){
+        die "ERROR : Not enough argument for $const::FUNC_NAME";
+    }
+
+    my $portAllowed=$switch->[$indice]{"Ports"};
+    return 0 if($portAllowed eq "all");
+
+    my @portArray = split(/,/,$portAllowed);
+
+    my $trouve=-1;
+    foreach my $i (0..$#portArray){
+        # If the string matches the format xx-yy that means that it is a range of port
+        if ($portArray[$i] =~ /-/){
+            my $min=$portArray[$i];
+            $min =~ s/\-\d+//;
+            my $max=$portArray[$i];
+            $max =~ s/\d+\-//;
+            if($port>=$min && $port<=$max){
+                $trouve=0;
+                last;
+            }
+        } else {
+            if($port==$portArray[$i]){
+                $trouve=0;
+                last;
+            }
+        }
+
+    }
+    return $trouve;
 }
 
 1;
