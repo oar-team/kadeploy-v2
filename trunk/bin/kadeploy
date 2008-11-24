@@ -407,25 +407,24 @@ libkadeploy2::debug::debugl(3, "<Transfert>\n");
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 libkadeploy2::debug::debugl(3, "filebase: $filebase\n");
-if ($filebase =~ /^.+\.tar\.gz$/ ||
-    $filebase =~ /^.+\.tgz$/     )
-{
+if ( $filebase =~ /^.+\.tar\.gz$/ || $filebase =~ /^.+\.tgz$/ ) {
     $usetar=1;
-# format desired partition and mount it
+    # format desired partition and mount it
     libkadeploy2::debug::debugl(3, "Formatting destination partition $destination_partition on the nodes...\n");
-#    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
     my $mkfs_fs_options = " ";
     if($configuration->get_conf($mkfs_fs . "_options")) {
 	    $mkfs_fs_options = $configuration->get_conf($mkfs_fs . "_options");
     }
+    
     libkadeploy2::debug::debugl(3, "using $mkfs_fs file system with options: $mkfs_fs_options \n");
-
-
     libkadeploy2::debug::debugl(1, "### Formatting the deployment partition on the nodes\n");
 
-
-    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
-    $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
+    # $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
+    # $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
+    $nodes_set->runRemoteCommandReportFailed("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "FATAL : format operation failed on node");
+    $nodes_set->runRemoteCommandReportFailed("\" umount /mnt/dest \"", "INFO : /mnt/dest not already mounted");
+    # if mount does not work transfert cannot be done
+    $nodes_set->runRemoteCommandReportFailed("\" mount -t $mkfs_fs $destination_partition /mnt/dest \"", "FATAL : mount of $destination_partition failed on node");
     libkadeploy2::debug::debugl(3, "Done\n");
     libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
     # send the environment!!
@@ -725,7 +724,7 @@ sub set_mkfs_option($){
 
 sub usages()
 {
-    print "Use : kadeploy 
+    print "Use : kadeploy
 \t[-m   | --machine     hostname] 
 \t[-f   | --file        node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
