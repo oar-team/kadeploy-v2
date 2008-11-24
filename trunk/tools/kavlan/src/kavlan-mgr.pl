@@ -133,7 +133,7 @@ for($i = 0 ; $i <  ($#{$switch}+1) ; $i++){
 
 #If the -s option is enable we verify if the name of the switch is present
 if(defined $options{"s"}){
-    $indiceSwitch = &getSwitchIdByName($options{"s"});
+    $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($options{"s"},$switch);
     print "indiceswitch: $indiceSwitch\n" if ($const::VERBOSE);
     if($indiceSwitch == -1){
         die "ERROR : There is no switch under this name";
@@ -262,7 +262,7 @@ foreach (keys %options){
                 &const::verbose("The port given is a computer name");
                 ($options{"p"},$switchName) = KaVLAN::Config::getPortNumber($options{"p"},$site->{"Name"});
                 if($options{"p"} eq -1){die "ERROR : Computer not present in the list";}
-                $indiceSwitch = &getSwitchIdByName($switchName);
+                $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
             if(defined $options{"s"}){
@@ -281,10 +281,10 @@ foreach (keys %options){
                 &const::verbose("The port given is a computer name");
                 ($options{"t"},$switchName) = KaVLAN::Config::getPortNumber($options{"t"},$site->{"Name"});
                 if($options{"t"} == -1){die "ERROR : Computer not present in the list";}
-                $indiceSwitch = &getSwitchIdByName($switchName);
+                $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
-            if(&canModifyPort($options{"t"},$indiceSwitch,$switch)==0){
+            if(&KaVLAN::Config::canModifyPort($options{"t"},$indiceSwitch,$switch)==0){
                 my $otherMode;
                 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl"){$otherMode="";}
                 &vlan::addTaggedPort($ARGV[0],$options{"t"},$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
@@ -303,10 +303,10 @@ foreach (keys %options){
                 &const::verbose("The port given is a computer name");
                 ($options{"u"},$switchName) = KaVLAN::Config::getPortNumber($options{"u"},$site->{"Name"});
                 if($options{"u"} eq -1){die "ERROR : Computer not present in the list";}
-                $indiceSwitch = &getSwitchIdByName($switchName);
+                $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
-            if(&canModifyPort($options{"u"},$indiceSwitch,$switch)==0){
+            if(&KaVLAN::Config::canModifyPort($options{"u"},$indiceSwitch,$switch)==0){
                 my $otherMode;
                 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl"){$otherMode="";}
                 &vlan::addUntaggedPort($ARGV[0],$options{"u"},$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
@@ -325,10 +325,10 @@ foreach (keys %options){
                 &const::verbose("The port given is a computer name");
                 ($options{"r"},$switchName) = KaVLAN::Config::getPortNumber($options{"r"},$site->{"Name"});
                 if($options{"r"} == -1){die "ERROR : Computer not present in the list";}
-                $indiceSwitch = &getSwitchIdByName($switchName);
+                $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
-            if(&canModifyPort($options{"r"},$indiceSwitch,$switch)==0){
+            if(&KaVLAN::Config::canModifyPort($options{"r"},$indiceSwitch,$switch)==0){
                 my $otherMode;
                 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl"){$otherMode="";}
                 &vlan::removePort($ARGV[0],$options{"r"},$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
@@ -347,10 +347,10 @@ foreach (keys %options){
                 &const::verbose("The port given is a computer name");
                 ($options{"z"},$switchName) = KaVLAN::Config::getPortNumber($options{"z"},$site->{"Name"});
                 if($options{"z"} == -1){die "ERROR : Computer not present in the list";}
-                $indiceSwitch = &getSwitchIdByName($switchName);
+                $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
                 if($indiceSwitch==-1){die "ERROR : There is no switch under this name";}
             }
-            if(&canModifyPort($options{"z"},$indiceSwitch,$switch)==0){
+            if(&KaVLAN::Config::canModifyPort($options{"z"},$indiceSwitch,$switch)==0){
                 my $otherMode;
                 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl"){$otherMode="";}
                 &vlan::portInitialConfiguration($options{"z"},$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
@@ -379,40 +379,6 @@ sub is_computer_name {
 }
 
 ##########################################################################################
-# Search the id of the switch in the switch table
-# arg : String -> the name of the switch
-# ret : the number or -1
-# rmq :
-##########################################################################################
-sub getSwitchIdByName(){
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="getSwitchIdByName";
-    &const::verbose();
-
-    my $indice=-1;
-
-#Check arguement
-    my ($name)=@_;
-    if(not defined $name){
-        die "ERROR : Not enough argument for $const::FUNC_NAME";
-    }
-
-    foreach my $i (0..$#{$switch}) {
-        &const::verbose("name : ".$switch->[$i]{"Name"});
-        if ($switch->[$i]{"Name"} eq  $name) {
-            &const::verbose("found switch $name !");
-            $indice = $i;
-            last;
-        }
-    }
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
-    return $indice;
-
-}
-
-##########################################################################################
 # Print the ports affected to a vlan 
 # arg : String -> the vlan name
 #       Session -> a switch session
@@ -422,12 +388,6 @@ sub getSwitchIdByName(){
 # rmq : 
 ##########################################################################################
 sub printPortsAffectedToVlan(){
-
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="printPortsAffectedToVlan";
-    &const::verbose();
-
 #Check arguement
     my ($vlanName,$switchSession,$switchConfig,$switchName)=@_;
     if(not defined $vlanName or not defined $switchSession or not defined $switchConfig or not defined $switchName){
@@ -450,8 +410,6 @@ sub printPortsAffectedToVlan(){
         }
         print "\n";
     }
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 ##########################################################################################
@@ -463,11 +421,6 @@ sub printPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub printPortInformation(){
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="printPortInformation";
-    &const::verbose();
-
     my @ret;
     my $val;
 
@@ -491,78 +444,16 @@ sub printPortInformation(){
         print $info[0];
     }
     print "\n";
-
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
 }
 
 
 
 
-##########################################################################################
-# Know if we can modify this port 
-# arg : Integer -> the port
-#    Integer -> the switch indice
-#       Switch -> a switch tab of reference
-# ret : 0 if it's ok OR -1 
-# rmq :
-##########################################################################################
-sub canModifyPort(){
-
-
-    my $OLD_FUNC_NAME=$const::FUNC_NAME;
-    $const::FUNC_NAME="canModifyPort";
-    &const::verbose();
-
-#Check arguement
-    my ($port,$indice,$switch)=@_;
-    if(not defined $port or not defined $indice or not defined $switch){
-        die "ERROR : Not enough argument for $const::FUNC_NAME";
-    }
-
-    my $portAllowed=$switch->[$indice]{"Ports"};
-
-    if($portAllowed eq "all"){
-        return 0;
-    }
-
-
-    my @portArray = split(/,/,$portAllowed);
-
-    my $trouve=-1;
-    my $i;
-
-    for($i=0;$i < ($#portArray+1) && $trouve==-1;$i++){
-#If the string matches the format xx-yy that means that it is a range of port
-        if($portArray[$i] =~ /-/){
-            my $min=$portArray[$i];
-            $min =~ s/\-\d+//;
-            my $max=$portArray[$i];
-            $max =~ s/\d+\-//;
-            if($port>=$min && $port<=$max){
-                $trouve=0;
-            }
-        }
-        else{
-            if($port==$portArray[$i]){
-                $trouve=0;
-            }
-        }
-
-    }
-
-    $const::FUNC_NAME=$OLD_FUNC_NAME;
-
-    return $trouve;
-
-
-}
 
 ##########################################################################################
 # Usage
 # arg :
-# ret : 
+# ret :
 # rmq :
 ##########################################################################################
 sub usage(){

@@ -48,7 +48,7 @@ sub new {
 ##########################################################################################
 sub getVlanNumber {
     my ($self,$vlanName,$session)=@_;
-#Check arguments
+    # Check arguments
     if(not defined $vlanName or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
@@ -58,11 +58,11 @@ sub getVlanNumber {
     &const::verbose("Get vlan number of ",$vlanName);
     my @res;
 
-#Retrieve the number and the name of each vlan
+    # Retrieve the number and the name of each vlan
     my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
     my @resp = $session->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
 
-#Loop until we have a name which correspond to $vlanName
+    # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
     foreach my $i (0..$max){
 #        &const::verbose("Seeing ", ${ @{ $resp[0] } }[$i]->val);
@@ -312,7 +312,7 @@ sub getPortInformation(){
     my @ret;
     my $val;
 
-#Check arguement
+    # Check argument
     my $self = shift;
     my ($port,$switchSession)=@_;
     if(not defined $port or not defined $switchSession){
@@ -332,16 +332,17 @@ sub getPortInformation(){
         if($name =~ /$const::MODIFY_NAME_KAVLAN/ or $name =~ /$const::VLAN_DEFAULT_NAME/){
 #Getting the right name of the vlan (without the prefix MODIFY_NAME_VLAN)
             if($name =~ /$const::MODIFY_NAME_KAVLAN/){
-                &const::verbose("Vlan founded:",$name);
+                &const::verbose("Vlan found:",$name);
                 $val = $name;
                 $val =~ s/$const::MODIFY_NAME_KAVLAN//;
 
             }
             if($name =~ /$const::VLAN_DEFAULT_NAME/){
-                &const::verbose("Vlan founded:",$name);
+                &const::verbose("Vlan found:",$name);
                 $val = $const::DEFAULT_NAME;
             }
 
+            &const::verbose("will run getPortsAffectedToVlan with ",$val);
             my $tmp = $self->getPortsAffectedToVlan($val,$switchSession);
             my %res = %{$tmp};
 
