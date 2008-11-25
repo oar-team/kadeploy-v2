@@ -28,6 +28,7 @@ use KaVLAN::Foundry;
 my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
 my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
 my $OARSTAT="oarstat";
+my $VLAN_PROPERTY_NAME="vlan";
 
 #Verify that there is at least one argument
 if($#ARGV < 0){
@@ -209,11 +210,9 @@ if ($options{"r"}) {   # get-network-range
 sub get_vlan {
     my $jobid = shift;
     if ($jobid) {
-        # TODO: get VLAN id oarstat -p
-        exit "get VLAN id from oarstat -p not implemented"
+        return &get_vlan_property("",$jobid);
     } elsif ($OAR_PROPERTIES) {
-        # TODO: get VLAN id from $OAR_RESOURCE_PROPERTIES_FILE
-        exit "get VLAN id from \$OAR_RESOURCE_PROPERTIES_FILE not implemented"
+        return &get_vlan_property($OAR_PROPERTIES,"");
     } else {
         die "no job specified, use -j";
     }
@@ -278,6 +277,27 @@ sub check_vlan {
     die "abort: bad VLAN id ($vlan_id)";
 }
 
+sub get_vlan_property {
+    my $filename = shift;
+    my $jobid    = shift;
+    if ( $jobid > 0) {
+        open(PROP, "$OARSTAT -p -j $jobid |") or die "can't start oarstat, abort ! $!";
+    } elsif (-f $filename ) {
+        open(PROP, "< $filename") or die "can't open $filename, abort ! $!";
+    }
+    while (<PROP>) {
+        chomp;
+        foreach my $prop (split /\s+\,\s+/) {
+            if ($prop =~ m/$VLAN_PROPERTY_NAME\s+\=\s+\'(\w+)\'/) {
+                &const::verbose("found vlan = $1");
+                close(PROP);
+                return $1;
+            }
+        }
+    }
+    close(PROP);
+}
+
 sub usage(){
     my $status= shift;
     $status=1 unless defined $status;
@@ -298,6 +318,3 @@ USAGE : $0 [options]
     exit $status;
 
 }
-
-
-
