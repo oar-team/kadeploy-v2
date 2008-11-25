@@ -7,7 +7,7 @@
 # note         :
 ##########################################################################################
 
-package kavlan2;
+package kavlan;
 
 use strict;
 use Getopt::Long;
@@ -27,6 +27,7 @@ use KaVLAN::Foundry;
 
 my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
 my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
+my $OARSTAT="oarstat";
 
 #Verify that there is at least one argument
 if($#ARGV < 0){
@@ -131,53 +132,91 @@ foreach my $i (0 .. $#{$switch}){
 
 if ($options{"r"}) {   # get-network-range
     # TODO
-    warn "get-network-range not implemented";
-    exit 0;
+    die "get-network-range not implemented";
 } elsif ($options{"g"}) { # get-network-gateway
     # TODO
-    warn "get-network-gateway not implemented";
-    exit 0;
+    die "get-network-gateway not implemented";
 } elsif ($options{"d"} ){ # disable dhcp server for the given vlan
     # TODO
-    warn "disable dhcp server: not implemented";
+    die "disable dhcp server: not implemented";
 } elsif ($options{"s"} ){ # set vlan for given nodes
     my @nodes;
     my $VLAN;
     if  ($options{'i'}) { # vlan id is set
-        $VLAN  = &get_vlan($options{"i"});
+        $VLAN  = &check_vlan($options{"i"});
         @nodes = get_nodes($options{"f"}, $options{"m"});
-        foreach my $node (@nodes) {
-            my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-            if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; }
-            my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
-            if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";}
-            if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch)==0){
-                my $otherMode;
-                $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
-                &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-            }
-            else{
-                die "ERROR : you can't modify this port";
-            }
-        }
     } elsif ($options{'j'}) {
         # use OAR job id to get the nodes
+        # TODO: get VLAN id & nodes from oarstat -p
+        $VLAN  = &get_vlan($options{"j"});
+        exit "get VLAN id from oarstat -p not implemented"
     } elsif ($OAR_NODEFILE) {
         # use OAR nodefile
         print "use oar nodefile: $OAR_NODEFILE\n";
         @nodes = get_nodes($OAR_NODEFILE, "");
+        $VLAN  = &get_vlan();
+        # TODO: get VLAN id from $OAR_RESOURCE_PROPERTIES_FILE
+        exit "get VLAN id from \$OAR_RESOURCE_PROPERTIES_FILE not implemented"
     } else {
         print "No nodes specified: use -m, -f or -j\n";
         exit 1;
+    };
+    foreach my $node (@nodes) {
+        my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
+        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; }
+        my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
+        if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";}
+        if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch)==0){
+            my $otherMode;
+            $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
+            &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
+        }
+        else{
+            die "ERROR : you can't modify this port";
+        }
+        print "all nodes are configured in the vlan $VLAN";
     }
 } elsif ($options{"V"} ){ # get vlan id of job
-    # TODO
-    warn "get vlan_id: not implemented";
+    print &get_vlan($options{'j'});
+    print "\n";
 } elsif ($options{"l"} ){ # get node list of job
-    # TODO
-    warn "get node list: not implemented";
+    my @nodes;
+    my @nodes_default; # node name in default vlan
+    my $JOBID=$options{'j'};
+    my $VLAN = &get_vlan($JOBID);
+    if ($JOBID) {
+        open(OARSTAT, "$OARSTAT -j $JOBID -f|") or die "Error while running oarstat: $!";
+        while (<OARSTAT>) {
+            if  (/assigned_hostnames = (.*)$/) {
+                @nodes_default= split(/\+/,$1);
+            }
+        };
+        close(OARSTAT);
+    } elsif ($OAR_NODEFILE) {
+        @nodes_default = &get_nodes($OAR_NODEFILE, "");
+    } else {
+        die "get node list: no job specified, use -j";
+    }
+    die "no VLAN found" unless $VLAN;
+    # rewrite nodename: add -vlanX where X is the vlan ID
+    @nodes = map { s/^(\w+-\d+)\./$1\-vlan$VLAN\./; $_ } @nodes_default;
+    foreach (@nodes) {print "$_\n";};
 } else {
     die "no action specified, abort";
+}
+
+# returns vlan id of job; if jobid is undef, check OAR env. variables.
+sub get_vlan {
+    my $jobid = shift;
+    if ($jobid) {
+        # TODO: get VLAN id oarstat -p
+        exit "get VLAN id from oarstat -p not implemented"
+    } elsif ($OAR_PROPERTIES) {
+        # TODO: get VLAN id from $OAR_RESOURCE_PROPERTIES_FILE
+        exit "get VLAN id from \$OAR_RESOURCE_PROPERTIES_FILE not implemented"
+    } else {
+        die "no job specified, use -j";
+    }
 }
 
 
@@ -193,7 +232,7 @@ sub get_nodes {
         while (<NODEFILE>) {
             chomp;
             if (&check_node_name($_)) {
-                push @nodelist, $1;
+                push @nodelist, $_;
             } else {
                 warn "skip node $_";
             }
@@ -219,14 +258,15 @@ sub get_nodes {
     }
 }
 
+# check if node name is valid (with or without domain)
+# => node-XX.site.grid5000.fr or node-xx-ethXX.site.grid5000.fr
 sub check_node_name {
     my $nodename = shift;
-    # node-XX.site.grid5000.fr or node-xx-ethXX.site.grid5000.fr
     return $nodename =~ m/^\w+-\d+(-\w+)?(\.\w+\.\w+\.\w+)?$/;
 }
 
-# check vlan_id parameter
-sub get_vlan {
+# check vlan_id parameter when given by the user
+sub check_vlan {
     my $vlan_id = shift;
 
     die "no vlan_id " unless $vlan_id;
