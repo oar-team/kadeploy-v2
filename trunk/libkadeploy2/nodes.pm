@@ -805,7 +805,7 @@ sub runLocalRemote($$$$) {
             $executedCommands{$nodeIP} = $localCommand . $connector . " " . $nodeIP . " " . $remoteCommand;
     }
     # return $self->runThose(\%executedCommands, 50, $launcherWindowSize, "failed on node", $report_failed);
-    return $self->runThose(\%executedCommands, 600, $launcherWindowSize, "failed on node", $report_failed);
+    return $self->runThose(\%executedCommands, 250, $launcherWindowSize, "failed on node", $report_failed);
 
 }
 
@@ -827,7 +827,7 @@ sub runDetachedCommand {
     }
 
     # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Detached command failed on node", 0);
-    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "Detached command failed on node", 0);
+    return $self->runThose(\%executedCommands, 15, $launcherWindowSize, "Detached command failed on node", 0);
 }
 
 
@@ -851,7 +851,7 @@ sub runDetachedKexec {
         $executedCommands{$nodeIP} = $connector . " " . $nodeIP . " " . $remoteCommand;
     }
     # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "Kexec failed on node", 0);
-    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "Kexec failed on node", 0);
+    return $self->runThose(\%executedCommands, 15, $launcherWindowSize, "Kexec failed on node", 0);
 }
 
 
@@ -872,7 +872,7 @@ sub runSimpleReboot {
     }
 
     # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
-    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "reboot failed on node", 0);
+    return $self->runThose(\%executedCommands, 15, $launcherWindowSize, "reboot failed on node", 0);
 }
 
 
@@ -894,7 +894,7 @@ sub rebootThoseNodes
     }
 
     # return $self->runThose(\%executedCommands, 2, $launcherWindowSize, "reboot failed on node", 0);
-    return $self->runThose(\%executedCommands, 20, $launcherWindowSize, "reboot failed on node", 0);
+    return $self->runThose(\%executedCommands, 15, $launcherWindowSize, "reboot failed on node", 0);
 }
 
 
@@ -946,7 +946,7 @@ sub rebootMyNodes {
             }
         }
         # $self->runThose(\%executedCommands, 6, $launcherWindowSize, "$method failed on node", 0);
-        $self->runThose(\%executedCommands, 100, $launcherWindowSize, "$method failed on node", 0);
+        $self->runThose(\%executedCommands, 50, $launcherWindowSize, "$method failed on node", 0);
     } else {
         # deployreboot
         return $self->rebootThoseNodes();
@@ -985,7 +985,7 @@ sub rebootMyNodes {
         if ( $nbmethod_nodes != 0 ) {
 	    libkadeploy2::debug::debugl(4, "Launching parrallel commands \n");
 	    # $self->runThose(\%nextExecutedCommands, 6, $launcherWindowSize, "hardboot failed on node", 0);
-	    $self->runThose(\%nextExecutedCommands, 100, $launcherWindowSize, "hardboot failed on node", 0);
+	    $self->runThose(\%nextExecutedCommands, 50, $launcherWindowSize, "hardboot failed on node", 0);
 	} else {
             $use_next_method = 0;
 	}

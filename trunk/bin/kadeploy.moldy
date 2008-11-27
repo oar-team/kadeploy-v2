@@ -241,18 +241,20 @@ my $tmp_node;
 #
 
 libkadeploy2::debug::debugl(3, "registering environment: " . $envid . "for this deployment:" . $deployment . "\n");
-foreach my $host (@db_checked_hosts){
-    $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $envid, $dev, $part);
-    if ($tmp_node) 
-    {
-	$nodes_set->add($tmp_node);
-    }
-    else 
-    {
-	libkadeploy2::debug::debugl(3,"node $host not included in current deployment\n");
-    }
+foreach my $host (@db_checked_hosts) {
+  $tmp_node = libkadeploy2::node_bd->new($host, $deployment, $envid, $dev, $part);
+  if ($tmp_node) {
+    $nodes_set->add($tmp_node);
+  } else {
+    libkadeploy2::debug::debugl(3,"node $host not included in current deployment\n");
+  }
 }
 
+# if ($nodes_set->{nodesNumber} == 0) {
+#  libkadeploy2::debug::debugl(2, "No more remaining nodes in set ; exiting ...\n");
+#  libkadeploy2::deploy_iolib::correct_deployment_consistence($base,$deployment);
+#  exit 0;
+#}
 
 ## runs the deployment (changes state to run)
 libkadeploy2::deploy_iolib::run_deployment($base,$deployment);
@@ -382,9 +384,13 @@ $nodes_set->runCommandMcat("cat $pre_install_archive", $pre_pipe);
 
 if (($useprodenvtodeploy == 0) && ($do_fdisk_on_deploy eq "yes"))
 {
-    # TODO: � remplacer par une autre commande
+    # TODO: a remplacer par une autre commande
     $nodes_set->runCommandMcat("$kadeploydir/sbin/kasetup -loadpartitionfile $partitionfile -printvalidfdisk", "cat > $remote_fdisk_file");
 }
+
+# libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+# $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+
 
 libkadeploy2::debug::debugl(3, "Executing preinstall...\n");
 
@@ -402,71 +408,71 @@ libkadeploy2::debug::debugl(3, "<Transfert>\n");
 libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 libkadeploy2::debug::debugl(3, "filebase: $filebase\n");
-if ($filebase =~ /^.+\.tar\.gz$/ ||
-    $filebase =~ /^.+\.tgz$/     )
-{
-    $usetar=1;
-# format desired partition and mount it
-    libkadeploy2::debug::debugl(3, "Formatting destination partition $destination_partition on the nodes...\n");
-#    $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
-    my $mkfs_fs_options = " ";
-    if($configuration->get_conf($mkfs_fs . "_options")) {
-	    $mkfs_fs_options = $configuration->get_conf($mkfs_fs . "_options");
-    }
-    libkadeploy2::debug::debugl(3, "using $mkfs_fs file system with options: $mkfs_fs_options \n");
-
-
-    libkadeploy2::debug::debugl(1, "### Formatting the deployment partition on the nodes\n");
-
-
-    $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
-    $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
-    libkadeploy2::debug::debugl(3, "Done\n");
-    libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
-    # send the environment!!
-    libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
-    $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
-
-    # test
-    # $nodes_set->runRemoteCommandBackground(" sleep 10000 ","sleep");
-    # end_test
+if ( $filebase =~ /^.+\.tar\.gz$/ || $filebase =~ /^.+\.tgz$/ ) {
+  $usetar=1;
+  # format desired partition and mount it
+  libkadeploy2::debug::debugl(3, "Formatting destination partition $destination_partition on the nodes...\n");
+  my $mkfs_fs_options = " ";
+  if($configuration->get_conf($mkfs_fs . "_options")) {
+    $mkfs_fs_options = $configuration->get_conf($mkfs_fs . "_options");
+  }
     
-    libkadeploy2::debug::debugl(3, "Done\n");
+  libkadeploy2::debug::debugl(3, "using $mkfs_fs file system with options: $mkfs_fs_options \n");
+  libkadeploy2::debug::debugl(1, "### Formatting the deployment partition on the nodes\n");
+
+  # $nodes_set->runRemoteCommand("\" mkfs -t $mkfs_fs $destination_partition \"");
+  # $nodes_set->runRemoteCommandReportFailed("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "FATAL : format operation failed on node");
+  $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
+  # if mount does not work transfert cannot be done
+  $nodes_set->runRemoteCommandReportFailed("\" mount -t $mkfs_fs $destination_partition /mnt/dest \"", "FATAL : mount of $destination_partition failed on node");
+  libkadeploy2::debug::debugl(3, "Done\n");
+  libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
+  # send the environment!!
+  libkadeploy2::debug::debugl(1, "### Sending user's environment to the nodes\n");
+  $nodes_set->runCommandMcat("cat $filebase", $dest_pipe);
+    
+  # libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+  # $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+    
+  libkadeploy2::debug::debugl(3, "Done\n");
 }
-if ($filebase =~ /^.+\.dd\.gz$/)
-{
-    libkadeploy2::debug::debugl(3, "<dd Transfert>\n");
-    libkadeploy2::debug::debugl(3, "Sending Computing environment to the nodes...\n");
-    $nodes_set->runRemoteCommand("\" ln -sf $destination_partition /dest_part \"");
-    $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe");
-    #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port); 
-    libkadeploy2::debug::debugl(3, "Done\n");
+
+if ($filebase =~ /^.+\.dd\.gz$/) {
+  libkadeploy2::debug::debugl(3, "<dd Transfert>\n");
+  libkadeploy2::debug::debugl(3, "Sending Computing environment to the nodes...\n");
+  $nodes_set->runRemoteCommand("\" ln -sf $destination_partition /dest_part \"");
+  $nodes_set->runCommandMcat("cat $filebase", "/destdd_pipe");
+  #$nodes_set->runCommandMcat("cat $filebase", "gzip -dc | cat > $destination_partition", $mcat_first_port);
+  libkadeploy2::debug::debugl(3, "Done\n");
+
+  # libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+  # $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
 }
 
 $time_transfert = libkadeploy2::deploy_iolib::get_time($base,$deployment);
 libkadeploy2::debug::debugl(3, "Transfert: " . $time_transfert . "\n");
 
 
-if ($usetar)
-{
-    libkadeploy2::debug::debugl(3, "<PostInstall>\n");
-    libkadeploy2::deploy_iolib::set_time($base,$deployment);
-# post-installation
-    libkadeploy2::debug::debugl(3, "Executing postinstall...\n");
+if ($usetar) {
+  libkadeploy2::debug::debugl(3, "<PostInstall>\n");
+  libkadeploy2::deploy_iolib::set_time($base,$deployment); 
+  # post-installation
+  libkadeploy2::debug::debugl(3, "Executing postinstall...\n");
 
-
-    libkadeploy2::debug::debugl(1, "### Execute post-install on the nodes\n");
-
-    $nodes_set->runCommandMcat("cat $filesite", $post_pipe);
-    $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
-    libkadeploy2::debug::debugl(3, "Done\n");
-
-# time bench
-
-    my $time_postinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
-    libkadeploy2::debug::debugl(3, "Postinstall: " . $time_postinstall . "\n");
+  $nodes_set->runCommandMcat("cat $filesite", $post_pipe);
+  # libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+  # $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
     
-    my @to_reboot = @db_checked_hosts;
+  libkadeploy2::debug::debugl(1, "### Execute post-install on the nodes\n");
+  $nodes_set->runRemoteCommandBackground("\" /rambin/$post_script /rambin \"", "postinstall");
+  libkadeploy2::debug::debugl(3, "Done\n");
+
+  # time bench
+
+  my $time_postinstall = libkadeploy2::deploy_iolib::get_time($base,$deployment);
+  libkadeploy2::debug::debugl(3, "Postinstall: " . $time_postinstall . "\n");
+    
+  my @to_reboot = @db_checked_hosts;
 }
 
 my @to_reboot = @db_checked_hosts;
@@ -490,13 +496,15 @@ if ($fastkernelreboot) #We use kexec to reboot faster
 }
 else
 {
-    if ($usetar)
-    {
-	libkadeploy2::debug::debugl(3, "Umounting fs...\n");
-	$nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
-	sleep(1);
-	libkadeploy2::debug::debugl(3, "Done\n");
-    }
+  if ($usetar) {
+    # libkadeploy2::debug::debugl(4, "Syncing disk ...\n");
+    # $nodes_set->runRemoteCommandReportFailed("\" sync \"", "Warning : sync failed on node");
+    
+    libkadeploy2::debug::debugl(3, "Umounting fs...\n");
+    $nodes_set->runRemoteCommand("\" umount $destination_partition  \"");
+	  sleep(1);
+    libkadeploy2::debug::debugl(3, "Done\n");
+  }
     if ($useprodenvtodeploy == 1)
     {
 	$nodes_set->rebootThoseNodes();
@@ -518,7 +526,14 @@ libkadeploy2::deploy_iolib::set_time($base,$deployment);
 
 @to_reboot = $nodes_set->getReadyNodes();
 # discard the previous nodes' set to allow the creation of a new one
+# my $remaining_nodes = $nodes_set->discard();
 $nodes_set->discard();
+# if ($remaining_nodes == 0) {
+#  libkadeploy2::debug::debugl(2, "No more remaining nodes in set ; exiting ...\n");
+#  libkadeploy2::deploy_iolib::correct_deployment_consistence($base,$deployment);
+#  exit 0;
+#}
+
 # Waits for all the nodes to be there
 $deployed_nodes_set = libkadeploy2::nodes->new("production"); 
 
@@ -711,7 +726,7 @@ sub set_mkfs_option($){
 
 sub usages()
 {
-    print "Use : kadeploy 
+    print "Use : kadeploy
 \t[-m   | --machine     hostname] 
 \t[-f   | --file        node_file]                 Choose -m XOR -f
 \t[-e   | --environment environment_name]
@@ -1069,29 +1084,26 @@ sub halt($){
     exit 0;
 }
 
-sub tsktsk {
-    $SIG{INT} = \&tsktsk;           # See ``Writing A Signal Handler''
-    print "Signal caught...\n";
-    # checks if $base exists i.e. if kadepoy has already connected to the database
-    if($base)
-    {
-	if($deployment)
-	{
+sub tsktsk
+{
+  $SIG{INT} = \&tsktsk;           # See ``Writing A Signal Handler''
+  print "Signal caught...\n";
+  # checks if $base exists i.e. if kadepoy has already connected to the database
+  if($base) {
+    if($deployment)	{
 	    libkadeploy2::deploy_iolib::correct_deployment_consistence($base,$deployment);
-	  }
     }
-    print "Database corrected\nExiting...\n";
-    # clean the remaining processes
-    if ($deployed_nodes_set)
-    {
-	if ($deployed_nodes_set != 0) 
-	{
+  }
+  print "Database corrected\nExiting...\n";
+  # clean the remaining processes
+  if ($deployed_nodes_set) {
+    if ($deployed_nodes_set != 0) {
 	    print "killing sentinelle\n";
-	} 
-	elsif ($nodes_set != 0) 
-	{
+    } 
+    elsif ($nodes_set != 0)	{
 	    print "killing sentinelle\n";
-	}
     }
-    exit 0;
+  }
+  exit 0;
 }
+

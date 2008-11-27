@@ -30,7 +30,7 @@ sub set_conf_rootdir($)
 
 sub info()
 {
-  libkadeploy2::debug::debugl(3, "[I] Configuration used : ".$ENV{$kaenv}."\n");
+  libkadeploy2::debug::debugl(3, "[I] Configuration used : ".$kadeploy_config_dir."\n");
 }
 
 1;
