@@ -27,7 +27,7 @@ INITRD_ROOTDEVICE="/dev/ram0"
 
 # For // kernel compilation
 NUMBER_OF_CPU=1
-NUMBER_OF_CORE=1
+NUMBER_OF_CORE=2
 COMPILATION_PARALLELISM=$(( ${NUMBER_OF_CPU} * ${NUMBER_OF_CORE} ))
 
 # TMP_INITRD=$OUTPUT_INITRD.uncompressed
@@ -141,7 +141,7 @@ BuildKernel()
 	  ;;
 	*)
 	  cp ${configfile} ${TMP_KERNELDIR}/linux-${KERNEL_VERSION}/.config
-	  ( cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION} && make oldconfig ) || ( CleanOut && Die "Failed to run kernel menuconfig" )
+	  ( cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION} && make silentoldconfig && make menuconfig ) || ( CleanOut && Die "Failed to run kernel menuconfig" )
 	  ;;
       esac
       break
@@ -150,10 +150,10 @@ BuildKernel()
 
   cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION}/
   Info "Making bzImage"
-  make -j$COMPILATION_PARALLELISM bzImage 2>&1 >/dev/null || ( CleanOut && Die "Failed to make bzImage" )
+  make -j${COMPILATION_PARALLELISM} bzImage 2>&1 >/dev/null || ( CleanOut && Die "Failed to make bzImage" )
   
   Info "Making modules"
-  make -j$COMPILATION_PARALLELISM modules 2>&1 >/dev/null || ( CleanOut && Die "Failed to make modules" )
+  make -j${COMPILATION_PARALLELISM} modules 2>&1 >/dev/null || ( CleanOut && Die "Failed to make modules" )
   
   Info "Making kernel install to ${CURRENT_BUILTDIR}"
   INSTALL_PATH=${CURRENT_BUILTDIR} make install  || ( CleanOut && Die "Failed to make kernel installation in ${CURRENT_BUILTDIR}" )
