@@ -19,9 +19,9 @@ function kadeploy_split_nodes()
 #DEPLOYDIR=/usr/local/kadeploy/
 #DEPLOYUSER=deploy
 #PERL5LIBDEPLOY=/usr/share/perl/5.8
-DEPLOYDIR=__SUBST__
-DEPLOYUSER=__SUBST__
-PERL5LIBDEPLOY=__SUBST__
+DEPLOYDIR=/usr/local/kadeploy-2.1.7
+DEPLOYUSER=deploy
+PERL5LIBDEPLOY=/usr/local/kadeploy-2.1.7
 
 
 OK=0
@@ -103,7 +103,7 @@ then
 	    then
 	        cluster=`echo $file | sed 's/kadeploy\_tmp\_cluster\_//g'`
 		echo "Launching Kadeploy on $cluster nodes"
-		cmd_args=$args" -f kadeploy_tmp_cluster_"$cluster" -c "$cluster
+		cmd_args=$args" -f kadeploy_tmp_cluster_"$cluster" -z "$cluster
 		set -- $cmd_args 
 	        ${append} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" &
 	    fi

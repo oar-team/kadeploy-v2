@@ -46,34 +46,13 @@ my $password;
 my $ok=0;
 my $production_db_label=" (the production DB)";
 my $test_db_label=" (the development DB)";
+my $conf_root_dir="";
 
+Getopt::Long::Configure ("gnu_getopt");
 
 ##################
 ### Main start ###
 ##################
-
-# -------------------
-# Configuration stuff
-# -------------------
-my $configuration = libkadeploy2::conflib->new();
-if ( !$configuration->check_conf())
-  {
-      print "ERROR : problem occured while loading Kadeploy configuration file.\n";
-      exit 1;
-  }
-
-# my $host=libkadeploy2::conflib::get_conf("deploy_db_host");
-# my $mysqlschemapath=libkadeploy2::conflib::get_conf("kadeploy2_directory")."/scripts/sql/";
-# my $deploy_db_name=libkadeploy2::conflib::get_conf("deploy_db_name");
-# my $deploy_db_login=libkadeploy2::conflib::get_conf("deploy_db_login");
-# my $deploy_db_password=libkadeploy2::conflib::get_conf("deploy_db_psswd");
-
-my $host=$configuration->get_conf("deploy_db_host");
-my $deploy_db_name=$configuration->get_conf("deploy_db_name");
-my $deploy_db_test_name=$deploy_db_name . "test";
-my $deploy_db_login=$configuration->get_conf("deploy_db_login");
-my $deploy_db_password=$configuration->get_conf("deploy_db_psswd");
-my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
 
 
 # ----------------
@@ -92,10 +71,40 @@ GetOptions('add-deploy-db-user' => \$add_deploy_db_user,
     'clean-db-deploy'           => \$clean_db_deploy,
     'patch21'                   => \$patch21,
     'patch211'                  => \$patch211,
+    'C=s'                       => \$conf_root_dir,
+    'configuration=s'           => \$conf_root_dir,
     'h'                        => \$help,
     'help'                     => \$help,
 );
 
+
+# -------------------------
+# Configuration management
+# -------------------------
+if (!$conf_root_dir eq "") {
+  libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
+}
+libkadeploy2::confroot::get_conf_rootdir();
+libkadeploy2::confroot::info();
+
+my $configuration = libkadeploy2::conflib->new();
+if ( !$configuration->check_conf())
+  {
+      print "ERROR : problem occured while loading Kadeploy configuration file.\n";
+      exit 1;
+  }
+# my $host=libkadeploy2::conflib::get_conf("deploy_db_host");
+# my $mysqlschemapath=libkadeploy2::conflib::get_conf("kadeploy2_directory")."/scripts/sql/";
+# my $deploy_db_name=libkadeploy2::conflib::get_conf("deploy_db_name");
+# my $deploy_db_login=libkadeploy2::conflib::get_conf("deploy_db_login");
+# my $deploy_db_password=libkadeploy2::conflib::get_conf("deploy_db_psswd");
+
+my $host=$configuration->get_conf("deploy_db_host");
+my $deploy_db_name=$configuration->get_conf("deploy_db_name");
+my $deploy_db_test_name=$deploy_db_name . "test";
+my $deploy_db_login=$configuration->get_conf("deploy_db_login");
+my $deploy_db_password=$configuration->get_conf("deploy_db_psswd");
+my $mysqlschemapath=$configuration->get_conf("kadeploy2_directory")."/db/";
 
 if ($clean_db_deploy)
 {
@@ -185,8 +194,9 @@ sub usage()
     print "--create-table-deploy (deprecated) \tCreate tables for Kadeploy (<= 2.1.6) DB\n";
     print "--patch21 (deprecated)\n";
     print "--patch211 (deprecated)\n\n";
-
+    print "-C|--configuration <conf root directory> \tConfiguration root directory\n";
     print "--clean \t\t\t\tCorrect error in Kadeploy DB\n";
+    print "-h|--help \t\t\t\tPrint this message\n\n";
     print "-h|--help \t\t\t\tPrint this message\n\n";
 }
 

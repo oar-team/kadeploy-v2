@@ -19,7 +19,7 @@ my $clustername;
 my $deployment_number;
 my $conf_root_dir;
 
-GetOptions('c=s'    => \$clustername,
+GetOptions('z=s'    => \$clustername,
   'cluster=s'       => \$clustername,
   'h!'              => \$help,
   'C=s'             => \$conf_root_dir,

@@ -36,7 +36,7 @@ my $conf_root_dir;
 #---------------
 # Parse options
 #---------------
-GetOptions('c=s'            => \$clustername,
+GetOptions('z=s'            => \$clustername,
 	   'cluster=s'      => \$clustername,
 	   'add!'           => \$add,
 	   'del=s'          => \@nodestodel,

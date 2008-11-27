@@ -52,7 +52,7 @@ if (!@ARGV){
 }
 
 # gets the options
-GetOptions('c=s'                => \$clustername,
+GetOptions('z=s'                => \$clustername,
            'cluster=s'          => \$clustername,
            'n=s'                => \$name,
 	   'name=s'             => \$name,
