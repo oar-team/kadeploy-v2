@@ -220,6 +220,7 @@ conflink_install:
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" && exit 1 )
+	@sed -i "s%DEPLOYCONFDIR=__SUBST__%DEPLOYCONFDIR=$(KADEPLOYCONFDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYDIR=__SUBST__%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYUSER=__SUBST__%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%PERL5LIBDEPLOY=__SUBST__%PERL5LIBDEPLOY=$(KAPERLDIR)%" $(KABINDIR)/kasudowrapper.sh

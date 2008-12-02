@@ -1,5 +1,23 @@
 #!/bin/bash
 
+#==================
+# Global variables
+#==================
+#DEPLOYDIR=/usr/local/kadeploy/
+#DEPLOYUSER=deploy
+#PERL5LIBDEPLOY=/usr/share/perl/5.8
+DEPLOYCONFDIR=__SUBST__
+DEPLOYDIR=__SUBST__
+DEPLOYUSER=__SUBST__
+PERL5LIBDEPLOY=__SUBST__
+
+OK=0
+export DEPLOYDIR
+export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
+
+append=""
+
+
 # split nodes for multi-cluster
 function kadeploy_split_nodes()
 {
@@ -11,24 +29,17 @@ function kadeploy_split_nodes()
     cat $f | sort | uniq | while read node
     do
 	cluster=`echo $node | cut -f1 -d"." | sed s/[-]*[0-9]*//g`
+	#
+	# Begin Patch [Acedeyn 01/12/2008
+	# If want to know for wich cluster belong the node, we have to check
+      	# /etc/[<DEPLOY_CONF_DIR>]/deploy_cluster.conf
+	# line=(`grep ^$node ${DEPLOYCONFDIR}/deploy_cluster.conf`)
+	# cluster=${line[1]}
+	#### End Patch
 	[ "$cluster" != "$current_cluster" ] && current_cluster=$cluster
 	echo $node >> kadeploy_tmp_cluster_$cluster
     done
 }
-
-#DEPLOYDIR=/usr/local/kadeploy/
-#DEPLOYUSER=deploy
-#PERL5LIBDEPLOY=/usr/share/perl/5.8
-DEPLOYDIR=/usr/local/kadeploy-2.1.7
-DEPLOYUSER=deploy
-PERL5LIBDEPLOY=/usr/local/kadeploy-2.1.7
-
-
-OK=0
-export DEPLOYDIR
-export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
-
-append=""
 
 if [ $(basename $0) = "kadeploy" ]
 	then if $(tty -s)
@@ -125,12 +136,10 @@ then
 		if [ -f $file ]
 		then
 		    cluster=`echo $file | sed 's/kadeploy\_tmp\_cluster\_//g'`
-		    if [ -f ~/.ssh/id_rsa.pub ]
-		    then
-			kaaddkeys -f "kadeploy-"$USER"-"$cluster"-nodes_ok.out" -k ~/.ssh/id_rsa.pub
-		    elif [ -f ~/.ssh/id_dsa.pub ]
-		    then 
-			kaaddkeys -f "kadeploy-"$USER"-"$cluster"-nodes_ok.out" -k ~/.ssh/id_dsa.pub
+		    if [ -f ~/.ssh/id_rsa.pub ]; then
+		      kaaddkeys -f "kadeploy-${USER}-${cluster}-nodes_ok.out" -C ${DEPLOYCONFDIR} -k ~/.ssh/id_rsa.pub
+		    elif [ -f ~/.ssh/id_dsa.pub ]; then
+		      kaaddkeys -f "kadeploy-${USER}-${cluster}-nodes_ok.out" -C ${DEPLOYCONFDIR} -k ~/.ssh/id_dsa.pub
 		    fi
 		fi
 	    done
