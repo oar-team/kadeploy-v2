@@ -70,8 +70,10 @@ if ($test == 0 ) {
   exit 0;
 }
 
-$karemote_args .= "-c \"cat - >> $authorized_file \"";
-$command = "cat $keyfile";
-exec "$command | karemote $karemote_args";
+# $karemote_args .= "-c \"cat - >> $authorized_file \"";
+# $command = "cat $keyfile";
+# exec "$command | karemote $karemote_args";
+# return 1;
 
-return 1;
+return (exec("karemote -c \"echo \$(cat $keyfile) >> $authorized_file\" ".$karemote_args));
+
