@@ -52,7 +52,6 @@ GetOptions(\%options,
         "h|help",
         "v|verbose");
 
-
 &usage(0) if( $options{"h"});
 
 #------------------------------
