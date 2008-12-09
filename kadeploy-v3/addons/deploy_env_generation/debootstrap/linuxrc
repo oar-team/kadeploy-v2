@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo "executing deployment phase 1" > /dev/ttyS0
+modprobe ext2
+
+mkfs -t ext2 /dev/ram1
+
+mount /dev/ram1 /initrd
+
+cd /initrd
+
+tar clO / | tar x 2> /dev/null
+
+pivot_root . initrd
+
+cd
+
+/sbin/init
