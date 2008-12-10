@@ -4,8 +4,8 @@
 
 if [ -f /sbin/kexec ]; then
 	if [ -f /do-kexec ]; then
-		start-stop-daemon -S -x /usr/share/fakePXE/kexec.sh -b
+		/sbin/start-stop-daemon -S -x /usr/share/fakePXE/kexec.sh -b
 	fi
 fi
 
-start-stop-daemon -S -x /sbin/reboot -b -- -f
+/sbin/start-stop-daemon -S -x /sbin/reboot -b -- -f

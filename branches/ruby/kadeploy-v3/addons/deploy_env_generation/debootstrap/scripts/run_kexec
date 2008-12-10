@@ -1,4 +1,4 @@
 #!/bin/sh
 
 sleep 1
-kexec -e
+/sbin/kexec -e
