@@ -12,4 +12,4 @@ fi
 
 echo 1 > ${FILE_LOCK}
 
-start-stop-daemon -S -x /usr/local/bin/execute_background.sh -b -- "$@"
+/sbin/start-stop-daemon -S -x /usr/local/bin/execute_background.sh -b -- "$@"

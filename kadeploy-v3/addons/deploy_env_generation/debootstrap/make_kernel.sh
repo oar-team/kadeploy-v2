@@ -101,7 +101,7 @@ GrabKernelArchive()
       Info "linux-$KERNEL_VERSION already grabbed"
       break
     else
-      wget --verbose --progress=bar "${KERNEL_2_6_ACHHIVE_URL}/linux-${KERNEL_VERSION}.tar.bz2"
+      wget --verbose --progress=bar "${KERNEL_2_6_ARCHIVE_URL}/linux-${KERNEL_VERSION}.tar.bz2"
       if [ "$?" -eq 0 ]; then
         break
       else
@@ -148,6 +148,7 @@ BuildKernel()
       break
     fi
   done
+
 
   cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION}/
   make oldconfig
