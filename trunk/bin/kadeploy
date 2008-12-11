@@ -87,7 +87,7 @@ my $deployment_nodes=0; #
 my $user;
 my $nodetype;
 my $verbose;
-my $rambinpath="/mnt/rambin";
+my $rambinpath="/rambin";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
 my $conf_root_dir;
