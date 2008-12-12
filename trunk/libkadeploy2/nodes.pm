@@ -570,7 +570,7 @@ sub runThose {
       }
 
       my $t = 0;
-      while(defined($timeout[$t]) and (($timeout[$t]->[1] <= time()) or (!defined($running_processes{$timeout[$t]->[0]})))){
+      while(defined($timeout[$t]) and (($timeout[$t]->[1] <= time() or (!defined($running_processes{$timeout[$t]->[0]}))))){
         if (!defined($running_processes{$timeout[$t]->[0]})){
             shift(@timeout);
         }else{
