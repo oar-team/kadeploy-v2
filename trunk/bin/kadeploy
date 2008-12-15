@@ -392,6 +392,7 @@ libkadeploy2::debug::debugl(3, "Executing preinstall...\n");
 #$nodes_set->runRemoteCommand("\" /usr/local/bin/wait_background.sh /var/lock/preinstall \"");
 $nodes_set->runRemoteCommandBackgroundReportFailed("$rambinpath/$pre_install_script $reformattmp", "preinstall", "preinstall failed on node");
 
+
 libkadeploy2::debug::debugl(3, "Done\n");
 
 # time bench
@@ -506,6 +507,7 @@ else
     else
     {
 	$nodes_set->rebootThoseNodes();
+	sleep(25);
     }
     libkadeploy2::debug::debugl(3, "nodes have rebooted...\n");
 }
