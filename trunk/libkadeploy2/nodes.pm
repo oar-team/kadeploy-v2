@@ -348,11 +348,12 @@ sub checkPortswithNmap {
     my $displayReadyNodesNumber = 0; # display the number of ready nodes?
 
     if ($environment eq "deployment") {
-      $portsToCheck{"22"} = 0; # ssh should be closed
-      $portsToCheck{"514"} = 1; # login port should be opened
+      $portsToCheck{"22"} = 1; # ssh should be opened
+      $portsToCheck{"25300"} = 1; # 25000 port should also be opened (tag)
     }
     else {
       $portsToCheck{"22"} = 1; # ssh should be opened
+      $portsToCheck{"25300"} = 0; # 25000 port should be closed (tag)
     }
     foreach my $port (sort (keys(%portsToCheck))) {
       $nmapPortsList = $nmapPortsList . "," . $port;
@@ -762,7 +763,7 @@ sub runRemoteCommandBackground($$$) {
 
 
 
-#
+# 
 # runs the remote command in background and report failed nodes (usefull for preinstall)
 # 
 sub runRemoteCommandBackgroundReportFailed($$$$) {
