@@ -137,7 +137,7 @@ BuildKernel()
       read rep
       case "$rep" in
         N|n|No|no|non|Non)
-	  ( cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION} && KCONFIG_ALLCONFIG=${configfile} make allmodconfig 2>&1 >/dev/null ) || ( CleanOut && Die "Failed to run : make allmodcofig" )
+	  ( cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION} && KCONFIG_ALLCONFIG=${configfile} make allmodconfig 2>&1 >/dev/null ) || ( CleanOut && Die "Failed to run : make allmodconfig" )
 	  ;;
 	*)
 	  cp ${configfile} ${TMP_KERNELDIR}/linux-${KERNEL_VERSION}/.config
@@ -149,6 +149,7 @@ BuildKernel()
   done
 
   cd ${TMP_KERNELDIR}/linux-${KERNEL_VERSION}/
+  make oldconfig
   Info "Making bzImage"
   make -j${COMPILATION_PARALLELISM} bzImage 2>&1 >/dev/null || ( CleanOut && Die "Failed to make bzImage" )
   
