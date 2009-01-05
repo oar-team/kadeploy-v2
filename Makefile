@@ -168,6 +168,7 @@ installdirs:
 	@echo "Making directories ..."
 	@mkdir -p $(KADEPLOYHOMEDIR)/db
 	@mkdir -p $(KADEPLOYHOMEDIR)/grub
+	@mkdir -p $(KADEPLOYHOMEDIR)/.ssh
 	@mkdir -p $(KABINDIR)	
 	@mkdir -p $(KASBINDIR)
 	@mkdir -p $(KAPERLDIR)/libkadeploy2
@@ -212,6 +213,9 @@ files_install:
 	
 # GRUB files
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
+
+# SSH key 
+        @install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy* $(KADEPLOYHOMEDIR)/.ssh/
 
 conflink_install:
 #	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
