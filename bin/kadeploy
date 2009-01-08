@@ -421,7 +421,10 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
 
 
     $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
-    $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node"); # if mount does not work transfert cannot be done
+    # Sleep a little to let the slow disks format quietly before mount
+    $nodes_set->runRemoteCommandReportFailed("sleep(2)", "sleep failed");
+     # if mount does not work transfert cannot be done
+    $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node");
     libkadeploy2::debug::debugl(3, "Done\n");
     libkadeploy2::debug::debugl(3, "<tar Transfert>\n");
     # send the environment!!
