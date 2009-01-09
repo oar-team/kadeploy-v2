@@ -118,7 +118,7 @@ module BroadcastEnvironment
             #Here are the micro steps
             result = result && @step.send_tarball_and_uncompress("chain")
             result = result && @step.send_key("chain")
-            result = result && @step.copy_kernel_initrd_to_pxe
+            result = result && @step.install_bootloader
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
@@ -164,7 +164,7 @@ module BroadcastEnvironment
             #Here are the micro steps 
             result = result && @step.send_tarball_and_uncompress("tree")
             result = result && @step.send_key("tree")
-            result = result && @step.copy_kernel_initrd_to_pxe
+            result = result && @step.install_bootloader
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }

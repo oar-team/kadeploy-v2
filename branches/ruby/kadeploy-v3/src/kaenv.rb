@@ -58,7 +58,8 @@ def add_environment(config, db)
                                     part, \
                                     fdisk_type, \
                                     filesystem, \
-                                    user) \
+                                    user, \
+                                    environment_kind) \
                             VALUES (\"#{env.name}\", \
                                     \"#{env.version}\", \
                                     \"#{env.description}\", \
@@ -75,7 +76,8 @@ def add_environment(config, db)
                                     \"#{env.part}\", \
                                     \"#{env.fdisk_type}\", \
                                     \"#{env.filesystem}\", \
-                                    \"#{env.user}\")"
+                                    \"#{env.user}\", \
+                                    \"#{env.environment_kind}\")"
   db.run_query(query)
 end
 
