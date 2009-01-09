@@ -24,6 +24,7 @@ module EnvironmentManagement
     attr_reader :fdisk_type
     attr_reader :filesystem
     attr_reader :user
+    attr_reader :environment_kind
 
     # Load an environment file
     #
@@ -77,6 +78,12 @@ module EnvironmentManagement
               @filesystem = val
             when "user"
               @user = val
+            when "environment_kind"
+              if (val == "linux") || (val == "xen") || (val == "other") then
+                @environment_kind = val
+              else
+                puts "#{val} is an invalid environment kind (linux and other are authorized)"
+              end
             else
               puts "#{attr} is an invalid attribute"
               return false
@@ -143,6 +150,7 @@ module EnvironmentManagement
       @fdisk_type = hash["fdisk_type"]
       @filesystem = hash["filesystem"]
       @user = hash["user"]
+      @environment_kind = hash["environment_kind"]
     end
 
     # Check the MD5 digest of a file
@@ -200,6 +208,7 @@ module EnvironmentManagement
       puts "fdisk_type : #{@fdisk_type}"
       puts "filesystem : #{@filesystem}"
       puts "user : #{@user}"
+      puts "environment_kind : #{@environment_kind}"
     end
   end
 end

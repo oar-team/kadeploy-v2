@@ -4,7 +4,7 @@
 nodesfile="/nodes.txt"
 
 # connector
-connector="rsh"
+connector="ssh -i /root/.ssh/id_deploy -o StrictHostKeyChecking=no -q""
 
 # named pipes
 entry_pipe="/entry_pipe"
@@ -13,7 +13,8 @@ dest_pipe=$1
 
 # me
 # /!\ hostname -i adds spaces.... 
-myIP="$(hostname -i | sed "s/\ //g")"
+#myIP="$(hostname -i | sed "s/\ //g")"
+myIP=`cat /etc/DukeLinux.ip`
 
 # get the next node's IP
 # /!\ BUG grep should add a $ to prevent mismatches (172.24.1.1 and 172.24.1.10)

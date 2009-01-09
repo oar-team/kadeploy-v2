@@ -1,11 +1,4 @@
 #!/bin/sh
 
-# a convenient replacement for reboot_detach
 
-if [ -f /sbin/kexec ]; then
-	if [ -f /do-kexec ]; then
-		/sbin/start-stop-daemon -S -x /usr/share/fakePXE/kexec.sh -b
-	fi
-fi
-
-/sbin/start-stop-daemon -S -x /sbin/reboot -b -- -f
+/sbin/start-stop-daemon -S -x /usr/local/bin/run_reboot -b

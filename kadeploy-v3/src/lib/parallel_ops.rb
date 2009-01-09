@@ -27,6 +27,16 @@ module ParallelOperations
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
     end
 
+    def make_taktuk_header_cmd
+      args_tab = Array.new
+      args_tab.push("-s") if @taktuk_auto_propagate
+      if @taktuk_connector != "" then
+        args_tab.push("-c")
+        args_tab.push("#{@taktuk_connector}")
+      end
+      return args_tab
+    end
+    
     # Create a Taktuk string for an exec command
     #
     # Arguments
@@ -35,13 +45,11 @@ module ParallelOperations
     # * returns a string that contains the Taktuk command line for an exec command
     def make_taktuk_exec_cmd(cmd)
       args = String.new
-      args += " -s" if @taktuk_auto_propagate
-      args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
       @nodes.set.each { |node|
         args += " -m #{node.hostname}"
       }
       args += " broadcast exec [ #{cmd} ]"
-      return args.split(" ")
+      return make_taktuk_header_cmd + args.split(" ")
     end
 
     # Create a Taktuk string for a send file command
@@ -54,8 +62,6 @@ module ParallelOperations
     # * returns a string that contains the Taktuk command line for a send file command
     def make_taktuk_send_file_cmd(file, dest_dir, scattering_kind)
       args = String.new
-      args += " -s" if @taktuk_auto_propagate
-      args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
       case scattering_kind
       when "chain"
         args += " -d 1"
@@ -68,7 +74,7 @@ module ParallelOperations
         args += " -m #{node.hostname}"
       }
       args += " broadcast put [ #{file} ] [ #{dest_dir} ]"
-      return args.split(" ")
+      return make_taktuk_header_cmd + args.split(" ")
     end
 
     # Create a Taktuk string for an exec command with an input file
@@ -81,8 +87,6 @@ module ParallelOperations
     # * returns a string that contains the Taktuk command line for an exec command with an input file
     def make_taktuk_exec_cmd_with_input_file(file, cmd, scattering_kind)
       args = String.new
-      args += " -s" if @taktuk_auto_propagate
-      args += " -c #{@taktuk_connector}" if @taktuk_connector != ""
       case scattering_kind
       when "chain"
         args += " -d 1"
@@ -96,7 +100,7 @@ module ParallelOperations
       }
       args += " broadcast exec [ #{cmd} ];"
       args += " broadcast input file [ #{file} ]"
-      return args.split(" ")      
+      return make_taktuk_header_cmd + args.split(" ")      
     end
  
     # Init a the state of a NodeSet before a send file command
@@ -324,22 +328,43 @@ module ParallelOperations
     #
     # Arguments
     # * timeout: time to wait
-    # * port: port probed on the rebooted nodes to test
+    # * ports_up: array of ports that must be up on the rebooted nodes to test
+    # * ports_down: array of ports that must be down on the rebooted nodes to test
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)    
-    def wait_nodes_after_reboot(timeout, port)
+    def wait_nodes_after_reboot(timeout, ports_up, ports_down)
       good_nodes = Array.new
       bad_nodes = Array.new
       init_nodes_state_before_wait_nodes_after_reboot_command
-      sleep(10)
+      sleep(20)
       start = Time.now.tv_sec
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
         sleep(2)
         @nodes.set.each { |node|
+          all_ports_ok = true
           if node.state == "KO" then
-            sock = TCPSocket.new(node.hostname, port) rescue false
-            if sock.kind_of? TCPSocket then
+            ports_up.each { |port|
+              begin
+                s = TCPsocket.open(node.hostname, port)                
+                s.close
+              rescue Errno::ECONNREFUSED
+                all_ports_ok = false
+                next
+              end
+            }
+            ports_down.each { |port|
+              begin
+                s = TCPsocket.open(node.hostname, port)
+                all_ports_ok = false
+                s.close
+              rescue Errno::ECONNREFUSED
+                next
+              end
+            }
+            if all_ports_ok then
               node.state = "OK"
+            else
+              node.state = "KO"
             end
           end
         }

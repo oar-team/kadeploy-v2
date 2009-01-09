@@ -110,7 +110,13 @@ module SetDeploymentEnvironnment
     # Output
     # * nothing
     def run
-      @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
+      if @config.common.use_rsh_to_deploy == "true" then
+        @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
+        connector_port = @config.common.rsh_port
+      else
+        @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
+        connector_port = @config.common.ssh_port
+      end
       Thread.new {
         @queue_manager.increment_active_threads
         @nodes.duplicate_and_free(@nodes_ko)
@@ -123,7 +129,7 @@ module SetDeploymentEnvironnment
             #Here are the micro steps
             result = result && @step.switch_pxe("prod_to_deploy_env")
             result = result && @step.reboot("soft")
-            result = result && @step.wait_reboot(@config.common.rsh_port)
+            result = result && @step.wait_reboot([connector_port,@config.common.test_deploy_env_port],[])
             result = result && @step.fdisk("untrusted_env")
             result = result && @step.format_deploy_part
             result = result && @step.mount_deploy_part
@@ -211,10 +217,53 @@ module SetDeploymentEnvironnment
     # Output
     # * nothing
     def run
-      @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
-      @queue_manager.increment_active_threads
-      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
-      @queue_manager.decrement_active_threads
+     if @config.common.use_rsh_to_deploy == "true" then
+        @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
+        connector_port = @config.common.rsh_port
+      else
+        @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
+        connector_port = @config.common.ssh_port
+      end
+      Thread.new {
+        @queue_manager.increment_active_threads
+        @nodes.duplicate_and_free(@nodes_ko)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+          instance_thread = Thread.new {
+            @logger.increment("retry_step1", @nodes_ko)
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(3, "Performing a SetDeploymentEnvUntrusted step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps
+            result = result && @step.switch_pxe("prod_to_nfsroot_env")
+            result = result && @step.reboot("soft")
+            result = result && @step.wait_reboot([connector_port,@config.common.test_deploy_env_port],[])
+            result = result && @step.fdisk("untrusted_env")
+            result = result && @step.format_deploy_part
+            result = result && @step.mount_deploy_part
+            result = result && @step.format_tmp_part
+            result = result && @step.mount_tmp_part
+            #End of micro steps
+          }
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+            if not @nodes_ok.empty? then
+              @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
+              @nodes_ok.duplicate_and_free(@nodes)        
+              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+            end
+          end
+          @remaining_retries -= 1
+        end
+        #After several retries, some nodes may still be in an incorrect state
+        if not @nodes_ko.empty? then
+          #Maybe some other instances are defined
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko) then
+            @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+          end
+        else
+          @queue_manager.decrement_active_threads
+        end
+      }
+
     end
   end
 

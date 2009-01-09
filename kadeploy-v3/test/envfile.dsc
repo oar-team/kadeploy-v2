@@ -15,3 +15,4 @@ part : /dev/hda3
 fdisk_type : 113
 filesystem : ext3
 user : ejeanvoi
+environment_kind : linux

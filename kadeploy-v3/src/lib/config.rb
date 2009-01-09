@@ -224,6 +224,10 @@ module ConfigInformation
               @common.ssh_port = content[2]
             when "rsh_port"
               @common.rsh_port = content[2]
+            when "test_deploy_env_port"
+              @common.test_deploy_env_port = content[2]
+            when "use_rsh_to_deploy"
+              @common.use_rsh_to_deploy = content[2]
             when "environment_extraction_dir"
               @common.environment_extraction_dir = content[2]
             when "log_to_file"
@@ -236,6 +240,18 @@ module ConfigInformation
               @common.reboot_window = content[2].to_i
             when "reboot_window_sleep_time"
               @common.reboot_window_sleep_time = content[2].to_i
+            when "nfsroot_kernel"
+              @common.nfsroot_kernel = content[2]
+            when "nfs_server"
+              @common.nfs_server = content[2]
+            when "bootloader"
+              if (content[2] == "chainload_pxe") || (content[2] == "pure_pxe") then
+                @common.bootloader = content[2]
+              else
+                puts "#{content[2]} is an invalid entry for bootloader, only the chainload_pxe and pure_pxe values are allowed."
+                puts "Let's use chainload_pxe as default"
+                @common.bootloader = "chainload_pxe"
+              end
             end
           end
         end
@@ -470,7 +486,7 @@ module ConfigInformation
         opts.on("-u", "--user USERNAME", "Specify the user") { |u|
           exec_specific.user = u
         }
-        opts.on("-p", "--partition PARTITION", "Specify the partition to use") { |p|
+        opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
           exec_specific.deploy_part = p
         }
         opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
@@ -522,6 +538,7 @@ module ConfigInformation
       opts.parse!(ARGV)
 
       if exec_specific.node_list.empty? then
+        puts "You must specify some nodes to deploy"
         puts "Use --help option for correct use"
         return false
       end
@@ -986,12 +1003,17 @@ module ConfigInformation
     attr_accessor :kadeploy_cache_size
     attr_accessor :ssh_port
     attr_accessor :rsh_port
+    attr_accessor :test_deploy_env_port
+    attr_accessor :use_rsh_to_deploy
     attr_accessor :environment_extraction_dir
     attr_accessor :log_to_file
     attr_accessor :log_to_syslog
     attr_accessor :log_to_db
     attr_accessor :reboot_window
     attr_accessor :reboot_window_sleep_time
+    attr_accessor :nfsroot_kernel
+    attr_accessor :nfs_server
+    attr_accessor :bootloader
 
     # Constructor of CommonConfig
     #
