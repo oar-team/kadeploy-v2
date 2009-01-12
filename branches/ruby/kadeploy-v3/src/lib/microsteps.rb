@@ -384,9 +384,10 @@ module MicroStepsLibrary
     #
     # Arguments
     # * step: kind of change (prod_to_deploy_env, prod_to_nfsroot_env, chainload_pxe, back_to_prod_env)
+    # * pxe_profile_msg (opt): string containing the pxe profile
     # Output
     # * return true if the operation has been performed correctly, false otherwise
-    def ms_switch_pxe(step)
+    def ms_switch_pxe(step, pxe_profile_msg = "")
       case step
       when "prod_to_deploy_env"
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
@@ -403,32 +404,44 @@ module MicroStepsLibrary
                                                   @config.common.tftp_repository,
                                                   @config.common.tftp_images_path,
                                                   @config.common.tftp_cfg)
+      when "set_pxe"
+        res = PXEOperations::set_pxe_for_custom(@nodes_ok.make_array_of_ip,
+                                                pxe_profile_msg,
+                                                @config.common.tftp_repository,
+                                                @config.common.tftp_cfg)
       when "deploy_to_deployed_env"
-        case @config.common.bootloader
-        when "pure_pxe"
-          suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
-          kernel = @config.exec_specific.environment.kernel + suffix_in_cache
-          initrd = @config.exec_specific.environment.initrd + suffix_in_cache
-          images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-          res = system("touch #{images_dir}/#{kernel}")
-          res = res && system("touch #{images_dir}/#{initrd}")
-          res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
-                                                        kernel,
-                                                        initrd,
-                                                        @config.exec_specific.environment.part,
-                                                        @config.common.tftp_repository,
-                                                        @config.common.tftp_images_path,
-                                                        @config.common.tftp_cfg)
-          Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
-                             @config.common.tftp_images_max_size * 1024 * 1024,
-                             6,
-                             /^.+--e\d+v\d+$/)
-        when "chainload_pxe"
-          PXEOperations::set_pxe_for_chainload(@nodes_ok.make_array_of_ip,
-                                               get_deploy_part_num(),
-                                               @config.common.tftp_repository,
-                                               @config.common.tftp_images_path,
-                                               @config.common.tftp_cfg)
+        if (@config.exec_specific.pxe_profile_msg != "") then
+          res = PXEOperations::set_pxe_for_custom(@nodes_ok.make_array_of_ip,
+                                                  @config.exec_specific.pxe_profile_msg,
+                                                  @config.common.tftp_repository,
+                                                  @config.common.tftp_cfg)
+        else
+          case @config.common.bootloader
+          when "pure_pxe"
+            suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
+            kernel = @config.exec_specific.environment.kernel + suffix_in_cache
+            initrd = @config.exec_specific.environment.initrd + suffix_in_cache
+            images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+            res = system("touch #{images_dir}/#{kernel}")
+            res = res && system("touch #{images_dir}/#{initrd}")
+            res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
+                                                          kernel,
+                                                          initrd,
+                                                          @config.exec_specific.environment.part,
+                                                          @config.common.tftp_repository,
+                                                          @config.common.tftp_images_path,
+                                                          @config.common.tftp_cfg)
+            Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
+                               @config.common.tftp_images_max_size * 1024 * 1024,
+                               6,
+                               /^.+--e\d+v\d+$/)
+          when "chainload_pxe"
+            PXEOperations::set_pxe_for_chainload(@nodes_ok.make_array_of_ip,
+                                                 get_deploy_part_num(),
+                                                 @config.common.tftp_repository,
+                                                 @config.common.tftp_images_path,
+                                                 @config.common.tftp_cfg)
+          end
         end
       when "back_to_prod_env"
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   

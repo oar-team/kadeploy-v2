@@ -57,22 +57,13 @@ if (config.check_config("kareboot") == true)
   #Rights check
   allowed_to_deploy = true
   part = String.new
-  prod_part = String.new
   #The rights must be checked for each cluster if the node_list contains nodes from several clusters
   config.exec_specific.node_list.group_by_cluster.each_pair { |cluster, set|
-    prod_part = kadeploy_server.get_prod_part(cluster)
-    if ((config.exec_specific.partition == prod_part) || (config.exec_specific.partition == "")) then
-      part = kadeploy_server.get_prod_part(cluster)
-    else
-      part = config.exec_specific.partition
-      rights = CheckRights::CheckRightsFactory.create(config.common.rights_kind,
-                                                      set,
-                                                      db,
-                                                      part).granted?
-      if (rights == false) then
-        allowed_to_deploy = false
-      end
-    end
+    part = kadeploy_server.get_default_deploy_part(cluster)
+    allowed_to_deploy = CheckRights::CheckRightsFactory.create(config.common.rights_kind,
+                                                               set,
+                                                               db,
+                                                               part).granted?
   }
   
   if allowed_to_deploy then
@@ -93,12 +84,16 @@ if (config.check_config("kareboot") == true)
     else
       debug_level = nil
     end
-
-    if (part == prod_part) then
-      kadeploy_server.launch_reboot(config.exec_specific.node_list, "", client_host, client_port, debug_level)
-    else
-      kadeploy_server.launch_reboot(config.exec_specific.node_list, part, client_host, client_port, debug_level)
+    pxe_profile_msg = String.new
+    if (config.exec_specific.pxe_profile_file != "") then
+      IO.readlines(config.exec_specific.pxe_profile_file).each { |l|
+        pxe_profile_msg.concat(l)
+      }
     end
+    kadeploy_server.launch_reboot(config.exec_specific.node_list, config.exec_specific.reboot_kind,
+                                  client_host, client_port, debug_level, pxe_profile_msg)
+  else
+    puts "You do not have the deployment rights on all the nodes"
   end
 
   db.disconnect
