@@ -345,10 +345,12 @@ module ParallelOperations
           if node.state == "KO" then
             ports_up.each { |port|
               begin
-                s = TCPsocket.open(node.hostname, port)                
+                s = TCPsocket.open(node.hostname, port)
                 s.close
               rescue Errno::ECONNREFUSED
                 all_ports_ok = false
+                next
+              rescue Errno::EHOSTUNREACH
                 next
               end
             }
@@ -358,6 +360,8 @@ module ParallelOperations
                 all_ports_ok = false
                 s.close
               rescue Errno::ECONNREFUSED
+                next
+              rescue Errno::EHOSTUNREACH
                 next
               end
             }

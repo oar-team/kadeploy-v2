@@ -120,7 +120,6 @@ module PXEOperations
   # * ips: array of ip (aaa.bbb.ccc.ddd string representation)
   # * msg: custom PXE profile
   # * tftp_repository: absolute path to the TFTP repository
-  # * tftp_img: relative path to the TFTP image repository
   # * tftp_cfg: relative path to the TFTP configuration repository
   # Output
   # * returns the value of write_pxe

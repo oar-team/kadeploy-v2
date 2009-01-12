@@ -99,6 +99,8 @@ module ConfigInformation
       exec_specific.script = String.new
       exec_specific.key = String.new
       exec_specific.reformat_tmp = false
+      exec_specific.pxe_profile_msg = String.new
+      exec_specific.pxe_profile_file = String.new
       exec_specific.steps = Array.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
@@ -140,16 +142,16 @@ module ConfigInformation
     def sanity_check(kind)
       #### generic check
       #common configuration file
-      if not File.exist?(CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE) then
-        puts "The #{CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE} file does not exist"
+      if not File.readable?(CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE) then
+        puts "The #{CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE} file cannot be read"
         return false
       end
       ### command specific check
       case kind
       when "kadeploy"
         #configuration node file
-        if not File.exist?(CONFIGURATION_FOLDER + "/" + NODES_FILE) then
-          puts "The #{CONFIGURATION_FOLDER + "/" + NODES_FILE} file does not exist"
+        if not File.readable?(CONFIGURATION_FOLDER + "/" + NODES_FILE) then
+          puts "The #{CONFIGURATION_FOLDER + "/" + NODES_FILE} file cannot be read"
           return false
         end
       when "kaenv"
@@ -376,7 +378,7 @@ module ConfigInformation
     # * nothing
     def load_commands
       commands_file = CONFIGURATION_FOLDER + "/" + COMMANDS_FILE
-      if File.exist?(commands_file) then
+      if File.readable?(commands_file) then
         IO.readlines(commands_file).each { |line|
           if not (/^#/ =~ line) then #we ignore commented lines
             if /(.+)\|(.+)\|(.+)/ =~ line then
@@ -499,8 +501,8 @@ module ConfigInformation
           end
         }
         opts.on("-s", "--script FILE", "Execute a script at the end of the deployment") { |f|
-          if not File.exist?(f) then
-            puts "The file #{f} does not exist"
+          if not File.readable?(f) then
+            puts "The file #{f} cannot be read"
             return false
           else
             if not File.stat(f).executable? then
@@ -511,14 +513,17 @@ module ConfigInformation
           exec_specific.script = File.expand_path(f)
         }
         opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
-          if not File.exist?(f) then
-            puts "The file #{f} does not exist"
+          if not File.readable?(f) then
+            puts "The file #{f} cannot be read"
             return false
           end
           exec_specific.key = File.expand_path(f)
         }
         opts.on("-r", "--reformat-tmp", "Reformat the /tmp partition") {
-          @exec_specific.reformat_tmp = true
+          exec_specific.reformat_tmp = true
+        }
+        opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
+          exec_specific.pxe_profile_file = file
         }
         opts.on("-z", "--force-steps STRING", "Undocumented, for administration purpose only") { |s|
           s.split("&").each { |macrostep|
@@ -675,8 +680,8 @@ module ConfigInformation
     def check_kaenv_config
       case @exec_specific.operation 
       when "add"
-        if not(File.exist?(@exec_specific.file)) then
-          puts "The file #{@exec_specific.file} does not exist"
+        if not(File.readable?(@exec_specific.file)) then
+          puts "The file #{@exec_specific.file} cannot be read"
           return false
         end
       when "delete"
@@ -910,9 +915,9 @@ module ConfigInformation
     # * nothing
     def load_kareboot_exec_specific(nodes_desc)
       @exec_specific = OpenStruct.new
-      @exec_specific.partition = String.new
       @exec_specific.debug_level = String.new
       @exec_specific.node_list = Nodes::NodeSet.new
+      @exec_specific.pxe_profile_file = String.new
       load_kareboot_cmdline_options(nodes_desc)
     end
 
@@ -933,28 +938,21 @@ module ConfigInformation
         opts.separator ""
         opts.separator "General options:"
         opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
-          if not Config.add_to_node_list(hostname, nodes_desc, @exec_specific) then
-            return false
-          end
+          Config.add_to_node_list(hostname, nodes_desc, @exec_specific)
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
           IO.readlines(f).sort.uniq.each { |hostname|
-            if not Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific) then
-              return false
-            end
+            Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific)
           }
         }
-        opts.on("-p", "--partition PARTITION", "Specify the partition to reboot on") { |p|
-          @exec_specific.partition = p
+        opts.on("-k", "--kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot)") { |k|
+          @exec_specific.reboot_kind = k
         }
         opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
-          debug_level = d.to_i
-          if ((debug_level > 4) || (debug_level < 0)) then
-            puts "Invalid debug level"
-            return false
-          else
-            @exec_specific.debug_level = debug_level
-          end
+          @exec_specific.debug_level = d.to_i
+        }
+        opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
+          @exec_specific.pxe_profile_file = file
         }
       end
       opts.parse!(ARGV)
@@ -968,12 +966,29 @@ module ConfigInformation
     # * returns true if the options used are correct, false otherwise
     def check_kareboot_config
       if @exec_specific.node_list.empty? then
-        puts "Use --help option for correct use"
+        puts "No node is chosen. Use --help option for correct use"
+        return false
+      end    
+      if (@exec_specific.debug_level != "") && ((@exec_specific.debug_level > 4) || (@exec_specific.debug_level < 0)) then
+        puts "Invalid debug level. Use --help option for correct use"
         return false
       end
-       return true
+      authorized_ops = ["back_to_prod_env", "set_pxe", "simple_reboot"]
+      if not authorized_ops.include?(@exec_specific.reboot_kind) then
+        puts "Invalid kind of reboot: #{@exec_specific.reboot_kind}. Use --help option for correct use"
+        return false
+      end
+      if (@exec_specific.pxe_profile_file != "") && (not File.readable?(@exec_specific.pxe_profile_file)) then
+        puts "The file #{@exec_specific.pxe_profile_file} cannot be read"
+        return false
+      end
+      if (@exec_specific.reboot_kind == "set_pxe") && (@exec_specific.pxe_profile_file == "") then
+        puts "You must also set the -s option"
+        return false
+      end
+      
+      return true
     end
-
   end
   
   class CommonConfig

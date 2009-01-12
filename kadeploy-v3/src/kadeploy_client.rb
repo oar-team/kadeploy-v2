@@ -112,13 +112,10 @@ if (exec_specific_config != nil) then
     #The rights must be checked for each cluster if the node_list contains nodes from several clusters
     exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
       default_part = kadeploy_server.get_default_deploy_part(cluster)
-      rights = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
-                                                      set,
-                                                      db,
-                                                      default_part).granted?
-      if (rights == false) then
-        allowed_to_deploy = false
-      end
+      allowed_to_deploy = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
+                                                                 set,
+                                                                 db,
+                                                                 default_part).granted?
     }
   end
 
@@ -137,6 +134,11 @@ if (exec_specific_config != nil) then
     end
     
     if (exec_specific_config != nil) then
+      if (exec_specific_config.pxe_profile_file != "") then
+        IO.readlines(exec_specific_config.pxe_profile_file).each { |l|
+          exec_specific_config.pxe_profile_msg.concat(l)
+        }
+      end
       kadeploy_server.set_exec_specific_config(exec_specific_config)
       kadeploy_server.launch_workflow(client_host, client_port)
       #We execute a script at the end of the deployment if required

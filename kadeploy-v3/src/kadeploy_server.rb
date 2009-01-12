@@ -148,7 +148,7 @@ class KadeployServer
   # * port: port on which the client listen to Drb
   # Output
   # * nothing  
-  def launch_reboot(node_list, partition, host, port, debug_level)
+  def launch_reboot(node_list, reboot_kind, host, port, debug_level, pxe_profile_msg)
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
@@ -160,17 +160,22 @@ class KadeployServer
     output = Debug::OutputControl.new(dl, client)
     node_list.group_by_cluster.each_pair { |cluster, set|
       step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @config, cluster, output)
-      if (partition == "") then
+      case reboot_kind
+      when "back_to_prod_env"
         step.switch_pxe("back_to_prod_env")
+      when "set_pxe"
+        step.switch_pxe("set_pxe", pxe_profile_msg)
         step.reboot("soft")
+      when "simple_reboot"
+        #no need to change the PXE profile
       else
-        step.reboot("hard")
+        raise "Invalid kind of reboot: #{@reboot_kind}"
       end
-      step.wait_reboot(@config.common.ssh_port)
+      step.reboot("soft")        
+      step.wait_reboot([@config.common.ssh_port],[])
     }
   end
 end
-
 
 Signal.trap("INT") do
   puts "SIGINT trapped, let's clean everything ..."
