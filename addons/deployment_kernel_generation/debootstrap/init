@@ -42,6 +42,11 @@ if [ $CMD_PARAM ]; then
 fi
 CMD_PARAM=
 
+get_param ETH_DEV
+ETH_DEV=$CMD_PARAM
+CMD_PARAM=
+
+
 get_param ETH_DRV
 ETH_DRV=$CMD_PARAM
 CMD_PARAM=
@@ -75,10 +80,10 @@ if [ $IPADDR ]; then
         ifconfig ${ETH_DEV} ${IPADDR} netmask ${NETMASK} broadcast ${BROADCAST}
 else
         DHCP_OK=
-        DHCPFILE=/etc/dhcpc/dhcpcd-${ETH_DEV}.info
+	DHCPFILE=/var/lib/dhcpcd/dhcpcd-#{ETH_DEV}.info
 
         echo -n "Using DHCP for device ${ETH_DEV}" > ${TTY}
-        dhcpcd -d -t 200 -L /etc/dhcpc ${ETH_DEV}
+        dhcpcd -d -t 200 ${ETH_DEV}
         for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
         do
                 echo -n "."  > ${TTY}
