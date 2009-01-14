@@ -1,5 +1,7 @@
 #!/bin/bash
 
+(cd /dev ; ./mkdev 2>/dev/null)
+
 echo "executing deployment phase 2" > /dev/ttyS0
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
 
@@ -16,11 +18,9 @@ boot_failed() {
     reboot -f
 }
 
-(cd /dev ; ./mkdev 2>/dev/null)
 
 mount -t tmpfs -o size=100m tmpfs /rambin
 ln -s /rambin /mnt/rambin
-
 
 # parameters and their default values
 TTY=/dev/ttyS0
@@ -113,23 +113,6 @@ echo "${IPADDR}" > /etc/DukeLinux.ip
 
 echo "nameserver ${DNS}" > /etc/resolv.conf
 
-
-/usr/bin/mkfifo /pre_pipe
-/usr/bin/mkfifo /dest_pipe
-/usr/bin/mkfifo /post_pipe
-/usr/bin/mkfifo /entry_pipe
-/usr/bin/mkfifo /destdd_pipe
-
-## tar listening for archives
-(while ( true ); do tar zxC < /pre_pipe /rambin 2>/dev/null; done)&
-(while ( true ); do tar zxC < /dest_pipe /mnt/dest 2>/dev/null; done)&
-(while ( true ); do tar zxC < /post_pipe /rambin 2>/dev/null; done)&
-
-## cat listening for dd
-(while ( true ); do gzip -dc < /destdd_pipe > /dest_part 2>/dev/null; done)&
-
-
-
 ## load disk driver
 get_param DISK_DRV
 DISK_DRV=$CMD_PARAM
@@ -149,8 +132,6 @@ fi
 
 /usr/sbin/sshd
 
+nc -l -p 25300 &
 
-while true
-do
-    nc -l -p 25300
-done
+exec /sbin/init 2
