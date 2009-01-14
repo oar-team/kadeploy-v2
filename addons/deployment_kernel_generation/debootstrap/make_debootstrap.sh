@@ -4,7 +4,7 @@ DIR=debootstrap
 SCRIPTS_DIR=scripts
 
 DEBOOTSTRAP="/usr/sbin/debootstrap"
-DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2
+DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,grub
 DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,adduser,cron,logrotate,laptop-detect,tasksel,tasksel-data,dhcp3-client,dhcp3-common,wget
 
 
@@ -46,9 +46,7 @@ aliases:    files nisplus
 EOF
 
 
-rm $DIR/sbin/init
-
-cp init $DIR/sbin/init
+cp linuxrc $DIR/
 cp mkdev $DIR/dev
 
 cp $SCRIPTS_DIR/* $DIR/usr/local/bin
