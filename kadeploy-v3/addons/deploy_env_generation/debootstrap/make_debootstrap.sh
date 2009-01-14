@@ -49,9 +49,7 @@ aliases:    files nisplus
 EOF
 
 
-rm $DIR/sbin/init
-
-cp init $DIR/sbin/init
+cp linuxrc $DIR/
 cp mkdev $DIR/dev
 
 cp $SCRIPTS_DIR/* $DIR/usr/local/bin
