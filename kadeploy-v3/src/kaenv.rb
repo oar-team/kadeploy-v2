@@ -18,11 +18,11 @@ require 'drb'
 def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
-    query = "SELECT * FROM environment WHERE user=\"#{config.exec_specific.user}\" \
-                                       AND version=(SELECT MAX(version) FROM environment WHERE user=\"#{config.exec_specific.user}\")"
+    query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\" \
+                                        AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{config.exec_specific.user}\")"
   else
-    query = "SELECT * FROM environment WHERE user=\"#{config.exec_specific.user}\"
-                                       ORDER BY version"
+    query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\"
+                                        ORDER BY version"
   end
   res = db.run_query(query)
   env.short_view_header
@@ -42,7 +42,7 @@ end
 def add_environment(config, db)
   env = EnvironmentManagement::Environment.new
   env.load_from_file(config.exec_specific.file)
-  query = "INSERT INTO environment (name, \
+  query = "INSERT INTO environments (name, \
                                     version, \
                                     description, \
                                     author, \
@@ -90,8 +90,8 @@ end
 # * nothing
 def delete_environment(config, db)
   env = EnvironmentManagement::Environment.new
-  query = "DELETE FROM environment WHERE name=\"#{config.exec_specific.env_name}\" \
-                                   AND user=\"#{ENV['USER']}\""
+  query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                    AND user=\"#{ENV['USER']}\""
   db.run_query(query)
 end
 
@@ -105,13 +105,13 @@ end
 def print_environment(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
-    query = "SELECT * FROM environment WHERE name=\"#{config.exec_specific.env_name}\" \
-                                       AND user=\"#{config.exec_specific.user}\" \
-                                       AND version=(SELECT MAX(version) FROM environment WHERE user=\"#{config.exec_specific.user}\")"
+    query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                        AND user=\"#{config.exec_specific.user}\" \
+                                        AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{config.exec_specific.user}\")"
   else
-    query = "SELECT * FROM environment WHERE name=\"#{config.exec_specific.env_name}\" \
-                                       AND user=\"#{config.exec_specific.user}\"
-                                       ORDER BY version"
+    query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                        AND user=\"#{config.exec_specific.user}\"
+                                        ORDER BY version"
   end
   res = db.run_query(query)
   if res != nil then
@@ -121,6 +121,11 @@ def print_environment(config, db)
       env.full_view
     }
   end
+end
+
+def _exit(exit_code, dbh)
+  dbh.disconnect
+  exit(exit_code)
 end
 
 config = ConfigInformation::Config.new("kaenv")
@@ -149,5 +154,7 @@ if (config.check_config("kaenv") == true)
   when "print"
     print_environment(config, db)
   end
-  db.disconnect
+  _exit(0, db)
+else
+  _exit(1, db)
 end

@@ -106,11 +106,11 @@ module EnvironmentManagement
     # * returns true if the environment can be loaded, false otherwise
     def load_from_db(name, version, user, dbh)
       if (version == nil) then
-        query = "SELECT * FROM environment WHERE name=\"#{name}\" \
+        query = "SELECT * FROM environments WHERE name=\"#{name}\" \
                                              AND user=\"#{user}\" \
-                                             AND version=(SELECT MAX(version) FROM environment WHERE user=\"#{user}\")"
+                                             AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{user}\")"
       else
-        query = "SELECT * FROM environment WHERE name=\"#{name}\" \
+        query = "SELECT * FROM environments WHERE name=\"#{name}\" \
                                              AND user=\"#{user}\" \
                                              AND version=\"#{version}\""
       end

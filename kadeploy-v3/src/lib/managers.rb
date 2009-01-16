@@ -278,6 +278,8 @@ module Managers
     @client = nil
     @reboot_window = nil
     @logger = nil
+    @db = nil
+    @deployments_table_lock = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
 
@@ -286,9 +288,13 @@ module Managers
     # Arguments
     # * config: instance of Config
     # * client: Drb handler of the client
+    # * db: database handler
+    # * deployments_table_lock: mutex to protect the deployments table
     # Output
     # * nothing
-    def initialize(config, client, reboot_window)
+    def initialize(config, client, reboot_window, db, deployments_table_lock)
+      @db = db
+      @deployments_table_lock = deployments_table_lock
       @config = config
       @client = client
       if (@config.exec_specific.debug_level != nil) then
@@ -301,9 +307,10 @@ module Managers
       @nodeset = @config.exec_specific.node_list
       @queue_manager = QueueManager.new(@config, @nodes_ok, @nodes_ko)
       @reboot_window = reboot_window
-      @logger = Debug::Logger.new(@nodeset, @config)
+      @logger = Debug::Logger.new(@nodeset, @config, @db)
       @logger.set("start", Time.now)
       @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
+
       @thread_set_deployment_environment = Thread.new {
         launch_thread_for_macro_step("SetDeploymentEnv")
       }
@@ -444,9 +451,30 @@ module Managers
     # * nothing  
     def run
       @output.debugl(1, "Launching Kadeploy ...")
-      grab_user_files
-      @queue_manager.next_macro_step(nil, @nodeset)
-      @thread_process_finished_nodes.join
+      @deployments_table_lock.lock
+      if (@config.exec_specific.ignore_nodes_deploying) then
+        nodes_ok = @nodeset
+      else
+        res = @nodeset.check_nodes_in_deployment(@db, @config.common.purge_deployment_timer)
+        nodes_ok = res[0]
+        nodes_ko = res[1]
+        @output.debugl(1, "The nodes #{nodes_ko.to_s} are already involved in deployment, let's discard them") if (not nodes_ko.empty?)
+      end
+      #We backup the set of nodes used in the deployement to be able to update their deployment state at the end of the deployment
+      nodes_ok_backup = Nodes::NodeSet.new
+      nodes_ok.duplicate(nodes_ok_backup)
+      nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db)
+      @deployments_table_lock.unlock
+      if (not nodes_ok.empty?) then
+        grab_user_files
+        @queue_manager.next_macro_step(nil, nodes_ok)
+        @thread_process_finished_nodes.join
+        @deployments_table_lock.lock
+        nodes_ok_backup.set_deployment_state("deployed", nil, @db)
+        @deployments_table_lock.unlock
+      else
+        @output.debugl(1, "All the nodes have been discarded ...")
+      end
     end
   end
 end

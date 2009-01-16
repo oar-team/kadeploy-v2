@@ -84,6 +84,12 @@ class KadeployClient
   end
 end
 
+def _exit(exit_code, dbh)
+  dbh.disconnect
+  exit(exit_code)
+end
+
+
 client_config = ConfigInformation::Config.load_client_config_file
 
 #Connect to the server
@@ -102,23 +108,19 @@ db.connect(common_config.deploy_db_host,
 exec_specific_config = ConfigInformation::Config.load_kadeploy_exec_specific(common_config.nodes_desc, db)
 if (exec_specific_config != nil) then
   #Rights check
-  if (exec_specific_config.deploy_part != "") then 
+  allowed_to_deploy = true
+  #The rights must be checked for each cluster if the node_list contains nodes from several clusters
+  exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
+    if (exec_specific_config.deploy_part != "") then 
+      part = exec_specific_config.deploy_part
+    else
+      part = kadeploy_server.get_default_deploy_part(cluster)
+    end
     allowed_to_deploy = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
-                                                               exec_specific_config.node_list,
+                                                               set,
                                                                db,
-                                                               exec_specific_config.deploy_part).granted?
-  else
-    allowed_to_deploy = true
-    #The rights must be checked for each cluster if the node_list contains nodes from several clusters
-    exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
-      default_part = kadeploy_server.get_default_deploy_part(cluster)
-      allowed_to_deploy = CheckRights::CheckRightsFactory.create(common_config.rights_kind,
-                                                                 set,
-                                                                 db,
-                                                                 default_part).granted?
-    }
-  end
-
+                                                               part).granted?
+  }
 
   if (allowed_to_deploy == true) then
     #Launch the listener on the client
@@ -130,7 +132,7 @@ if (exec_specific_config != nil) then
       client_port= content[2]
     else
       puts "The URI #{DRb.uri} is not correct"
-      exit(1)
+      _exit(1, db)
     end
     
     if (exec_specific_config != nil) then
@@ -139,8 +141,7 @@ if (exec_specific_config != nil) then
           exec_specific_config.pxe_profile_msg.concat(l)
         }
       end
-      kadeploy_server.set_exec_specific_config(exec_specific_config)
-      kadeploy_server.launch_workflow(client_host, client_port)
+      kadeploy_server.launch_workflow(client_host, client_port, exec_specific_config)
       #We execute a script at the end of the deployment if required
       if (exec_specific_config.script != "") then
         system(exec_specific_config.script)
@@ -148,6 +149,9 @@ if (exec_specific_config != nil) then
     end
   else
     puts "You do not have the deployment rights on all the nodes"
+    _exit(1, db)
   end
+  _exit(0, db)
+else
+  _exit(1, db)
 end
-db.disconnect

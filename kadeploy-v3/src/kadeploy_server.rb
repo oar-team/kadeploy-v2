@@ -11,28 +11,34 @@ require 'drb'
 class KadeployServer
   @config = nil
   @client = nil
-  attr_reader :mutex
+  attr_reader :file_server_lock
+  attr_reader :deployments_table_lock
   attr_reader :tcp_buffer_size
   attr_reader :dest_host
   attr_reader :dest_port
-  @file_name = nil #any access to file_name must be protected with mutex
+  @db = nil
+  @file_name = nil #any access to file_name must be protected with file_server_lock
   @reboot_window = nil
 
   # Constructor of KadeployServer
   #
   # Arguments
   # * config: instance of Config
+  # * reboot_window: size of the reboot window
+  # * db: database handler
   # Output
   # * raises an exception if the file server can not open a socket
-  def initialize(config, reboot_window)
+  def initialize(config, reboot_window, db)
     @config = config
     @dest_host = @config.common.kadeploy_server
     @dest_port = @config.common.kadeploy_file_server_port
     @tcp_buffer_size = @config.common.kadeploy_tcp_buffer_size
     @reboot_window = reboot_window
     puts "Launching the Kadeploy file server"
-    @mutex = Mutex.new
+    @file_server_lock = Mutex.new
+    @deployments_table_lock = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
+    @db = db
 
 #    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 #    opt = [1].pack("i")
@@ -64,7 +70,7 @@ class KadeployServer
   # Output
   # * nothing
   def pre_send_file(file_name)
-    @mutex.lock
+    @file_server_lock.lock
     @file_name = file_name
   end
 
@@ -75,7 +81,7 @@ class KadeployServer
   # Output
   # * nothing
   def post_send_file
-    @mutex.unlock
+    @file_server_lock.unlock
   end
 
   # Get the common configuration (RPC)
@@ -115,29 +121,43 @@ class KadeployServer
   # * exec_specific: instance of Config.exec_specific
   # Output
   # * nothing
-  def set_exec_specific_config(exec_specific)
-    @config.exec_specific = exec_specific
-    #overide the configuration if the steps are specified in the command line
-    if (not @config.exec_specific.steps.empty?) then
-      @config.exec_specific.node_list.group_by_cluster.each_key { |cluster|
-        @config.cluster_specific[cluster].workflow_steps = @config.exec_specific.steps
-      }
-    end
-  end
+#   def set_exec_specific_config(exec_specific)
+#     @config.exec_specific = exec_specific
+#     #overide the configuration if the steps are specified in the command line
+#     if (not @config.exec_specific.steps.empty?) then
+#       @config.exec_specific.node_list.group_by_cluster.each_key { |cluster|
+#         @config.cluster_specific[cluster].workflow_steps = @config.exec_specific.steps
+#       }
+#     end
+#   end
 
   # Launch the workflow from the client side (RPC)
   #
   # Arguments
   # * host: hostname of the client
   # * port: port on which the client listen to Drb
+  # * exec_specific: instance of Config.exec_specific
   # Output
   # * nothing
-  def launch_workflow(host, port)
+  def launch_workflow(host, port, exec_specific)
     puts "Let's launch an instance of Kadeploy"
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
-    workflow=Managers::WorkflowManager.new(@config, client, @reboot_window)
+
+    #We create a new instance of Config with a specific exec_specific part
+    config = ConfigInformation::Config.new("empty")
+    config.common = @config.common.clone
+    config.cluster_specific = @config.cluster_specific.clone
+    config.exec_specific = exec_specific
+    #overide the configuration if the steps are specified in the command line
+    if (not exec_specific.steps.empty?) then
+      exec_specific.node_list.group_by_cluster.each_key { |cluster|
+        config.cluster_specific[cluster].workflow_steps = exec_specific.steps
+      }
+    end
+
+    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @db, @deployments_table_lock)
     workflow.run
   end
 
@@ -177,18 +197,23 @@ class KadeployServer
   end
 end
 
-Signal.trap("INT") do
-  puts "SIGINT trapped, let's clean everything ..."
-  #todo: clean some stuff
-  exit 1
-end
-
 config = ConfigInformation::Config.new("kadeploy")
 if (config.check_config("kadeploy") == true)
+  db = Database::DbFactory.create(config.common.db_kind)
+  Signal.trap("INT") do
+    puts "SIGINT trapped, let's clean everything ..."
+    db.disconnect
+    exit 1
+  end
+  db.connect(config.common.deploy_db_host,
+              config.common.deploy_db_login,
+              config.common.deploy_db_passwd,
+              config.common.deploy_db_name)
+  kadeployServer = KadeployServer.new(config, 
+                                      Managers::WindowManager.new(config.common.reboot_window, config.common.reboot_window_sleep_time),
+                                      db)
   puts "Launching the Kadeploy RPC server"
   uri = "druby://#{config.common.kadeploy_server}:#{config.common.kadeploy_server_port}"
-  kadeployServer = KadeployServer.new(config, 
-                                      Managers::WindowManager.new(config.common.reboot_window, config.common.reboot_window_sleep_time))
   DRb.start_service(uri, kadeployServer)
   DRb.thread.join
 else

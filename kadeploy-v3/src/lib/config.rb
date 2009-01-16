@@ -19,7 +19,7 @@ module ConfigInformation
     public
 
     attr_accessor :common
-    attr_reader :cluster_specific
+    attr_accessor :cluster_specific
     attr_accessor :exec_specific
 
     #Constructor of Config
@@ -47,6 +47,7 @@ module ConfigInformation
           load_kastat_exec_specific
         when "kareboot"
           load_kareboot_exec_specific(nodes_desc)
+        when "empty"
         else
           raise "Invalid configuration kind: #{kind}"
         end
@@ -102,6 +103,7 @@ module ConfigInformation
       exec_specific.pxe_profile_msg = String.new
       exec_specific.pxe_profile_file = String.new
       exec_specific.steps = Array.new
+      exec_specific.ignore_nodes_deploying = false
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -254,6 +256,8 @@ module ConfigInformation
                 puts "Let's use chainload_pxe as default"
                 @common.bootloader = "chainload_pxe"
               end
+            when "purge_deployment_timer"
+              @common.purge_deployment_timer = content[2].to_i
             end
           end
         end
@@ -456,7 +460,7 @@ module ConfigInformation
       progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
-        opts.summary_width = 28
+        opts.summary_width = 30
         opts.program_name = progname
         opts.banner = "Usage: #{progname} [options]"
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
@@ -538,6 +542,9 @@ module ConfigInformation
             }
             exec_specific.steps.push(MacroStep.new(macrostep_name, tmp))
           }
+        }
+        opts.on("-i", "--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
+          exec_specific.ignore_nodes_deploying = true
         }
       end
       opts.parse!(ARGV)
@@ -1029,6 +1036,7 @@ module ConfigInformation
     attr_accessor :nfsroot_kernel
     attr_accessor :nfs_server
     attr_accessor :bootloader
+    attr_accessor :purge_deployment_timer
 
     # Constructor of CommonConfig
     #

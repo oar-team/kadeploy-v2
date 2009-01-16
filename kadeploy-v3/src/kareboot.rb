@@ -36,6 +36,12 @@ class KarebootClient
   end
 end
 
+def _exit(exit_code, dbh)
+  dbh.disconnect
+  exit(exit_code)
+end
+
+
 #Connect to the Kadeploy server to get the common configuration
 client_config = ConfigInformation::Config.load_client_config_file
 DRb.start_service()
@@ -47,7 +53,7 @@ config = ConfigInformation::Config.new("kareboot", common_config.nodes_desc)
 config.common = common_config
 
 
-if (config.check_config("kareboot") == true)
+if config.check_config("kareboot") then
   db = Database::DbFactory.create(config.common.db_kind)
   db.connect(config.common.deploy_db_host,
              config.common.deploy_db_login,
@@ -76,7 +82,7 @@ if (config.check_config("kareboot") == true)
       client_port= content[2]
     else
       puts "The URI #{DRb.uri} is not correct"
-      exit(1)
+      _exit(1, db)
     end
 
     if (config.exec_specific.debug_level != "") then
@@ -94,7 +100,9 @@ if (config.check_config("kareboot") == true)
                                   client_host, client_port, debug_level, pxe_profile_msg)
   else
     puts "You do not have the deployment rights on all the nodes"
+    _exit(1, db)
   end
-
-  db.disconnect
+  _exit(0, db)
+else
+  _exit(1, db)
 end

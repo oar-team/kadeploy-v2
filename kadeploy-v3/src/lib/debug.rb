@@ -36,20 +36,23 @@ module Debug
   class Logger
     @nodes = nil
     @config = nil
+    @db = nil
 
     # Constructor of Logger
     #
     # Arguments
     # * node_set: NodeSet that contains the nodes implied in the deployment
     # * config: instance of Config
+    # * db: database handler
     # Output
     # * nothing
-    def initialize(node_set, config)
+    def initialize(node_set, config, db)
       @nodes = Hash.new
       node_set.make_array_of_hostname.each { |n|
         @nodes[n] = create_node_infos
       }
       @config = config
+      @db = db
     end
 
     # Create an hashtable that contains all the information to log
@@ -174,11 +177,6 @@ module Debug
     # Output
     # * nothing
     def dump_to_db
-      db = Database::DbFactory.create(@config.common.db_kind)
-      db.connect(@config.common.deploy_db_host,
-                 @config.common.deploy_db_login,
-                 @config.common.deploy_db_passwd,
-                 @config.common.deploy_db_name)
       @nodes.each_pair { |hostname, node_infos|
         query = "INSERT INTO log (user, hostname, \
                                   step1, step2, step3, \
@@ -196,9 +194,8 @@ module Debug
                                 \"#{node_infos["step1_duration"]}\", \"#{node_infos["step2_duration"]}\", \"#{node_infos["step3_duration"]}\", \
                                 \"#{node_infos["env"]}\", \"#{node_infos["md5"]}\", \
                                 \"#{node_infos["success"]}\", \"#{node_infos["error"]}\")"
-        db.run_query(query)
+        @db.run_query(query)
       }
-      db.disconnect
     end
 
     # Dump the logged information to a file
