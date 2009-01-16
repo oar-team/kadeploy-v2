@@ -297,6 +297,14 @@ module Nodes
       return [good_nodes, bad_nodes]
     end
 
+    # Set the deployment state on a NodeSet
+    #
+    # Arguments
+    # * state: state of the nodes (deploying or deployed)
+    # * env_id: id of the environment deployed on the nodes
+    # * db: database handler
+    # Output
+    # * return true if the state has been correctly modified, false otherwise
     def set_deployment_state(state, env_id, db)
       list = String.new
       @set.each_index { |i|
@@ -322,6 +330,45 @@ module Nodes
         return false
       end
       return true
+    end
+
+    # Check if one node in the set has been deployed with a demolishing environment
+    #
+    # Arguments
+    # * db: database handler
+    # Output
+    # * return true if at least one node has been deployed with a demolishing environment
+    def check_demolishing_env(db)
+      list = String.new
+      @set.each_index { |i|
+        list += "hostname=\"#{@set[i].hostname}\" "
+        list += "OR " if (i < @set.length - 1)
+      }
+      query = "SELECT hostname FROM nodes \
+                               INNER JOIN environments ON nodes.env_id=environments.id \
+                               WHERE demolishing_env=1 AND (#{list})"
+      res = db.run_query(query)
+      return (res.num_rows > 0)
+    end
+
+    # Tag some environments as demolishing
+    #
+    # Arguments
+    # * db: database handler
+    # Output
+    # * return nothing
+    def tag_demolishing_env(db)
+       list = String.new
+      @set.each_index { |i|
+        list += "hostname=\"#{@set[i].hostname}\" "
+        list += "OR " if (i < @set.length - 1)
+      }
+      query = "SELECT DISTINCT(env_id) FROM nodes WHERE #{list}"
+      res = db.run_query(query)
+      while (row = res.fetch_row) do
+        query2 = "UPDATE environments SET demolishing=1 WHERE id=\"#{row[0]}\""
+        db.run_query(query2)
+      end
     end
   end
 end

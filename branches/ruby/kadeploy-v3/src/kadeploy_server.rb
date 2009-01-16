@@ -164,36 +164,48 @@ class KadeployServer
   # Reboot a set of nodes from the client side (RPC)
   #
   # Arguments
+  # * exec_specific: instance of Config.exec_specific
   # * host: hostname of the client
   # * port: port on which the client listen to Drb
   # Output
-  # * nothing  
-  def launch_reboot(node_list, reboot_kind, host, port, debug_level, pxe_profile_msg)
+  # * return 0 in case of success, 1 if the reboot failed on some nodes, 2 if the reboot has not been applied
+  def launch_reboot(exec_specific, host, port, debug_level, pxe_profile_msg)
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
+    return_value = 0
     if (debug_level != nil) then
       dl = debug_level
     else
       dl = @config.common.debug_level
     end
     output = Debug::OutputControl.new(dl, client)
-    node_list.group_by_cluster.each_pair { |cluster, set|
-      step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @config, cluster, output)
-      case reboot_kind
-      when "back_to_prod_env"
-        step.switch_pxe("back_to_prod_env")
-      when "set_pxe"
-        step.switch_pxe("set_pxe", pxe_profile_msg)
-        step.reboot("soft")
-      when "simple_reboot"
-        #no need to change the PXE profile
-      else
-        raise "Invalid kind of reboot: #{@reboot_kind}"
-      end
-      step.reboot("soft")        
-      step.wait_reboot([@config.common.ssh_port],[])
-    }
+    if exec_specific.check_prod_env && exec_specific.node_list.check_demolishing_env(@db) then
+      output.debugl(0, "Reboot not performed since some nodes have been deployed with a demolishing environment")
+      return_value = 2
+    else
+      exec_specific.node_list.group_by_cluster.each_pair { |cluster, set|
+        step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @config, cluster, output)
+        case exec_specific.reboot_kind
+        when "back_to_prod_env"
+          step.switch_pxe("back_to_prod_env")
+        when "set_pxe"
+          step.switch_pxe("set_pxe", pxe_profile_msg)
+          step.reboot("soft")
+        when "simple_reboot"
+          #no need to change the PXE profile
+        else
+          raise "Invalid kind of reboot: #{@reboot_kind}"
+        end
+        step.reboot("soft")        
+        step.wait_reboot([@config.common.ssh_port],[])
+        if (exec_specific.reboot_kind == "back_to_prod_env") && (exec_specific.check_prod_env) then
+          step.nodes_ko.tag_demolishing_env(@db)
+          return_value = 1
+        end
+      }
+    end
+    return return_value
   end
 end
 
@@ -206,9 +218,9 @@ if (config.check_config("kadeploy") == true)
     exit 1
   end
   db.connect(config.common.deploy_db_host,
-              config.common.deploy_db_login,
-              config.common.deploy_db_passwd,
-              config.common.deploy_db_name)
+             config.common.deploy_db_login,
+             config.common.deploy_db_passwd,
+             config.common.deploy_db_name)
   kadeployServer = KadeployServer.new(config, 
                                       Managers::WindowManager.new(config.common.reboot_window, config.common.reboot_window_sleep_time),
                                       db)

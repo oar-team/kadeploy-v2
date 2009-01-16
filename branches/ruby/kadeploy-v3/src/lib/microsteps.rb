@@ -11,8 +11,8 @@ require 'ftools'
 
 module MicroStepsLibrary
   class MicroSteps
-    @nodes_ok = nil
-    @nodes_ko = nil
+    attr_accessor :nodes_ok
+    attr_accessor :nodes_ko
     @reboot_window = nil
     @config = nil
     @cluster = nil

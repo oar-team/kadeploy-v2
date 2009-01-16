@@ -25,6 +25,7 @@ module EnvironmentManagement
     attr_reader :filesystem
     attr_reader :user
     attr_reader :environment_kind
+    attr_reader :demolishing_env
 
     # Load an environment file
     #
@@ -84,6 +85,8 @@ module EnvironmentManagement
               else
                 puts "#{val} is an invalid environment kind (linux and other are authorized)"
               end
+            when "demolishing_env"
+              @demolishing_env = val
             else
               puts "#{attr} is an invalid attribute"
               return false
@@ -151,6 +154,7 @@ module EnvironmentManagement
       @filesystem = hash["filesystem"]
       @user = hash["user"]
       @environment_kind = hash["environment_kind"]
+      @demolishing_env = hash["demolishing_env"]
     end
 
     # Check the MD5 digest of a file
@@ -209,6 +213,7 @@ module EnvironmentManagement
       puts "filesystem : #{@filesystem}"
       puts "user : #{@user}"
       puts "environment_kind : #{@environment_kind}"
+      puts "demolishing_env : #{@demolishing_env}"
     end
   end
 end
