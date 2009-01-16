@@ -33,3 +33,4 @@ reboot_window_sleep_time = 10
 nfsroot_kernel = vmlinuz-2.6.27.7
 nfs_server = 172.16.160.1
 bootloader = chainload_pxe
+purge_deployment_timer = 900

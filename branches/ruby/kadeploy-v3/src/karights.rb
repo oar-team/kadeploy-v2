@@ -108,6 +108,11 @@ def delete_rights(config, db)
   }
 end
 
+def _exit(exit_code, dbh)
+  dbh.disconnect
+  exit(exit_code)
+end
+
 config = ConfigInformation::Config.new("karights")
 
 #Connect to the Kadeploy server to get the common configuration
@@ -132,5 +137,7 @@ if (config.check_config("karights") == true)
   when "show"
     show_rights(config, db)
   end
-  db.disconnect
+  _exit(0, db)
+else
+  _exit(1, db)
 end

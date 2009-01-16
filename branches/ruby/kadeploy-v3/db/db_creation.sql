@@ -1,9 +1,9 @@
 -- 
--- Structure de la table `environment`
+-- Structure de la table `environments`
 -- 
 
-DROP TABLE IF EXISTS `environment`;
-CREATE TABLE IF NOT EXISTS `environment` (
+DROP TABLE IF EXISTS `environments`;
+CREATE TABLE IF NOT EXISTS `environments` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `name` varchar(255) NOT NULL default '',
   `version` int(10) unsigned NOT NULL default '0',
@@ -55,6 +55,21 @@ CREATE TABLE IF NOT EXISTS `log` (
   `error` varchar(255) NOT NULL,
   `user` varchar(16) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+-- 
+-- Structure de la table `nodes`
+-- 
+
+DROP TABLE IF EXISTS `nodes`;
+CREATE TABLE IF NOT EXISTS `nodes` (
+  `hostname` varchar(64) NOT NULL,
+  `state` varchar(16) NOT NULL,
+  `env_id` int(10) unsigned NOT NULL,
+  `date` int(10) unsigned NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 
 -- --------------------------------------------------------
 

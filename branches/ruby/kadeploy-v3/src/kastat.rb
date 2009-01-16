@@ -179,6 +179,13 @@ def list_all(config, db)
   } 
 end
 
+def _exit(exit_code, dbh)
+  dbh.disconnect
+  exit(exit_code)
+end
+
+
+
 config = ConfigInformation::Config.new("kastat")
 
 #Connect to the Kadeploy server to get the common configuration
@@ -205,5 +212,7 @@ if (config.check_config("kastat") == true) then
   when "list_min_failure_rate"
     list_failure_rate(config, db, config.exec_specific.min_rate)
   end
-  db.disconnect
+  _exit(0, db)
+else
+  _exit(1, db)
 end

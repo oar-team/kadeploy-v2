@@ -257,5 +257,71 @@ module Nodes
         node.last_cmd_stderr = msg
       }
     end
+
+    # Make the difference with another NodeSet
+    #
+    # Arguments
+    # * sub: NodeSet that contains the nodes to remove
+    # Output
+    # * return the NodeSet that contains the diff
+    def diff(sub)
+      dest = NodeSet.new
+      @set.each { |node|
+        if (sub.get_node_by_host(node.hostname) == nil) then
+          dest.push(node.clone)
+        end
+      }
+      return dest
+    end
+
+    # Check if some nodes are currently in deployment
+    #
+    # Arguments
+    # * db: database handler
+    # * purge: period after what the data in the nodes table can be pruged (ie. there is no running deployment on the nodes)
+    # Output
+    # * return an array that contains two NodeSet ([0] is the good nodes set and [1] is the bad nodes set)
+    def check_nodes_in_deployment(db, purge)
+      bad_nodes = NodeSet.new
+      list = String.new
+      @set.each_index { |i|
+        list += "hostname=\"#{@set[i].hostname}\" "
+        list += "OR " if (i < @set.length - 1)
+      }
+      query = "SELECT hostname FROM nodes WHERE state=\"deploying\" AND date > #{Time.now.to_i - purge} AND (#{list})"
+      res = db.run_query(query)
+      while (row = res.fetch_row) do
+        bad_nodes.push(get_node_by_host(row[0]).clone)
+      end
+      good_nodes = diff(bad_nodes)
+      return [good_nodes, bad_nodes]
+    end
+
+    def set_deployment_state(state, env_id, db)
+      list = String.new
+      @set.each_index { |i|
+        list += "hostname=\"#{@set[i].hostname}\" "
+        list += "OR " if (i < @set.length - 1)
+      }
+      case state
+      when "deploying"
+        query = "DELETE FROM nodes WHERE #{list}"
+        db.run_query(query)
+        date = Time.now.to_i
+        @set.each { |node|
+          query = "INSERT INTO nodes (hostname, state, env_id, date) \
+                   VALUES (\"#{node.hostname}\",\"deploying\",\"#{env_id}\",\"#{date}\")"
+          db.run_query(query)
+        }
+      when "deployed"
+        @set.each { |node|
+          query = "UPDATE nodes SET state=\"deployed\" WHERE hostname=\"#{node.hostname}\""
+          db.run_query(query)
+        }
+      else
+        return false
+      end
+      return true
+    end
   end
 end
