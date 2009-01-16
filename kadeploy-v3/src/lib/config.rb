@@ -925,6 +925,7 @@ module ConfigInformation
       @exec_specific.debug_level = String.new
       @exec_specific.node_list = Nodes::NodeSet.new
       @exec_specific.pxe_profile_file = String.new
+      @exec_specific.check_prod_env = false
       load_kareboot_cmdline_options(nodes_desc)
     end
 
@@ -961,6 +962,10 @@ module ConfigInformation
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           @exec_specific.pxe_profile_file = file
         }
+        opts.on("-c", "--check-prod-env", "Debug level between 0 to 4") { |d|
+          @exec_specific.check_prod_env = true
+        }
+       
       end
       opts.parse!(ARGV)
     end

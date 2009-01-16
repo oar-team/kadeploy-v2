@@ -59,7 +59,8 @@ def add_environment(config, db)
                                     fdisk_type, \
                                     filesystem, \
                                     user, \
-                                    environment_kind) \
+                                    environment_kind,
+                                    demolishing_env) \
                             VALUES (\"#{env.name}\", \
                                     \"#{env.version}\", \
                                     \"#{env.description}\", \
@@ -77,7 +78,8 @@ def add_environment(config, db)
                                     \"#{env.fdisk_type}\", \
                                     \"#{env.filesystem}\", \
                                     \"#{env.user}\", \
-                                    \"#{env.environment_kind}\")"
+                                    \"#{env.environment_kind}\", \
+                                    \"#{env.demolishing_env}\")"
   db.run_query(query)
 end
 
@@ -124,7 +126,7 @@ def print_environment(config, db)
 end
 
 def _exit(exit_code, dbh)
-  dbh.disconnect
+  dbh.disconnect if (dbh != nil)
   exit(exit_code)
 end
 

@@ -180,7 +180,7 @@ def list_all(config, db)
 end
 
 def _exit(exit_code, dbh)
-  dbh.disconnect
+  dbh.disconnect if (dbh != nil)
   exit(exit_code)
 end
 

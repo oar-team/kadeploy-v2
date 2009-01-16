@@ -37,7 +37,7 @@ class KarebootClient
 end
 
 def _exit(exit_code, dbh)
-  dbh.disconnect
+  dbh.disconnect if (dbh != nil)
   exit(exit_code)
 end
 
@@ -96,13 +96,12 @@ if config.check_config("kareboot") then
         pxe_profile_msg.concat(l)
       }
     end
-    kadeploy_server.launch_reboot(config.exec_specific.node_list, config.exec_specific.reboot_kind,
-                                  client_host, client_port, debug_level, pxe_profile_msg)
+    res = kadeploy_server.launch_reboot(config.exec_specific, client_host, client_port, debug_level, pxe_profile_msg)
+    _exit(res, db)
   else
     puts "You do not have the deployment rights on all the nodes"
     _exit(1, db)
   end
-  _exit(0, db)
 else
   _exit(1, db)
 end
