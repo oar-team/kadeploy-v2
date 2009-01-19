@@ -18,8 +18,12 @@ require 'drb'
 def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
-    query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\" \
-                                        AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{config.exec_specific.user}\")"
+    query = "SELECT name, MAX(version) AS version, description, author, tarball_file, tarball_kind, \
+                    tarball_md5, postinstall_file, postinstall_kind, postinstall_md5, kernel, kernel_params, \
+                    initrd, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                    FROM environments \
+                    WHERE user=\"#{config.exec_specific.user}\" \
+                    GROUP BY name"
   else
     query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\"
                                         ORDER BY version"
@@ -107,12 +111,20 @@ end
 def print_environment(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
-    query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                        AND user=\"#{config.exec_specific.user}\" \
-                                        AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{config.exec_specific.user}\")"
+    if (config.exec_specific.version != "") then
+      query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                          AND user=\"#{config.exec_specific.user}\" \
+                                          AND version=\"#{config.exec_specific.version}\""
+    else
+      query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                          AND user=\"#{config.exec_specific.user}\" \
+                                          AND version=(SELECT MAX(version) FROM environments \
+                                                                           WHERE user=\"#{config.exec_specific.user}\" \
+                                                                           AND name=\"#{config.exec_specific.env_name}\")"
+    end
   else
     query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                        AND user=\"#{config.exec_specific.user}\"
+                                        AND user=\"#{config.exec_specific.user}\" \
                                         ORDER BY version"
   end
   res = db.run_query(query)
@@ -123,6 +135,31 @@ def print_environment(config, db)
       env.full_view
     }
   end
+end
+
+#Remove the demolishing tag on an environment
+#
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
+def remove_demolishing_tag(config, db)
+  #if no version number is given, we only remove the demolishing tag on the last version
+  if (config.exec_specific.version != "") then
+    version = config.exec_specific.version
+  else
+    query = "SELECT MAX(version) FROM environments WHERE user=\"#{config.exec_specific.user}\" \
+                                                   AND name=\"#{config.exec_specific.env_name}\""
+    res = db.run_query(query)
+    row = res.fetch_row
+    version = row[0]
+  end
+  query = "UPDATE environments SET demolishing_env=0 WHERE name=\"#{config.exec_specific.env_name}\" \
+                                                     AND user=\"#{config.exec_specific.user}\" \
+                                                     AND version=\"#{version}\""
+  db.run_query(query)
 end
 
 def _exit(exit_code, dbh)
@@ -155,6 +192,8 @@ if (config.check_config("kaenv") == true)
     delete_environment(config,db)
   when "print"
     print_environment(config, db)
+  when "remove-demolishing-tag"
+    remove_demolishing_tag(config, db)
   end
   _exit(0, db)
 else
