@@ -179,8 +179,11 @@ class KadeployServer
     else
       dl = @config.common.debug_level
     end
+    @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
     output = Debug::OutputControl.new(dl, client)
-    if exec_specific.check_prod_env && exec_specific.node_list.check_demolishing_env(@db) then
+    if (exec_specific.reboot_kind == "back_to_prod_env") && 
+        exec_specific.check_prod_env && 
+        exec_specific.node_list.check_demolishing_env(@db) then
       output.debugl(0, "Reboot not performed since some nodes have been deployed with a demolishing environment")
       return_value = 2
     else
@@ -191,17 +194,19 @@ class KadeployServer
           step.switch_pxe("back_to_prod_env")
         when "set_pxe"
           step.switch_pxe("set_pxe", pxe_profile_msg)
-          step.reboot("soft")
         when "simple_reboot"
           #no need to change the PXE profile
         else
           raise "Invalid kind of reboot: #{@reboot_kind}"
         end
-        step.reboot("soft")        
+        step.reboot("soft")
         step.wait_reboot([@config.common.ssh_port],[])
-        if (exec_specific.reboot_kind == "back_to_prod_env") && (exec_specific.check_prod_env) then
-          step.nodes_ko.tag_demolishing_env(@db)
-          return_value = 1
+        if (exec_specific.reboot_kind == "back_to_prod_env") then
+          step.check_nodes("prod_env_booted")
+          if (exec_specific.check_prod_env) then
+            step.nodes_ko.tag_demolishing_env(@db)
+            return_value = 1
+          end
         end
       }
     end

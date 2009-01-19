@@ -358,16 +358,18 @@ module Nodes
     # Output
     # * return nothing
     def tag_demolishing_env(db)
-       list = String.new
-      @set.each_index { |i|
-        list += "hostname=\"#{@set[i].hostname}\" "
-        list += "OR " if (i < @set.length - 1)
-      }
-      query = "SELECT DISTINCT(env_id) FROM nodes WHERE #{list}"
-      res = db.run_query(query)
-      while (row = res.fetch_row) do
-        query2 = "UPDATE environments SET demolishing=1 WHERE id=\"#{row[0]}\""
-        db.run_query(query2)
+      if not empty? then
+        list = String.new
+        @set.each_index { |i|
+          list += "hostname=\"#{@set[i].hostname}\" "
+          list += "OR " if (i < @set.length - 1)
+        }
+        query = "SELECT DISTINCT(env_id) FROM nodes WHERE #{list}"
+        res = db.run_query(query)
+        while (row = res.fetch_row) do
+          query2 = "UPDATE environments SET demolishing_env=1 WHERE id=\"#{row[0]}\""
+          db.run_query(query2)
+        end
       end
     end
   end

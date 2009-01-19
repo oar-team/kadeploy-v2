@@ -632,6 +632,7 @@ module ConfigInformation
       @exec_specific.env_name = String.new
       @exec_specific.user = ENV['USER'] #By default, we use the current user
       @exec_specific.show_all_version = false
+      @exec_specific.version = String.new
       load_kaenv_cmdline_options
     end
 
@@ -672,6 +673,13 @@ module ConfigInformation
         opts.on("-u", "--user USERNAME", "Specify the user") { |u|
           @exec_specific.user = u
         }
+        opts.on("-v", "--version NUMBER", "Specify the version") { |v|
+          @exec_specific.version = v
+        }        
+        opts.on("-r", "--remove-demolishing-tag ENVNAME", "Remove the demolishing tag on an environment") { |n|
+          @exec_specific.operation = "remove-demolishing-tag"
+          @exec_specific.env_name = n
+        }        
       end
       opts.parse!(ARGV)
     end
@@ -694,6 +702,7 @@ module ConfigInformation
       when "delete"
       when "list"
       when "print"
+      when "remove-demolishing-tag"
       else
         puts "You should choose an operation"
         return false
