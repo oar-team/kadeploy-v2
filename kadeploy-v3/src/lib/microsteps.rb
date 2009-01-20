@@ -363,6 +363,51 @@ module MicroStepsLibrary
       return true
     end
 
+    # Send a tarball on the nodes (currently unused)
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # Output
+    # * return true (should be false sometimes :D) 
+    def send_tarball(scattering_kind)
+      parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
+                                         @config.common.tarball_dest_dir,
+                                         scattering_kind,
+                                         @config.common.taktuk_connector)
+      return true
+    end
+
+    # Send a tarball and uncompress it on the nodes
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # * tarball_file: path to the tarball
+    # * tarball_kind: kind of archive (tgz, tbz2, ddgz, ddbz2)
+    # * dest: destination path
+    # Output
+    # * return true if the operation is correctly performed, false 
+    def send_tarball_and_uncompress(scattering_kind, tarball_file, tarball_kind, dest)
+      case tarball_kind
+      when "tgz"
+        cmd = "tar xz -C #{dest}"
+      when "tbz2"
+        cmd = "tar xj -C #{dest}"
+      when "ddgz"
+        cmd = "gzip -cd > #{dest}"
+      when "ddbz2"
+        cmd = "bzip2 -cd > #{dest}"
+      else
+        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        return false
+      end
+      parallel_exec_cmd_with_input_file_wrapper(tarball_file,
+                                                cmd,
+                                                scattering_kind,
+                                                @config.common.taktuk_connector,
+                                                "0")
+      return true
+    end
+
     public
 
     def method_missing(method_sym, *args)
@@ -576,7 +621,7 @@ module MicroStepsLibrary
       return true
     end
 
-    # Mount the deployment part on the ndoes
+    # Mount the deployment part on the nodes
     #
     # Arguments
     # * nothing
@@ -603,47 +648,6 @@ module MicroStepsLibrary
       return true
     end
 
-    # Send a tarball on the nodes (currently unused)
-    #
-    # Arguments
-    # * scattering_kind:  kind of taktuk scatter (tree, chain)
-    # Output
-    # * return true (should be false sometimes :D) 
-    def ms_send_tarball(scattering_kind)
-      parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
-                                         @config.common.tarball_dest_dir,
-                                         scattering_kind,
-                                         @config.common.taktuk_connector)
-      return true
-    end
-
-    # Send a tarball and uncompress it on the nodes
-    #
-    # Arguments
-    # * scattering_kind:  kind of taktuk scatter (tree, chain)
-    # Output
-    # * return true if the operation is correctly performed, false 
-    def ms_send_tarball_and_uncompress(scattering_kind)
-      case @config.exec_specific.environment.tarball_kind
-      when "tgz"
-        cmd = "tar xz -C #{@config.common.environment_extraction_dir}"
-      when "tbz2"
-        cmd = "tar xj -C #{@config.common.environment_extraction_dir}"
-      when "ddgz"
-        cmd = "gzip -cd > #{@config.common.environment_extraction_dir}"
-      when "ddbz2"
-        cmd = "bzip2 -cd > #{@config.common.environment_extraction_dir}"
-      else
-        @output.debugl(0, "The #{@config.exec_specific.environment.tarball_kind} archive kind is not supported")
-        return false
-      end
-      parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.environment.tarball_file,
-                                                cmd,
-                                                scattering_kind,
-                                                @config.common.taktuk_connector,
-                                                "0")
-      return true
-    end
 
     # Send a tarball and uncompress it on the nodes
     #
@@ -744,8 +748,77 @@ module MicroStepsLibrary
       end
     end
 
+    # Umount the deployment part on the nodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return true (should be false sometimes :D) 
     def ms_umount_deploy_part
       parallel_exec_command_wrapper("umount #{@config.exec_specific.environment.part}", @config.common.taktuk_connector)
+      return true
+    end
+
+    # Send and uncompress the user environment on the nodes
+    #
+    # Arguments
+    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # Output
+    # * return true if the environment has been successfully uncompressed, false otherwise
+    def ms_send_environment(scattering_kind)
+      return send_tarball_and_uncompress(scattering_kind,
+                                         @config.exec_specific.environment.tarball_file,
+                                         @config.exec_specific.environment.tarball_kind,
+                                         @config.common.environment_extraction_dir)
+    end
+
+    # Send and uncompress the admin postinstall on the nodes
+    #
+    # Arguments
+    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # Output
+    # * return true if the environment has been successfully uncompressed, false otherwise   
+    def ms_send_admin_post_install(scattering_kind)
+      return send_tarball_and_uncompress(scattering_kind,
+                                         @config.cluster_specific[@cluster].admin_post_install_file,
+                                         @config.cluster_specific[@cluster].admin_post_install_kind,
+                                         @config.common.rambin_path)
+    end
+
+    # Send and uncompress the user postinstall on the nodes
+    #
+    # Arguments
+    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # Output
+    # * return true if the environment has been successfully uncompressed, false otherwise
+    def ms_send_user_post_install(scattering_kind)
+      return send_tarball_and_uncompress(scattering_kind,
+                                         @config.exec_specific.environment.postinstall_file,
+                                         @config.exec_specific.environment.postinstall_kind,
+                                         @config.common.rambin_path)   
+    end
+
+    # Execute the admin postinstall script
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return true (should be false sometimes :D) 
+    def ms_exec_admin_post_install
+      parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{@config.cluster_specific[@cluster].admin_post_install_script})",
+                                    @config.common.taktuk_connector)
+      return true
+    end
+
+    # Execute the user postinstall script
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return true (should be false sometimes :D) 
+    def ms_exec_user_post_install
+      parallel_exec_command_wrapper("(#{@config.common.rambin_path}/traitement.sh)",
+                                    @config.common.taktuk_connector)
       return true
     end
   end

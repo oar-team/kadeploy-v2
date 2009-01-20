@@ -258,6 +258,8 @@ module ConfigInformation
               end
             when "purge_deployment_timer"
               @common.purge_deployment_timer = content[2].to_i
+            when "rambin_path"
+              @common.rambin_path = content[2]
             end
           end
         end
@@ -338,6 +340,14 @@ module ConfigInformation
                 content[2].split(",").each { |driver|
                   @cluster_specific[cluster].drivers.push(driver)
                 }
+              when "admin_post_install_file"
+                @cluster_specific[cluster].admin_post_install_file = content[2]
+              when "admin_post_install_md5sum"
+                @cluster_specific[cluster].admin_post_install_md5sum = content[2]
+              when "admin_post_install_kind"
+                @cluster_specific[cluster].admin_post_install_kind = content[2]
+              when "admin_post_install_script"
+                @cluster_specific[cluster].admin_post_install_script = content[2]
               when "macrostep"
                 macrostep_name = content[2].split("|")[0]
                 microstep_list = content[2].split("|")[1]
@@ -609,6 +619,18 @@ module ConfigInformation
         puts "The #{@common.tftp_repository}/#{@common.tftp_cfg} directory does not exist"
         return false
       end
+      #admin_post_install file
+      @cluster_specific.each_key { |cluster|
+        if not File.exist?(@cluster_specific[cluster].admin_post_install_file) then
+          puts "The admin_post_install file #{@cluster_specific[cluster].admin_post_install_file} does not exist"
+          return false
+        else
+          if not (Digest::MD5.hexdigest(File.read(@cluster_specific[cluster].admin_post_install_file)) == @cluster_specific[cluster].admin_post_install_md5sum) then
+            puts "The md5sum of #{@cluster_specific[cluster].admin_post_install_file} does not correspond to the value specified in the configuration"
+            return false
+          end
+        end
+      }
       return true
     end
 
@@ -998,7 +1020,7 @@ module ConfigInformation
       if not authorized_ops.include?(@exec_specific.reboot_kind) then
         puts "Invalid kind of reboot: #{@exec_specific.reboot_kind}. Use --help option for correct use"
         return false
-      end
+      end        
       if (@exec_specific.pxe_profile_file != "") && (not File.readable?(@exec_specific.pxe_profile_file)) then
         puts "The file #{@exec_specific.pxe_profile_file} cannot be read"
         return false
@@ -1051,6 +1073,7 @@ module ConfigInformation
     attr_accessor :nfs_server
     attr_accessor :bootloader
     attr_accessor :purge_deployment_timer
+    attr_accessor :rambin_path
 
     # Constructor of CommonConfig
     #
@@ -1085,6 +1108,10 @@ module ConfigInformation
     attr_accessor :cmd_console
     attr_accessor :fdisk_file
     attr_accessor :drivers
+    attr_accessor :admin_post_install_file
+    attr_accessor :admin_post_install_kind
+    attr_accessor :admin_post_install_md5sum
+    attr_accessor :admin_post_install_script
 
     # Constructor of ClusterSpecificConfig
     #
