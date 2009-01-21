@@ -119,8 +119,9 @@ module SetDeploymentEnvironnment
       end
       Thread.new {
         @queue_manager.increment_active_threads
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
-        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -146,7 +147,7 @@ module SetDeploymentEnvironnment
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
-        if not @nodes_ko.empty? then
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko) then
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
@@ -169,8 +170,9 @@ module SetDeploymentEnvironnment
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
       Thread.new {
         @queue_manager.increment_active_threads
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
-        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -194,7 +196,7 @@ module SetDeploymentEnvironnment
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
-        if not @nodes_ko.empty? then
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko) then
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
@@ -215,7 +217,7 @@ module SetDeploymentEnvironnment
     # Output
     # * nothing
     def run
-     if @config.common.use_rsh_to_deploy == "true" then
+      if @config.common.use_rsh_to_deploy == "true" then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
         connector_port = @config.common.rsh_port
       else
@@ -224,8 +226,9 @@ module SetDeploymentEnvironnment
       end
       Thread.new {
         @queue_manager.increment_active_threads
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
-        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -242,6 +245,7 @@ module SetDeploymentEnvironnment
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+            p "sortie popo"
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
               @nodes_ok.duplicate_and_free(@nodes)        
@@ -251,7 +255,7 @@ module SetDeploymentEnvironnment
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
-        if not @nodes_ko.empty? then
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko) then
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
@@ -260,7 +264,6 @@ module SetDeploymentEnvironnment
           @queue_manager.decrement_active_threads
         end
       }
-
     end
   end
 

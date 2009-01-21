@@ -108,6 +108,8 @@ module ConfigInformation
       exec_specific.pxe_profile_file = String.new
       exec_specific.steps = Array.new
       exec_specific.ignore_nodes_deploying = false
+      exec_specific.breakpoint_on_microstep = String.new
+      exec_specific.breakpointed = false
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -559,6 +561,9 @@ module ConfigInformation
         }
         opts.on("-i", "--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
           exec_specific.ignore_nodes_deploying = true
+        }
+        opts.on("-b", "--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
+          exec_specific.breakpoint_on_microstep = m
         }
       end
       opts.parse!(ARGV)

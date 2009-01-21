@@ -416,8 +416,14 @@ module MicroStepsLibrary
       else
         real_method = "ms_#{method_sym.to_s}".to_sym
         if (self.class.method_defined? real_method) then
-          @output.debugl(4, "--- #{method_sym}: #{@nodes_ok.to_s}")
-        send(real_method, *args)
+          if (@config.exec_specific.breakpoint_on_microstep == method_sym.to_s) then
+            @output.debugl(0, "BRK #{method_sym.to_s}: #{@nodes_ok.to_s}")
+            @config.exec_specific.breakpointed = true
+            return false
+          else
+            @output.debugl(4, "--- #{method_sym.to_s}: #{@nodes_ok.to_s}")
+            send(real_method, *args)
+          end
         else
           @output.debugl(4, "Wrong method: #{method_sym} !!!")
           exit 1
