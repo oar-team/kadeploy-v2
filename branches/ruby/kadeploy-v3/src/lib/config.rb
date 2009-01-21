@@ -25,7 +25,7 @@ module ConfigInformation
     #Constructor of Config
     #
     # Arguments
-    # * kind: tool (kadeploy, kaenv, karights, kastat)
+    # * kind: tool (kadeploy, kaenv, karights, kastat, kareboot, kaconsole)
     # * nodes_desc(opt): set of nodes read from the configuration file
     # Output
     # * nothing if all is OK, otherwise raises an exception
@@ -47,6 +47,8 @@ module ConfigInformation
           load_kastat_exec_specific
         when "kareboot"
           load_kareboot_exec_specific(nodes_desc)
+        when "kaconsole"
+          load_kaconsole_exec_specific(nodes_desc)
         when "empty"
         else
           raise "Invalid configuration kind: #{kind}"
@@ -60,7 +62,7 @@ module ConfigInformation
     # Check the config of the Kadeploy tools
     #
     # Arguments
-    # * kind: tool (kadeploy, kaenv, karights, kastat)
+    # * kind: tool (kadeploy, kaenv, karights, kastat, kareboot, kaconsole)
     # Output
     # * calls the chack_config method that correspond to the selected tool
     def check_config(kind)
@@ -75,6 +77,8 @@ module ConfigInformation
         check_kastat_config
       when "kareboot"
         check_kareboot_config
+      when "kaconsole"
+        check_kaconsole_config
       end
     end
 
@@ -1030,6 +1034,64 @@ module ConfigInformation
         return false
       end
       
+      return true
+    end
+
+##################################
+#      Kaconsole specific        #
+##################################
+
+    # Load the kaconsole specific stuffs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def load_kaconsole_exec_specific(nodes_desc)
+      @exec_specific = OpenStruct.new
+      @exec_specific.node = nil
+      load_kaconsole_cmdline_options(nodes_desc)
+    end
+
+    # Load the command-line options of kaconsole
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true in case of success, false otherwise
+    def load_kaconsole_cmdline_options(nodes_desc)
+      progname = File::basename($PROGRAM_NAME)
+      opts = OptionParser::new do |opts|
+        opts.summary_indent = "  "
+        opts.summary_width = 28
+        opts.program_name = progname
+        opts.banner = "Usage: #{progname} [options]"
+        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.separator ""
+        opts.separator "General options:"
+        opts.on("-m", "--machine MACHINE", "Obtain a console on the given machines") { |hostname|          
+          n = nodes_desc.get_node_by_host(hostname)
+          if (n != nil) then
+            @exec_specific.node = n
+          else
+            puts "Invalid hostname"
+          end
+        }
+      end
+      opts.parse!(ARGV)
+    end
+
+    # Check the whole configuration of the kaconsole execution
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the options used are correct, false otherwise
+    def check_kaconsole_config
+      if (@exec_specific.node == nil) then
+        puts "You must choose one node"
+        return false
+      end
       return true
     end
   end
