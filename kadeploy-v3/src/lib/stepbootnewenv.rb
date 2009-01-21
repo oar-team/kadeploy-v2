@@ -108,8 +108,9 @@ module BootNewEnvironment
     def run
       Thread.new {
         @queue_manager.increment_active_threads
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
-        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
           instance_thread = Thread.new {
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -130,7 +131,7 @@ module BootNewEnvironment
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
-        if not @nodes_ko.empty? then
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
@@ -152,8 +153,9 @@ module BootNewEnvironment
     def run
       Thread.new {
         @queue_manager.increment_active_threads
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
-        while (@remaining_retries > 0) && (not @nodes_ko.empty?)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
           instance_thread = Thread.new {
             use_rsh_for_reboot = (@config.common.taktuk_connector == @config.common.taktuk_rsh_connector)
             @logger.increment("retry_step3", @nodes_ko)
@@ -176,7 +178,7 @@ module BootNewEnvironment
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
-        if not @nodes_ko.empty? then
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
