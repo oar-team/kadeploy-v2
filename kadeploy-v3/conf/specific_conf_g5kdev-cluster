@@ -11,7 +11,7 @@ cmd_soft_reboot_ssh = ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o Pre
 cmd_soft_reboot_rsh = rsh -l root HOSTNAME_FQDN /sbin/reboot -f
 cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT.vmx reset hard
 cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT.vmx start hard
-cmd_console = no_cmd
+cmd_console = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/console.sh HOSTNAME_SHORT
 #drivers = ata_piix,ata_generic
 admin_post_install_file = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/admin_post_install_g5kdev.tgz
 admin_post_install_md5sum = ce08c8b89d3ac279b9ae61c5c6851fa9
