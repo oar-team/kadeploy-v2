@@ -162,7 +162,7 @@ links_install:
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kaadduser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kadeluser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kanodes
-	@( [ ! -e $(PERLDIR)/libkadeploy2 ] && ( ln -s $(PERLDIR)/$(KADIR)/libkadeploy2 $(PERLDIR)/libkadeploy2 ) || echo $(PERLDIR)/libkadeploy2 already exists ; not linked over. )
+	@( [ ! -e $(PERLDIR)/libkadeploy2 ] && ( ln -s $(PERLDIR)/$(KADIR)/libkadeploy2 $(PERLDIR)/libkadeploy2 ) || echo $(PERLDIR)/libkadeploy2 already exists : not linked over. )
 	
 installdirs:
 	@echo "Making directories ..."
