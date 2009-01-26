@@ -215,11 +215,11 @@ files_install:
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 
 # SSH key 
-        @install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy* $(KADEPLOYHOMEDIR)/.ssh/
+	@install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy* $(KADEPLOYHOMEDIR)/.ssh/
 
 conflink_install:
 #	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
-	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists ; not linked over. )
+	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
 	
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
