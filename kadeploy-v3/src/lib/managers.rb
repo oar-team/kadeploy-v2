@@ -420,13 +420,14 @@ module Managers
       return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
     end
 
-    # Grab files from the client side (tarball, ssh public key, ...)
+    # Grab files from the client side (tarball, ssh public key, user postinstall, files for custom operations)
     #
     # Arguments
     # * nothing
     # Output
     # * nothing
     def grab_user_files
+      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
       local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
       if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
         @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
@@ -434,13 +435,38 @@ module Managers
       else
         system("touch #{local_tarball}")
       end
-      @config.exec_specific.environment.tarball_file = local_tarball #now, we use the cached file
+      @config.exec_specific.environment.tarball_file = local_tarball
+
       if @config.exec_specific.key != "" then
         @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
         @client.get_file(@config.exec_specific.key)
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
       end
-      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
+
+      local_postinstall = use_local_path_dirname(@config.exec_specific.environment.postinstall_file)
+      if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != @config.exec_specific.environment.postinstall_md5) then
+        @output.debugl(4, "Grab the postinstall file #{@config.exec_specific.environment.postinstall_file}")
+        @client.get_file(@config.exec_specific.environment.postinstall_file)
+      else
+        system("touch #{local_postinstall}")
+      end
+      @config.exec_specific.environment.postinstall_file = local_postinstall
+
+      if (@config.exec_specific.custom_operations != nil) then
+        @config.exec_specific.custom_operations.each_key { |macro_step|
+          @config.exec_specific.custom_operations[macro_step].each_key { |micro_step|
+            @config.exec_specific.custom_operations[macro_step][micro_step].each { |entry|
+              if (entry[0] == "send") then
+                @output.debugl(4, "Grab the file #{entry[1]} for custom operations")
+                @client.get_file(entry[1])
+                entry[1] = use_local_path_dirname(entry[1])
+              end
+            }
+          }
+        }
+      end
+      
+
     end
 
     # Main of WorkflowManager

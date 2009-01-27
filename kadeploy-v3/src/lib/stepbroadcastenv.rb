@@ -74,7 +74,7 @@ module BroadcastEnvironment
       @logger.set("step2", get_instance_name, @nodes)
       @logger.set("timeout_step2", @timeout, @nodes)
       @start = Time.now.to_i
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @config, cluster, output)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @config, cluster, output, get_instance_name)
     end
 
     # Get the name of the current macro step

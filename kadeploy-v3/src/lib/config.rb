@@ -110,6 +110,9 @@ module ConfigInformation
       exec_specific.ignore_nodes_deploying = false
       exec_specific.breakpoint_on_microstep = String.new
       exec_specific.breakpointed = false
+      exec_specific.custom_operations_file = String.new
+      exec_specific.custom_operations = nil
+
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -166,6 +169,7 @@ module ConfigInformation
       when "karights"
       when "kastat"
       when "kareboot"
+      when "kaconsole"
       end
       return true
     end
@@ -346,6 +350,14 @@ module ConfigInformation
                 content[2].split(",").each { |driver|
                   @cluster_specific[cluster].drivers.push(driver)
                 }
+              when "admin_pre_install_file"
+                @cluster_specific[cluster].admin_pre_install_file = content[2]
+              when "admin_pre_install_md5sum"
+                @cluster_specific[cluster].admin_pre_install_md5sum = content[2]
+              when "admin_pre_install_kind"
+                @cluster_specific[cluster].admin_pre_install_kind = content[2]
+              when "admin_pre_install_script"
+                @cluster_specific[cluster].admin_pre_install_script = content[2]
               when "admin_post_install_file"
                 @cluster_specific[cluster].admin_post_install_file = content[2]
               when "admin_post_install_md5sum"
@@ -545,6 +557,30 @@ module ConfigInformation
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           exec_specific.pxe_profile_file = file
         }
+        opts.on("-c", "--set-custom-operations FILE", "Add some custom operations defined in a file") { |file|
+          exec_specific.custom_operations_file = file
+          if not File.readable?(file) then
+            puts "The file #{file} cannot be read"
+            return false
+          else
+            exec_specific.custom_operations = Hash.new
+            #example of line: macro_step,microstep@cmd1%arg%dir,cmd2%arg%dir,...,cmdN%arg%dir
+            IO.readlines(file).each { |line|
+              if (line =~ /\A\w+,\w+@\w+%.+%.+(,\w+%.+%.+)*\Z/) then
+                step = line.split("@")[0]
+                cmds = line.split("@")[1]
+                macro_step = step.split(",")[0]
+                micro_step = step.split(",")[1]
+                exec_specific.custom_operations[macro_step] = Hash.new if (not exec_specific.custom_operations.has_key?(macro_step))
+                exec_specific.custom_operations[macro_step][micro_step] = Array.new if (not exec_specific.custom_operations[macro_step].has_key?(micro_step))
+                cmds.split(",").each { |cmd|
+                  entry = cmd.split("%")
+                  exec_specific.custom_operations[macro_step][micro_step].push(entry)
+                }
+              end
+            }
+          end
+        }
         opts.on("-z", "--force-steps STRING", "Undocumented, for administration purpose only") { |s|
           s.split("&").each { |macrostep|
             macrostep_name = macrostep.split("|")[0]
@@ -628,6 +664,18 @@ module ConfigInformation
         puts "The #{@common.tftp_repository}/#{@common.tftp_cfg} directory does not exist"
         return false
       end
+      #admin_pre_install file
+      @cluster_specific.each_key { |cluster|
+        if not File.exist?(@cluster_specific[cluster].admin_pre_install_file) then
+          puts "The admin_pre_install file #{@cluster_specific[cluster].admin_pre_install_file} does not exist"
+          return false
+        else
+          if not (Digest::MD5.hexdigest(File.read(@cluster_specific[cluster].admin_pre_install_file)) == @cluster_specific[cluster].admin_pre_install_md5sum) then
+            puts "The md5sum of #{@cluster_specific[cluster].admin_pre_install_file} does not correspond to the value specified in the configuration"
+            return false
+          end
+        end
+      }
       #admin_post_install file
       @cluster_specific.each_key { |cluster|
         if not File.exist?(@cluster_specific[cluster].admin_post_install_file) then
@@ -1002,7 +1050,7 @@ module ConfigInformation
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           @exec_specific.pxe_profile_file = file
         }
-        opts.on("-c", "--check-prod-env", "Debug level between 0 to 4") { |d|
+        opts.on("-c", "--check-prod-env", "Check if the production environment has been detroyed") { |d|
           @exec_specific.check_prod_env = true
         }
        
@@ -1175,6 +1223,10 @@ module ConfigInformation
     attr_accessor :cmd_console
     attr_accessor :fdisk_file
     attr_accessor :drivers
+    attr_accessor :admin_pre_install_file
+    attr_accessor :admin_pre_install_kind
+    attr_accessor :admin_pre_install_md5sum
+    attr_accessor :admin_pre_install_script
     attr_accessor :admin_post_install_file
     attr_accessor :admin_post_install_kind
     attr_accessor :admin_post_install_md5sum
