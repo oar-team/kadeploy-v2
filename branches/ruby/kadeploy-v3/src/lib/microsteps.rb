@@ -413,11 +413,24 @@ module MicroStepsLibrary
                                                        "0")
     end
 
+    # Execute a custom command on the nodes
+    #
+    # Arguments
+    # * cmd: command to execute
+    # Output
+    # * return true if the command has been correctly performed, false otherwise
     def custom_exec_cmd(cmd)
       @output.debugl(4, "CUS exec_cmd: #{@nodes_ok.to_s}")
       return parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector)
     end
 
+    # Send a custom file on the nodes
+    #
+    # Arguments
+    # * file: filename
+    # * dest_dir: destination directory on the nodes
+    # Output
+    # * return true if the file has been correctly sent, false otherwise
     def custom_send_file(file, dest_dir)
       @output.debugl(4, "CUS send_file: #{@nodes_ok.to_s}")
       return parallel_send_file_command_wrapper(file,
@@ -426,6 +439,13 @@ module MicroStepsLibrary
                                                 @config.common.taktuk_connector)
     end
 
+    # Run the custom methods attached to a micro step
+    #
+    # Arguments
+    # * macro_step: name of the macro step
+    # * micro_step: name of the micro step
+    # Output
+    # * return true if the methods have been successfully executed, false otherwise    
     def run_custom_methods(macro_step, micro_step)
       result = true
       @config.exec_specific.custom_operations[macro_step][micro_step].each { |entry|
@@ -445,6 +465,13 @@ module MicroStepsLibrary
       return result
     end
 
+    # Check if some custom methods are attached to a micro step
+    #
+    # Arguments
+    # * macro_step: name of the macro step
+    # * micro_step: name of the micro step
+    # Output
+    # * return true if at least one custom method is attached to the micro step, false otherwise
     def custom_methods_attached?(macro_step, micro_step)
       return ((@config.exec_specific.custom_operations != nil) && 
               @config.exec_specific.custom_operations.has_key?(macro_step) && 
@@ -654,10 +681,18 @@ module MicroStepsLibrary
     # Output
     # * return true if the format has been successfully performed, false otherwise
     def ms_format_deploy_part
-      return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
-                                           umount #{get_deploy_part_str()} 2>/dev/null; \
-                                           mkfs -t #{@config.exec_specific.environment.filesystem} #{get_deploy_part_str()}",
-                                           @config.common.taktuk_connector)
+      if @config.common.mkfs_options.has_key?(@config.exec_specific.environment.filesystem) then
+        opts = @config.common.mkfs_options[@config.exec_specific.environment.filesystem]
+        return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
+                                              umount #{get_deploy_part_str()} 2>/dev/null; \
+                                              mkfs -t #{@config.exec_specific.environment.filesystem} #{opts} #{get_deploy_part_str()}",
+                                              @config.common.taktuk_connector)
+      else
+        return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
+                                              umount #{get_deploy_part_str()} 2>/dev/null; \
+                                              mkfs -t #{@config.exec_specific.environment.filesystem} #{get_deploy_part_str()}",
+                                              @config.common.taktuk_connector)
+      end
     end
 
     # Format the /tmp part on the nodes
@@ -668,9 +703,16 @@ module MicroStepsLibrary
     # * return true if the format has been successfully performed, false otherwise
     def ms_format_tmp_part
       if (@config.exec_specific.reformat_tmp) then
-        tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
-        return parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{tmp_part}",
-                                             @config.common.taktuk_connector)
+        if @config.common.mkfs_options.has_key?("ext2") then
+          opts = @config.common.mkfs_options["ext2"]
+          tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+          return parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{opts} #{tmp_part}",
+                                               @config.common.taktuk_connector)
+        else
+          tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+          return parallel_exec_command_wrapper("mkdir -p /tmp; umount #{tmp_part} 2>/dev/null; mkfs.ext2 #{tmp_part}",
+                                               @config.common.taktuk_connector)
+        end
       end
       return true
     end
