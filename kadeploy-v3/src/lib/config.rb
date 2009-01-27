@@ -270,6 +270,18 @@ module ConfigInformation
               @common.purge_deployment_timer = content[2].to_i
             when "rambin_path"
               @common.rambin_path = content[2]
+            when "mkfs_options"
+              #mkfs_options = type1@opts|type2@opts....
+              if content[2] =~ /\A\w+@.+(|\w+|.+)*\Z/ then
+                @common.mkfs_options = Hash.new
+                content[2].split("|").each { |entry|
+                  fstype = entry.split("@")[0]
+                  opts = entry.split("@")[1]
+                  @common.mkfs_options[fstype] = opts
+                }
+              else
+                puts "Wrong entry for mkfs_options"
+              end
             end
           end
         end
@@ -1189,6 +1201,7 @@ module ConfigInformation
     attr_accessor :bootloader
     attr_accessor :purge_deployment_timer
     attr_accessor :rambin_path
+    attr_accessor :mkfs_options
 
     # Constructor of CommonConfig
     #
