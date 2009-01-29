@@ -73,14 +73,14 @@ module Managers
     end
 
     public
-    # Launch a windowed reboot
+    # Launch a windowed function
     #
     # Arguments
-    # * node_set: instance of NodeSet that contains the set of nodes to reboot
+    # * node_set: instance of NodeSet
     # * callback: reference on block that takes a NodeSet as argument
     # Output
     # * nothing
-    def launch_reboot(node_set, &callback)
+    def launch(node_set, &callback)
       remaining = node_set.length
       while (remaining != 0)
         remaining, taken = acquire(remaining)
@@ -277,6 +277,7 @@ module Managers
     @config = nil
     @client = nil
     @reboot_window = nil
+    @nodes_check_window = nil
     @logger = nil
     @db = nil
     @deployments_table_lock = nil
@@ -288,11 +289,13 @@ module Managers
     # Arguments
     # * config: instance of Config
     # * client: Drb handler of the client
+    # * reboot_window: instance of WindowManager to manage the reboot window
+    # * nodes_check_window: instance of WindowManager to manage the check of the nodes
     # * db: database handler
     # * deployments_table_lock: mutex to protect the deployments table
     # Output
     # * nothing
-    def initialize(config, client, reboot_window, db, deployments_table_lock)
+    def initialize(config, client, reboot_window, nodes_check_window, db, deployments_table_lock)
       @db = db
       @deployments_table_lock = deployments_table_lock
       @config = config
@@ -307,6 +310,7 @@ module Managers
       @nodeset = @config.exec_specific.node_list
       @queue_manager = QueueManager.new(@config, @nodes_ok, @nodes_ko)
       @reboot_window = reboot_window
+      @nodes_check_window = nodes_check_window
       @logger = Debug::Logger.new(@nodeset, @config, @db)
       @logger.set("start", Time.now)
       @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
@@ -355,6 +359,7 @@ module Managers
                                                                           set,
                                                                           @queue_manager,
                                                                           @reboot_window,
+                                                                          @nodes_check_window,
                                                                           @output,
                                                                           @logger).run
               when "BroadcastEnv"
@@ -365,6 +370,7 @@ module Managers
                                                                  set,
                                                                  @queue_manager,
                                                                  @reboot_window,
+                                                                 @nodes_check_window,
                                                                  @output,
                                                                  @logger).run
               when "BootNewEnv"
@@ -375,6 +381,7 @@ module Managers
                                                              set,
                                                              @queue_manager,
                                                              @reboot_window,
+                                                             @nodes_check_window,
                                                              @output,
                                                              @logger).run
               else

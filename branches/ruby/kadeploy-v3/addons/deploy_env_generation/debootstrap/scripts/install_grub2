@@ -38,7 +38,7 @@ esac
 MSG=$MSG"}"
 /bin/echo -e $MSG > $MENU_GRUB
 
-/usr/sbin/grub-install \($GRUBPART\) --root-directory=$DEST
+/usr/sbin/grub-install $ROOT --root-directory=$DEST
 
 mv $MENU_GRUB $DEST/$MENU_GRUB
 

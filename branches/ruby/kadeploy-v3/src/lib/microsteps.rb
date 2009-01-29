@@ -25,16 +25,18 @@ module MicroStepsLibrary
     # * nodes_ok: NodeSet of nodes OK
     # * nodes_ko: NodeSet of nodes KO
     # * reboot_window: WindowManager instance
+    # * nodes_check_window: WindowManager instance
     # * config: instance of Config
     # * cluster: cluster name of the nodes
     # * output: OutputControl instance
     # * macro_step: name of the current MacroStep instance
     # Output
     # * nothing
-    def initialize(nodes_ok, nodes_ko, reboot_window, config, cluster, output, macro_step)
+    def initialize(nodes_ok, nodes_ko, reboot_window, nodes_check_window, config, cluster, output, macro_step)
       @nodes_ok = nodes_ok
       @nodes_ko = nodes_ko
       @reboot_window = reboot_window
+      @nodes_check_window = nodes_check_window
       @config = config
       @cluster = cluster
       @output = output
@@ -152,13 +154,14 @@ module MicroStepsLibrary
     # * timeout: time to wait
     # * ports_up: up ports probed on the rebooted nodes to test
     # * ports_down: down ports probed on the rebooted nodes to test
+    # * nodes_check_window: instance of WindowManager
     # Output
     # * return true if at least one node has been successfully rebooted, false otherwise
-    def parallel_wait_nodes_after_reboot_wrapper(timeout, ports_up, ports_down)
+    def parallel_wait_nodes_after_reboot_wrapper(timeout, ports_up, ports_down, nodes_check_window)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
       po = ParallelOperations::ParallelOps.new(node_set, @config, nil)
-      classify_nodes(po.wait_nodes_after_reboot(timeout, ports_up, ports_down))
+      classify_nodes(po.wait_nodes_after_reboot(timeout, ports_up, ports_down, nodes_check_window))
       return (not @nodes_ok.empty?)
     end
 
@@ -221,7 +224,7 @@ module MicroStepsLibrary
           end
         end
       }
-      @reboot_window.launch_reboot(node_set, &callback)
+      @reboot_window.launch(node_set, &callback)
     end
 
     # Extract some file from an archive
@@ -770,7 +773,10 @@ module MicroStepsLibrary
     # Output
     # * return true if some nodes are here, false otherwise
     def ms_wait_reboot(ports_up, ports_down)
-      return parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot, ports_up, ports_down)
+      return parallel_wait_nodes_after_reboot_wrapper(@config.cluster_specific[@cluster].timeout_reboot, 
+                                                      ports_up, 
+                                                      ports_down,
+                                                      @nodes_check_window)
     end
     
     # Eventually install a bootloader
