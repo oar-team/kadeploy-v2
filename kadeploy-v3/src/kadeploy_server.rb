@@ -19,21 +19,24 @@ class KadeployServer
   @db = nil
   @file_name = nil #any access to file_name must be protected with file_server_lock
   @reboot_window = nil
-
+  @nodes_check_window = nil
+  
   # Constructor of KadeployServer
   #
   # Arguments
   # * config: instance of Config
-  # * reboot_window: size of the reboot window
+  # * reboot_window: instance of WindowManager to manage the reboot window
+  # * nodes_check_window: instance of WindowManager to manage the check of the nodes
   # * db: database handler
   # Output
   # * raises an exception if the file server can not open a socket
-  def initialize(config, reboot_window, db)
+  def initialize(config, reboot_window, nodes_check_window, db)
     @config = config
     @dest_host = @config.common.kadeploy_server
     @dest_port = @config.common.kadeploy_file_server_port
     @tcp_buffer_size = @config.common.kadeploy_tcp_buffer_size
     @reboot_window = reboot_window
+    @nodes_check_window = nodes_check_window
     puts "Launching the Kadeploy file server"
     @file_server_lock = Mutex.new
     @deployments_table_lock = Mutex.new
@@ -157,7 +160,7 @@ class KadeployServer
       }
     end
 
-    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @db, @deployments_table_lock)
+    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock)
     workflow.run
   end
 
@@ -228,6 +231,7 @@ if (config.check_config("kadeploy") == true)
              config.common.deploy_db_name)
   kadeployServer = KadeployServer.new(config, 
                                       Managers::WindowManager.new(config.common.reboot_window, config.common.reboot_window_sleep_time),
+                                      Managers::WindowManager.new(config.common.nodes_check_window, 1),
                                       db)
   puts "Launching the Kadeploy RPC server"
   uri = "druby://#{config.common.kadeploy_server}:#{config.common.kadeploy_server_port}"

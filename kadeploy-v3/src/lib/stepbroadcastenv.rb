@@ -13,19 +13,20 @@ module BroadcastEnvironment
     # * nodes: instance of NodeSet
     # * queue_manager: instance of QueueManager
     # * reboot_window: instance of WindowManager
+    # * nodes_check_window: instance of WindowManager
     # * output: instance of OutputControl
     # * logger: instance of Logger
     # Output
     # * returns a BroadcastEnv instance (BroadcastEnvChainWithFS, BroadcastEnvTreeWithFS, BroadcastEnvDummy)
     # * raises an exception if an invalid kind of instance is given
-    def BroadcastEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
+    def BroadcastEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       case kind
       when "BroadcastEnvChainWithFS"
-        return BroadcastEnvChainWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
+        return BroadcastEnvChainWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvTreeWithFS"
-        return BroadcastEnvTreeWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
+        return BroadcastEnvTreeWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvDummy"
-        return BroadcastEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
+        return BroadcastEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       else
         raise "Invalid kind of step value for the environment broadcast step"
       end
@@ -38,6 +39,7 @@ module BroadcastEnvironment
     @queue_manager = nil
     @config = nil
     @reboot_window = nil
+    @nodes_check_window = nil
     @output = nil
     @cluster = nil
     @nodes = nil
@@ -55,17 +57,19 @@ module BroadcastEnvironment
     # * nodes: instance of NodeSet
     # * queue_manager: instance of QueueManager
     # * reboot_window: instance of WindowManager
+    # * nodes_check_window: instance of WindowManager
     # * output: instance of OutputControl
     # * logger: instance of Logger
     # Output
     # * nothing
-    def initialize(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, output, logger)
+    def initialize(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       @remaining_retries = max_retries
       @timeout = timeout
       @nodes = nodes
       @queue_manager = queue_manager
       @config = @queue_manager.config
       @reboot_window = reboot_window
+      @nodes_check_window = nodes_check_window
       @output = output
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
@@ -74,7 +78,7 @@ module BroadcastEnvironment
       @logger.set("step2", get_instance_name, @nodes)
       @logger.set("timeout_step2", @timeout, @nodes)
       @start = Time.now.to_i
-      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @config, cluster, output, get_instance_name)
+      @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @nodes_check_window, @config, cluster, output, get_instance_name)
     end
 
     # Get the name of the current macro step

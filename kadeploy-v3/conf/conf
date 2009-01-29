@@ -30,6 +30,7 @@ log_to_syslog = true
 log_to_db = true
 reboot_window = 50
 reboot_window_sleep_time = 10
+nodes_check_window = 50
 nfsroot_kernel = vmlinuz-2.6.27.7
 nfs_server = 172.16.160.1
 bootloader = chainload_pxe

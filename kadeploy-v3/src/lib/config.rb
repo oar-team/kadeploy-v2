@@ -254,6 +254,8 @@ module ConfigInformation
               @common.reboot_window = content[2].to_i
             when "reboot_window_sleep_time"
               @common.reboot_window_sleep_time = content[2].to_i
+            when "nodes_check_window"
+              @common.nodes_check_window = content[2].to_i
             when "nfsroot_kernel"
               @common.nfsroot_kernel = content[2]
             when "nfs_server"
@@ -1196,6 +1198,7 @@ module ConfigInformation
     attr_accessor :log_to_db
     attr_accessor :reboot_window
     attr_accessor :reboot_window_sleep_time
+    attr_accessor :nodes_check_window
     attr_accessor :nfsroot_kernel
     attr_accessor :nfs_server
     attr_accessor :bootloader
