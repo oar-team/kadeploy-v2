@@ -161,21 +161,21 @@ if ($options{"r"}) {   # get-network-range
         print "No nodes specified: use -m, -f or -j\n";
         exit 1;
     };
+    &check_nodes_configuration(\@nodes);
     foreach my $node (@nodes) {
         my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; }
         my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
         if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";}
         if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch)==0){
             my $otherMode;
             $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
             &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-        }
-        else{
+            print " ... node $node changed to vlan KAVLAN-$VLAN\n" ;
+        } else {
             die "ERROR : you can't modify this port";
         }
-        print "all nodes are configured in the vlan $VLAN";
     }
+    print "all nodes are configured in the vlan $VLAN\n";
 } elsif ($options{"V"} ){ # get vlan id of job
     print &get_vlan($options{'j'});
     print "\n";
@@ -217,6 +217,14 @@ sub get_vlan {
     }
 }
 
+# check if all nodes are configured
+sub check_nodes_configuration {
+    my $nodes = shift;
+    foreach my $node (@{$nodes}) {
+        my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
+        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; }
+    }
+}
 
 # return: list of nodes, or die if empty nodelist
 sub get_nodes {
