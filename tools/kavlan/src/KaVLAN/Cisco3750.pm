@@ -97,7 +97,7 @@ sub getPortsAffectedToVlan(){
         }
     }
     ## FIXME: handle tagged port
-    warn "TAGGED vlan not implemented";
+    &const::verbose("TAGGED vlan not implemented");
     return \%res;
 }
 
@@ -141,7 +141,7 @@ sub getPortIfIndex {
         my ($sw,$p) = ($1,$2);
         $sw =~ s@/@@;
         $p +=5;
-        my $portnumber="$sw$p";
+        my $portnumber=sprintf("%d%02d",$sw,$p);
         my $var = new SNMP::Varbind([$CISCO_PORT_IFINDEX,$portnumber]);
         my $ifIndex = $switchSession->get($var);
         &const::verbose("ifindex of port $port ($portnumber) is $ifIndex");
