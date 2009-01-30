@@ -483,8 +483,33 @@ module MicroStepsLibrary
 
     public
 
+    # Test if a timeout is reached
+    #
+    # Arguments
+    # * timeout: timeout
+    # * instance_thread: instance of thread that waits for the timeout
+    # * step_name: name of the current step
+    # Output   
+    # * return true if the timeout is reached, false otherwise
+    def timeout?(timeout, instance_thread, step_name)
+      start = Time.now.to_i
+      while ((instance_thread.status != false) && (Time.now.to_i < (start + timeout)))
+        sleep(1)
+      end
+      if (instance_thread.status != false) then
+        @output.debugl(4, "Timeout before the end of the step, let's kill the instance")
+        Thread.kill(instance_thread)
+        @nodes_ok.duplicate_and_free(@nodes_ko)
+        @nodes_ko.set_error_msg("Timeout in the #{step_name} step")
+        return true
+      else
+        instance_thread.join
+        return false
+      end
+    end
+
     def method_missing(method_sym, *args)
-      if @nodes_ok.empty? then
+      if (@nodes_ok.empty?) then
         return false
       else
         real_method = "ms_#{method_sym.to_s}".to_sym
@@ -822,30 +847,6 @@ module MicroStepsLibrary
     def ms_produce_bad_nodes
       @nodes_ok.duplicate_and_free(@nodes_ko)
       return true
-    end
-
-    # Test if a timeout is reached
-    #
-    # Arguments
-    # * timeout: timeout
-    # * instance_thread: instance of thread that waits for the timeout
-    # * step_name: name of the current step
-    # Output   
-    # * return true if the timeout is reached, false otherwise
-    def ms_timeout?(timeout, instance_thread, step_name)
-      start = Time.now.to_i
-      while ((instance_thread.status != false) && (Time.now.to_i < (start + timeout)))
-        sleep 1
-      end
-      if (instance_thread.status != false) then
-        @output.debugl(4, "Timeout before the end of the step, let's kill the instance")
-        Thread.kill(instance_thread)
-        @nodes_ok.duplicate_and_free(@nodes_ko)
-        @nodes_ko.set_error_msg("Timeout in the #{step_name} step")
-        return true
-      else
-        return false
-      end
     end
 
     # Umount the deployment part on the nodes

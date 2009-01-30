@@ -247,9 +247,13 @@ module ConfigInformation
             when "log_to_file"
               @common.log_to_file = content[2]
             when "log_to_syslog"
-              @common.log_to_syslog = true if (content[2] == "true")
+              @common.log_to_syslog = (content[2] == "true")
             when "log_to_db"
-              @common.log_to_db = true if (content[2] == "true")
+              @common.log_to_db = (content[2] == "true")
+            when "dbg_to_syslog"
+              @common.dbg_to_syslog = (content[2] == "true")
+            when "dbg_to_syslog_level"
+              @common.dbg_to_syslog_level = content[2].to_i
             when "reboot_window"
               @common.reboot_window = content[2].to_i
             when "reboot_window_sleep_time"
@@ -1196,6 +1200,8 @@ module ConfigInformation
     attr_accessor :log_to_file
     attr_accessor :log_to_syslog
     attr_accessor :log_to_db
+    attr_accessor :dbg_to_syslog
+    attr_accessor :dbg_to_syslog_level
     attr_accessor :reboot_window
     attr_accessor :reboot_window_sleep_time
     attr_accessor :nodes_check_window

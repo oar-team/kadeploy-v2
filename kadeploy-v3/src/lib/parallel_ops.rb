@@ -398,7 +398,7 @@ module ParallelOperations
               a += "#{node.hostname},"
             end
           }
-          p "    -+-+- Missing nodes: #{a}"  if (a != "")
+          puts "    -+-+- Missing nodes: #{a}"  if (a != "")
         }
         nodes_check_window.launch(nodes_to_test, &callback)
       end

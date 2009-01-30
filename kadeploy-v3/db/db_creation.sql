@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `environments` (
 
 DROP TABLE IF EXISTS `log`;
 CREATE TABLE IF NOT EXISTS `log` (
+  `deploy_id` int(10) NOT NULL,
   `hostname` varchar(50) NOT NULL,
   `step1` varchar(35) NOT NULL,
   `step2` varchar(35) NOT NULL,
