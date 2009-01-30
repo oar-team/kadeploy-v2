@@ -42,14 +42,12 @@ class KadeployServer
     @deployments_table_lock = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
     @db = db
-
 #    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 #    opt = [1].pack("i")
 #    sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, opt)
 #    sockaddr = Socket.pack_sockaddr_in(@dest_port, @dest_host)
 #    sock.bind(sockaddr)
 #    sock.listen(10)
-
     if (sock.kind_of? TCPSocket) then
       Thread.new {
         while (session = sock.accept)

@@ -145,6 +145,7 @@ module BroadcastEnvironment
           #Maybe some other instances are defined
           if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+            @queue_manager.decrement_active_threads
           end
         else
           @queue_manager.decrement_active_threads
@@ -196,6 +197,7 @@ module BroadcastEnvironment
           #Maybe some other instances are defined
           if not replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+            @queue_manager.decrement_active_threads
           end
         else
           @queue_manager.decrement_active_threads

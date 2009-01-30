@@ -5,17 +5,29 @@ module Debug
   class OutputControl
     @debug_level = 0
     @client = nil
-
+    @user = nil
+    @deploy_id = nil
+    @syslog = nil
+    @syslog_dbg_level = nil
+    
     # Constructor of OutputControl
     #
     # Arguments
     # * debug_level: debug level at the runtime
     # * client: Drb handler of the client
+    # * user: username
+    # * deploy_id: id of the deployment
+    # * syslog: boolean used to know if syslog must be used or not
+    # * syslog_dbg_level: level of debug required in syslog
     # Output
     # * nothing
-    def initialize(debug_level, client)
+    def initialize(debug_level, client, user, deploy_id, syslog, syslog_dbg_level)
       @debug_level = debug_level
       @client = client
+      @user = user
+      @deploy_id = deploy_id
+      @syslog = syslog
+      @syslog_dbg_level = syslog_dbg_level
     end
 
     # Print a message according to a specified debug level
@@ -27,8 +39,14 @@ module Debug
     # * prints the message on the server and on the client
     def debugl(l, msg)
       if (l <= @debug_level)
-        puts msg
         @client.print(msg)
+      end
+      server_str = "#{@deploy_id}|#{@user} -> #{msg}"
+      puts server_str
+      if (@syslog && (l <= @syslog_dbg_level)) then
+        sl = Syslog.open("Kadeploy-dbg")
+        sl.log(Syslog::LOG_NOTICE, "#{server_str}")
+        sl.close
       end
     end
   end
@@ -64,6 +82,8 @@ module Debug
     # * returns an Hash instance
     def create_node_infos
       node_infos = Hash.new
+      node_infos["deploy_id"] = 0
+      node_infos["user"] = String.new
       node_infos["step1"] = String.new
       node_infos["step2"] = String.new
       node_infos["step3"] = String.new
@@ -155,9 +175,9 @@ module Debug
     # Output
     # * nothing
     def dump_to_syslog
-      sl = Syslog.open("Kadeploy")
+      sl = Syslog.open("Kadeploy-log")
       @nodes.each_pair { |hostname, node_infos|
-        str = hostname + "," + @config.exec_specific.true_user
+        str = node_infos["deploy_id"] + "," + hostname + "," + node_infos["user"]
         str += node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
         str += node_infos["timeout_step1"].to_s + "," + node_infos["timeout_step2"].to_s + "," + node_infos["timeout_step3"].to_s + ","
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","
@@ -178,7 +198,7 @@ module Debug
     # * nothing
     def dump_to_db
       @nodes.each_pair { |hostname, node_infos|
-        query = "INSERT INTO log (user, hostname, \
+        query = "INSERT INTO log (deploy_id, user, hostname, \
                                   step1, step2, step3, \
                                   timeout_step1, timeout_step2, timeout_step3, \
                                   retry_step1, retry_step2, retry_step3, \
@@ -186,7 +206,7 @@ module Debug
                                   step1_duration, step2_duration, step3_duration, \
                                   env, md5, \
                                   success, error) \
-                        VALUES (\"#{@config.exec_specific.true_user}\", \"#{hostname}\", \
+                        VALUES (\"#{node_infos["deploy_id"]}\", \"#{node_infos["user"]}\", \"#{hostname}\", \
                                 \"#{node_infos["step1"]}\", \"#{node_infos["step2"]}\", \"#{node_infos["step3"]}\", \
                                 \"#{node_infos["timeout_step1"]}\", \"#{node_infos["timeout_step2"]}\", \"#{node_infos["timeout_step3"]}\", \
                                 \"#{node_infos["retry_step1"]}\", \"#{node_infos["retry_step2"]}\", \"#{node_infos["retry_step3"]}\", \
@@ -194,6 +214,7 @@ module Debug
                                 \"#{node_infos["step1_duration"]}\", \"#{node_infos["step2_duration"]}\", \"#{node_infos["step3_duration"]}\", \
                                 \"#{node_infos["env"]}\", \"#{node_infos["md5"]}\", \
                                 \"#{node_infos["success"]}\", \"#{node_infos["error"]}\")"
+        p query
         @db.run_query(query)
       }
     end
@@ -208,7 +229,7 @@ module Debug
       fd = File.new(@config.common.log_to_file, File::CREAT | File::APPEND | File::WRONLY, 0644)
       fd.flock(File::LOCK_EX)
       @nodes.each_pair { |hostname, node_infos|
-        str = hostname + "," + @config.exec_specific.true_user + ","
+        str = node_infos["deploy_id"] + "," + hostname + "," + node_infos["user"]
         str += node_infos["step1"] + "," + node_infos["step2"] + "," + node_infos["step3"]  + ","
         str += node_infos["timeout_step1"].to_s + "," + node_infos["timeout_step2"].to_s + "," + node_infos["timeout_step3"].to_s + ","
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","

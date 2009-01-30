@@ -300,10 +300,15 @@ module Managers
       @deployments_table_lock = deployments_table_lock
       @config = config
       @client = client
+      deploy_id = Time.now.to_i #we use the timestamp as a deploy_id
       if (@config.exec_specific.debug_level != nil) then
-        @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client)
+        @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client, 
+                                           @config.exec_specific.true_user, deploy_id,
+                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
       else
-        @output = Debug::OutputControl.new(@config.common.debug_level, client)
+        @output = Debug::OutputControl.new(@config.common.debug_level, client,
+                                           @config.exec_specific.true_user, deploy_id,
+                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
       end
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
@@ -312,6 +317,8 @@ module Managers
       @reboot_window = reboot_window
       @nodes_check_window = nodes_check_window
       @logger = Debug::Logger.new(@nodeset, @config, @db)
+      @logger.set("user", @config.exec_specific.true_user)
+      @logger.set("deploy_id", deploy_id)
       @logger.set("start", Time.now)
       @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
 
@@ -434,7 +441,6 @@ module Managers
     # Output
     # * nothing
     def grab_user_files
-      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
       local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
       if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
         @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
@@ -472,8 +478,7 @@ module Managers
           }
         }
       end
-      
-
+      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
     end
 
     # Main of WorkflowManager
