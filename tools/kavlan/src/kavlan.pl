@@ -162,19 +162,11 @@ if ($options{"r"}) {   # get-network-range
         exit 1;
     };
     &check_nodes_configuration(\@nodes);
+
     foreach my $node (@nodes) {
-        my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-        my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
-        if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";}
-        if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch)==0){
-            my $otherMode;
-            $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
-            &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-            print " ... node $node changed to vlan KAVLAN-$VLAN\n" ;
-        } else {
-            die "ERROR : you can't modify this port";
-        }
+         &set_vlan($node,$VLAN);
     }
+
     print "all nodes are configured in the vlan $VLAN\n";
 } elsif ($options{"V"} ){ # get vlan id of job
     print &get_vlan($options{'j'});
@@ -205,6 +197,21 @@ if ($options{"r"}) {   # get-network-range
     die "no action specified, abort";
 }
 
+
+sub set_vlan {
+    my $node = shift;
+    my $VLAN = shift;
+    my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
+    my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
+
+    # we have already checked before that the indice is defined and we
+    # have rights to modify the port, therefore, we can skip checks heres
+    my $otherMode;
+    $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
+    &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
+    print " ... node $node changed to vlan KAVLAN-$VLAN\n" ;
+}
+
 # returns vlan id of job; if jobid is undef, check OAR env. variables.
 sub get_vlan {
     my $jobid = shift;
@@ -222,7 +229,12 @@ sub check_nodes_configuration {
     my $nodes = shift;
     foreach my $node (@{$nodes}) {
         my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; }
+        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; };
+        my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
+        if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";};
+        if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch) != 0) {
+            die "ERROR : you can't modify this port";
+        }
     }
 }
 

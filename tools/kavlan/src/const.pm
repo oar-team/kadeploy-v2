@@ -55,6 +55,10 @@ our $VERBOSE=0;
 #Uses during the verbose mode to show the name of the function this variable have to be redefined in each function in order to override the variable of the caller function
 our $FUNC_NAME="main";
 
+# Cache SNMP results for all sessions (VLAN name, ports index, and so on ...)
+our %CACHE ;
+
+
 ##########################################################################################
 # Verbose function 
 # arg : ...
