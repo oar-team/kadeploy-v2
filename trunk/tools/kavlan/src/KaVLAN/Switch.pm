@@ -57,10 +57,17 @@ sub getVlanNumber {
 
     &const::verbose("Get vlan number of ",$vlanName);
     my @res;
+    my @resp;
 
-    # Retrieve the number and the name of each vlan
-    my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
-    my @resp = $session->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
+    if ( defined $const::CACHE{\$session}{'VLANS'}) {
+        &const::verbose("reuse VLAN list of switch from CACHE");
+        @resp = @{$const::CACHE{\$session}{'VLANS'}} ;
+    } else {
+        #Retrieve the number and the name of each vlan
+        my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
+        @resp = $session->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
+        $const::CACHE{\$session}{'VLANS'} = \@resp;
+    }
 
     # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
@@ -309,19 +316,27 @@ sub listVlanOnSwitch(){
 # rmq :
 ##########################################################################################
 sub getPortInformation(){
-    my @ret;
-    my $val;
-
-    # Check argument
     my $self = shift;
     my ($port,$switchSession)=@_;
     if(not defined $port or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retrieve the number and the name of each vlan
-    my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
-    my @resp = $switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
+    my @ret;
+    my $val;
+
+    my @resp;
+
+
+    if ( defined $const::CACHE{\$switchSession}{'VLANS'}) {
+        &const::verbose("reuse VLAN list of switch from CACHE");
+        @resp = @{$const::CACHE{\$switchSession}{'VLANS'}} ;
+    } else {
+        #Retrieve the number and the name of each vlan
+        my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
+        @resp = $switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
+        $const::CACHE{\$switchSession}{'VLANS'} = \@resp;
+    }
 
     my $indiceTagPort = 1;
 #Loop until we have a name which correspond to $vlanName
@@ -341,10 +356,16 @@ sub getPortInformation(){
                 &const::verbose("Vlan found:",$name);
                 $val = $const::DEFAULT_NAME;
             }
-
-            &const::verbose("will run getPortsAffectedToVlan with ",$val);
-            my $tmp = $self->getPortsAffectedToVlan($val,$switchSession);
-            my %res = %{$tmp};
+            my %res;
+            if ( defined $const::CACHE{\$switchSession}{'port'}{$val}) {
+                &const::verbose("reuse VLAN list of port from CACHE");
+                %res = %{$const::CACHE{\$switchSession}{'port'}{$val}} ;
+            } else {
+                &const::verbose("will run getPortsAffectedToVlan with ",$val);
+                my $tmp = $self->getPortsAffectedToVlan($val,$switchSession);
+                %res = %{$tmp};
+                $const::CACHE{\$switchSession}{'port'}{$val} = \%res;
+            }
 
 #Add informations about this vlan if we find the port in the vlan
             if(defined  @{$res{"TAGGED"}}){
