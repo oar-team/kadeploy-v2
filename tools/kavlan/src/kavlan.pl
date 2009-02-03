@@ -27,10 +27,10 @@ use KaVLAN::Foundry;
 
 my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
 my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
-my $OARSTAT="oarstat";
-my $VLAN_PROPERTY_NAME="vlan";
+my $OARSTAT="oarstat"; # oarstat command
+my $VLAN_PROPERTY_NAME="vlan"; # OAR property name of the VLAN ressource
 
-#Verify that there is at least one argument
+# Verify that there is at least one argument
 if($#ARGV < 0){
     &usage();
     exit(0);
@@ -49,6 +49,7 @@ GetOptions(\%options,
         "f|filenode=s",
         "m|machine=s@",
         "s|set",
+        "q|quiet",
         "h|help",
         "v|verbose");
 
@@ -147,27 +148,26 @@ if ($options{"r"}) {   # get-network-range
         @nodes = get_nodes($options{"f"}, $options{"m"});
     } elsif ($options{'j'}) {
         # use OAR job id to get the nodes
-        # TODO: get VLAN id & nodes from oarstat -p
         $VLAN  = &get_vlan($options{"j"});
-        exit "get VLAN id from oarstat -p not implemented"
-    } elsif ($OAR_NODEFILE) {
+        @nodes = &get_nodes_from_oarjob($options{"j"});
+    } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
         # use OAR nodefile
-        print "use oar nodefile: $OAR_NODEFILE\n";
+        print "use oar nodefile: $OAR_NODEFILE\n" unless $options{"quiet"};
         @nodes = get_nodes($OAR_NODEFILE, "");
         $VLAN  = &get_vlan();
-        # TODO: get VLAN id from $OAR_RESOURCE_PROPERTIES_FILE
-        exit "get VLAN id from \$OAR_RESOURCE_PROPERTIES_FILE not implemented"
     } else {
         print "No nodes specified: use -m, -f or -j\n";
         exit 1;
     };
-    &check_nodes_configuration(\@nodes);
-
-    foreach my $node (@nodes) {
-         &set_vlan($node,$VLAN);
+    if ($VLAN) {
+        &check_nodes_configuration(\@nodes);
+        foreach my $node (@nodes) {
+            &set_vlan($node,$VLAN);
+        }
+    } else {
+        die "No VLAN found, abort!";
     }
-
-    print "all nodes are configured in the vlan $VLAN\n";
+    print "all nodes are configured in the vlan $VLAN\n" unless $options{"quiet"};
 } elsif ($options{"V"} ){ # get vlan id of job
     print &get_vlan($options{'j'});
     print "\n";
@@ -177,19 +177,14 @@ if ($options{"r"}) {   # get-network-range
     my $JOBID=$options{'j'};
     my $VLAN = &get_vlan($JOBID);
     if ($JOBID) {
-        open(OARSTAT, "$OARSTAT -j $JOBID -f|") or die "Error while running oarstat: $!";
-        while (<OARSTAT>) {
-            if  (/assigned_hostnames = (.*)$/) {
-                @nodes_default= split(/\+/,$1);
-            }
-        };
-        close(OARSTAT);
+        @nodes_default = &get_nodes_from_oarjob($JOBID);
     } elsif ($OAR_NODEFILE) {
         @nodes_default = &get_nodes($OAR_NODEFILE, "");
     } else {
         die "get node list: no job specified, use -j";
     }
     die "no VLAN found" unless $VLAN;
+    die "no nodes found" if ($#nodes_default < 1);
     # rewrite nodename: add -vlanX where X is the vlan ID
     @nodes = map { s/^(\w+-\d+)\./$1\-vlan$VLAN\./; $_ } @nodes_default;
     foreach (@nodes) {print "$_\n";};
@@ -197,19 +192,19 @@ if ($options{"r"}) {   # get-network-range
     die "no action specified, abort";
 }
 
-
 sub set_vlan {
     my $node = shift;
     my $VLAN = shift;
     my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
     my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
 
-    # we have already checked before that the indice is defined and we
-    # have rights to modify the port, therefore, we can skip checks heres
+    # we have already checked before (in check_nodes_configuration
+    # )that the indice is defined and we have rights to modify the
+    # port, therefore, we can skip checks here
     my $otherMode;
     $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
     &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-    print " ... node $node changed to vlan KAVLAN-$VLAN\n" ;
+    print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"quiet"};
 }
 
 # returns vlan id of job; if jobid is undef, check OAR env. variables.
@@ -227,6 +222,9 @@ sub get_vlan {
 # check if all nodes are configured
 sub check_nodes_configuration {
     my $nodes = shift;
+    if ($#{@{$nodes}} <= 0) {
+        die "node list empty, abort !";
+    }
     foreach my $node (@{$nodes}) {
         my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
         if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; };
@@ -236,6 +234,27 @@ sub check_nodes_configuration {
             die "ERROR : you can't modify this port";
         }
     }
+}
+
+sub get_nodes_from_oarjob {
+    my $JOBID = shift;
+
+    my @nodes_default;
+
+    if ($JOBID =~ m/^\d+$/) {
+        &const::verbose("get nodes from oarstat: $OARSTAT -f -j $JOBID  ");
+        open(OARSTAT, "$OARSTAT -f -j $JOBID |") or die "Error while running oarstat: $!";
+        while (<OARSTAT>) {
+            if  (/assigned_hostnames = (.*)$/) {
+                @nodes_default= split(/\+/,$1);
+            }
+        };
+        close(OARSTAT);
+        return @nodes_default;
+    } else {
+        die "Wrong jobid given ($JOBID), abort!";
+    }
+
 }
 
 # return: list of nodes, or die if empty nodelist
@@ -268,12 +287,7 @@ sub get_nodes {
                 push @nodelist, $elem;
             }
     }
-    if ($#nodelist >=0) {
-        &const::verbose("OK, found ".($#nodelist+1)." node(s):\n".Dumper(@nodelist));
-        return @nodelist;
-    } else {
-        die "no nodes found" ;
-    }
+    return @nodelist;
 }
 
 # check if node name is valid (with or without domain)
@@ -332,6 +346,7 @@ USAGE : $0 [options]
        -f|--filenode <NODEFILE>
        -j|--oar-jobid=XXXX
        -m|--machine <nodename>
+       -q|--quiet                    quiet mode
        -h|--help                     print this help
        -v|--verbose                  verbose mode\n";
     exit $status;
