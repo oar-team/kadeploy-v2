@@ -24,6 +24,7 @@ use KaVLAN::summit;
 use KaVLAN::hp3400cl;
 use KaVLAN::Cisco3750;
 use KaVLAN::Foundry;
+use KaVLAN::RightsMgt;
 
 my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
 my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
@@ -126,41 +127,57 @@ foreach my $i (0 .. $#{$switch}){
 }
 
 #--------------------------
+# MANAGE DATABASE
+#--------------------------
+my $dbuser   = $site->{DbUser};
+my $dbpasswd = $site->{DbPasswd};
+my $dbhost   = $site->{DbHost};
+my $dbname   = $site->{DbName};
+
+die "Database not configured correctly, check your configuration file" unless ($dbuser and $dbpasswd and $dbhost and $dbname);
+my $dbh = &KaVLAN::RightsMgt::connect($dbhost,$dbname,$dbuser,$dbpasswd);
+
+#--------------------------
 # MANAGE ARGUMENTS
 #--------------------------
 
-# TODO: rights management
+# TODO: unsecure, just for testing.
+my $USER= $ENV{USER};
 
 if ($options{"r"}) {   # get-network-range
     # TODO
+    my $VLAN  = &get_vlan();
     die "get-network-range not implemented";
 } elsif ($options{"g"}) { # get-network-gateway
     # TODO
+    my $VLAN  = &get_vlan();
     die "get-network-gateway not implemented";
 } elsif ($options{"d"} ){ # disable dhcp server for the given vlan
     # TODO
+    my $VLAN  = &get_vlan();
     die "disable dhcp server: not implemented";
 } elsif ($options{"s"} ){ # set vlan for given nodes
     my @nodes;
-    my $VLAN;
+    my $VLAN  = &get_vlan();
     if  ($options{'i'}) { # vlan id is set
-        $VLAN  = &check_vlan($options{"i"});
         @nodes = get_nodes($options{"f"}, $options{"m"});
     } elsif ($options{'j'}) {
         # use OAR job id to get the nodes
-        $VLAN  = &get_vlan($options{"j"});
         @nodes = &get_nodes_from_oarjob($options{"j"});
     } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
         # use OAR nodefile
         print "use oar nodefile: $OAR_NODEFILE\n" unless $options{"quiet"};
         @nodes = get_nodes($OAR_NODEFILE, "");
-        $VLAN  = &get_vlan();
     } else {
         print "No nodes specified: use -m, -f or -j\n";
         exit 1;
     };
-    if ($VLAN) {
+    if (defined $VLAN) {
         &check_nodes_configuration(\@nodes);
+        unless (&KaVLAN::RightsMgt::check_rights_nodelist($dbh, $USER,\@nodes,$VLAN)) {
+            die "No rights to change VLAN, abort" ;
+        }
+        &const::verbose("User $USER has enough rights to change the VLAN of all nodes, continue");
         foreach my $node (@nodes) {
             &set_vlan($node,$VLAN);
         }
@@ -169,13 +186,13 @@ if ($options{"r"}) {   # get-network-range
     }
     print "all nodes are configured in the vlan $VLAN\n" unless $options{"quiet"};
 } elsif ($options{"V"} ){ # get vlan id of job
-    print &get_vlan($options{'j'});
+    print &get_vlan_from_oar($options{'j'});
     print "\n";
 } elsif ($options{"l"} ){ # get node list of job
     my @nodes;
     my @nodes_default; # node name in default vlan
     my $JOBID=$options{'j'};
-    my $VLAN = &get_vlan($JOBID);
+    my $VLAN = &get_vlan_from_oar($JOBID);
     if ($JOBID) {
         @nodes_default = &get_nodes_from_oarjob($JOBID);
     } elsif ($OAR_NODEFILE) {
@@ -184,13 +201,21 @@ if ($options{"r"}) {   # get-network-range
         die "get node list: no job specified, use -j";
     }
     die "no VLAN found" unless $VLAN;
-    die "no nodes found" if ($#nodes_default < 1);
+    die "no nodes found" if ($#nodes_default < 0);
     # rewrite nodename: add -vlanX where X is the vlan ID
     @nodes = map { s/^(\w+-\d+)\./$1\-vlan$VLAN\./; $_ } @nodes_default;
     foreach (@nodes) {print "$_\n";};
 } else {
     die "no action specified, abort";
 }
+
+
+&KaVLAN::RightsMgt::disconnect($dbh);
+
+
+## -----------------------------------------------------------------------
+## End of main script here -----------------------------------------------
+## -----------------------------------------------------------------------
 
 sub set_vlan {
     my $node = shift;
@@ -207,12 +232,29 @@ sub set_vlan {
     print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"quiet"};
 }
 
-# returns vlan id of job; if jobid is undef, check OAR env. variables.
 sub get_vlan {
+    my $VLAN;
+    if  ($options{'i'}) { # vlan id is set
+        $VLAN  = &check_vlan($options{"i"});
+    } elsif ($options{'j'}) {
+        # use OAR job id to get the nodes
+        $VLAN  = &get_vlan_from_oar($options{"j"});
+    } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
+        # use OAR nodefile
+        $VLAN  = &get_vlan_from_oar();
+    } else {
+        return undef;
+    }
+}
+
+# returns vlan id of job; if jobid is undef, check OAR env. variables.
+sub get_vlan_from_oar {
     my $jobid = shift;
     if ($jobid) {
+        &const::verbose("try to get VLAN id from job $jobid");
         return &get_vlan_property("",$jobid);
     } elsif ($OAR_PROPERTIES) {
+        &const::verbose("try to get VLAN id from OAR_PROPERTIES file");
         return &get_vlan_property($OAR_PROPERTIES,"");
     } else {
         die "no job specified, use -j";
@@ -222,7 +264,7 @@ sub get_vlan {
 # check if all nodes are configured
 sub check_nodes_configuration {
     my $nodes = shift;
-    if ($#{@{$nodes}} <= 0) {
+    if ($#{@{$nodes}} < 0) {
         die "node list empty, abort !";
     }
     foreach my $node (@{$nodes}) {
@@ -329,6 +371,7 @@ sub get_vlan_property {
         }
     }
     close(PROP);
+    die "Can't find VLAN from OAR properties, abort";
 }
 
 sub usage(){
@@ -350,5 +393,4 @@ USAGE : $0 [options]
        -h|--help                     print this help
        -v|--verbose                  verbose mode\n";
     exit $status;
-
 }
