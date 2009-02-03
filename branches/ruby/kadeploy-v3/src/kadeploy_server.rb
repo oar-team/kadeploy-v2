@@ -169,7 +169,7 @@ class KadeployServer
   # * host: hostname of the client
   # * port: port on which the client listen to Drb
   # Output
-  # * return 0 in case of success, 1 if the reboot failed on some nodes, 2 if the reboot has not been applied
+  # * return 0 in case of success, 1 if the reboot failed on some nodes, 2 if the reboot has not been launched
   def launch_reboot(exec_specific, host, port, debug_level, pxe_profile_msg)
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
@@ -181,15 +181,21 @@ class KadeployServer
       dl = @config.common.debug_level
     end
     @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-    output = Debug::OutputControl.new(dl, client)
+    output = Debug::OutputControl.new(dl, client, exec_specific.true_user, -1, 
+                                      @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
     if (exec_specific.reboot_kind == "back_to_prod_env") && 
         exec_specific.check_prod_env && 
-        exec_specific.node_list.check_demolishing_env(@db) then
+        exec_specific.node_list.check_demolishing_env(@db, @config.common.demolishing_env_threshold) then
       output.debugl(0, "Reboot not performed since some nodes have been deployed with a demolishing environment")
       return_value = 2
     else
+      #We create a new instance of Config with a specific exec_specific part
+      config = ConfigInformation::Config.new("empty")
+      config.common = @config.common.clone
+      config.cluster_specific = @config.cluster_specific.clone
+      config.exec_specific = exec_specific
       exec_specific.node_list.group_by_cluster.each_pair { |cluster, set|
-        step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @config, cluster, output)
+        step = MicroStepsLibrary::MicroSteps.new(set, Nodes::NodeSet.new, @reboot_window, @nodes_check_window, config, cluster, output, "Kareboot")
         case exec_specific.reboot_kind
         when "back_to_prod_env"
           step.switch_pxe("back_to_prod_env")
