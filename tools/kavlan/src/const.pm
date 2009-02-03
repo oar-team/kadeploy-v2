@@ -18,7 +18,6 @@ package const;
 @ISA = ("Exporter");
 
 
-
 #For a better syntaxe
 use strict;
 
@@ -52,6 +51,9 @@ our $IEEE_MAX_VLAN=4095;
 
 #Activate the verbose mode
 our $VERBOSE=0;
+
+#Activate the debug mode
+our $DEBUG=0;
 #Uses during the verbose mode to show the name of the function this variable have to be redefined in each function in order to override the variable of the caller function
 our $FUNC_NAME="main";
 
@@ -66,7 +68,6 @@ our %CACHE ;
 # rmq : print all the arguments and a '\n' if the verbose mode is activated
 ##########################################################################################
 sub verbose(){
-
     my @args=@_;
 
     if($const::VERBOSE!=0){
@@ -77,6 +78,13 @@ sub verbose(){
     }
 
         print "\n";
+    }
+}
+
+sub debug(){
+    my $string= shift;
+    if($const::DEBUG){
+        print "DEBUG: $string\n";
     }
 }
 
