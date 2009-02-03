@@ -98,7 +98,6 @@ module ConfigInformation
       exec_specific.load_env_arg = String.new
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
-      exec_specific.true_user = ENV['USER']
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
       exec_specific.script = String.new
@@ -112,6 +111,7 @@ module ConfigInformation
       exec_specific.breakpointed = false
       exec_specific.custom_operations_file = String.new
       exec_specific.custom_operations = nil
+      exec_specific.disable_bootloader_install = false
 
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
@@ -288,6 +288,8 @@ module ConfigInformation
               else
                 puts "Wrong entry for mkfs_options"
               end
+            when "demolishing_env_threshold"
+              @common.demolishing_env_threshold = content[2].to_i
             end
           end
         end
@@ -618,6 +620,9 @@ module ConfigInformation
         }
         opts.on("-b", "--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
           exec_specific.breakpoint_on_microstep = m
+        }
+        opts.on("-n", "--disable-bootload-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
+          exec_specific.disable_bootloader_install = true
         }
       end
       opts.parse!(ARGV)
@@ -1032,6 +1037,8 @@ module ConfigInformation
       @exec_specific.node_list = Nodes::NodeSet.new
       @exec_specific.pxe_profile_file = String.new
       @exec_specific.check_prod_env = false
+      @exec_specific.true_user = ENV['USER']
+      @exec_specific.breakpoint_on_microstep = "none"
       load_kareboot_cmdline_options(nodes_desc)
     end
 
@@ -1211,6 +1218,7 @@ module ConfigInformation
     attr_accessor :purge_deployment_timer
     attr_accessor :rambin_path
     attr_accessor :mkfs_options
+    attr_accessor :demolishing_env_threshold
 
     # Constructor of CommonConfig
     #

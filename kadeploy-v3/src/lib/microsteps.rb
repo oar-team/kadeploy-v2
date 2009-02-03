@@ -521,16 +521,18 @@ module MicroStepsLibrary
           else
             if custom_methods_attached?(@macro_step, method_sym.to_s) then
               if run_custom_methods(@macro_step, method_sym.to_s) then
-                @output.debugl(4, "--- #{method_sym.to_s}: #{@nodes_ok.to_s}")
+                @output.debugl(3, "--- #{method_sym.to_s}")
+                @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
                 send(real_method, *args)
               end
             else
-              @output.debugl(4, "--- #{method_sym.to_s}: #{@nodes_ok.to_s}")
+              @output.debugl(3, "--- #{method_sym.to_s}")
+              @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
               send(real_method, *args)
             end
           end
         else
-          @output.debugl(4, "Wrong method: #{method_sym} #{real_method}!!!")
+          @output.debugl(0, "Wrong method: #{method_sym} #{real_method}!!!")
           exit 1
         end
       end
@@ -823,14 +825,19 @@ module MicroStepsLibrary
           return false
         end
       when "chainload_pxe"
-        case @config.exec_specific.environment.environment_kind
-        when "linux"
-          install_grub2_on_nodes("linux")
-        when "xen"
-          install_grub2_on_nodes("xen")
-        when "other"
-          #in this case, the bootloader must be installed by the user (dd partition)
+        if @config.exec_specific.disable_bootloader_install then
+          @output.debugl(4, "Bypass the bootloader installation")
           return true
+        else
+          case @config.exec_specific.environment.environment_kind
+          when "linux"
+            install_grub2_on_nodes("linux")
+          when "xen"
+            install_grub2_on_nodes("xen")
+          when "other"
+            #in this case, the bootloader must be installed by the user (dd partition)
+            return true
+          end
         end
       else
         @output.debugl(0, "Invalid bootloader value: #{@config.common.bootloader}")

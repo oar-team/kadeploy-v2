@@ -67,7 +67,9 @@ module ParallelOperations
       when "chain"
         args += " -d 1"
       when "tree"
-        args += " -d #{@taktuk_tree_arity}"
+        if (@taktuk_tree_arity > 0) then
+          args += " -d #{@taktuk_tree_arity}"
+        end
       else
         raise "Invalid structure for broadcasting file"
       end
@@ -92,7 +94,9 @@ module ParallelOperations
       when "chain"
         args += " -d 1"
       when "tree"
-        args += " -d #{@taktuk_tree_arity}"
+        if (@taktuk_tree_arity > 0) then
+          args += " -d #{@taktuk_tree_arity}"
+        end
       else
         raise "Invalid structure for broadcasting file"
       end

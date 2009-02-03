@@ -11,8 +11,8 @@ deploy_db_passwd = deploy
 rights_kind = db
 taktuk_ssh_connector = ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey -o BatchMode=yes -i /root/.ssh/id_deploy
 taktuk_rsh_connector = rsh -l root
-taktuk_tree_arity = 10
-taktuk_auto_propagate = true
+taktuk_tree_arity = 0
+taktuk_auto_propagate = false
 tarball_dest_dir = /tmp
 environment_extraction_dir = /mnt/dest
 kadeploy_server = g5kdev
@@ -39,3 +39,4 @@ bootloader = chainload_pxe
 purge_deployment_timer = 900
 rambin_path = /rambin
 mkfs_options = ext2@-b 4096 -O sparse_super,filetype,resize_inode,dir_index|ext3@-b 4096 -O sparse_super,filetype,resize_inode,dir_index
+demolishing_env_threshold = 2

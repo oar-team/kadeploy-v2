@@ -118,15 +118,15 @@ module BroadcastEnvironment
           instance_thread = Thread.new {
             @logger.increment("retry_step2", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(3, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
             result = result && @step.send_environment("chain")
-            result = result && @step.send_admin_post_install("chain")
+            result = result && @step.send_admin_post_install("tree")
             result = result && @step.exec_admin_post_install
-            result = result && @step.send_user_post_install("chain")
-            result = result && @step.exec_user_post_install 
-            result = result && @step.send_key("chain")
+            result = result && @step.send_user_post_install("tree")
+            result = result && @step.exec_user_post_install
+            result = result && @step.send_key("tree")
             result = result && @step.install_bootloader
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
@@ -170,7 +170,7 @@ module BroadcastEnvironment
           instance_thread = Thread.new {
             @logger.increment("retry_step2", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(3, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
             result = result && @step.send_environment("tree")

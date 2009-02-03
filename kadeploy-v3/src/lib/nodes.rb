@@ -336,9 +336,10 @@ module Nodes
     #
     # Arguments
     # * db: database handler
+    # * threshold: specify the minimum number of failures to consider a envrionement as demolishing
     # Output
     # * return true if at least one node has been deployed with a demolishing environment
-    def check_demolishing_env(db)
+    def check_demolishing_env(db, threshold)
       list = String.new
       @set.each_index { |i|
         list += "hostname=\"#{@set[i].hostname}\" "
@@ -346,7 +347,7 @@ module Nodes
       }
       query = "SELECT hostname FROM nodes \
                                INNER JOIN environments ON nodes.env_id=environments.id \
-                               WHERE demolishing_env=1 AND (#{list})"
+                               WHERE demolishing_env>#{threshold} AND (#{list})"
       res = db.run_query(query)
       return (res.num_rows > 0)
     end
@@ -367,7 +368,7 @@ module Nodes
         query = "SELECT DISTINCT(env_id) FROM nodes WHERE #{list}"
         res = db.run_query(query)
         while (row = res.fetch_row) do
-          query2 = "UPDATE environments SET demolishing_env=1 WHERE id=\"#{row[0]}\""
+          query2 = "UPDATE environments SET demolishing_env=demolishing_env+1 WHERE id=\"#{row[0]}\""
           db.run_query(query2)
         end
       end
