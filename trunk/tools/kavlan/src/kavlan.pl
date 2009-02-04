@@ -173,7 +173,7 @@ if ($options{"r"}) {   # get-network-range
         exit 1;
     };
     if (defined $VLAN) {
-        &check_nodes_configuration(\@nodes);
+        &KaVLAN::Config::check_nodes_configuration(\@nodes,$site,$switch);
         unless (&KaVLAN::RightsMgt::check_rights_nodelist($dbh, $USER,\@nodes,$VLAN)) {
             die "No rights to change VLAN, abort" ;
         }
@@ -261,22 +261,6 @@ sub get_vlan_from_oar {
     }
 }
 
-# check if all nodes are configured
-sub check_nodes_configuration {
-    my $nodes = shift;
-    if ($#{@{$nodes}} < 0) {
-        die "node list empty, abort !";
-    }
-    foreach my $node (@{$nodes}) {
-        my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; };
-        my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
-        if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";};
-        if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch) != 0) {
-            die "ERROR : you can't modify this port";
-        }
-    }
-}
 
 sub get_nodes_from_oarjob {
     my $JOBID = shift;
