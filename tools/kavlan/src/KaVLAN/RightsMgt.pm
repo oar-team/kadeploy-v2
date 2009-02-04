@@ -191,7 +191,7 @@ sub check_rights_nodelist{
         $result = check_node_rights($dbh, $user, $host, $vlan);
 
         if ($result == 0) {
-            print("WARNING : \"$user\" does not have deployment rights on $host $vlan\n");
+            print("WARNING : \"$user\" does not have deployment rights on $host using VLAN $vlan\n");
             return 0;
         }
     }

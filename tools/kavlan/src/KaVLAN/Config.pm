@@ -8,7 +8,7 @@
 
 package KaVLAN::Config;
 
-@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort);
+@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort check_nodes_configuration);
 
 use warnings;
 use strict;
@@ -228,6 +228,26 @@ sub canModifyPort(){
 
     }
     return $trouve;
+}
+
+
+# check if all nodes are configured
+sub check_nodes_configuration {
+    my $nodes   = shift;
+    my $site    = shift;
+    my $switch  = shift;
+    if ($#{@{$nodes}} < 0) {
+        die "node list empty, abort !";
+    }
+    foreach my $node (@{$nodes}) {
+        my ($port,$switchName) = &getPortNumber($node,$site->{"Name"});
+        if ($port eq -1) { die "ERROR : Node $node not present in the configuration"; };
+        my $indiceSwitch = &getSwitchIdByName($switchName,$switch);
+        if($indiceSwitch==-1) {die "ERROR : There is no switch under this name";};
+        if(&KaVLAN::Config::canModifyPort($node,$indiceSwitch,$switch) != 0) {
+            die "ERROR : you can't modify this port";
+        }
+    }
 }
 
 1;
