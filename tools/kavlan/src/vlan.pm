@@ -22,15 +22,15 @@ use const;
 ##########################################################################################
 # Add a vlan
 # arg : String -> the name of the vlan
-#       Session -> a routeur session
-#    Config -> a routeur configuration
+#       Session -> a router session
+#    Config -> a router configuration
 # ret : 
 # rmq :
 ##########################################################################################
-sub addVlanOnRouteur(){
-    my ($vlanName,$routeurSession,$routeurConfig)=@_;
+sub addVlanOnRouter(){
+    my ($vlanName,$routerSession,$routerConfig)=@_;
     # Check arguments
-    if(not defined $vlanName or not defined $routeurSession or not defined $routeurConfig){
+    if(not defined $vlanName or not defined $routerSession or not defined $routerConfig){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
     if($vlanName eq $const::DEFAULT_NAME){
@@ -38,7 +38,7 @@ sub addVlanOnRouteur(){
     }
     &const::verbose();
 
-    &addVlanOnSwitch($vlanName,$routeurSession,$routeurConfig);
+    &addVlanOnSwitch($vlanName,$routerSession,$routerConfig);
 }
 
 ##########################################################################################
@@ -75,14 +75,14 @@ sub addVlanOnSwitch(){
 # Delete a vlan
 # arg : String -> the name of the vlan
 #       Session -> a switch session
-#    Config -> a routeur configuration
+#    Config -> a router configuration
 # ret : 
 # rmq :
 ##########################################################################################
-sub delVlanOnRouteur(){
-    my ($vlanName,$routeurSession,$routeurConfig)=@_;
+sub delVlanOnRouter(){
+    my ($vlanName,$routerSession,$routerConfig)=@_;
     # Check argument
-    if(not defined $vlanName or not defined $routeurSession or not defined $routeurConfig ){
+    if(not defined $vlanName or not defined $routerSession or not defined $routerConfig ){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
     &const::verbose();
@@ -92,14 +92,14 @@ sub delVlanOnRouteur(){
     }
     # Retrieve the vlan number of $vlanName
     &const::verbose("Verifying if this vlan is set");
-    my @vlanNumber= $routeurConfig->getVlanNumber($const::MODIFY_NAME_KAVLAN.$vlanName,$routeurSession);
+    my @vlanNumber= $routerConfig->getVlanNumber($const::MODIFY_NAME_KAVLAN.$vlanName,$routerSession);
     if($#vlanNumber==-1){
         die "ERROR : There is no vlan under this name";
     }
 
     # Change the name of the vlan
-    &const::verbose("Modifying vlan name on the routeur");
-    $routeurConfig->modifyVlanName($const::MODIFY_NAME_KAVLAN.$vlanName,$const::DEFAULT_NAME_KAVLAN.$vlanNumber[0],$routeurSession);
+    &const::verbose("Modifying vlan name on the router");
+    $routerConfig->modifyVlanName($const::MODIFY_NAME_KAVLAN.$vlanName,$const::DEFAULT_NAME_KAVLAN.$vlanNumber[0],$routerSession);
 }
 
 ##########################################################################################
