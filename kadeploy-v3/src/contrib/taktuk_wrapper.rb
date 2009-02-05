@@ -171,11 +171,11 @@ class TaktukWrapper
       }
       chan[1].each { |b| b.call( *arr ) }
     end
-
+    
     @at_exit_blocks.each { |b|
       b.call
     }
-    
+    Process.waitpid(@pid)
   end
 
 end
