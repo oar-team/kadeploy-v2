@@ -162,6 +162,8 @@ class KadeployServer
 
     workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
     workflow.run
+    #let's free memory at the end of the workflow
+    GC.start
   end
 
   # Reboot a set of nodes from the client side (RPC)
