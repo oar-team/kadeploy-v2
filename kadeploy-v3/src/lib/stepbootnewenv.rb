@@ -111,7 +111,6 @@ module BootNewEnvironment
     # * nothing
     def run
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -157,7 +156,6 @@ module BootNewEnvironment
     # * nothing
     def run
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -205,7 +203,6 @@ module BootNewEnvironment
     # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      @queue_manager.increment_active_threads
       @queue_manager.next_macro_step(get_macro_step_name, @nodes)
       @queue_manager.decrement_active_threads
     end

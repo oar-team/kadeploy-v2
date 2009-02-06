@@ -98,6 +98,7 @@ module ConfigInformation
       exec_specific.load_env_arg = String.new
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
+      exec_specific.true_user = ENV['USER']
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
       exec_specific.script = String.new
@@ -370,22 +371,34 @@ module ConfigInformation
                 content[2].split(",").each { |driver|
                   @cluster_specific[cluster].drivers.push(driver)
                 }
-              when "admin_pre_install_file"
-                @cluster_specific[cluster].admin_pre_install_file = content[2]
-              when "admin_pre_install_md5sum"
-                @cluster_specific[cluster].admin_pre_install_md5sum = content[2]
-              when "admin_pre_install_kind"
-                @cluster_specific[cluster].admin_pre_install_kind = content[2]
-              when "admin_pre_install_script"
-                @cluster_specific[cluster].admin_pre_install_script = content[2]
-              when "admin_post_install_file"
-                @cluster_specific[cluster].admin_post_install_file = content[2]
-              when "admin_post_install_md5sum"
-                @cluster_specific[cluster].admin_post_install_md5sum = content[2]
-              when "admin_post_install_kind"
-                @cluster_specific[cluster].admin_post_install_kind = content[2]
-              when "admin_post_install_script"
-                @cluster_specific[cluster].admin_post_install_script = content[2]
+              when "admin_pre_install"
+                #filename|tgz|md5sum|script,filename|tgz|md5sum|script,...
+                if content[2] =~ /.+|\w+|\w+|.+(,.+|\w+|\w+|.+)*/ then
+                  @cluster_specific[cluster].admin_pre_install = Array.new
+                  content[2].split(",").each { |tmp|
+                    val = tmp.split("|")
+                    entry = Hash.new
+                    entry["file"] = val[0]
+                    entry["kind"] = val[1]
+                    entry["md5"] = val[2]
+                    entry["script"] = val[3]
+                    @cluster_specific[cluster].admin_pre_install.push(entry)
+                  }
+                end
+              when "admin_post_install"
+                #filename|tgz|md5sum|script,filename|tgz|md5sum|script,...
+                if content[2] =~ /.+|\w+|\w+|.+(,.+|\w+|\w+|.+)*/ then
+                  @cluster_specific[cluster].admin_post_install = Array.new
+                  content[2].split(",").each { |tmp|
+                    val = tmp.split("|")
+                    entry = Hash.new
+                    entry["file"] = val[0]
+                    entry["kind"] = val[1]
+                    entry["md5"] = val[2]
+                    entry["script"] = val[3]
+                    @cluster_specific[cluster].admin_post_install.push(entry)
+                  }
+                end
               when "macrostep"
                 macrostep_name = content[2].split("|")[0]
                 microstep_list = content[2].split("|")[1]
@@ -514,68 +527,12 @@ module ConfigInformation
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-m", "--machine MACHINE", "Node to run on") { |hostname|
-          if not add_to_node_list(hostname, nodes_desc, exec_specific) then
-            return false
-          end
-        }
-        opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
-          IO.readlines(f).sort.uniq.each { |hostname|
-            if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
-              return false
-            end
-          }
-        }
         opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
           exec_specific.load_env_kind = "file"
           exec_specific.load_env_arg = f
         }
-        opts.on("-e", "--env-name ENVNAME", "Name of the recorded environment to deploy") { |n|
-          exec_specific.load_env_kind = "db"
-          exec_specific.load_env_arg = n
-        }
-        opts.on("-v", "--env-version NUMVERSION", "Number of version of the environment to deploy") { |n|
-          exec_specific.env_version = n
-        }
-        opts.on("-u", "--user USERNAME", "Specify the user") { |u|
-          exec_specific.user = u
-        }
-        opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
-          exec_specific.deploy_part = p
-        }
-        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
-          debug_level = d.to_i
-          if ((debug_level > 4) || (debug_level < 0)) then
-            puts "Invalid debug level"
-            return false
-          else
-            exec_specific.debug_level = debug_level
-          end
-        }
-        opts.on("-s", "--script FILE", "Execute a script at the end of the deployment") { |f|
-          if not File.readable?(f) then
-            puts "The file #{f} cannot be read"
-            return false
-          else
-            if not File.stat(f).executable? then
-              puts "The file #{f} must be executable to be run at the end of the deployment"
-              return false
-            end
-          end
-          exec_specific.script = File.expand_path(f)
-        }
-        opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
-          if not File.readable?(f) then
-            puts "The file #{f} cannot be read"
-            return false
-          end
-          exec_specific.key = File.expand_path(f)
-        }
-        opts.on("-r", "--reformat-tmp", "Reformat the /tmp partition") {
-          exec_specific.reformat_tmp = true
-        }
-        opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
-          exec_specific.pxe_profile_file = file
+        opts.on("-b", "--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
+          exec_specific.breakpoint_on_microstep = m
         }
         opts.on("-c", "--set-custom-operations FILE", "Add some custom operations defined in a file") { |file|
           exec_specific.custom_operations_file = file
@@ -601,6 +558,71 @@ module ConfigInformation
             }
           end
         }
+        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
+          debug_level = d.to_i
+          if ((debug_level > 4) || (debug_level < 0)) then
+            puts "Invalid debug level"
+            return false
+          else
+            exec_specific.debug_level = debug_level
+          end
+        }
+        opts.on("-e", "--env-name ENVNAME", "Name of the recorded environment to deploy") { |n|
+          exec_specific.load_env_kind = "db"
+          exec_specific.load_env_arg = n
+        }
+        opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
+          IO.readlines(f).sort.uniq.each { |hostname|
+            if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
+              return false
+            end
+          }
+        }
+        opts.on("-i", "--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
+          exec_specific.ignore_nodes_deploying = true
+        }
+        opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
+          if not File.readable?(f) then
+            puts "The file #{f} cannot be read"
+            return false
+          end
+          exec_specific.key = File.expand_path(f)
+        }
+        opts.on("-m", "--machine MACHINE", "Node to run on") { |hostname|
+          if not add_to_node_list(hostname, nodes_desc, exec_specific) then
+            return false
+          end
+        }
+        opts.on("-n", "--disable-bootload-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
+          exec_specific.disable_bootloader_install = true
+        }
+        opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
+          exec_specific.deploy_part = p
+        }
+        opts.on("-r", "--reformat-tmp", "Reformat the /tmp partition") {
+          exec_specific.reformat_tmp = true
+        }
+        opts.on("-s", "--script FILE", "Execute a script at the end of the deployment") { |f|
+          if not File.readable?(f) then
+            puts "The file #{f} cannot be read"
+            return false
+          else
+            if not File.stat(f).executable? then
+              puts "The file #{f} must be executable to be run at the end of the deployment"
+              return false
+            end
+          end
+          exec_specific.script = File.expand_path(f)
+        }
+        opts.on("-u", "--user USERNAME", "Specify the user") { |u|
+          exec_specific.user = u
+        }
+        opts.on("-v", "--env-version NUMVERSION", "Number of version of the environment to deploy") { |n|
+          exec_specific.env_version = n
+        }
+        opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
+          exec_specific.pxe_profile_file = file
+        }
         opts.on("-z", "--force-steps STRING", "Undocumented, for administration purpose only") { |s|
           s.split("&").each { |macrostep|
             macrostep_name = macrostep.split("|")[0]
@@ -614,15 +636,6 @@ module ConfigInformation
             }
             exec_specific.steps.push(MacroStep.new(macrostep_name, tmp))
           }
-        }
-        opts.on("-i", "--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
-          exec_specific.ignore_nodes_deploying = true
-        }
-        opts.on("-b", "--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
-          exec_specific.breakpoint_on_microstep = m
-        }
-        opts.on("-n", "--disable-bootload-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
-          exec_specific.disable_bootloader_install = true
         }
       end
       opts.parse!(ARGV)
@@ -689,27 +702,31 @@ module ConfigInformation
       end
       #admin_pre_install file
       @cluster_specific.each_key { |cluster|
-        if not File.exist?(@cluster_specific[cluster].admin_pre_install_file) then
-          puts "The admin_pre_install file #{@cluster_specific[cluster].admin_pre_install_file} does not exist"
-          return false
-        else
-          if not (Digest::MD5.hexdigest(File.read(@cluster_specific[cluster].admin_pre_install_file)) == @cluster_specific[cluster].admin_pre_install_md5sum) then
-            puts "The md5sum of #{@cluster_specific[cluster].admin_pre_install_file} does not correspond to the value specified in the configuration"
+        @cluster_specific[cluster].admin_pre_install.each { |entry|
+          if not File.exist?(entry["file"]) then
+            puts "The admin_pre_install file #{entry["file"]} does not exist"
             return false
+          else
+            if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
+              puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
+              return false
+            end
           end
-        end
+        }
       }
       #admin_post_install file
       @cluster_specific.each_key { |cluster|
-        if not File.exist?(@cluster_specific[cluster].admin_post_install_file) then
-          puts "The admin_post_install file #{@cluster_specific[cluster].admin_post_install_file} does not exist"
-          return false
-        else
-          if not (Digest::MD5.hexdigest(File.read(@cluster_specific[cluster].admin_post_install_file)) == @cluster_specific[cluster].admin_post_install_md5sum) then
-            puts "The md5sum of #{@cluster_specific[cluster].admin_post_install_file} does not correspond to the value specified in the configuration"
+        @cluster_specific[cluster].admin_post_install.each { |entry|
+          if not File.exist?(entry["file"]) then
+            puts "The admin_pre_install file #{entry["file"]} does not exist"
             return false
+          else
+            if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
+              puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
+              return false
+            end
           end
-        end
+        }
       }
       return true
     end
@@ -735,6 +752,7 @@ module ConfigInformation
       @exec_specific.user = ENV['USER'] #By default, we use the current user
       @exec_specific.show_all_version = false
       @exec_specific.version = String.new
+      @exec_specific.check_md5 = false
       load_kaenv_cmdline_options
     end
 
@@ -758,6 +776,9 @@ module ConfigInformation
           @exec_specific.operation = "add"
           @exec_specific.file = f
         }
+        opts.on("-c" , "--check-md5", "Check the md5sum of the tarball and the post-install files") {
+          @exec_specific.check_md5 = true
+        }
         opts.on("-d", "--delete ENVNAME", "Delete the environment from the environment database") { |n|
           @exec_specific.operation = "delete"
           @exec_specific.env_name = n
@@ -769,6 +790,10 @@ module ConfigInformation
           @exec_specific.operation = "print"
           @exec_specific.env_name = n
         }
+        opts.on("-r", "--remove-demolishing-tag ENVNAME", "Remove the demolishing tag on an environment") { |n|
+          @exec_specific.operation = "remove-demolishing-tag"
+          @exec_specific.env_name = n
+        } 
         opts.on("-s", "--show-all-versions", "Show all versions of an environment") {
           @exec_specific.show_all_version = true
         }
@@ -777,11 +802,7 @@ module ConfigInformation
         }
         opts.on("-v", "--version NUMBER", "Specify the version") { |v|
           @exec_specific.version = v
-        }        
-        opts.on("-r", "--remove-demolishing-tag ENVNAME", "Remove the demolishing tag on an environment") { |n|
-          @exec_specific.operation = "remove-demolishing-tag"
-          @exec_specific.env_name = n
-        }        
+        }               
       end
       opts.parse!(ARGV)
     end
@@ -854,11 +875,11 @@ module ConfigInformation
         opts.on("-d", "--delete", "Delete some rights to a user") {
           @exec_specific.operation = "delete"
         }
-        opts.on("-p", "--part PARTNAME", "Include the partition in the operation") { |p|
-          @exec_specific.part_list.push(p)
-        }
         opts.on("-m", "--machine MACHINE", "Include the machine in the operation") { |m|
           @exec_specific.node_list.push(m)
+        }
+        opts.on("-p", "--part PARTNAME", "Include the partition in the operation") { |p|
+          @exec_specific.part_list.push(p)
         }        
         opts.on("-s", "--show-rights", "Show the rights for a given user") {
           @exec_specific.operation = "show"
@@ -940,12 +961,6 @@ module ConfigInformation
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-x", "--date-min DATE", "Get the stats from this date (yyyy:mm:dd:hh:mm:ss)") { |d|
-          @exec_specific.date_min = d
-        }
-        opts.on("-y", "--date-max DATE", "Get the stats to this date") { |d|
-          @exec_specific.date_max = d
-        }
         opts.on("-a", "--list-min-retries NUMBER_OF_RETRIES", "Print the statistics about the nodes that need several attempts") { |n|
           @exec_specific.operation = "list_retries"
           @exec_specific.min_retries = n
@@ -960,14 +975,20 @@ module ConfigInformation
         opts.on("-d", "--list-all", "Print all the information") { |r|
           @exec_specific.operation = "list_all"
         }
-        opts.on("-s", "--step STEP", "Applies the retry filter on the given steps (1, 2 or 3)") { |s|
-          @exec_specific.steps.push(s) 
+        opts.on("-f", "--field FIELD", "Only print the given fields (user,hostname,step1,step2,step3,timeout_step1,timeout_step2,timeout_step3,retry_step1,retry_step2,retry_step3,start,step1_duration,step2_duration,step3_duration,env,md5,success,error)") { |f|
+          @exec_specific.fields.push(f)
         }
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
           @exec_specific.node_list.push(m)
         }
-        opts.on("-f", "--field FIELD", "Only print the given fields (user,hostname,step1,step2,step3,timeout_step1,timeout_step2,timeout_step3,retry_step1,retry_step2,retry_step3,start,step1_duration,step2_duration,step3_duration,env,md5,success,error)") { |f|
-          @exec_specific.fields.push(f)
+        opts.on("-s", "--step STEP", "Applies the retry filter on the given steps (1, 2 or 3)") { |s|
+          @exec_specific.steps.push(s) 
+        }
+        opts.on("-x", "--date-min DATE", "Get the stats from this date (yyyy:mm:dd:hh:mm:ss)") { |d|
+          @exec_specific.date_min = d
+        }
+        opts.on("-y", "--date-max DATE", "Get the stats to this date") { |d|
+          @exec_specific.date_max = d
         }
       end
       opts.parse!(ARGV)
@@ -1058,8 +1079,11 @@ module ConfigInformation
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
-          Config.add_to_node_list(hostname, nodes_desc, @exec_specific)
+        opts.on("-c", "--check-prod-env", "Check if the production environment has been detroyed") { |d|
+          @exec_specific.check_prod_env = true
+        }
+        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
+          @exec_specific.debug_level = d.to_i
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
           IO.readlines(f).sort.uniq.each { |hostname|
@@ -1069,16 +1093,12 @@ module ConfigInformation
         opts.on("-k", "--kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot)") { |k|
           @exec_specific.reboot_kind = k
         }
-        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
-          @exec_specific.debug_level = d.to_i
+        opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
+          Config.add_to_node_list(hostname, nodes_desc, @exec_specific)
         }
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           @exec_specific.pxe_profile_file = file
-        }
-        opts.on("-c", "--check-prod-env", "Check if the production environment has been detroyed") { |d|
-          @exec_specific.check_prod_env = true
-        }
-       
+        }      
       end
       opts.parse!(ARGV)
     end
@@ -1253,14 +1273,8 @@ module ConfigInformation
     attr_accessor :cmd_console
     attr_accessor :fdisk_file
     attr_accessor :drivers
-    attr_accessor :admin_pre_install_file
-    attr_accessor :admin_pre_install_kind
-    attr_accessor :admin_pre_install_md5sum
-    attr_accessor :admin_pre_install_script
-    attr_accessor :admin_post_install_file
-    attr_accessor :admin_post_install_kind
-    attr_accessor :admin_post_install_md5sum
-    attr_accessor :admin_post_install_script
+    attr_accessor :admin_pre_install
+    attr_accessor :admin_post_install
 
     # Constructor of ClusterSpecificConfig
     #

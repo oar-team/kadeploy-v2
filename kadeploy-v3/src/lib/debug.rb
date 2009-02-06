@@ -9,7 +9,8 @@ module Debug
     @deploy_id = nil
     @syslog = nil
     @syslog_dbg_level = nil
-    
+    @syslog_lock = nil
+
     # Constructor of OutputControl
     #
     # Arguments
@@ -19,15 +20,17 @@ module Debug
     # * deploy_id: id of the deployment
     # * syslog: boolean used to know if syslog must be used or not
     # * syslog_dbg_level: level of debug required in syslog
+    # * syslog_lock: mutex on Syslog
     # Output
     # * nothing
-    def initialize(debug_level, client, user, deploy_id, syslog, syslog_dbg_level)
+    def initialize(debug_level, client, user, deploy_id, syslog, syslog_dbg_level, syslog_lock)
       @debug_level = debug_level
       @client = client
       @user = user
       @deploy_id = deploy_id
       @syslog = syslog
       @syslog_dbg_level = syslog_dbg_level
+      @syslog_lock = syslog_lock
     end
 
     # Print a message according to a specified debug level
@@ -44,9 +47,14 @@ module Debug
       server_str = "#{@deploy_id}|#{@user} -> #{msg}"
       puts server_str
       if (@syslog && (l <= @syslog_dbg_level)) then
+        @syslog_lock.lock
+        while Syslog.opened?
+          sleep 0.2
+        end
         sl = Syslog.open("Kadeploy-dbg")
         sl.log(Syslog::LOG_NOTICE, "#{server_str}")
         sl.close
+        @syslog_lock.unlock
       end
     end
   end
@@ -55,6 +63,7 @@ module Debug
     @nodes = nil
     @config = nil
     @db = nil
+    @syslog_lock = nil
 
     # Constructor of Logger
     #
@@ -62,28 +71,36 @@ module Debug
     # * node_set: NodeSet that contains the nodes implied in the deployment
     # * config: instance of Config
     # * db: database handler
+    # * user: username
+    # * deploy_id: deployment id
+    # * start: start time
+    # * env: environment name
+    # * syslog_lock: mutex on Syslog
     # Output
     # * nothing
-    def initialize(node_set, config, db)
+    def initialize(node_set, config, db, user, deploy_id, start, env, syslog_lock)
       @nodes = Hash.new
       node_set.make_array_of_hostname.each { |n|
-        @nodes[n] = create_node_infos
+        @nodes[n] = create_node_infos(user, deploy_id, start, env)
       }
       @config = config
       @db = db
+      @syslog_lock = syslog_lock
     end
 
     # Create an hashtable that contains all the information to log
     #
     # Arguments
-    # * nothing
-    # * msg: message
+    # * user: username
+    # * deploy_id: deployment id
+    # * start: start time
+    # * env: environment name
     # Output
     # * returns an Hash instance
-    def create_node_infos
+    def create_node_infos(user, deploy_id, start, env)
       node_infos = Hash.new
-      node_infos["deploy_id"] = 0
-      node_infos["user"] = String.new
+      node_infos["deploy_id"] = deploy_id
+      node_infos["user"] = user
       node_infos["step1"] = String.new
       node_infos["step2"] = String.new
       node_infos["step3"] = String.new
@@ -93,15 +110,14 @@ module Debug
       node_infos["retry_step1"] = -1
       node_infos["retry_step2"] = -1
       node_infos["retry_step3"] = -1
-      node_infos["start"] = Time.new
+      node_infos["start"] = start
       node_infos["step1_duration"] = 0
       node_infos["step2_duration"] = 0
       node_infos["step3_duration"] = 0
-      node_infos["env"] = String.new
+      node_infos["env"] = env
       node_infos["md5"] = String.new
       node_infos["success"] = false
       node_infos["error"] = String.new
-
       return node_infos
     end
 
@@ -175,6 +191,10 @@ module Debug
     # Output
     # * nothing
     def dump_to_syslog
+      @syslog_lock.lock
+      while Syslog.opened?
+        sleep 0.2
+      end
       sl = Syslog.open("Kadeploy-log")
       @nodes.each_pair { |hostname, node_infos|
         str = node_infos["deploy_id"].to_s + "," + hostname + "," + node_infos["user"]
@@ -188,6 +208,7 @@ module Debug
         sl.log(Syslog::LOG_NOTICE, "#{str}")
       }
       sl.close
+      @syslog_lock.unlock
     end
 
     # Dump the logged information to the database
@@ -214,7 +235,7 @@ module Debug
                                 \"#{node_infos["step1_duration"]}\", \"#{node_infos["step2_duration"]}\", \"#{node_infos["step3_duration"]}\", \
                                 \"#{node_infos["env"]}\", \"#{node_infos["md5"]}\", \
                                 \"#{node_infos["success"]}\", \"#{node_infos["error"]}\")"
-        @db.run_query(query)
+        res = @db.run_query(query)
       }
     end
 

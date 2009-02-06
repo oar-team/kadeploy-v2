@@ -111,7 +111,6 @@ module BroadcastEnvironment
     # * nothing
     def run
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -122,10 +121,8 @@ module BroadcastEnvironment
             result = true
             #Here are the micro steps
             result = result && @step.send_environment("chain")
-            result = result && @step.send_admin_post_install("tree")
-            result = result && @step.exec_admin_post_install
-            result = result && @step.send_user_post_install("tree")
-            result = result && @step.exec_user_post_install
+            result = result && @step.manage_admin_post_install("tree")
+            result = result && @step.manage_user_post_install("tree")
             result = result && @step.send_key("tree")
             result = result && @step.install_bootloader
             result = result && @step.switch_pxe("deploy_to_deployed_env")
@@ -163,7 +160,6 @@ module BroadcastEnvironment
     # * nothing
     def run
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -174,10 +170,8 @@ module BroadcastEnvironment
             result = true
             #Here are the micro steps 
             result = result && @step.send_environment("tree")
-            result = result && @step.send_admin_post_install("tree")
-            result = result && @step.exec_admin_post_install
-            result = result && @step.send_user_post_install("tree")
-            result = result && @step.exec_user_post_install 
+            result = result && @step.manage_admin_post_install("tree")
+            result = result && @step.manage_user_post_install("tree")
             result = result && @step.send_key("tree")
             result = result && @step.install_bootloader
             result = result && @step.switch_pxe("deploy_to_deployed_env")
@@ -215,7 +209,6 @@ module BroadcastEnvironment
     # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      @queue_manager.increment_active_threads
       @queue_manager.next_macro_step(get_macro_step_name, @nodes)
       @queue_manager.decrement_active_threads
     end

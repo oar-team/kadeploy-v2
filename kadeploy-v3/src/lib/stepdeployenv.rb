@@ -122,7 +122,6 @@ module SetDeploymentEnvironnment
         connector_port = @config.common.ssh_port
       end
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -180,7 +179,6 @@ module SetDeploymentEnvironnment
         connector_port = @config.common.ssh_port
       end
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -193,8 +191,7 @@ module SetDeploymentEnvironnment
             result = result && @step.switch_pxe("prod_to_deploy_env")
             result = result && @step.reboot("soft")
             result = result && @step.wait_reboot([connector_port,@config.common.test_deploy_env_port],[])
-            result = result && @step.send_admin_pre_install("tree")
-            result = result && @step.exec_admin_pre_install
+            result = result && @step.manage_admin_pre_install("tree")
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
@@ -230,7 +227,6 @@ module SetDeploymentEnvironnment
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -287,7 +283,6 @@ module SetDeploymentEnvironnment
         connector_port = @config.common.ssh_port
       end
       Thread.new {
-        @queue_manager.increment_active_threads
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -307,7 +302,6 @@ module SetDeploymentEnvironnment
             #End of micro steps
           }
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
-            p "sortie popo"
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
               @nodes_ok.duplicate_and_free(@nodes)        
@@ -339,7 +333,6 @@ module SetDeploymentEnvironnment
     # * nothing
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      @queue_manager.increment_active_threads
       @queue_manager.next_macro_step(get_macro_step_name, @nodes)
       @queue_manager.decrement_active_threads
     end

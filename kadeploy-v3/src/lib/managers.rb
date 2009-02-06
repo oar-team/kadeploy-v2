@@ -172,6 +172,7 @@ module Managers
       if (nodes.set.empty?)
         raise "Empty node set"
       else
+        increment_active_threads
         case current_step
         when nil
           @queue_deployment_environment.push(nodes)
@@ -201,7 +202,6 @@ module Managers
       if not macro_step.use_next_instance then
         return false
       else
-        decrement_active_threads
         case current_step
         when "SetDeploymentEnv"
           @queue_deployment_environment.push(nodes)
@@ -263,6 +263,17 @@ module Managers
       @queue_boot_new_environment.push(MagicCookie.new) 
       @queue_process_finished_nodes.push(MagicCookie.new)
     end
+
+    # Check if there are some pending events 
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return true if there is no more pending events
+    def empty?
+      return @queue_deployment_environment.empty? && @queue_broadcast_environment.empty? && 
+        @queue_boot_new_environment.empty? && @queue_process_finished_nodes.empty?
+    end
   end
 
   class WorkflowManager
@@ -281,6 +292,7 @@ module Managers
     @logger = nil
     @db = nil
     @deployments_table_lock = nil
+    @mutex = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
 
@@ -293,9 +305,10 @@ module Managers
     # * nodes_check_window: instance of WindowManager to manage the check of the nodes
     # * db: database handler
     # * deployments_table_lock: mutex to protect the deployments table
+    # * syslog_lock: mutex on Syslog
     # Output
     # * nothing
-    def initialize(config, client, reboot_window, nodes_check_window, db, deployments_table_lock)
+    def initialize(config, client, reboot_window, nodes_check_window, db, deployments_table_lock, syslog_lock)
       @db = db
       @deployments_table_lock = deployments_table_lock
       @config = config
@@ -304,11 +317,11 @@ module Managers
       if (@config.exec_specific.debug_level != nil) then
         @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client, 
                                            @config.exec_specific.true_user, deploy_id,
-                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
+                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, syslog_lock)
       else
         @output = Debug::OutputControl.new(@config.common.debug_level, client,
                                            @config.exec_specific.true_user, deploy_id,
-                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
+                                           @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, syslog_lock)
       end
       @nodes_ok = Nodes::NodeSet.new
       @nodes_ko = Nodes::NodeSet.new
@@ -316,11 +329,14 @@ module Managers
       @queue_manager = QueueManager.new(@config, @nodes_ok, @nodes_ko)
       @reboot_window = reboot_window
       @nodes_check_window = nodes_check_window
-      @logger = Debug::Logger.new(@nodeset, @config, @db)
-      @logger.set("user", @config.exec_specific.true_user)
-      @logger.set("deploy_id", deploy_id)
-      @logger.set("start", Time.now)
-      @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
+      @mutex = Mutex.new
+      @logger = Debug::Logger.new(@nodeset, @config, @db, 
+                                  @config.exec_specific.true_user, deploy_id, Time.now, 
+                                  @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version, syslog_lock)
+#      @logger.set("user", @config.exec_specific.true_user)
+#      @logger.set("deploy_id", deploy_id)
+#      @logger.set("start", Time.now)
+#      @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
 
       @thread_set_deployment_environment = Thread.new {
         launch_thread_for_macro_step("SetDeploymentEnv")
@@ -400,24 +416,31 @@ module Managers
             if not nodes.empty? then
               @nodes_ok.add(nodes)
             end
-            if @queue_manager.one_last_active_thread? then
-              @logger.set("success", true, @nodes_ok)
-              @nodes_ok.group_by_cluster.each_pair { |cluster, set|
-                @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
-                @output.debugl(1, set.to_s)
-              }
-              @logger.set("success", false, @nodes_ko)
-              @logger.error(@nodes_ko)
-              @nodes_ko.group_by_cluster.each_pair { |cluster, set|
-                @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
-                @output.debugl(1, set.to_s(true))
-              }
-              @client.generate_files(@nodes_ok, @nodes_ko)
-              @logger.dump
-              @queue_manager.send_exit_signal
-              @thread_set_deployment_environment.join
-              @thread_broadcast_environment.join
-              @thread_boot_new_environment.join
+            # Only the first instance that reaches the end has to manage the exit
+            if @mutex.try_lock then
+              while ((not @queue_manager.one_last_active_thread?) || (not @queue_manager.empty?))
+                sleep 1
+              end
+              if @queue_manager.one_last_active_thread? then
+                @logger.set("success", true, @nodes_ok)
+                @nodes_ok.group_by_cluster.each_pair { |cluster, set|
+                  @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
+                  @output.debugl(1, set.to_s)
+                }
+                @logger.set("success", false, @nodes_ko)
+                @logger.error(@nodes_ko)
+                @nodes_ko.group_by_cluster.each_pair { |cluster, set|
+                  @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
+                  @output.debugl(1, set.to_s(true))
+                }
+                @client.generate_files(@nodes_ok, @nodes_ko)
+                @logger.dump
+                @queue_manager.send_exit_signal
+                @thread_set_deployment_environment.join
+                @thread_broadcast_environment.join
+                @thread_boot_new_environment.join
+                @mutex.unlock
+              end
             end
           end
         end
@@ -441,14 +464,14 @@ module Managers
     # Output
     # * nothing
     def grab_user_files
-      local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball_file)
-      if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball_md5) then
-        @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball_file}")
-        @client.get_file(@config.exec_specific.environment.tarball_file)
+      local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball["file"])
+      if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball["md5"]) then
+        @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball["file"]}")
+        @client.get_file(@config.exec_specific.environment.tarball["file"])
       else
         system("touch #{local_tarball}")
       end
-      @config.exec_specific.environment.tarball_file = local_tarball
+      @config.exec_specific.environment.tarball["file"] = local_tarball
 
       if @config.exec_specific.key != "" then
         @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
@@ -456,14 +479,16 @@ module Managers
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
       end
 
-      local_postinstall = use_local_path_dirname(@config.exec_specific.environment.postinstall_file)
-      if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != @config.exec_specific.environment.postinstall_md5) then
-        @output.debugl(4, "Grab the postinstall file #{@config.exec_specific.environment.postinstall_file}")
-        @client.get_file(@config.exec_specific.environment.postinstall_file)
-      else
-        system("touch #{local_postinstall}")
-      end
-      @config.exec_specific.environment.postinstall_file = local_postinstall
+      @config.exec_specific.environment.postinstall.each { |postinstall|
+        local_postinstall = use_local_path_dirname(postinstall["file"])
+        if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
+          @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
+          @client.get_file(postinstall_file["file"])
+        else
+          system("touch #{local_postinstall}")
+        end
+        postinstall["file"] = local_postinstall
+      }
 
       if (@config.exec_specific.custom_operations != nil) then
         @config.exec_specific.custom_operations.each_key { |macro_step|
