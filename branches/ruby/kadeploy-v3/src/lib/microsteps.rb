@@ -45,7 +45,7 @@ module MicroStepsLibrary
 
     private
 
-    # Classify an array of nodes in two arrayes (good ones and bad nodes)
+    # Classify an array of nodes in two NodeSet (good ones and bad nodes)
     #
     # Arguments
     # * good_bad_array: array that contains nodes ok and ko ([0] are the good ones and [1] are the bad ones)
@@ -64,7 +64,12 @@ module MicroStepsLibrary
       end
     end 
  
-
+    # Classify an array of nodes in two NodeSet (good ones and bad nodes) but does not modify @nodes_ko
+    #
+    # Arguments
+    # * good_bad_array: array that contains nodes ok and ko ([0] are the good ones and [1] are the bad ones)
+    # Output
+    # * return a NodeSet of bad nodes or nil if there is no bad nodes
     def classify_only_good_nodes(good_bad_array)
       if not good_bad_array[0].empty? then
         good_bad_array[0].each { |n|
@@ -918,7 +923,8 @@ module MicroStepsLibrary
           @config.exec_specific.breakpointed = true
           res= false
         else
-          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{preinstall["script"]})", @config.common.taktuk_connector)
+          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{preinstall["script"]})",
+                                                     @config.common.taktuk_connector)
         end
       }
       return res
@@ -939,7 +945,8 @@ module MicroStepsLibrary
           @config.exec_specific.breakpointed = true
           res= false
         else
-          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{postinstall["script"]})", @config.common.taktuk_connector)
+          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+                                                     @config.common.taktuk_connector)
         end
       }
       return res
@@ -960,7 +967,8 @@ module MicroStepsLibrary
           @config.exec_specific.breakpointed = true
           res= false
         else
-          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{postinstall["script"]})", @config.common.taktuk_connector)
+          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+                                                     @config.common.taktuk_connector)
         end
       }
       return res
