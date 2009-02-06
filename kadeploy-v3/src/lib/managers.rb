@@ -483,7 +483,7 @@ module Managers
         local_postinstall = use_local_path_dirname(postinstall["file"])
         if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
           @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
-          @client.get_file(postinstall_file["file"])
+          @client.get_file(postinstall["file"])
         else
           system("touch #{local_postinstall}")
         end
