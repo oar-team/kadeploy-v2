@@ -20,6 +20,7 @@ class KadeployServer
   @file_name = nil #any access to file_name must be protected with file_server_lock
   @reboot_window = nil
   @nodes_check_window = nil
+  @syslog_lock = nil
   
   # Constructor of KadeployServer
   #
@@ -40,6 +41,7 @@ class KadeployServer
     puts "Launching the Kadeploy file server"
     @file_server_lock = Mutex.new
     @deployments_table_lock = Mutex.new
+    @syslog_lock = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
     @db = db
 #    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
@@ -158,7 +160,7 @@ class KadeployServer
       }
     end
 
-    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock)
+    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
     workflow.run
   end
 
@@ -182,7 +184,7 @@ class KadeployServer
     end
     @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
     output = Debug::OutputControl.new(dl, client, exec_specific.true_user, -1, 
-                                      @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level)
+                                      @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, @syslog_lock)
     if (exec_specific.reboot_kind == "back_to_prod_env") && 
         exec_specific.check_prod_env && 
         exec_specific.node_list.check_demolishing_env(@db, @config.common.demolishing_env_threshold) then

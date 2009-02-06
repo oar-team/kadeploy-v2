@@ -64,6 +64,24 @@ module MicroStepsLibrary
       end
     end 
  
+
+    def classify_only_good_nodes(good_bad_array)
+      if not good_bad_array[0].empty? then
+        good_bad_array[0].each { |n|
+          @nodes_ok.push(n)
+        }
+      end
+      if not good_bad_array[1].empty? then
+        bad_nodes = Nodes::NodeSet.new
+        good_bad_array[1].each { |n|
+          bad_nodes.push(n)
+        }
+        return bad_nodes
+      else
+        return nil
+      end
+    end
+
     # Wrap a parallel command
     #
     # Arguments
@@ -191,7 +209,8 @@ module MicroStepsLibrary
         end
       }
       CmdCtrlWrapper::run(pr)
-      classify_nodes(CmdCtrlWrapper::get_results(pr))
+      #classify_nodes(CmdCtrlWrapper::get_results(pr))
+      return classify_only_good_nodes(CmdCtrlWrapper::get_results(pr))
     end
 
     # Wrap the reboot command
@@ -206,19 +225,24 @@ module MicroStepsLibrary
       @nodes_ok.duplicate_and_free(node_set)
 
       callback = Proc.new { |ns|
+        bad_nodes = Nodes::NodeSet.new
         map = Array.new
         map.push("soft")
         map.push("hard")
         map.push("very_hard")
         index = map.index(kind)
         finished = false
-
+        
         while ((index < map.length) && (not finished))
-          _reboot_wrapper(map[index], ns, use_rsh_for_reboot)
-          if (not @nodes_ko.empty?) then
+          bad_nodes = _reboot_wrapper(map[index], ns, use_rsh_for_reboot)
+          if (bad_nodes != nil) then
             ns.free
-            @nodes_ko.duplicate_and_free(ns)
             index = index + 1
+            if (index < map.length) then
+              bad_nodes.duplicate_and_free(ns)
+            else
+              @nodes_ko.add(bad_nodes)
+            end
           else
             finished = true
           end
@@ -874,81 +898,72 @@ module MicroStepsLibrary
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
       return send_tarball_and_uncompress(scattering_kind,
-                                         @config.exec_specific.environment.tarball_file,
-                                         @config.exec_specific.environment.tarball_kind,
+                                         @config.exec_specific.environment.tarball["file"],
+                                         @config.exec_specific.environment.tarball["kind"],
                                          @config.common.environment_extraction_dir)
     end
 
-    # Send and uncompress the admin preinstall on the nodes
+    # Send and execute the admin preinstalls on the nodes
     #
     # Arguments
     # * scattering_kind: kind of taktuk scatter (tree, chain)
     # Output
-    # * return true if the admin preinstall has been successfully uncompressed, false otherwise   
-    def ms_send_admin_pre_install(scattering_kind)
-      return send_tarball_and_uncompress(scattering_kind,
-                                         @config.cluster_specific[@cluster].admin_pre_install_file,
-                                         @config.cluster_specific[@cluster].admin_pre_install_kind,
-                                         @config.common.rambin_path)
+    # * return true if the admin preinstall has been successfully uncompressed, false otherwise
+    def ms_manage_admin_pre_install(scattering_kind)
+      res = true
+      @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
+        res = res && send_tarball_and_uncompress(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path)
+        if (preinstall["script"] == "breakpoint") then
+          @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
+          @config.exec_specific.breakpointed = true
+          res= false
+        else
+          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{preinstall["script"]})", @config.common.taktuk_connector)
+        end
+      }
+      return res
     end
 
-    # Send and uncompress the admin postinstall on the nodes
+    # Send and execute the admin postinstalls on the nodes
     #
     # Arguments
     # * scattering_kind: kind of taktuk scatter (tree, chain)
     # Output
     # * return true if the admin postinstall has been successfully uncompressed, false otherwise   
-    def ms_send_admin_post_install(scattering_kind)
-      return send_tarball_and_uncompress(scattering_kind,
-                                         @config.cluster_specific[@cluster].admin_post_install_file,
-                                         @config.cluster_specific[@cluster].admin_post_install_kind,
-                                         @config.common.rambin_path)
+    def ms_manage_admin_post_install(scattering_kind)
+      res = true
+      @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
+        res = res && send_tarball_and_uncompress(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        if (postinstall["script"] == "breakpoint") then 
+          @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
+          @config.exec_specific.breakpointed = true
+          res= false
+        else
+          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{postinstall["script"]})", @config.common.taktuk_connector)
+        end
+      }
+      return res
     end
 
-    # Send and uncompress the user postinstall on the nodes
+    # Send and execute the user postinstalls on the nodes
     #
     # Arguments
     # * scattering_kind: kind of taktuk scatter (tree, chain)
     # Output
     # * return true if the user postinstall has been successfully uncompressed, false otherwise
-    def ms_send_user_post_install(scattering_kind)
-      return send_tarball_and_uncompress(scattering_kind,
-                                         @config.exec_specific.environment.postinstall_file,
-                                         @config.exec_specific.environment.postinstall_kind,
-                                         @config.common.rambin_path)   
-    end
-
-    # Execute the admin preinstall script
-    #
-    # Arguments
-    # * nothing
-    # Output
-    # * return true if the admin preinstall script has been successfully executed
-    def ms_exec_admin_pre_install
-      return parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{@config.cluster_specific[@cluster].admin_pre_install_script})",
-                                           @config.common.taktuk_connector)
-    end
-
-    # Execute the admin postinstall script
-    #
-    # Arguments
-    # * nothing
-    # Output
-    # * return true if the admin postinstall script has been successfully executed
-    def ms_exec_admin_post_install
-      return parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{@config.cluster_specific[@cluster].admin_post_install_script})",
-                                           @config.common.taktuk_connector)
-    end
-
-    # Execute the user postinstall script
-    #
-    # Arguments
-    # * nothing
-    # Output
-    # * return true if the user postinstall script has been successfully executed
-    def ms_exec_user_post_install
-      return parallel_exec_command_wrapper("(#{@config.common.rambin_path}/traitement.sh)",
-                                           @config.common.taktuk_connector)
+    def ms_manage_user_post_install(scattering_kind)
+      res = true
+      @config.exec_specific.environment.postinstall.each { |postinstall|
+        res = res && send_tarball_and_uncompress(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        if (postinstall["script"] == "breakpoint") then
+          @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
+          @config.exec_specific.breakpointed = true
+          res= false
+        else
+          res = res && parallel_exec_command_wrapper("(#{@config.common.rambin_path}/#{postinstall["script"]})", @config.common.taktuk_connector)
+        end
+      }
+      return res
     end
   end
 end

@@ -18,8 +18,8 @@ require 'drb'
 def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.show_all_version == false) then
-    query = "SELECT name, MAX(version) AS version, description, author, tarball_file, tarball_kind, \
-                    tarball_md5, postinstall_file, postinstall_kind, postinstall_md5, kernel, kernel_params, \
+    query = "SELECT name, MAX(version) AS version, description, author, tarball, \
+                    postinstall, kernel, kernel_params, \
                     initrd, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                     FROM environments \
                     WHERE user=\"#{config.exec_specific.user}\" \
@@ -45,17 +45,13 @@ end
 # * nothing
 def add_environment(config, db)
   env = EnvironmentManagement::Environment.new
-  env.load_from_file(config.exec_specific.file)
+  env.load_from_file(config.exec_specific.file, config.exec_specific.check_md5)
   query = "INSERT INTO environments (name, \
                                     version, \
                                     description, \
                                     author, \
-                                    tarball_file, \
-                                    tarball_kind, \
-                                    tarball_md5, \
-                                    postinstall_file, \
-                                    postinstall_kind, \
-                                    postinstall_md5, \
+                                    tarball, \
+                                    postinstall, \
                                     kernel, \
                                     kernel_params, \
                                     initrd, \
@@ -69,12 +65,8 @@ def add_environment(config, db)
                                     \"#{env.version}\", \
                                     \"#{env.description}\", \
                                     \"#{env.author}\", \
-                                    \"#{env.tarball_file}\", \
-                                    \"#{env.tarball_kind}\", \
-                                    \"#{env.tarball_md5}\", \
-                                    \"#{env.postinstall_file}\", \
-                                    \"#{env.postinstall_kind}\", \
-                                    \"#{env.postinstall_md5}\", \
+                                    \"#{env.flatten_tarball()}\", \
+                                    \"#{env.flatten_post_install()}\", \
                                     \"#{env.kernel}\", \
                                     \"#{env.kernel_params}\", \
                                     \"#{env.initrd}\", \

@@ -11,12 +11,8 @@ module EnvironmentManagement
     attr_reader :version
     attr_reader :description
     attr_reader :author
-    attr_accessor :tarball_file
-    attr_reader :tarball_kind
-    attr_reader :tarball_md5
-    attr_accessor :postinstall_file
-    attr_reader :postinstall_kind
-    attr_reader :postinstall_md5
+    attr_accessor :tarball
+    attr_accessor :postinstall
     attr_reader :kernel
     attr_reader :kernel_params
     attr_reader :initrd
@@ -31,10 +27,11 @@ module EnvironmentManagement
     #
     # Arguments
     # * file: filename
+    # * check_md5: specify if the md5sum of the tarball and the post-install files must be checked
     # Output
     # * returns true if the environment can be loaded correctly, false otherwise
     # * raises an exception if the file does not exist
-    def load_from_file(file)
+    def load_from_file(file, check_md5)
       if not File.exist?(file)
         put "#{file} does not exist"
         return false
@@ -53,18 +50,35 @@ module EnvironmentManagement
               @description = val
             when "author"
               @author = val
-            when "tarball_file"
-              @tarball_file = val
-            when "tarball_kind"
-              @tarball_kind = val
-            when "tarball_md5"
-              @tarball_md5 = val
-            when "postinstall_file"
-              @postinstall_file = val
-            when "postinstall_kind"
-              @postinstall_kind = val
-            when "postinstall_md5"
-              @postinstall_md5 = val
+            when "tarball"
+              #filename|tgz|md5sum
+              if val =~ /.+|\w+|\w+/ then
+                @tarball = Hash.new
+                tmp = val.split("|")
+                @tarball["file"] = tmp[0]
+                @tarball["kind"] = tmp[1]
+                @tarball["md5"] = tmp[2]
+              else
+                puts "invalid entry for tarball"
+                return false
+              end
+            when "postinstall"
+              #filename|tgz|md5sum,filename|tgz|md5sum,...
+              if val =~ /.+|\w+|\w+(,.+|\w+|\w+)*/ then
+                @postinstall = Array.new
+                val.split(",").each { |tmp|
+                  tmp2 = tmp.split("|")
+                  entry = Hash.new
+                  entry["file"] = tmp2[0]
+                  entry["kind"] = tmp2[1]
+                  entry["md5"] = tmp2[2]
+                  entry["script"] = tmp2[3]
+                  @postinstall.push(entry)
+                }
+              else
+                puts "invalid entry for postinstall"
+                return false
+              end
             when "kernel"
               @kernel = val
             when "kernel_params"
@@ -94,8 +108,11 @@ module EnvironmentManagement
           end
         }
       end
-      id = 0
-      return check_md5_digest
+      if check_md5 then
+        return check_md5_digest
+      else
+        return true
+      end
     end
 
     # Load an environment from a database
@@ -140,12 +157,21 @@ module EnvironmentManagement
       @version = hash["version"]
       @description = hash["description"]
       @author = hash["author"]
-      @tarball_file = hash["tarball_file"]
-      @tarball_kind = hash["tarball_kind"]
-      @tarball_md5 = hash["tarball_md5"]
-      @postinstall_file = hash["postinstall_file"]
-      @postinstall_kind = hash["postinstall_kind"]
-      @postinstall_md5 = hash["postinstall_md5"]
+      @tarball = Hash.new
+      val = hash["tarball"].split("|")
+      @tarball["file"] = val[0]
+      @tarball["kind"] = val[1]
+      @tarball["md5"] = val[2]
+      @postinstall = Array.new
+      hash["postinstall"].split(",").each { |tmp|
+        val = tmp.split("|")
+        entry = Hash.new
+        entry["file"] = val[0]
+        entry["kind"] = val[1]
+        entry["md5"] = val[2]
+        entry["script"] = val[3]
+        @postinstall.push(entry)
+      }
       @kernel = hash["kernel"]
       @kernel_params = hash["kernel_params"]
       @initrd = hash["initrd"]
@@ -157,14 +183,28 @@ module EnvironmentManagement
       @demolishing_env = hash["demolishing_env"]
     end
 
-    # Check the MD5 digest of a file
+    # Check the MD5 digest of the files
     #
     # Arguments
     # * nothing
     # Output
     # * returns true if the digest is OK, false otherwise
     def check_md5_digest
-      return ((Digest::MD5.hexdigest(File.read(@tarball_file)) == @tarball_md5) && (Digest::MD5.hexdigest(File.read(@postinstall_file)) == @postinstall_md5))
+      val = @tarball.split("|")
+      tarball_file = val[0]
+      tarball_md5 = val[2]
+      if (Digest::MD5.hexdigest(File.read(tarball_file)) != tarball_md5) then
+        return false
+      end
+      @postinstall.split(",").each { |entry|
+        val = entry.split("|")
+        postinstall_file = val[0]
+        postinstall_md5 = val[2]
+        if (Digest::MD5.hexdigest(File.read(postinstall_file)) != postinstall_md5) then
+          return false
+        end       
+      }
+      return true
     end
 
     # Print the header
@@ -199,12 +239,8 @@ module EnvironmentManagement
       puts "version : #{@version}"
       puts "description : #{@description}"
       puts "author : #{@author}"
-      puts "tarball_file : #{@tarball_file}"
-      puts "tarball_kind : #{@tarball_kind}"
-      puts "tarball_md5 : #{@tarball_md5}"
-      puts "postinstall_file : #{@postinstall_file}"
-      puts "postinstall_kind : #{@postinstall_kind}"
-      puts "postinstall_md5 : #{@postinstall_md5}"
+      puts "tarball : #{flatten_tarball()}"
+      puts "postinstall : #{flatten_post_install()}"
       puts "kernel : #{@kernel}"
       puts "kernel_params : #{@kernel_params}"
       puts "initrd : #{@initrd}"
@@ -214,6 +250,19 @@ module EnvironmentManagement
       puts "user : #{@user}"
       puts "environment_kind : #{@environment_kind}"
       puts "demolishing_env : #{@demolishing_env}"
+    end
+
+    def flatten_tarball
+      return "#{@tarball["file"]}|#{@tarball["kind"]}|#{@tarball["md5"]}"
+    end
+
+    def flatten_post_install
+      s = String.new
+      @postinstall.each_index { |i|
+        s += "#{@postinstall[i]["file"]}|#{@postinstall[i]["kind"]}|#{@postinstall[i]["md5"]}|#{@postinstall[i]["script"]}"
+        s += "," if (i < @postinstall.length - 1)
+      }
+      return s
     end
   end
 end
