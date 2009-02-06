@@ -410,6 +410,8 @@ module Managers
               else
                 raise "Invalid macro step name"
               end
+              #let's free the memory after the launch of the threads
+              GC.start
             }
           else
             #in this case, all is ok
