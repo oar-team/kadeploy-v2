@@ -30,10 +30,12 @@ def list_environments(config, db)
   end
   res = db.run_query(query)
   env.short_view_header
-  res.each_hash { |row|
-    env.load_from_hash(row)
-    env.short_view
-  }
+  if (res != nil) then
+    res.each_hash { |row|
+      env.load_from_hash(row)
+      env.short_view
+    }
+  end
 end
 
 # Add an environment described in the file Config.exec_specific.file
