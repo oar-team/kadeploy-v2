@@ -13,14 +13,8 @@ cmd_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT
 cmd_very_hard_reboot = vmware-cmd /home/ejeanvoi/vmware/HOSTNAME_SHORT/HOSTNAME_SHORT.vmx start hard
 cmd_console = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/console.sh HOSTNAME_SHORT
 #drivers = ata_piix,ata_generic
-admin_pre_install_file = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/admin_pre_install_g5kdev.tgz
-admin_pre_install_md5sum = 8a5e0b4fd05a54def639c1b4432e84e6
-admin_pre_install_kind = tgz
-admin_pre_install_script = launch_admin_pre_install.sh
-admin_post_install_file = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/admin_post_install_g5kdev.tgz
-admin_post_install_md5sum = ce08c8b89d3ac279b9ae61c5c6851fa9
-admin_post_install_kind = tgz
-admin_post_install_script = launch_admin_post_install.sh
+admin_pre_install = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/admin_pre_install_g5kdev.tgz|tgz|8a5e0b4fd05a54def639c1b4432e84e6|launch_admin_pre_install.sh
+admin_post_install = /home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3/test/admin_post_install_g5kdev.tgz|tgz|ce08c8b89d3ac279b9ae61c5c6851fa9|launch_admin_post_install.sh
 
 #Automata description
 #macrostep = SetDeploymentEnv|SetDeploymentEnvDummy:2:100

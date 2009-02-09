@@ -5,6 +5,7 @@ require 'parallel_ops'
 require 'cmdctrl_wrapper'
 require 'pxe_ops'
 require 'cache'
+require 'bittorrent'
 
 #Ruby libs
 require 'ftools'
@@ -402,20 +403,20 @@ module MicroStepsLibrary
                                                             @config.common.taktuk_connector)
     end
 
-    # Send a tarball on the nodes (currently unused)
+    # Send a tarball with Taktuk on the nodes (currently unused)
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
     # Output
     # * return true if the tarball has been successfully sent, false otherwise
-    def send_tarball(scattering_kind)
+    def send_tarball_with_taktuk(scattering_kind)
       return parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
                                                 @config.common.tarball_dest_dir,
                                                 scattering_kind,
                                                 @config.common.taktuk_connector)
     end
 
-    # Send a tarball and uncompress it on the nodes
+    # Send a tarball with Taktuk and uncompress it on the nodes
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
@@ -424,7 +425,7 @@ module MicroStepsLibrary
     # * dest: destination path
     # Output
     # * return true if the operation is correctly performed, false otherwise
-    def send_tarball_and_uncompress(scattering_kind, tarball_file, tarball_kind, dest)
+    def send_tarball_and_uncompress_with_taktuk(scattering_kind, tarball_file, tarball_kind, dest)
       case tarball_kind
       when "tgz"
         cmd = "tar xz -C #{dest}"
@@ -444,6 +445,63 @@ module MicroStepsLibrary
                                                        @config.common.taktuk_connector,
                                                        "0")
     end
+
+    # Send a tarball with Bittorrent and uncompress it on the nodes
+    #
+    # Arguments
+    # * tarball_file: path to the tarball
+    # * tarball_kind: kind of archive (tgz, tbz2, ddgz, ddbz2)
+    # * dest: destination path
+    # Output
+    # * return true if the operation is correctly performed, false otherwise
+    def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, dest)
+      torrent = "#{tarball_file}.torrent"
+      if not Bittorrent::make_torrent(torrent, tarball_file, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
+        @output.debugl(0, "The torrent file (#{torrent}) has not been created")
+        return false
+      end
+      seed_pid = Bittorrent::launch_seed(torrent)
+      if (seed_pid == -1) then
+        @output.debugl(0, "The seed of #{torrent} has not been launched")
+        return false
+      end
+      if not parallel_send_file_command_wrapper(torrent, "/tmp", "tree", @config.common.taktuk_connector) then
+        @output.debugl(4, "Error while sending the torrent file")
+        return false
+      end
+      if not parallel_exec_command_wrapper("(/usr/local/bin/bittorrent_detach #{File.basename(torrent)})", @config.common.taktuk_connector) then
+        @output.debugl(4, "Error while launching the bittorrent download")
+        return false
+      end
+
+      if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent) then
+        @output.debugl(0, "A timeout for the bittorrent download has been reached")
+        Process.kill("SIGKILL", seed_pid)
+        return false
+      end
+      @output.debugl(4, "Shutdown the seed for #{torrent}")
+      Process.kill("SIGKILL", seed_pid)
+      
+      case tarball_kind
+      when "tgz"
+        cmd = "tar xzf /tmp/#{File.basename(tarball_file)} -C #{dest}"
+      when "tbz2"
+        cmd = "tar xjf /tmp/#{File.basename(tarball_file)} -C #{dest}"
+      when "ddgz"
+        cmd = "gzip -cd /tmp/#{File.basename(tarball_file)} > #{dest}"
+      when "ddbz2"
+        cmd = "bzip2 -cd /tmp/#{File.basename(tarball_file)} > #{dest}"
+      else
+        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        return false
+      end
+      if not parallel_exec_command_wrapper("", @config.common.taktuk_connector) then
+        @output.debugl(4, "Error while uncompressing the tarball")
+        return false
+      end
+      return true
+    end
+   
 
     # Execute a custom command on the nodes
     #
@@ -902,10 +960,14 @@ module MicroStepsLibrary
     # Output
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
-      return send_tarball_and_uncompress(scattering_kind,
-                                         @config.exec_specific.environment.tarball["file"],
-                                         @config.exec_specific.environment.tarball["kind"],
-                                         @config.common.environment_extraction_dir)
+      if  (scattering_kind == "bittorrent") then
+        return send_tarball_and_uncompress_with_bittorrent()
+      else
+        return send_tarball_and_uncompress_with_taktuk(scattering_kind,
+                                                       @config.exec_specific.environment.tarball["file"],
+                                                       @config.exec_specific.environment.tarball["kind"],
+                                                       @config.common.environment_extraction_dir)
+      end
     end
 
     # Send and execute the admin preinstalls on the nodes
@@ -917,7 +979,7 @@ module MicroStepsLibrary
     def ms_manage_admin_pre_install(scattering_kind)
       res = true
       @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
-        res = res && send_tarball_and_uncompress(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path)
         if (preinstall["script"] == "breakpoint") then
           @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
           @config.exec_specific.breakpointed = true
@@ -939,7 +1001,7 @@ module MicroStepsLibrary
     def ms_manage_admin_post_install(scattering_kind)
       res = true
       @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
-        res = res && send_tarball_and_uncompress(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
         if (postinstall["script"] == "breakpoint") then 
           @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
           @config.exec_specific.breakpointed = true
@@ -961,7 +1023,7 @@ module MicroStepsLibrary
     def ms_manage_user_post_install(scattering_kind)
       res = true
       @config.exec_specific.environment.postinstall.each { |postinstall|
-        res = res && send_tarball_and_uncompress(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
         if (postinstall["script"] == "breakpoint") then
           @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
           @config.exec_specific.breakpointed = true

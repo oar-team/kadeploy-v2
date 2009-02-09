@@ -226,6 +226,11 @@ class KadeployServer
 end
 
 config = ConfigInformation::Config.new("kadeploy")
+if config.common.use_local_bt_tracker then
+  Thread.new {
+    system("bttrack --port #{bt_tracker_port} --dfile bt_download_state")
+  }
+end
 if (config.check_config("kadeploy") == true)
   db = Database::DbFactory.create(config.common.db_kind)
   Signal.trap("INT") do
