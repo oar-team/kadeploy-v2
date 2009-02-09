@@ -59,7 +59,7 @@ module CmdCtrlWrapper
     }
     return [good_nodes, bad_nodes]
   end
-
+ 
   # Get the results of the execution
   #
   # Arguments
@@ -82,5 +82,15 @@ module CmdCtrlWrapper
       end
     }
     return [good_nodes, bad_nodes]
+  end
+
+  # Get the output of the execution (not suitable for a parallel command)
+  #
+  # Arguments
+  # * pr: instance of a ParallelRunner
+  # Output
+  # * return a string containing the output of the execution
+  def CmdCtrlWrapper::get_output(pr)
+    return pr.results[0].result.stdout
   end
 end

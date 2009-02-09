@@ -216,7 +216,7 @@ module ConfigInformation
             when "taktuk_tree_arity"
               @common.taktuk_tree_arity = content[2].to_i
             when "taktuk_auto_propagate"
-              if content[2] == "true"
+              if content[2] == "true" then
                 @common.taktuk_auto_propagate = true
               else
                 @common.taktuk_auto_propagate = false
@@ -291,6 +291,16 @@ module ConfigInformation
               end
             when "demolishing_env_threshold"
               @common.demolishing_env_threshold = content[2].to_i
+            when "bt_tracker_ip"
+              @common.bt_tracker_ip = content[2]
+            when "bt_tracker_port"
+              @common.bt_tracker_port = content[2]
+            when "bt_download_timeout"
+              @common.bt_download_timeout = content[2].to_i
+            when "use_local_bt_tracker"
+              if content[2] == "true" then
+                use_local_bt_tracker = true
+              end
             end
           end
         end
@@ -1239,6 +1249,10 @@ module ConfigInformation
     attr_accessor :rambin_path
     attr_accessor :mkfs_options
     attr_accessor :demolishing_env_threshold
+    attr_accessor :use_local_bt_tracker
+    attr_accessor :bt_tracker_ip
+    attr_accessor :bt_tracker_port
+    attr_accessor :bt_download_timeout
 
     # Constructor of CommonConfig
     #

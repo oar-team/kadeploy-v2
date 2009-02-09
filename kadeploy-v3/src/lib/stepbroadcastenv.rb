@@ -25,6 +25,8 @@ module BroadcastEnvironment
         return BroadcastEnvChainWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvTreeWithFS"
         return BroadcastEnvTreeWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "BroadcastEnvBittorrent"
+        return BroadcastEnvBittorrent.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvDummy"
         return BroadcastEnvDummy.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       else
@@ -170,6 +172,56 @@ module BroadcastEnvironment
             result = true
             #Here are the micro steps 
             result = result && @step.send_environment("tree")
+            result = result && @step.manage_admin_post_install("tree")
+            result = result && @step.manage_user_post_install("tree")
+            result = result && @step.send_key("tree")
+            result = result && @step.install_bootloader
+            result = result && @step.switch_pxe("deploy_to_deployed_env")
+            #End of micro steps
+          }
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+            if not @nodes_ok.empty? then
+              @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
+              @nodes_ok.duplicate_and_free(@nodes)
+              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+            end
+          end
+          @remaining_retries -= 1
+        end
+        #After several retries, some nodes may still be in an incorrect state
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
+          #Maybe some other instances are defined
+          if not replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+            @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+            @queue_manager.decrement_active_threads
+          end
+        else
+          @queue_manager.decrement_active_threads
+        end
+      }
+    end
+  end
+
+  class BroadcastEnvBittorrent < BroadcastEnv
+    # Main of the BroadcastEnvBittorrent instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def run
+      Thread.new {
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
+        @nodes.duplicate_and_free(@nodes_ko)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_thread = Thread.new {
+            @logger.increment("retry_step2", @nodes_ko)
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps 
+            result = result && @step.mount_tmp_part #we need /tmp to store the tarball
+            result = result && @step.send_environment("bittorrent")
             result = result && @step.manage_admin_post_install("tree")
             result = result && @step.manage_user_post_install("tree")
             result = result && @step.send_key("tree")
