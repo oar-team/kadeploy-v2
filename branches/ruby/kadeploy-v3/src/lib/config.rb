@@ -297,10 +297,8 @@ module ConfigInformation
               @common.bt_tracker_port = content[2]
             when "bt_download_timeout"
               @common.bt_download_timeout = content[2].to_i
-            when "use_local_bt_tracker"
-              if content[2] == "true" then
-                use_local_bt_tracker = true
-              end
+            when "use_local_bt_tracker"          
+              @common.use_local_bt_tracker = (content[2] == "true")
             end
           end
         end

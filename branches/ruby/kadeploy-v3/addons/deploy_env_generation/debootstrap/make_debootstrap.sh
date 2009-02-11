@@ -4,7 +4,7 @@ DIR=debootstrap
 SCRIPTS_DIR=scripts
 
 DEBOOTSTRAP="/usr/sbin/debootstrap"
-DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,taktuk,grub-pc
+DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,taktuk,grub-pc,bittorrent
 DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,adduser,cron,logrotate,laptop-detect,tasksel,tasksel-data,dhcp3-client,dhcp3-common,wget
 
 
@@ -51,6 +51,20 @@ EOF
 
 cp linuxrc $DIR/
 cp mkdev $DIR/dev
+
+# Ugly patch for bittorrent required because btdownloadheadless is launched without terminal
+patch $DIR/usr/bin/btdownloadheadless.bittorrent -i - <<EOF
+152,153c152,153
+<         import curses
+<         curses.initscr()
+---
+> #        import curses
+> #        curses.initscr()
+155c155
+<         curses.endwin()
+---
+> #        curses.endwin()
+EOF
 
 cp $SCRIPTS_DIR/* $DIR/usr/local/bin
 

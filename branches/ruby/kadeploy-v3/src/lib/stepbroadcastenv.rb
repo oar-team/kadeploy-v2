@@ -21,10 +21,10 @@ module BroadcastEnvironment
     # * raises an exception if an invalid kind of instance is given
     def BroadcastEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       case kind
-      when "BroadcastEnvChainWithFS"
-        return BroadcastEnvChainWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
-      when "BroadcastEnvTreeWithFS"
-        return BroadcastEnvTreeWithFS.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "BroadcastEnvChain"
+        return BroadcastEnvChain.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "BroadcastEnvTree"
+        return BroadcastEnvTree.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvBittorrent"
         return BroadcastEnvBittorrent.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvDummy"
@@ -104,8 +104,8 @@ module BroadcastEnvironment
     end
   end
 
-  class BroadcastEnvChainWithFS < BroadcastEnv
-    # Main of the BroadcastEnvChainWithFS instance
+  class BroadcastEnvChain < BroadcastEnv
+    # Main of the BroadcastEnvChain instance
     #
     # Arguments
     # * nothing
@@ -116,10 +116,12 @@ module BroadcastEnvironment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step2", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(2, "Performing a BroadcastEnvChain step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
             result = result && @step.send_environment("chain")
@@ -130,11 +132,11 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1
@@ -153,8 +155,8 @@ module BroadcastEnvironment
     end
   end
 
-  class BroadcastEnvTreeWithFS < BroadcastEnv
-    # Main of the BroadcastEnvTreeWithFS instance
+  class BroadcastEnvTree < BroadcastEnv
+    # Main of the BroadcastEnvTree instance
     #
     # Arguments
     # * nothing
@@ -165,10 +167,12 @@ module BroadcastEnvironment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step2", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(2, "Performing a BroadcastEnvChain step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
             result = result && @step.send_environment("tree")
@@ -179,11 +183,11 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1
@@ -214,10 +218,12 @@ module BroadcastEnvironment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step2", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(2, "Performing a BroadcastEnvChainWithFS step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(2, "Performing a BroadcastEnvBittorrent step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
             result = result && @step.mount_tmp_part #we need /tmp to store the tarball
@@ -229,11 +235,11 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1

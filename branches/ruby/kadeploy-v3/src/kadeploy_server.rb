@@ -226,12 +226,13 @@ class KadeployServer
 end
 
 config = ConfigInformation::Config.new("kadeploy")
-if config.common.use_local_bt_tracker then
-  Thread.new {
-    system("bttrack --port #{bt_tracker_port} --dfile bt_download_state")
-  }
-end
 if (config.check_config("kadeploy") == true)
+  if config.common.use_local_bt_tracker then
+    Thread.new {
+      puts "Launching the Bittorrent tracker"
+      res = system("bttrack --port #{config.common.bt_tracker_port} --dfile #{config.common.kadeploy_cache_dir}/bt_download_state &>/dev/null")
+    }
+  end
   db = Database::DbFactory.create(config.common.db_kind)
   Signal.trap("INT") do
     puts "SIGINT trapped, let's clean everything ..."

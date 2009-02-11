@@ -91,6 +91,10 @@ module CmdCtrlWrapper
   # Output
   # * return a string containing the output of the execution
   def CmdCtrlWrapper::get_output(pr)
-    return pr.results[0].result.stdout
+    stdout = String.new
+    pr.results.each_pair { |cb, result|
+      stdout = result.stdout
+    }
+    return stdout
   end
 end
