@@ -718,6 +718,11 @@ module ConfigInformation
             if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
               puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
               return false
+            else
+              if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
+                puts "Only tgz and tbz2 file kinds are allowed for preinstall files"
+                return false
+              end
             end
           end
         }
@@ -732,6 +737,11 @@ module ConfigInformation
             if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
               puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
               return false
+            else
+              if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
+                puts "Only tgz and tbz2 file kinds are allowed for postinstall files"
+                return false
+              end
             end
           end
         }
