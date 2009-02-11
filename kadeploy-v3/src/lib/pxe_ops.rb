@@ -70,9 +70,17 @@ module PXEOperations
   # * tftp_cfg: relative path to the TFTP configuration repository
   # Output
   # * returns the value of write_pxe
-  def PXEOperations::set_pxe_for_linux(ips, kernel, initrd, boot_part, tftp_repository, tftp_img, tftp_cfg) 
-    kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n"
-    append_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd 
+  def PXEOperations::set_pxe_for_linux(ips, kernel, initrd, boot_part, tftp_repository, tftp_img, tftp_cfg)
+    if /\Ahttp:\/\/.+/ =~ kernel then
+      kernel_line = "\tKERNEL " + kernel + "\n" #gpxelinux
+    else
+      kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n" #pxelinux
+    end
+    if /\Ahttp:\/\/.+/ =~ tftp_img then
+      append_line = "\tAPPEND initrd=" + initrd #gpxelinux
+    else
+      append_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd #pxelinux
+    end
     append_line += " root=" + boot_part if (boot_part != "")
     append_line += "\n"
     msg = get_pxe_header() + kernel_line + append_line
@@ -91,7 +99,11 @@ module PXEOperations
   # Output
   # * returns the value of write_pxe
   def PXEOperations::set_pxe_for_nfsroot(ips, kernel, nfs_server, tftp_repository, tftp_img, tftp_cfg)
-    kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n"
+    if /\Ahttp:\/\/.+/ =~ kernel then
+      kernel_line = "\tKERNEL " + kernel + "\n" #gpxelinux 
+    else
+      kernel_line = "\tKERNEL " + tftp_img + "/" + kernel + "\n" #pxelinux
+    end
     append_line = "\tAPPEND rw console=ttyS0,115200n81 console=tty0 root=/dev/nfs ip=dhcp nfsroot=#{nfs_server}:#{nfs_root_path}\n"
     msg = get_pxe_header() + kernel_line + append_line
     return write_pxe(ips, msg, tftp_repository, tftp_cfg)

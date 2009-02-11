@@ -456,11 +456,11 @@ module MicroStepsLibrary
     # * return true if the operation is correctly performed, false otherwise
     def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, dest)
       torrent = "#{tarball_file}.torrent"
-      if not Bittorrent::make_torrent(torrent, tarball_file, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
+      if not Bittorrent::make_torrent(tarball_file, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
         @output.debugl(0, "The torrent file (#{torrent}) has not been created")
         return false
       end
-      seed_pid = Bittorrent::launch_seed(torrent)
+      seed_pid = Bittorrent::launch_seed(torrent, @config.common.kadeploy_cache_dir)
       if (seed_pid == -1) then
         @output.debugl(0, "The seed of #{torrent} has not been launched")
         return false
@@ -469,12 +469,12 @@ module MicroStepsLibrary
         @output.debugl(4, "Error while sending the torrent file")
         return false
       end
-      if not parallel_exec_command_wrapper("(/usr/local/bin/bittorrent_detach #{File.basename(torrent)})", @config.common.taktuk_connector) then
+      if not parallel_exec_command_wrapper("/usr/local/bin/bittorrent_detach /tmp/#{File.basename(torrent)}", @config.common.taktuk_connector) then
         @output.debugl(4, "Error while launching the bittorrent download")
         return false
       end
-
-      if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent) then
+      sleep(10)
+      if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
         @output.debugl(0, "A timeout for the bittorrent download has been reached")
         Process.kill("SIGKILL", seed_pid)
         return false
@@ -495,7 +495,8 @@ module MicroStepsLibrary
         @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
         return false
       end
-      if not parallel_exec_command_wrapper("", @config.common.taktuk_connector) then
+      puts "uncompressing the bouzin"
+      if not parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector) then
         @output.debugl(4, "Error while uncompressing the tarball")
         return false
       end
@@ -578,7 +579,7 @@ module MicroStepsLibrary
     # * step_name: name of the current step
     # Output   
     # * return true if the timeout is reached, false otherwise
-    def timeout?(timeout, instance_thread, step_name)
+    def timeout?(timeout, instance_thread, step_name, instance_node_set)
       start = Time.now.to_i
       while ((instance_thread.status != false) && (Time.now.to_i < (start + timeout)))
         sleep(1)
@@ -586,10 +587,12 @@ module MicroStepsLibrary
       if (instance_thread.status != false) then
         @output.debugl(4, "Timeout before the end of the step, let's kill the instance")
         Thread.kill(instance_thread)
-        @nodes_ok.duplicate_and_free(@nodes_ko)
+        @nodes_ok.free
+        instance_node_set.duplicate_and_free(@nodes_ko)
         @nodes_ko.set_error_msg("Timeout in the #{step_name} step")
         return true
       else
+        instance_node_set.free()
         instance_thread.join
         return false
       end
@@ -852,12 +855,9 @@ module MicroStepsLibrary
     # Output
     # * return true if the mount has been successfully performed, false otherwise
     def ms_mount_tmp_part
-      if (@config.exec_specific.reformat_tmp) then      
-        tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
-        return parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
-                                             @config.common.taktuk_connector)
-      end
-      return true
+      tmp_part = @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].tmp_part
+      return parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
+                                           @config.common.taktuk_connector)
     end
 
 
@@ -961,7 +961,9 @@ module MicroStepsLibrary
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
       if  (scattering_kind == "bittorrent") then
-        return send_tarball_and_uncompress_with_bittorrent()
+        return send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
+                                                           @config.exec_specific.environment.tarball["kind"],
+                                                           @config.common.environment_extraction_dir)
       else
         return send_tarball_and_uncompress_with_taktuk(scattering_kind,
                                                        @config.exec_specific.environment.tarball["file"],

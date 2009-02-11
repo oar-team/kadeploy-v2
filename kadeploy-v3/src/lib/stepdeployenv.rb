@@ -125,6 +125,8 @@ module SetDeploymentEnvironnment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -140,11 +142,11 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)        
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1
@@ -182,6 +184,8 @@ module SetDeploymentEnvironnment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -194,11 +198,11 @@ module SetDeploymentEnvironnment
             result = result && @step.manage_admin_pre_install("tree")
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)        
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1
@@ -230,6 +234,8 @@ module SetDeploymentEnvironnment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -243,12 +249,12 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
-            end            
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
+            end
           end
           @remaining_retries -= 1
         end
@@ -286,6 +292,8 @@ module SetDeploymentEnvironnment
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
           instance_thread = Thread.new {
             @logger.increment("retry_step1", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
@@ -301,11 +309,11 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
-          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name) then
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
-              @nodes_ok.duplicate_and_free(@nodes)        
-              @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
             end
           end
           @remaining_retries -= 1

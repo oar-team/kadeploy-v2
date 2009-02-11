@@ -10,5 +10,6 @@ then
     exit 1
 fi
 
+unset http_proxy
 source $KADEPLOY_CONFIG_DIR/load_kadeploy_env
 $KADEPLOY_INSTALL_DIR/src/kadeploy_server.rb "$@"

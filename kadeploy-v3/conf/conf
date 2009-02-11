@@ -40,7 +40,7 @@ purge_deployment_timer = 900
 rambin_path = /rambin
 mkfs_options = ext2@-b 4096 -O sparse_super,filetype,resize_inode,dir_index|ext3@-b 4096 -O sparse_super,filetype,resize_inode,dir_index
 demolishing_env_threshold = 2
-bt_tracker_ip : fgdx2
-bt_tracker_port : 6969
-bt_download_timeout : 1800
-use_local_tracker : true
+bt_tracker_ip = fgdx2
+bt_tracker_port = 6969
+bt_download_timeout = 1800
+use_local_bt_tracker = true
