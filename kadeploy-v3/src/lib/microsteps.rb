@@ -403,18 +403,6 @@ module MicroStepsLibrary
                                                             @config.common.taktuk_connector)
     end
 
-    # Send a tarball with Taktuk on the nodes (currently unused)
-    #
-    # Arguments
-    # * scattering_kind:  kind of taktuk scatter (tree, chain)
-    # Output
-    # * return true if the tarball has been successfully sent, false otherwise
-    def send_tarball_with_taktuk(scattering_kind)
-      return parallel_send_file_command_wrapper(@config.exec_specific.environment.tarball_file,
-                                                @config.common.tarball_dest_dir,
-                                                scattering_kind,
-                                                @config.common.taktuk_connector)
-    end
 
     # Send a tarball with Taktuk and uncompress it on the nodes
     #
@@ -422,19 +410,20 @@ module MicroStepsLibrary
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
     # * tarball_file: path to the tarball
     # * tarball_kind: kind of archive (tgz, tbz2, ddgz, ddbz2)
-    # * dest: destination path
+    # * deploy_mount_point: deploy mount point
+    # * deploy_mount_part: deploy mount part
     # Output
     # * return true if the operation is correctly performed, false otherwise
-    def send_tarball_and_uncompress_with_taktuk(scattering_kind, tarball_file, tarball_kind, dest)
+    def send_tarball_and_uncompress_with_taktuk(scattering_kind, tarball_file, tarball_kind, deploy_mount_point, deploy_part)
       case tarball_kind
       when "tgz"
-        cmd = "tar xz -C #{dest}"
+        cmd = "tar xz -C #{deploy_mount_point}"
       when "tbz2"
-        cmd = "tar xj -C #{dest}"
+        cmd = "tar xj -C #{deploy_mount_point}"
       when "ddgz"
-        cmd = "gzip -cd > #{dest}"
+        cmd = "gzip -cd > #{deploy_part}"
       when "ddbz2"
-        cmd = "bzip2 -cd > #{dest}"
+        cmd = "bzip2 -cd > #{deploy_part}"
       else
         @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
         return false
@@ -451,10 +440,11 @@ module MicroStepsLibrary
     # Arguments
     # * tarball_file: path to the tarball
     # * tarball_kind: kind of archive (tgz, tbz2, ddgz, ddbz2)
-    # * dest: destination path
+    # * deploy_mount_point: deploy mount point
+    # * deploy_mount_part: deploy mount part
     # Output
     # * return true if the operation is correctly performed, false otherwise
-    def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, dest)
+    def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
       torrent = "#{tarball_file}.torrent"
       if not Bittorrent::make_torrent(tarball_file, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
         @output.debugl(0, "The torrent file (#{torrent}) has not been created")
@@ -484,18 +474,17 @@ module MicroStepsLibrary
       
       case tarball_kind
       when "tgz"
-        cmd = "tar xzf /tmp/#{File.basename(tarball_file)} -C #{dest}"
+        cmd = "tar xzf /tmp/#{File.basename(tarball_file)} -C #{deploy_mount_point}"
       when "tbz2"
-        cmd = "tar xjf /tmp/#{File.basename(tarball_file)} -C #{dest}"
+        cmd = "tar xjf /tmp/#{File.basename(tarball_file)} -C #{deploy_mount_point}"
       when "ddgz"
-        cmd = "gzip -cd /tmp/#{File.basename(tarball_file)} > #{dest}"
+        cmd = "gzip -cd /tmp/#{File.basename(tarball_file)} > #{deploy_part}"
       when "ddbz2"
-        cmd = "bzip2 -cd /tmp/#{File.basename(tarball_file)} > #{dest}"
+        cmd = "bzip2 -cd /tmp/#{File.basename(tarball_file)} > #{deploy_part}"
       else
         @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
         return false
       end
-      puts "uncompressing the bouzin"
       if not parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector) then
         @output.debugl(4, "Error while uncompressing the tarball")
         return false
@@ -844,8 +833,14 @@ module MicroStepsLibrary
     # Output
     # * return true if the mount has been successfully performed, false otherwise
     def ms_mount_deploy_part
-      return parallel_exec_command_wrapper("mount #{get_deploy_part_str()} #{@config.common.environment_extraction_dir}",
-                                           @config.common.taktuk_connector)
+      #we do not mount the deploy part for a dd.gz or dd.bz2 image
+      if ((@config.exec_specific.environment.tarball["kind"] == "tgz") ||
+          (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
+        return parallel_exec_command_wrapper("mount #{get_deploy_part_str()} #{@config.common.environment_extraction_dir}",
+                                             @config.common.taktuk_connector)
+      else
+        return true
+      end
     end
 
     # Mount the /tmp part on the nodes
@@ -963,12 +958,14 @@ module MicroStepsLibrary
       if  (scattering_kind == "bittorrent") then
         return send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
                                                            @config.exec_specific.environment.tarball["kind"],
-                                                           @config.common.environment_extraction_dir)
+                                                           @config.common.environment_extraction_dir,
+                                                           @config.exec_specific.environment.part)
       else
         return send_tarball_and_uncompress_with_taktuk(scattering_kind,
                                                        @config.exec_specific.environment.tarball["file"],
                                                        @config.exec_specific.environment.tarball["kind"],
-                                                       @config.common.environment_extraction_dir)
+                                                       @config.common.environment_extraction_dir,
+                                                       @config.exec_specific.environment.part)
       end
     end
 
@@ -981,7 +978,7 @@ module MicroStepsLibrary
     def ms_manage_admin_pre_install(scattering_kind)
       res = true
       @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
         if (preinstall["script"] == "breakpoint") then
           @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
           @config.exec_specific.breakpointed = true
@@ -1003,7 +1000,7 @@ module MicroStepsLibrary
     def ms_manage_admin_post_install(scattering_kind)
       res = true
       @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
         if (postinstall["script"] == "breakpoint") then 
           @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
           @config.exec_specific.breakpointed = true
@@ -1025,7 +1022,7 @@ module MicroStepsLibrary
     def ms_manage_user_post_install(scattering_kind)
       res = true
       @config.exec_specific.environment.postinstall.each { |postinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path)
+        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
         if (postinstall["script"] == "breakpoint") then
           @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
           @config.exec_specific.breakpointed = true

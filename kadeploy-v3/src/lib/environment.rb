@@ -71,6 +71,10 @@ module EnvironmentManagement
                   entry = Hash.new
                   entry["file"] = tmp2[0]
                   entry["kind"] = tmp2[1]
+                  if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
+                    puts "Only tgz and tbz2 file kinds are allowed for postinstall files"
+                    return false
+                  end
                   entry["md5"] = tmp2[2]
                   entry["script"] = tmp2[3]
                   @postinstall.push(entry)
@@ -98,6 +102,7 @@ module EnvironmentManagement
                 @environment_kind = val
               else
                 puts "#{val} is an invalid environment kind (linux and other are authorized)"
+                return false
               end
             when "demolishing_env"
               @demolishing_env = val
