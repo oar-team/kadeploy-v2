@@ -776,11 +776,15 @@ module MicroStepsLibrary
         @output.debugl(0, "Invalid kind of deploy environment: #{kind}")
         return false
       end
-      return parallel_exec_cmd_with_input_file_wrapper(@config.cluster_specific[@cluster].fdisk_file,
-                                                       "fdisk #{@config.cluster_specific[@cluster].block_device}",
-                                                       "tree",
-                                                       @config.common.taktuk_connector,
-                                                       expected_status)
+      temp = Tempfile.new("fdisk_#{@cluster}")
+      system("cat #{@config.cluster_specific[@cluster].fdisk_file}|sed 's/PARTTYPE/#{@config.exec_specific.environment.fdisk_type}/' > #{temp.path}")
+      res = parallel_exec_cmd_with_input_file_wrapper(temp.path,
+                                                      "fdisk #{@config.cluster_specific[@cluster].block_device}",
+                                                      "tree",
+                                                      @config.common.taktuk_connector,
+                                                      expected_status)
+      temp.unlink
+      return res
     end
 
     # Perform the deployment part on the nodes
@@ -790,17 +794,23 @@ module MicroStepsLibrary
     # Output
     # * return true if the format has been successfully performed, false otherwise
     def ms_format_deploy_part
-      if @config.common.mkfs_options.has_key?(@config.exec_specific.environment.filesystem) then
-        opts = @config.common.mkfs_options[@config.exec_specific.environment.filesystem]
-        return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
+      if ((@config.exec_specific.environment.tarball["kind"] == "tgz") ||
+          (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
+        if @config.common.mkfs_options.has_key?(@config.exec_specific.environment.filesystem) then
+          opts = @config.common.mkfs_options[@config.exec_specific.environment.filesystem]
+          return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
                                               umount #{get_deploy_part_str()} 2>/dev/null; \
                                               mkfs -t #{@config.exec_specific.environment.filesystem} #{opts} #{get_deploy_part_str()}",
-                                              @config.common.taktuk_connector)
-      else
-        return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
+                                               @config.common.taktuk_connector)
+        else
+          return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
                                               umount #{get_deploy_part_str()} 2>/dev/null; \
                                               mkfs -t #{@config.exec_specific.environment.filesystem} #{get_deploy_part_str()}",
-                                              @config.common.taktuk_connector)
+                                               @config.common.taktuk_connector)
+        end
+      else
+        @output.debugl(4, "Bypass the format of the deploy part")
+        return true
       end
     end
 
@@ -839,6 +849,7 @@ module MicroStepsLibrary
         return parallel_exec_command_wrapper("mount #{get_deploy_part_str()} #{@config.common.environment_extraction_dir}",
                                              @config.common.taktuk_connector)
       else
+        @output.debugl(4, "Bypass the mount of the deploy part")
         return true
       end
     end
@@ -945,7 +956,13 @@ module MicroStepsLibrary
     # Output
     # * return true if the deploy part has been successfully umounted, false otherwise
     def ms_umount_deploy_part
-      return parallel_exec_command_wrapper("umount #{@config.exec_specific.environment.part}", @config.common.taktuk_connector)
+      if ((@config.exec_specific.environment.tarball["kind"] == "tgz") ||
+          (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
+        return parallel_exec_command_wrapper("umount #{@config.exec_specific.environment.part}", @config.common.taktuk_connector)
+      else
+        @output.debugl(4, "Bypass the umount of the deploy part")
+        return true
+      end
     end
 
     # Send and uncompress the user environment on the nodes
@@ -999,17 +1016,21 @@ module MicroStepsLibrary
     # * return true if the admin postinstall has been successfully uncompressed, false otherwise   
     def ms_manage_admin_post_install(scattering_kind)
       res = true
-      @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
-        if (postinstall["script"] == "breakpoint") then 
-          @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
-          @config.exec_specific.breakpointed = true
-          res= false
-        else
-          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
-                                                     @config.common.taktuk_connector)
-        end
-      }
+      if (@config.exec_specific.environment.environment_kind != "other") then
+        @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
+          res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
+          if (postinstall["script"] == "breakpoint") then 
+            @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
+            @config.exec_specific.breakpointed = true
+            res= false
+          else
+            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+                                                       @config.common.taktuk_connector)
+          end
+        }
+      else
+        @output.debugl(4, "Bypass the admin postinstalls")
+      end
       return res
     end
 
@@ -1021,17 +1042,21 @@ module MicroStepsLibrary
     # * return true if the user postinstall has been successfully uncompressed, false otherwise
     def ms_manage_user_post_install(scattering_kind)
       res = true
-      @config.exec_specific.environment.postinstall.each { |postinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
-        if (postinstall["script"] == "breakpoint") then
-          @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
-          @config.exec_specific.breakpointed = true
-          res= false
-        else
-          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
-                                                     @config.common.taktuk_connector)
-        end
-      }
+      if (@config.exec_specific.environment.environment_kind != "other") then
+        @config.exec_specific.environment.postinstall.each { |postinstall|
+          res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
+          if (postinstall["script"] == "breakpoint") then
+            @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
+            @config.exec_specific.breakpointed = true
+            res= false
+          else
+            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+                                                       @config.common.taktuk_connector)
+          end
+        }
+      else
+        @output.debugl(4, "Bypass the user postinstalls")
+      end
       return res
     end
   end
