@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `environments` (
   `initrd` varchar(255) NOT NULL,
   `kernel` varchar(255) NOT NULL,
   `kernel_params` varchar(255) NOT NULL,
-  `fdisk_type` int(10) unsigned default NULL,
+  `fdisk_type` varchar(2) default NULL,
   `filesystem` varchar(9) default NULL,
   `user` varchar(255) default 'nobody',
   `part` varchar(20) NOT NULL,
