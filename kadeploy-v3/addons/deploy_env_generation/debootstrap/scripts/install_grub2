@@ -27,7 +27,7 @@ case $KIND in
 	MSG=$MSG"menuentry Xen {\n"
 	MSG=$MSG"\tset root="$GRUBPART"\n"
 	MSG=$MSG"\tmultiboot "$LINE1"\n"
-	MSG=$MSG"\tmodule "$LINE2" root ="$ROOT" ro\n"
+	MSG=$MSG"\tmodule "$LINE2" root="$ROOT" ro\n"
 	MSG=$MSG"\tmodule "$LINE3"\n"
 	;;
     *)

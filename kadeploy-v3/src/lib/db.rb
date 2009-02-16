@@ -9,7 +9,7 @@ module Database
     # Arguments
     # * kind: specifies the kind of database to use (currently, only mysql is supported)
     # Output
-    # * returns a Db instance (DbMysql)
+    # * returns a Db instance
     def DbFactory.create(kind)
       case kind
       when "mysql"
