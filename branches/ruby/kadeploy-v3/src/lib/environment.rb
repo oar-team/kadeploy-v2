@@ -16,6 +16,8 @@ module EnvironmentManagement
     attr_reader :kernel
     attr_reader :kernel_params
     attr_reader :initrd
+    attr_reader :hypervisor
+    attr_reader :hypervisor_params
     attr_reader :part
     attr_reader :fdisk_type
     attr_reader :filesystem
@@ -36,6 +38,8 @@ module EnvironmentManagement
         put "#{file} does not exist"
         return false
       else
+        @hypervisor = String.new
+        @hypervisor_params = String.new
         IO::read(file).split("\n").each { |line|
           if /^(\w+)\ :\ (.+)/ =~ line then
             content = Regexp.last_match
@@ -89,6 +93,10 @@ module EnvironmentManagement
               @kernel_params = val
             when "initrd"
               @initrd = val
+            when "hypervisor"
+              @hypervisor = val
+            when "hypervisor_params"
+              @hypervisor_params = val
             when "part"
               @part = val
             when "fdisk_type"
@@ -180,6 +188,8 @@ module EnvironmentManagement
       @kernel = hash["kernel"]
       @kernel_params = hash["kernel_params"]
       @initrd = hash["initrd"]
+      @hypervisor = hash["hypervisor"]
+      @hypervisor_params = hash["hypervisor_params"]
       @part = hash["part"]
       @fdisk_type = hash["fdisk_type"]
       @filesystem = hash["filesystem"]
@@ -219,8 +229,8 @@ module EnvironmentManagement
     # Output
     # * nothing
     def short_view_header
-      puts "Name         Version     User            Description"
-      puts "####         #######     ####            ###########"
+      puts "Name                Version     User            Description"
+      puts "####                #######     ####            ###########"
     end
 
     # Print the short view
@@ -230,7 +240,7 @@ module EnvironmentManagement
     # Output
     # * nothing
     def short_view
-      printf("%-15s %-7s %-10s %-40s\n", @name, @version, @user, @description)
+      printf("%-21s %-7s %-10s %-40s\n", @name, @version, @user, @description)
     end
 
     # Print the full view
@@ -249,6 +259,8 @@ module EnvironmentManagement
       puts "kernel : #{@kernel}"
       puts "kernel_params : #{@kernel_params}"
       puts "initrd : #{@initrd}"
+      puts "hypervisor : #{@hypervisor}" if (@hypervisor != "")
+      puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != "")
       puts "part : #{@part}"
       puts "fdisk_type : #{@fdisk_type}"
       puts "filesystem : #{@filesystem}"

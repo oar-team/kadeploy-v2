@@ -20,7 +20,7 @@ def list_environments(config, db)
   if (config.exec_specific.show_all_version == false) then
     query = "SELECT name, MAX(version) AS version, description, author, tarball, \
                     postinstall, kernel, kernel_params, \
-                    initrd, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                    initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                     FROM environments \
                     WHERE user=\"#{config.exec_specific.user}\" \
                     GROUP BY name"
@@ -57,6 +57,8 @@ def add_environment(config, db)
                                     kernel, \
                                     kernel_params, \
                                     initrd, \
+                                    hypervisor, \
+                                    hypervisor_params, \
                                     part, \
                                     fdisk_type, \
                                     filesystem, \
@@ -72,6 +74,8 @@ def add_environment(config, db)
                                     \"#{env.kernel}\", \
                                     \"#{env.kernel_params}\", \
                                     \"#{env.initrd}\", \
+                                    \"#{env.hypervisor}\", \
+                                    \"#{env.hypervisor_params}\", \
                                     \"#{env.part}\", \
                                     \"#{env.fdisk_type}\", \
                                     \"#{env.filesystem}\", \

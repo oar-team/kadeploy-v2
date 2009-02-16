@@ -288,35 +288,39 @@ module MicroStepsLibrary
     # Copy the kernel and the initrd into the PXE directory
     #
     # Arguments
-    # * nothing
+    # * files: array of file
     # Output
     # * return true if the operation is correctly performed, false
-    def copy_kernel_initrd_to_pxe
+    def copy_kernel_initrd_to_pxe(files)
       must_extract = false
-      archive = @config.exec_specific.environment.tarball_file
-      kernel = "boot/" + @config.exec_specific.environment.kernel
-      initrd = "boot/" + @config.exec_specific.environment.initrd
+      archive = @config.exec_specific.environment.tarball["file"]
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
-      cached_kernel = dest_dir + "/" + @config.exec_specific.environment.kernel + suffix_in_cache
-      cached_initrd = dest_dir + "/" + @config.exec_specific.environment.initrd + suffix_in_cache
-      if not (File.exist?(cached_kernel) && File.exist?(cached_initrd)) then
-        must_extract = true
-      else
-        #If the archive has been modified, re-extraction required
-        if (File.mtime(archive).to_i > File.atime(cached_kernel).to_i) ||
-            (File.mtime(archive).to_i > File.atime(cached_initrd).to_i) then
+      prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+      files.each { |file|
+        if not (File.exist?(dest_dir + "/" + prefix_in_cache + file)) then
           must_extract = true
         end
+      }
+      if not must_extract then
+        files.each { |file|
+          #If the archive has been modified, re-extraction required
+          if (File.mtime(archive).to_i > File.atime(dest_dir + "/" + prefix_in_cache + file).to_i) then
+            must_extract = true
+          end
+        }
       end
-
       if must_extract then
+        files_in_archive = Array.new
+        files.each { |file|
+          files_in_archive.push("boot/" + file)
+        }
         res = extract_files_from_archive(archive,
-                                         @config.exec_specific.environment.tarball_kind,
-                                         [kernel, initrd],
+                                         @config.exec_specific.environment.tarball["kind"],
+                                         files_in_archive,
                                          @config.common.kadeploy_cache_dir)
-        res = res && File.move(@config.common.kadeploy_cache_dir + "/" + @config.exec_specific.environment.kernel, cached_kernel)
-        res = res && File.move(@config.common.kadeploy_cache_dir + "/" + @config.exec_specific.environment.initrd, cached_initrd)
+        files.each { |file|
+          res = res && File.move(@config.common.kadeploy_cache_dir + "/" + file, dest_dir + "/" + prefix_in_cache + file)
+        }
         return res
       else
         return true
@@ -367,11 +371,14 @@ module MicroStepsLibrary
         line1 = "/boot/#{@config.exec_specific.environment.kernel}"
         line2 = "/boot/#{@config.exec_specific.environment.initrd}"
       when "xen"
+        line1 = "/boot/#{@config.exec_specific.environment.hypervisor} #{@config.exec_specific.environment.hypervisor_params}"
+        line2 = "/boot/#{@config.exec_specific.environment.kernel}"
+        line3 = "/boot/#{@config.exec_specific.environment.initrd}"
       else
         return false
       end
       return parallel_exec_command_wrapper_expecting_status("(/usr/local/bin/install_grub \
-                                                            #{kind} \"#{root}\" \"#{grubpart}\" #{path} \
+                                                            #{kind} #{root} \"#{grubpart}\" #{path} \
                                                             \"#{line1}\" \"#{line2}\" \"#{line3}\")",
                                                             ["0"],
                                                             @config.common.taktuk_connector)
@@ -393,11 +400,14 @@ module MicroStepsLibrary
         line1 = "/boot/#{@config.exec_specific.environment.kernel}"
         line2 = "/boot/#{@config.exec_specific.environment.initrd}"
       when "xen"
+        line1 = "/boot/#{@config.exec_specific.environment.hypervisor}"
+        line2 = "/boot/#{@config.exec_specific.environment.kernel}"
+        line3 = "/boot/#{@config.exec_specific.environment.initrd}"
       else
         return false
       end
       return parallel_exec_command_wrapper_expecting_status("(/usr/local/bin/install_grub2 \
-                                                            #{kind} \"#{root}\" \"#{grubpart}\" #{path} \
+                                                            #{kind} #{root} \"#{grubpart}\" #{path} \
                                                             \"#{line1}\" \"#{line2}\" \"#{line3}\")",
                                                             ["0"],
                                                             @config.common.taktuk_connector)
@@ -655,29 +665,76 @@ module MicroStepsLibrary
         else
           case @config.common.bootloader
           when "pure_pxe"
-            suffix_in_cache = "--e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version
-            kernel = @config.exec_specific.environment.kernel + suffix_in_cache
-            initrd = @config.exec_specific.environment.initrd + suffix_in_cache
-            images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-            res = system("touch #{images_dir}/#{kernel}")
-            res = res && system("touch #{images_dir}/#{initrd}")
-            res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
+            prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+            case @config.exec_specific.environment.environment_kind
+            when "linux"
+              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
+              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
+              images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+              res = system("touch -a #{images_dir}/#{kernel}")
+              res = res && system("touch -a #{images_dir}/#{initrd}")
+              res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
+                                                            kernel,
+                                                            initrd,
+                                                            @config.exec_specific.environment.part,
+                                                            @config.common.tftp_repository,
+                                                            @config.common.tftp_images_path,
+                                                            @config.common.tftp_cfg)
+            when "xen"
+              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
+              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
+              hypervisor = prefix_in_cache + @config.exec_specific.environment.hypervisor
+              images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+              res = system("touch -a #{images_dir}/#{kernel}")
+              res = res && system("touch -a #{images_dir}/#{initrd}")
+              res = res && system("touch -a #{images_dir}/#{hypervisor}")
+              res = res && PXEOperations::set_pxe_for_xen(@nodes_ok.make_array_of_ip,
+                                                          hypervisor,
+                                                          @config.exec_specific.environment.hypervisor_params,
                                                           kernel,
+                                                          @config.exec_specific.environment.kernel_params,
                                                           initrd,
                                                           @config.exec_specific.environment.part,
                                                           @config.common.tftp_repository,
                                                           @config.common.tftp_images_path,
                                                           @config.common.tftp_cfg)
+            end
             Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
                                @config.common.tftp_images_max_size * 1024 * 1024,
                                6,
                                /^.+--e\d+v\d+$/)
           when "chainload_pxe"
-            PXEOperations::set_pxe_for_chainload(@nodes_ok.make_array_of_ip,
-                                                 get_deploy_part_num(),
-                                                 @config.common.tftp_repository,
-                                                 @config.common.tftp_images_path,
-                                                 @config.common.tftp_cfg)
+            if (@config.exec_specific.environment.environment_kind != "xen") then
+              PXEOperations::set_pxe_for_chainload(@nodes_ok.make_array_of_ip,
+                                                   get_deploy_part_num(),
+                                                   @config.common.tftp_repository,
+                                                   @config.common.tftp_images_path,
+                                                   @config.common.tftp_cfg)
+            else
+              # @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+              prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
+              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
+              hypervisor = prefix_in_cache + @config.exec_specific.environment.hypervisor
+              images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
+              res = system("touch -a #{images_dir}/#{kernel}")
+              res = res && system("touch -a #{images_dir}/#{initrd}")
+              res = res && system("touch -a #{images_dir}/#{hypervisor}")
+              res = res && PXEOperations::set_pxe_for_xen(@nodes_ok.make_array_of_ip,
+                                                          hypervisor,
+                                                          @config.exec_specific.environment.hypervisor_params,
+                                                          kernel,
+                                                          @config.exec_specific.environment.kernel_params,
+                                                          initrd,
+                                                          @config.exec_specific.environment.part,
+                                                          @config.common.tftp_repository,
+                                                          @config.common.tftp_images_path,
+                                                          @config.common.tftp_cfg)
+              Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
+                                 @config.common.tftp_images_max_size * 1024 * 1024,
+                                 6,
+                                 /^.+--e\d+v\d+$/)              
+            end
           end
         end
       when "back_to_prod_env"
@@ -690,7 +747,7 @@ module MicroStepsLibrary
                                                @config.common.tftp_cfg)
       end
       if (res == false) then
-        @output.debugl(0, "The PXE configuration has not been performed correctly: #{kind}")
+        @output.debugl(0, "The PXE configuration has not been performed correctly: #{step}")
       end
       return res
     end
@@ -711,13 +768,18 @@ module MicroStepsLibrary
       when "very_hard"
         reboot_wrapper("very_hard")
       when "kexec"
-        kernel = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel}"
-        initrd = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.initrd}"
-        kernel_params = @config.exec_specific.environment.kernel_params
-        root_part = @config.exec_specific.environment.part
-        #Warning, this require the /usr/local/bin/kexec_detach script
-        return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
-                                             @config.common.taktuk_connector)
+        if (@config.exec_specific.environment.environment_kind == "linux") then
+          kernel = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel}"
+          initrd = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.initrd}"
+          kernel_params = @config.exec_specific.environment.kernel_params
+          root_part = @config.exec_specific.environment.part
+          #Warning, this require the /usr/local/bin/kexec_detach script
+          return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
+                                               @config.common.taktuk_connector)
+        else
+          @output.debugl(4, "The Kexec optimization can only be used with a linux environment")
+          reboot_wrapper("soft", use_rsh_for_reboot)
+        end
       end
       return true
     end
@@ -910,9 +972,12 @@ module MicroStepsLibrary
       when "pure_pxe"
         case @config.exec_specific.environment.environment_kind
         when "linux"
-          return copy_kernel_initrd_to_pxe
+          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
+                                            @config.exec_specific.environment.initrd])
         when "xen"
-          return copy_kernel_initrd_to_pxe
+          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
+                                            @config.exec_specific.environment.initrd,
+                                            @config.exec_specific.environment.hypervisor])
         when "other"
           @output.debugl(0, "Only linux and xen environments can be booted with a pure PXE configuration")
           return false
@@ -924,9 +989,14 @@ module MicroStepsLibrary
         else
           case @config.exec_specific.environment.environment_kind
           when "linux"
-            install_grub2_on_nodes("linux")
+            return install_grub2_on_nodes("linux")
           when "xen"
-            install_grub2_on_nodes("xen")
+#           return install_grub2_on_nodes("xen")
+            @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+            return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
+                                              @config.exec_specific.environment.initrd,
+                                              @config.exec_specific.environment.hypervisor])
+
           when "other"
             #in this case, the bootloader must be installed by the user (dd partition)
             return true

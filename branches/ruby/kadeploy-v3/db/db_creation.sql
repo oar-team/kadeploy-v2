@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS `environments` (
   `author` varchar(56) NOT NULL default '',
   `tarball` varchar(512) NOT NULL,
   `postinstall` varchar(512) NOT NULL,
+  `hypervisor` varchar(255) NOT NULL,
+  `hypervisor_params` varchar(255) NOT NULL,
   `initrd` varchar(255) NOT NULL,
   `kernel` varchar(255) NOT NULL,
   `kernel_params` varchar(255) NOT NULL,

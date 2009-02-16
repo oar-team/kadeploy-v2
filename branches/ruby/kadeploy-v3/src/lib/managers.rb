@@ -471,7 +471,7 @@ module Managers
         @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball["file"]}")
         @client.get_file(@config.exec_specific.environment.tarball["file"])
       else
-        system("touch #{local_tarball}")
+        system("touch -a #{local_tarball}")
       end
       @config.exec_specific.environment.tarball["file"] = local_tarball
 
@@ -487,7 +487,7 @@ module Managers
           @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
           @client.get_file(postinstall["file"])
         else
-          system("touch #{local_postinstall}")
+          system("touch -a #{local_postinstall}")
         end
         postinstall["file"] = local_postinstall
       }
