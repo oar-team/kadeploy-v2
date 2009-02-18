@@ -17,16 +17,36 @@ require 'drb'
 # * prints the environments of a given user
 def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
-  if (config.exec_specific.show_all_version == false) then
-    query = "SELECT name, MAX(version) AS version, description, author, tarball, \
+  if (config.exec_specific.user == "*") then #we show the environments of all the users
+    if (config.exec_specific.show_all_version == false) then
+      query = "SELECT name, MAX(version) AS version, description, author, tarball, \
                     postinstall, kernel, kernel_params, \
                     initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                     FROM environments \
-                    WHERE user=\"#{config.exec_specific.user}\" \
                     GROUP BY name"
+    else
+      query = "SELECT * FROM environments ORDER BY name,version"
+    end
+    res = db.run_query(query)
+    env.short_view_header
+    if (res != nil) then
+      res.each_hash { |row|
+        env.load_from_hash(row)
+        env.short_view
+      }
+    end
   else
-    query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\"
-                                        ORDER BY version"
+    if (config.exec_specific.show_all_version == false) then
+      query = "SELECT name, MAX(version) AS version, description, author, tarball, \
+                      postinstall, kernel, kernel_params, \
+                      initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                      FROM environments \
+                      WHERE user=\"#{config.exec_specific.user}\" \
+                      GROUP BY name"
+    else
+      query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\"
+                                          ORDER BY name,version"
+    end
   end
   res = db.run_query(query)
   env.short_view_header
@@ -93,9 +113,14 @@ end
 # Output
 # * nothing
 def delete_environment(config, db)
-  env = EnvironmentManagement::Environment.new
-  query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                    AND user=\"#{ENV['USER']}\""
+  if (config.exec_specific.version != "") then
+    query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                      AND version=\"#{config.exec_specific.version}\" \
+                                      AND user=\"#{ENV['USER']}\""
+  else
+    query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                      AND user=\"#{ENV['USER']}\""    
+  end
   db.run_query(query)
 end
 
