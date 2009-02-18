@@ -979,7 +979,7 @@ module ConfigInformation
         opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-a", "--list-min-retries NUMBER_OF_RETRIES", "Print the statistics about the nodes that need several attempts") { |n|
+        opts.on("-a", "--list-min-retries NB", "Print the statistics about the nodes that need several attempts") { |n|
           @exec_specific.operation = "list_retries"
           @exec_specific.min_retries = n
         }
