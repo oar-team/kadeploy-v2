@@ -42,7 +42,7 @@ A TFTP server (\texttt{tftpd-hpa} on Debian for instance) must be installed.
 
 To allow the network booting, you must specify in the DHCP configuration file the filename option that define the file retrieve by a client. This filename can be pxelinux.0 or gpxelinux.0.
 
-Finally, the TFTP images directory (see~\ref{sec:general_config} part) must contain the following files: pxelinux.0 and/or gpxelinux.0, chain.c32 and, mboot.c32. These files can be found in the Syslinux software (\url{http://syslinux.zytor.com}), the 3.73 version is at least required.
+Finally, the TFTP images directory (see~\ref{sec:general_config} part) must contain the following files: pxelinux.0 and/or gpxelinux.0, chain.c32, and mboot.c32. These files can be found in the Syslinux software (\url{http://syslinux.zytor.com}), the 3.73 version is at least required.
 
 \subsection{HTTP server (optionnal)}
 In order to use the HTTP fetching capabilites of gpxelinux, an HTTP server must be configured and must contain the production environment kernel/initrtd and the deployment environment kernel/initrd (see~\ref{sec:specific_config} part).
@@ -643,7 +643,7 @@ Kaconsole can't be used on a node on which a user doesn't have the deployment ri
 Kastat can be used by using the \texttt{kastat} command. The CLI looks like this:
 \begin{small}
 \begin{verbatim}
-Usage: kastat. [options]
+Usage: kastat [options]
 Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
 General options:
   -a, --list-min-retries NB        Print the statistics about the nodes that need several attempts
@@ -651,18 +651,49 @@ General options:
   -c, --list-min-failure-rate RATE Print the nodes which have a minimum failure-rate of 
                                    RATE (0 <= RATE <= 100
   -d, --list-all                   Print all the information
-  -f, --field FIELD                Only print the given fields (user,hostname,
-                                                          step1,step2,step3,
-                                                          timeout_step1,timeout_step2,timeout_step3,
-                                                          retry_step1,retry_step2,
-                                                          retry_step3,start,step1_duration,step2)
+  -f, --field FIELD                Only print the given fields (user,hostname,step1,step2,step3,
+                                                           timeout_step1,timeout_step2,timeout_step3,
+                                                           retry_step1,retry_step2,retry_step3,
+                                                           start,
+                                                           step1_duration,step2_duration,step3_duration,
+                                                           env,md5,success,error)
   -m, --machine MACHINE            Only print information about the given machines
   -s, --step STEP                  Applies the retry filter on the given steps (1, 2 or 3)
   -x, --date-min DATE              Get the stats from this date (yyyy:mm:dd:hh:mm:ss)
   -y, --date-max DATE              Get the stats to this date
 \end{verbatim}
 \end{small}
-TODO ...
+
+We present now the use cases. Note that all the commands can be filtred with a period by using the \texttt{-x|--date-min} and \texttt{-y|--date-max} options.
+\paragraph{Use case 1}
+\begin{verbatim}
+> kastat -d -m gdx-25.orsay.grid5000.fr
+\end{verbatim}
+This commands prints all the deployment performed on the node \textit{gdx-25.orsay.grid5000.fr}.
+
+\paragraph{Use case 2}
+\begin{verbatim}
+> kastat -d -f hostname -f env -f success
+\end{verbatim}
+This command prints all the deployment performed. Because the \texttt{-f|--field} option is used, only the fields \textit{hostname}, \textit{env}, and \textit{success} are printed. If the option \texttt{-f|--field} is not used, all the fields are printed.
+
+\paragraph{Use case 3}
+\begin{verbatim}
+> kastat -b -x 2009:02:12:08:00:00 -y 2009:02:13:08:00:00
+\end{verbatim}
+This commands prints the failure rate of all the nodes (at least deployed one time) during the period between the 2009/02/12 - 8h00 and the 2009/02/13 - 8h00. The \texttt{-x|--date-min} and \texttt{-y|--date-max} options can be used separately or can be omitted.
+
+\paragraph{Use case 4}
+\begin{verbatim}
+> kastat -c 25 -x 2009:02:12:08:00:00
+\end{verbatim}
+This commands prints the nodes that have a failure rate of at least 25\% from the 2009/02/12 - 8h00.
+
+\paragraph{Use case 5}
+\begin{verbatim}
+> kastat -a 3 -s 1
+\end{verbatim}
+This commands prints the information about the deployments that requires at least 3 retries in the macro-step 1. If the \texttt{-s|--step} option is not set, the information about the deployments that requires at least 3 retries in any macro-step are printed.
 
 \chapter{Developper guide}
 TODO
