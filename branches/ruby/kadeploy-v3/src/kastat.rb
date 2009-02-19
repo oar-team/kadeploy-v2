@@ -85,7 +85,7 @@ def list_retries(config, db)
   step_list = String.new
   if (not config.exec_specific.steps.empty?) then
     config.exec_specific.steps.each_index { |i|
-      case config.steps[i]
+      case config.exec_specific.steps[i]
       when "1"
         step_list += "retry_step1>=\"#{config.exec_specific.min_retries}\""
       when "2"
@@ -105,7 +105,7 @@ def list_retries(config, db)
 
   generic_where_clause = append_generic_where_clause(config)
   if (generic_where_clause == "") then
-    query = "SELECT * FROM log WHERE #{generic_where_clause}"
+    query = "SELECT * FROM log WHERE #{step_list}"
   else
     query = "SELECT * FROM log WHERE #{generic_where_clause} AND #{step_list}"
   end
