@@ -58,14 +58,14 @@ def select_fields(row, config, default_fields)
   fields = String.new  
   if (not config.exec_specific.fields.empty?) then
     config.exec_specific.fields.each_index { |i|
-      fields += row[config.exec_specific.fields[i]]
+      fields += row[config.exec_specific.fields[i]].gsub("\n", "\\n")
       if (i < config.exec_specific.fields.length - 1) then
         fields += ","
       end    
     }
   else
     default_fields.each_index { |i|
-      fields += row[default_fields[i]]
+      fields += row[default_fields[i]].gsub("\n", "\\n")
       if (i < default_fields.length - 1) then
         fields += ","
       end
@@ -148,7 +148,7 @@ def list_failure_rate(config, db, min = nil)
     }
     rate = 100 - (100 * success / array.length)
     if ((min == nil) || (rate >= min)) then
-      puts select_fields(row, config, ["hostname","rate"])
+      puts "#{hostname}: #{rate}%"
     end
   }
 end

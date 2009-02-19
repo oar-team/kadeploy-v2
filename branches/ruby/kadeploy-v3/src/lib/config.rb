@@ -1033,7 +1033,7 @@ module ConfigInformation
         end
       }
       if (@exec_specific.date_min != 0) then
-        if not (/^\d{4}:\d{2}:\d{2}$/ === @exec_specific.date_min) then
+        if not (/^\d{4}:\d{2}:\d{2}:\d{2}:\d{2}:\d{2}$/ === @exec_specific.date_min) then
           puts "The date #{@exec_specific.date_min} is not correct"
           return false
         else
@@ -1042,7 +1042,7 @@ module ConfigInformation
         end
       end
       if (@exec_specific.date_max != 0) then
-        if not (/^\d{4}:\d{2}:\d{2}$/ === @exec_specific.date_max) then
+        if not (/^\d{4}:\d{2}:\d{2}:\d{2}:\d{2}:\d{2}$/ === @exec_specific.date_max) then
           puts "The date #{@exec_specific.date_max} is not correct"
           return false
         else
