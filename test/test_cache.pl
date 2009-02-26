@@ -1,14 +1,23 @@
 #!/usr/bin/perl
 
 
-BEGIN{
-        unshift(@INC, ".");
-}
+# BEGIN { unshift(@INC, "."); }
 
-use lib qw (/home/bdexheimer/svn/kadeploy/trunk/cmd/);
+no lib qw(:ALL .);
+no lib qw(/usr/share/perl/5.8/libkadeploy2);
+use lib qw(/home/nancy/bdexheimer/svn/kadeploy/trunk);
 use strict;
 use libkadeploy2::cache;
 
+print "@INC\n";
+
+my $d = "boot/boot2/boot3/kernel";
+my $ld = libkadeploy2::pathlib::get_leading_dirs($d);
+print "d = ".$d." ld = ".$ld."\n";
+
+my $d = "kernel";
+my $ld = libkadeploy2::pathlib::get_leading_dirs($d);
+print "d = ".$d." ld = ".$ld."\n";
 
 if ( libkadeploy2::cache::init_cache("/tmp/") ) { print "cache cree.\n"; }
 else { print "cache non cree.\n"; }
@@ -16,8 +25,14 @@ else { print "cache non cree.\n"; }
 my $moncache=libkadeploy2::cache::get_cache_directory();
 print "le cache est " . $moncache . "\n";
 
+# my @files = ("vmlinuz", "initrd.img");
+my @files = ("boot/vmlinuz", "boot/initrd");
+# my @files = ("boot/kernel", "", "boot/initrd", "     ", "boot/xen", "boot/noyau");
+# my $arc = "image.tgz"; 
+my $arc = "bug1850.tgz"; 
+# my $arc = "env.tgz"; 
+my $strip = 1;
 
-my @files = ("kernel-2.6.22", "initrd-2.6.22");
 my $f1 = @files[0];
 my $f2 = @files[1];
 my $env_id=611;
@@ -28,14 +43,10 @@ my $f2id = $f2.".".$env_id;
 # if ( libkadeploy2::cache::already_in_cache($f1) ) { print $f1 . " est present dans le cache.\n"; }
 # else { print $f1 . " n'est pas present dans le cache.\n"; }
 
-my $arc = "env.tgz"; 
-my $strip = 0;
-
-print "### insertion cache ###\n";
 libkadeploy2::cache::put_in_cache_from_archive(\@files, $arc, $strip, $env_id);
 
-if ( libkadeploy2::cache::already_in_cache($f1id) ) { print $f1id . " est present dans le cache.\n"; }
-else { print $f1id . " n'est pas present dans le cache.\n"; }
+# if ( libkadeploy2::cache::already_in_cache($f1id) ) { print $f1id . " est present dans le cache.\n"; }
+# else { print $f1id . " n'est pas present dans le cache.\n"; }
 
 # print "### nettoyage cache ###\n";
 # libkadeploy2::cache::clean_cache();
@@ -55,14 +66,16 @@ else { print $f1id . " n'est pas present dans le cache.\n"; }
 # print "tftprelative = " . $tftprelative . "\n";
 
 my $dir = libkadeploy2::cache::get_cache_directory();
+$f1id = libkadeploy2::pathlib::strip_leading_dirs($f1id);
 $dir = $dir .  "/" . $f1id;
-print "### Age du fichier : " . $f1id . "###\n";
+print "### Age du fichier : " . $dir . "###\n";
 print "-M = " . ( -M $dir ) . "\n";
 print "-A = " . ( -A $dir ) . "\n";
 print "-C = " . ( -C $dir ) . "\n";
 my $dir = libkadeploy2::cache::get_cache_directory();
+$f2id = libkadeploy2::pathlib::strip_leading_dirs($f2id);
 $dir = $dir .  "/" . $f2id;
-print "### Age du fichier : " . $f2id . "###\n";
+print "### Age du fichier : " . $dir . "###\n";
 print "-M = " . ( -M $dir ) . "\n";
 print "-A = " . ( -A $dir ) . "\n";
 print "-C = " . ( -C $dir ) . "\n";

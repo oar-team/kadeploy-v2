@@ -8,85 +8,112 @@
 #######################################
 
 
-#=========
-# Version
-#=========
+#===================================
+# ADAPT TO your target distribution
+#===================================
+DISTRIB = debian4
 
+
+#==============================================
+# Kadeploy installation prefix
+# YOU MAY ADAPT this to your local preferences
+#==============================================
+PREFIX=/usr/local
+
+
+#=======================================
+# Release - please DO NOT modify below
+#=======================================
 MAJOR = 2
 MINOR = 1
 SUBMINOR = 7
-KADEPLOY_VERSION = "-$(MAJOR).$(MINOR).$(SUBMINOR)"
+SUBRELEASE = testing
 
 
-#=============================================
-# Modify to adapt at your local environment
-#=============================================
-
-# Distribution : for Perl library installation path
-DISTRIB = debian4
-
-# Kadeploy directories installation layout
-PREFIX=/usr/local
-
-# Kadeploy main installation directory
-KADEPLOYHOMEDIR=$(PREFIX)/kadeploy$(KADEPLOY_VERSION)
-
-# Kadeploy system user
-DEPLOYUSER=deploy
-DEPLOYGROUP=deploy
-
-
-#=====================
-# DO NOT modify below 
-#=====================
-
-SHELL=/bin/bash
-
-$(info Use settings for distribution : $(DISTRIB) )
-ifeq ($(DISTRIB), debian4)
-PERLDIR=/usr/share/perl/5.8/
-HTMLDOC=/usr/bin/htmldoc
-XSLTPROC=/usr/bin/xsltproc
-TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
-else ifeq ($(DISTRIB), fedora4)
-PERLDIR=/usr/lib/perl5/5.8.6/
-HTMLDOC=/usr/bin/htmldoc
-XSLTPROC=/usr/bin/xsltproc
-TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+#============================
+# Please DO NOT modify below
+#============================
+VERSION_BRIEF = $(MAJOR)$(MINOR)$(SUBMINOR)
+ifneq ($(strip $(VERSION_BRIEF)),)
+VERSION = $(MAJOR).$(MINOR).$(SUBMINOR)
+endif
+ifneq ($(strip $(SUBRELEASE)),)
+KADEPLOY_VERSION = $(VERSION)-$(SUBRELEASE)
+KADEPLOY_VERSION_BRIEF = $(VERSION_BRIEF)_$(SUBRELEASE)
+else ifneq ($(VERSION),)
+KADEPLOY_VERSION = $(VERSION)
+KADEPLOY_VERSION_BRIEF = $(VERSION_BRIEF)
+endif
+ifneq ($(KADEPLOY_VERSION),)
+KADIR = kadeploy-$(KADEPLOY_VERSION)
 else
-PERLDIR=/usr/share/perl/5.8/
-$(info $(DISTRIB) : using default Perl path : $(PERLDIR) )
-HTMLDOC=/usr/bin/htmldoc
-$(info $(DISTRIB) : using default htmldoc path : $(HTMLDOC) )
-XSLTPROC=/usr/bin/xsltproc
-$(info $(DISTRIB) : using default xsltproc path : $(XSLTPROC) )
-TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
-$(info $(DISTRIB) : using default LPD XSL stylesheet : $(TLDPOPXSL) )
+KADIR = kadeploy
 endif
 
-KADIR=kadeploy$(KADEPLOY_VERSION)
-# Kadeploy main configuration directory
-CONFDIR=/etc/kadeploy
-KADEPLOYCONFDIR=$(CONFDIR)$(KADEPLOY_VERSION)
 
+#============================
+# Please DO NOT modify below 
+#============================
+SHELL=/bin/bash
 
-MANDIR=$(PREFIX)/man
-INFODIR=$(PREFIX)/info
-BINDIR=$(PREFIX)/bin/$(KADIR)
-SBINDIR=$(PREFIX)/sbin/$(KADIR)
-
+# Installation directories
+KADEPLOYHOMEDIR=$(PREFIX)/$(KADIR)
 KABINDIR=$(KADEPLOYHOMEDIR)/bin
 KASBINDIR=$(KADEPLOYHOMEDIR)/sbin
 KAADDONSDIR=$(KADEPLOYHOMEDIR)/addons
-KAPERLDIR=$(KADEPLOYHOMEDIR)
+KALIBDIR=$(KADEPLOYHOMEDIR)
 KADBDIR=$(KADEPLOYHOMEDIR)/db
+
+# Configuration directory
+KADEPLOYCONFDIR_LEGACY=/etc/kadeploy
+KADEPLOYCONFDIR=/etc/$(KADIR)
+
+MANDIR=$(PREFIX)/man
+INFODIR=$(PREFIX)/info
+
+# Path to user reachable Ka*-commands
+BINDIR=$(PREFIX)/bin/$(KADIR)
+SBINDIR=$(PREFIX)/sbin/$(KADIR)
+
 
 KADEPLOY_BINFILES=kaconsole kaenvironments karecordenv kadeploy kareboot karemote kaaddkeys kadatabase
 KADEPLOY_SBINFILES=kaadduser kadeluser kanodes
 KADEPLOY_MANPAGES=kaadduser.1 kaaddkeys.1 kaconsole.1 kadeluser.1 kaenvironments.1 karecordenv.1 kadeploy.1 kareboot.1 deploy.conf.1 karemote.1 deploy_cmd.conf.1
 
+# Kadeploy user settings
 GROUPS=/etc/group
 USERS=/etc/passwd
+DEPLOYUSER=deploy
+DEPLOYGROUP=deploy
+
+
+#=====================================================================
+# To be adapted to the target distribution (developer's part of work)
+# - Perl libs paths
+# - docbook resources
+#=====================================================================
+ifeq ($(DISTRIB), debian4)
+PERLDIR=/usr/share/perl/5.8
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+else ifeq ($(DISTRIB), fedora4)
+PERLDIR=/usr/lib/perl5/5.8.6
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+else
+PERLDIR=/usr/share/perl/5.8
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+endif
+
+$(info Use settings for distribution : $(DISTRIB) )
+$(info $(DISTRIB) : using Perl path : $(PERLDIR) )
+$(info $(DISTRIB) : using htmldoc path : $(HTMLDOC) )
+$(info $(DISTRIB) : using xsltproc path : $(XSLTPROC) )
+$(info $(DISTRIB) : using LDP XSL stylesheet : $(TLDPOPXSL) )
 
 #==================
 # Archive creation
@@ -103,7 +130,7 @@ TOOLS=tools/
 PDF_DOCS=$(wildcard $(DOCBOOK)*.pdf)
 
 EXCLUDED=--exclude='.svn' --exclude='*~'
-KADEPLOY_ARC=kadeploy$(KADEPLOY_VERSION).tar
+KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
 
 
 
@@ -133,9 +160,9 @@ all: usage
 installcheck: root_check user_and_group_deploy_check prefix_check
 
 prefix_check:
-	     @echo "Installation directory check ..."
-	     @( test -d $(PREFIX) || ( mkdir -p $(PREFIX) && echo "$(PREFIX) created." ) )
-
+	@echo "Installation directory check ..."
+	@( ( test -d $(PREFIX) && echo "$(PREFIX) found." ) || ( echo "$(PREFIX) not found ; will be created." ) )
+	
 root_check:
 	@echo "root check ..."
 	@[ `whoami` = 'root' ] || ( echo "Warning: root-privileges are required to install some files !" ; exit 1 )
@@ -144,9 +171,9 @@ root_check:
 user_and_group_deploy_check: 
 	@echo "User and group check ..."
 	@( ( grep -q "^deploy:" $(GROUPS) && echo "deploy group already created." ) || \
-		addgroup --quiet --system $(DEPLOYGROUP) )
+	addgroup --quiet --system $(DEPLOYGROUP) )
 	@( ( grep -q "^deploy:" $(USERS) && echo "deploy user already created." ) || \
-		adduser --quiet --system --ingroup $(DEPLOYGROUP) --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER) 2>&1 >/dev/null )
+	adduser --quiet --system --ingroup $(DEPLOYGROUP) --no-create-home --home $(KADEPLOYHOMEDIR) $(DEPLOYUSER) 2>&1 >/dev/null )
 
 links_install:
 	@echo "Making links to sudowrapper ..."
@@ -157,12 +184,11 @@ links_install:
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kareboot
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/karemote
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR)/kadatabase
-# ln -s $(KABINDIR)/kasudowrapper.sh $(BINDIR/kaaddkeys
-
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kaadduser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kadeluser
 	@ln -s $(KABINDIR)/kasudowrapper.sh $(SBINDIR)/kanodes
-	@( [ ! -e $(PERLDIR)/libkadeploy2 ] && ( ln -s $(PERLDIR)/$(KADIR)/libkadeploy2 $(PERLDIR)/libkadeploy2 ) || echo $(PERLDIR)/libkadeploy2 already exists : not linked over. )
+	@( ( [ ! -e $(PERLDIR)/libkadeploy2 ] && ln -s $(PERLDIR)/$(KADIR)/libkadeploy2 $(PERLDIR)/libkadeploy2 ) || \
+	( echo "$(PERLDIR)/libkadeploy2 already exists ; not linked over." ) )
 	
 installdirs:
 	@echo "Making directories ..."
@@ -171,7 +197,7 @@ installdirs:
 	@mkdir -p $(KADEPLOYHOMEDIR)/.ssh
 	@mkdir -p $(KABINDIR)	
 	@mkdir -p $(KASBINDIR)
-	@mkdir -p $(KAPERLDIR)/libkadeploy2
+	@mkdir -p $(KALIBDIR)/libkadeploy2
 	@mkdir -p $(PERLDIR)/$(KADIR)
 	@mkdir -p -m 700 $(KADEPLOYCONFDIR)
 	@mkdir -p $(BINDIR)
@@ -203,11 +229,10 @@ files_install:
 	@install -m 755 sbin/setup_pxe.pl $(KASBINDIR)/
 
 # Perl modules 
-	@install -m 755 libkadeploy2/* $(KAPERLDIR)/libkadeploy2/
-	@ln -sf $(KAPERLDIR)/libkadeploy2 $(PERLDIR)/$(KADIR)/libkadeploy2
+	@install -m 755 libkadeploy2/* $(KALIBDIR)/libkadeploy2/
+	@ln -sf $(KALIBDIR)/libkadeploy2 $(PERLDIR)/$(KADIR)/libkadeploy2
 
 # database scripts
-	@install -m 755 scripts/install/kadeploy_db_init.pl $(KADBDIR)
 	@install -m 755 scripts/install/kadeploy_conflib.pm $(KADBDIR)
 	@install -m 755 scripts/sql/*.sql $(KADBDIR)
 	
@@ -215,11 +240,12 @@ files_install:
 	@install -m 755 addons/grub/* $(KADEPLOYHOMEDIR)/grub
 
 # SSH key 
-	@install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy* $(KADEPLOYHOMEDIR)/.ssh/
+	@install -m 600 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy $(KADEPLOYHOMEDIR)/.ssh/
+	@install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy.pub $(KADEPLOYHOMEDIR)/.ssh/
 
 conflink_install:
-#	@( [ -e $(CONFDIR) ] && ( mv $(CONFDIR) $(CONFDIR).old ) || echo No previously existing $(CONFDIR) found. )
-	@( [ ! -e $(CONFDIR) ] && ( ln -s $(KADEPLOYCONFDIR) $(CONFDIR) ) || echo $(CONFDIR) already exists : not linked over. )
+	@( ( [ ! -e $(KADEPLOYCONFDIR_LEGACY) ] &&  ln -s $(KADEPLOYCONFDIR) $(KADEPLOYCONFDIR_LEGACY) ) || \
+	( echo "$(KADEPLOYCONFDIR_LEGACY) already exists ; not linked over." ) )
 	
 #Sudo installation : modification of /etc/sudoers
 sudo_install:
@@ -227,9 +253,9 @@ sudo_install:
 	@sed -i "s%DEPLOYCONFDIR=__SUBST__%DEPLOYCONFDIR=$(KADEPLOYCONFDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYDIR=__SUBST__%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYUSER=__SUBST__%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
-	@sed -i "s%PERL5LIBDEPLOY=__SUBST__%PERL5LIBDEPLOY=$(KAPERLDIR)%" $(KABINDIR)/kasudowrapper.sh
-	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
-	@scripts/install/sudoers_install.pl $(KADEPLOYHOMEDIR)
+	@sed -i "s%PERL5LIBDEPLOY=__SUBST__%PERL5LIBDEPLOY=$(KALIBDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@scripts/install/sudocheck -k $(KADEPLOY_VERSION_BRIEF) -u
+	@scripts/install/sudocheck -k $(KADEPLOY_VERSION_BRIEF) -b $(KABINDIR) -i
 	
 # Manpages installation
 man_install:
@@ -238,7 +264,7 @@ man_install:
 
 #Kadeploy installation in main directory
 install: installcheck installdirs files_install links_install conflink_install sudo_install final_msg
-	@chown -R deploy: $(KADEPLOYCONFDIR)
+	@( chown -R deploy:deploy $(KADEPLOYCONFDIR) )
 
 final_msg:
 	@echo -e "\n*** WARNING"
@@ -265,11 +291,11 @@ files_uninstall :
 	@cd $(SBINDIR) && rm -f $(KADEPLOY_SBINFILES)
 	@rm -rf $(BINDIR)
 	@rm -rf $(SBINDIR)
-	#@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
 	@rm -rf $(PERLDIR)/$(KADIR)
+	#@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
      
 	@echo "Uninstalling sudowrapper ..."
-	@scripts/uninstall/sudoers_uninstall.pl $(KADEPLOYHOMEDIR)
+	@scripts/install/sudocheck -k $(KADEPLOY_VERSION_BRIEF) -u
 	
 	@echo "Removing deploy user and group ..."
 	@( grep -q $(DEPLOYUSER) /etc/passwd && userdel $(DEPLOYUSER) ) \
@@ -277,12 +303,12 @@ files_uninstall :
 	@( grep -q $(DEPLOYGROUP) /etc/group && groupdel $(DEPLOYGROUP) ) \
 	|| echo "group $(DEPLOYGROUP) already removed."
 	
-	@echo "Deleting Kadeploy homedir ..."
+	@echo "Deleting Kadeploy installation directory : $(KADEPLOYHOMEDIR)"
 	@rm -rf $(KADEPLOYHOMEDIR)/
-	@echo "Deleting Kadeploy confdir ..."
+	@echo "Deleting Kadeploy configuration directory : $(KADEPLOYCONFDIR)"
 	@rm -rf $(KADEPLOYCONFDIR)/
-	@( [ -L $(CONFDIR) ] && ( rm -f $(CONFDIR) ) || echo No previously existing $(CONFDIR) found. )
-	@( [ -d $(CONFDIR).old ] && ( mv $(CONFDIR).old $(CONFDIR) ) || echo No previously existing $(CONFDIR).old found. )
+	@( [ -L $(KADEPLOYCONFDIR_LEGACY) ] && ( rm -f $(KADEPLOYCONFDIR_LEGACY) ) || echo "No previously existing $(KADEPLOYCONFDIR_LEGACY) found." )
+	@( [ -d $(KADEPLOYCONFDIR_LEGACY).old ] && ( mv $(KADEPLOYCONFDIR_LEGACY).old $(KADEPLOYCONFDIR_LEGACY) ) || echo No previously existing $(KADEPLOYCONFDIR_LEGACY).old found. )
 
 uninstall : root_check files_uninstall
 
@@ -358,9 +384,9 @@ documentation: check_htmldoc check_xsltproc check_ldpxsl
 ################
 
 usage:
-	@echo -e "\n\t**************************************"
-	@echo -e "\t*** Installation of Kadeploy$(KADEPLOY_VERSION) ***"
-	@echo -e "\t**************************************"
+	@echo -e "\n\t***************************************"
+	@echo -e "\t*** Installation of Kadeploy-$(KADEPLOY_VERSION) ***"
+	@echo -e "\t***************************************"
 	@echo -e "\n\tUsage: make [ OPTIONS=<...> ] MODULE"
-	@echo -e "\t\t==> OPTIONS := { PREFIX | KADEPLOYHOMEDIR } "
+	@echo -e "\t\t==> OPTIONS := { PREFIX | DISTRIB } "
 	@echo -e "\t\t==> MODULE := { install | uninstall | dist }\n"
