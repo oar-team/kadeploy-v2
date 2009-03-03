@@ -129,7 +129,7 @@ ADDONS=addons/
 TOOLS=tools/
 PDF_DOCS=$(wildcard $(DOCBOOK)*.pdf)
 
-EXCLUDED=--exclude='.svn' --exclude='*~'
+EXCLUDED=--exclude='.svn' --exclude='*~' --exclude='old_method'
 KADEPLOY_ARC=kadeploy-$(KADEPLOY_VERSION).tar
 
 

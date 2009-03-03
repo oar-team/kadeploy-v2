@@ -11,6 +11,23 @@ use libkadeploy2::cache;
 
 print "@INC\n";
 
+my @tex = ("xen", "kernel", "initrd");
+print "taille = ".scalar(@tex)." \n";
+print "@tex \n";
+
+my $path = "xen --- kernel --- initrd kparam1 kparam2=v1 kparam3=v2";
+my @mbfiles = split /-{3}/, $path;
+my $f;
+foreach $f(@mbfiles) {
+    print "f = $f\n";
+}
+my $initrd=@mbfiles[2];
+my @mbfiles2 = split /\s+/, $initrd;
+foreach $f(@mbfiles2) {
+    print "f = $f\n";
+}
+
+
 my $d = "boot/boot2/boot3/kernel";
 my $ld = libkadeploy2::pathlib::get_leading_dirs($d);
 print "d = ".$d." ld = ".$ld."\n";
@@ -19,6 +36,33 @@ my $d = "kernel";
 my $ld = libkadeploy2::pathlib::get_leading_dirs($d);
 print "d = ".$d." ld = ".$ld."\n";
 
+my $k = "mboot.c32";
+if (libkadeploy2::pathlib::check_multiboot("mboot.c32")) {
+    print "MULTIBOOT \n";
+} else {
+	print "NO MULTI\n";
+}
+if (libkadeploy2::pathlib::check_multiboot("   mboot.c32   ")) {
+    print "MULTIBOOT \n";
+} else {
+	print "NO MULTI\n";
+}
+if (libkadeploy2::pathlib::check_multiboot("mbo0t;c32")) {
+    print "MULTIBOOT \n";
+} else {
+	print "NO MULTI\n";
+}
+
+my @test_valid = ("", "   ", "kernel", "   xen   ");
+foreach my $f (@test_valid) {
+  if (libkadeploy2::pathlib::is_valid($f)) {
+    print "for test = [ $f ] : VALID\n"; 
+  } else {
+    print "for test = [ $f ] : NOT VALID\n";
+  }
+}
+
+
 if ( libkadeploy2::cache::init_cache("/tmp/") ) { print "cache cree.\n"; }
 else { print "cache non cree.\n"; }
 
@@ -26,16 +70,16 @@ my $moncache=libkadeploy2::cache::get_cache_directory();
 print "le cache est " . $moncache . "\n";
 
 # my @files = ("vmlinuz", "initrd.img");
-my @files = ("boot/vmlinuz", "boot/initrd");
-# my @files = ("boot/kernel", "", "boot/initrd", "     ", "boot/xen", "boot/noyau");
+# my @files = ("boot/vmlinuz", "boot/initrd");
+ my @files = ("boot/kernel", "", "boot/initrd", "     ", "boot/xen", "boot/noyau");
 # my $arc = "image.tgz"; 
-my $arc = "bug1850.tgz"; 
-# my $arc = "env.tgz"; 
+# my $arc = "bug1850.tgz"; 
+ my $arc = "env.tgz"; 
 my $strip = 1;
 
 my $f1 = @files[0];
 my $f2 = @files[1];
-my $env_id=611;
+my $env_id=908;
 my $f1id = $f1.".".$env_id;
 my $f2id = $f2.".".$env_id;
 
