@@ -127,13 +127,7 @@ sub check_files($)
     my @res;
     my $a=0;
     while ($a < $count) {
-	if ($arr_files[$a] =~ m/^$/) {
-	    delete $arr_files[$a];
-	} elsif ($arr_files[$a] =~ m/[ ]+/) {
-	    delete $arr_files[$a];
-	} elsif (!defined($arr_files[$a])) {
-	    delete $arr_files[$a];
-	} else {
+	if ( libkadeploy2::pathlib::is_valid($arr_files[$a]) && (defined($arr_files[$a])) ) {
 	    push(@res, $arr_files[$a]);
 	}
 	$a++;
@@ -195,7 +189,7 @@ sub put_in_cache_from_archive($$$$)
 		    if ($firstchar eq "/") { 
 		    # dereferenced link is an absolute path
 		    # print "### ABSOLUTE link\n";
-		    $archivefile = libkadeploy2::pathlib::strip_bar($file);
+		    $archivefile = libkadeploy2::pathlib::strip_leading_slash($file);
 		  } elsif ($firstchar eq ".") {
 		    # dereferenced link is a relative link
 		    # print "### RELATIVE link\n";
@@ -212,7 +206,7 @@ sub put_in_cache_from_archive($$$$)
 		  }
 		  # remove currently extracted file in cache because it's a link
 		  $rootdir = libkadeploy2::pathlib::get_subdir_root($prev_archivefile);
-		  rmtree($_cachedirectory."/".$rootdir, 1, 1);  
+		  rmtree($_cachedirectory."/".$rootdir, 0, 1);  
 		} else {
 		  # current $archivefile is a true file
 		  $still_a_link = 0;
@@ -220,7 +214,7 @@ sub put_in_cache_from_archive($$$$)
 	    }
 	    copy($_cachedirectory."/".$archivefile, $_cachedirectory."/".$original_file.".".$env_id);
 	    $rootdir = libkadeploy2::pathlib::get_subdir_root($archivefile);
-	    rmtree($_cachedirectory."/".$rootdir, 1, 1);
+	    rmtree($_cachedirectory."/".$rootdir, 0, 1);
 	    $cachemodified = 1;
 	}
     }

@@ -15,17 +15,12 @@ sub strip_leading_slash($)
 sub strip_leading_dirs($)
 {
     my $f=shift;
-    
-    $f =~ s/.*\/([^\/]*)$/$1/;
-    return($f);
-}
-
-sub strip_bar($)
-{
-    my $f=shift;
-    
-    $f =~ s/^\/(.*)$/$1/;
-    return($f);
+    if (!libkadeploy2::pathlib::is_valid($f)) {
+	return ("");
+    } else {
+	$f =~ s/.*\/([^\/]*)$/$1/;
+	return($f);
+    }
 }
 
 sub strip_dotdot($)
@@ -56,12 +51,31 @@ sub get_subdir_root($)
     return($f);
 }
 
-
-sub check_multiboot_kernel($)
+sub check_multiboot($)
 {
     my $k = shift;
     
-    return($k =~ /\bmboot\.c32\b/);
+    if ( $k =~ m/mboot\.c32/ ) {
+	return 1;
+    } else {
+	return 0;
+    }
 }
+
+sub is_valid($)
+{
+    my $f=shift;
+    
+    if (defined($f)) {
+	if ( (!($f =~ m/^$/)) && (!($f =~ m/^[ ]+$/)) ) {
+	    return 1;
+	} else {
+	    return 0;
+	}
+    } else {
+	return 0;
+    }	
+}
+
 
 1;
