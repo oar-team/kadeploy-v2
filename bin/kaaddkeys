@@ -62,7 +62,7 @@ if ($node_file eq "") {
 if ($verbose) { $command .= "-v "; }
 
 if (!$conf_root_dir eq "") {
-  $karemote_args .= "-C $conf_root_dir ";
+  $karemote_args .= "--configuration $conf_root_dir ";
 }
 
 if ($test == 0 ) {

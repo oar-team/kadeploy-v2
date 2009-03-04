@@ -15,6 +15,7 @@ use libkadeploy2::debug;
 my $_tftpdirectory;
 ## Directory path of Kadeploy environment files cache
 my $_cachedirectory;
+my $_subcachedir = "__sub";
 ## days count after which files are removed from cache
 my $_expirydelay    = 30;
 ## Array of files in cache
@@ -149,6 +150,8 @@ sub put_in_cache_from_archive($$$$)
     my $original_file;
     $strip=0;
 
+    $_subcachedir = $_subcachedir.".".$env_id;
+    
     if ( empty_cache() ) { read_files_in_cache(); }
     
     ## Clean cache from oldest files
@@ -172,15 +175,18 @@ sub put_in_cache_from_archive($$$$)
 	# print "cache file : ".$_cachedirectory."/".$cachefile." (age = ".$agecachefile." )\n";
 	if ( ( ! already_in_cache($cachefileid) ) || ( $agearchive < $agecachefile ) )
 	{
+	    if (! -d $_cachedirectory."/".$_subcachedir) {
+		mkdir $_cachedirectory."/".$_subcachedir, 0755;
+	    }
 	    # print "cache::put_in_cache_from_archive :  adding " . $archivefile . "\n";
 	    my $still_a_link = 1;
 	    while ($still_a_link) 
 	    {
 		my $prev_archivefile = $archivefile;
 		# print "===> tar -C ".$_cachedirectory." --strip ".$strip." -xvzf ".$archive." ".$archivefile."\n";
-		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory --strip $strip -xvzf $archive $archivefile");
+		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory/$_subcachedir --strip $strip -xvzf $archive $archivefile");
 		# print "??? we are doing readlink of ".$archivefile."\n";
-		$file = readlink $_cachedirectory."/".$archivefile;
+		$file = readlink $_cachedirectory."/".$_subcachedir."/".$archivefile;
 		# print "??? readlink result = ".$file."\n";
 		if ($file) { 
 		  $still_a_link = 1;
@@ -206,17 +212,20 @@ sub put_in_cache_from_archive($$$$)
 		  }
 		  # remove currently extracted file in cache because it's a link
 		  $rootdir = libkadeploy2::pathlib::get_subdir_root($prev_archivefile);
-		  rmtree($_cachedirectory."/".$rootdir, 0, 1);  
+		  rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);  
 		} else {
 		  # current $archivefile is a true file
 		  $still_a_link = 0;
 		}
 	    }
-	    copy($_cachedirectory."/".$archivefile, $_cachedirectory."/".$original_file.".".$env_id);
+	    copy($_cachedirectory."/".$_subcachedir."/".$archivefile, $_cachedirectory."/".$original_file.".".$env_id);
 	    $rootdir = libkadeploy2::pathlib::get_subdir_root($archivefile);
-	    rmtree($_cachedirectory."/".$rootdir, 0, 1);
+	    rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);
 	    $cachemodified = 1;
 	}
+	if (-d $_cachedirectory."/".$_subcachedir) {
+	    rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
+        }
     }
     
     ## If cache modified, reload it
