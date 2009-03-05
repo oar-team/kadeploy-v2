@@ -13,6 +13,8 @@ use DBI;
 use libkadeploy2::conflib;
 use libkadeploy2::debug;
 use Time::Local;
+# ACedeyn : for timestamp of the deploy result
+use POSIX qw(strftime);
 use strict;
 
 ##############
@@ -1825,15 +1827,23 @@ sub debug_print($$$){
 	$username=$ENV{USER};
     }
     my $ret_nodes_ok;
-    $ret_nodes_ok=open(NODES_OK,">/tmp/kadeploy-".$username."-".$cluster."-nodes_ok.out");
+
+    # ACedeyn : We need the deploy_date / deploy_id to make an uniq readable file
+    #          
+    my $deploy_date = strftime "%Y-%m-%d-%H%M%S", localtime ;
+    my $file_output="/tmp/kadeploy-".$username."-".$cluster."-".$deploy_date."-".$deploy_id."-nodes";
+    $ret_nodes_ok=open(NODES_OK,">".$file_output."_ok.out");
     if (!$ret_nodes_ok) {
-	print "Can't create /tmp/kadeploy-".$username."-".$cluster."-nodes_ok.out";
+	print "Can't create ".$file_output."_ok.out";
     }
     my $ret_nodes_nok;
-    $ret_nodes_nok=open(NODES_NOK,">/tmp/kadeploy-".$username."-".$cluster."-nodes_nok.out");
+    $ret_nodes_nok=open(NODES_NOK,">".$file_output."_nok.out");
     if (!$ret_nodes_ok) {
-	print "Can't create /tmp/kadeploy-".$username."-".$cluster."-nodes_nok.out";
+	print "Can't create ".$file_output."_nok.out";
     }
+    # FIME: 1 I don't know why, but the file created is not in /tmp but in the user homedir...
+    #       2 This modification breaks the kaaddkey stuff in kasudowrapper...
+    ## /ACedeyn
 
     # prints information
     libkadeploy2::debug::debugl_light(3, "\nDeploy\tState\n");
