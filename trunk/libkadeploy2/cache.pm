@@ -5,6 +5,9 @@ package libkadeploy2::cache;
 
 use File::Copy;
 use File::Path;
+## ACedeyn : 05/03/2009 chdir is needed to correctly remove files
+use File::chdir ; # See : http://search.cpan.org/~dagolden/File-chdir-0.1002/lib/File/chdir.pod
+                  # need : libfile-chdir-perl on Debian
 use libkadeploy2::pathlib;
 use libkadeploy2::debug;
 
@@ -110,13 +113,17 @@ sub read_files_in_cache()
 ## Search a file in cache
 sub already_in_cache($)
 {
-    if ( empty_cache() ) { return 0; }
-    
-    my $searchedfile = shift;
-    # print "cache::already_in_cache : _filesincache = @_filesincache\n";
-    
-    if ( grep /$searchedfile/, "@_filesincache" ) { return 1; }
-    else { return 0; }
+  #if ( empty_cache() ) { return 0; }
+  #  
+  #  my $searchedfile = shift;
+  #  # print "cache::already_in_cache : _filesincache = @_filesincache\n";
+  #  
+  #  if ( grep /$searchedfile/, "@_filesincache" ) { return 1; }
+  #  else { return 0; }
+  
+  ### If we want to be sure that the user kernel in the image file, we need to uptade each time thoses files
+  ### I keep this function, maybe we can solve this problem in a better way
+  return 0 ;
 }
 
 sub check_files($)
@@ -211,20 +218,30 @@ sub put_in_cache_from_archive($$$$)
 		    }
 		  }
 		  # remove currently extracted file in cache because it's a link
-		  $rootdir = libkadeploy2::pathlib::get_subdir_root($prev_archivefile);
-		  rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);  
+		  # ACedeyn 5/03/2009 : I think this two next line are useless because of
+		  # L236 : rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
+		  #$rootdir = libkadeploy2::pathlib::get_subdir_root($prev_archivefile);
+		  #rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);  
 		} else {
 		  # current $archivefile is a true file
 		  $still_a_link = 0;
 		}
 	    }
 	    copy($_cachedirectory."/".$_subcachedir."/".$archivefile, $_cachedirectory."/".$original_file.".".$env_id);
-	    $rootdir = libkadeploy2::pathlib::get_subdir_root($archivefile);
-	    rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);
+	    # ACedeyn : see my comment at L220
+	    #$rootdir = libkadeploy2::pathlib::get_subdir_root($archivefile);
+	    #rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);
 	    $cachemodified = 1;
 	}
 	if (-d $_cachedirectory."/".$_subcachedir) {
-	    rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
+	  #rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
+	  #ACedeyn : Here we have a possible problem if the current working directory is not 
+	  # readable for the deploy user. see : http://perldoc.perl.org/File/Path.html#DIAGNOSTICS
+	  # error cannot fetch initial working directory: [errmsg]
+	  # The solution is to first change to the $_cachedirectory then remove the $_subcachedir
+	  local $CWD = $_cachedirectory ;
+	  rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
+
         }
     }
     
