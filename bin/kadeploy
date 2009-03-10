@@ -2,6 +2,12 @@
 
 use File::Copy;
 use Getopt::Long;
+
+# For testing purpose only - comment 2 lines below otherwise
+# no lib qw(/usr/share/perl/5.8/libkadeploy2);
+# use lib qw(/usr/local/kadeploy-2.1.7-testing);
+
+# Kadeploy 2 modules
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::rights_iolib;
 use libkadeploy2::conflib;
@@ -10,6 +16,7 @@ use libkadeploy2::node_bd;
 use libkadeploy2::nodes;
 use libkadeploy2::confroot;
 use libkadeploy2::debug;
+
 use warnings;
 use strict;
 
@@ -74,6 +81,7 @@ my $post_pipe;
 my $entry_pipe;
 my $destdd_pipe;
 my $rmnodefilesintmp;
+my $tstamp;
 my $cluster;
 my $useprodenvtodeploy=0;   # use the production environment to deploy (avoid the first reboot on Duke)
 my $kadeploy_config_dir="";
@@ -90,6 +98,9 @@ my $verbose;
 my $rambinpath="/rambin";
 my $remote_fdisk_file="$rambinpath/fdisk_user.txt";
 my $remote_preinstall_conf="$rambinpath/preinstalldisk.conf";
+my $temp_files_dir="/tmp";
+my $nlist_ok="kadeploy-";
+my $nlist_nok="kadeploy-";
 my $conf_root_dir;
 
 my $reformattmp=0; #by default, we don't reformat the /tmp partition
@@ -421,7 +432,8 @@ if ($filebase =~ /^.+\.tar\.gz$/ ||
 
 
     $nodes_set->runRemoteCommandBackground("mkfs -t $mkfs_fs $mkfs_fs_options $destination_partition", "format");
-    # Sleep a little to let the slow disks format quietly before mount
+    # Wait to let slow disks finish formatting before mounting
+    # $nodes_set->runRemoteCommandReportFailed(" sleep 2 ", "sleep failed");
     sleep(2);
      # if mount does not work transfert cannot be done
     $nodes_set->runRemoteCommandReportFailed("\" mount $destination_partition /mnt/dest \"", "mount of $destination_partition failed on node");
@@ -579,7 +591,13 @@ libkadeploy2::debug::debugl(3, "Last Reboot: " . $time_end . "\n");
 ## error if a node failed then checks which node has failed
 ## and turns the others to 'deployed' state
 my $exit_value = libkadeploy2::deploy_iolib::end_deployment($base,$deployment);
-libkadeploy2::deploy_iolib::debug_print($base,$deployment,$cluster);
+
+# Produce nodes list which deployed successfully and which failed
+$nlist_ok=$temp_files_dir."/".$nlist_ok.$username."-".$cluster."-nodes_ok.out".".".$tstamp;
+$nlist_nok=$temp_files_dir."/".$nlist_nok.$username."-".$cluster."-nodes_nok.out".".".$tstamp;
+libkadeploy2::deploy_iolib::debug_print($base, $deployment, $nlist_ok, $nlist_nok);
+
+# Close DB
 libkadeploy2::deploy_iolib::disconnect($base);
 
 libkadeploy2::debug::debugl_light(3, "\n\nSumary:\n\tfirst reboot and check: " . $time_first_check . "\n\tpreinstall:" . $time_preinstall . "\n\ttransfert: " . $time_transfert . "\n\tlast reboot and check: " . $time_end . "\n");
@@ -773,8 +791,9 @@ sub check_options()
     'version'             => \$version,
     'D=i'                 => \$debug_level,
     'debug-level=i'       => \$debug_level,
-    'z=s'                 => \$cluster,           #crappy, undocumented because it's called from the sudowrapper.
-    'rmnodefilesintmp=s'  => \$rmnodefilesintmp,  #crappy, undocumented because it's called from the sudowrapper.
+    'z=s'                 => \$cluster,           # crappy, undocumented because it is called from the sudowrapper.
+    'rmnodefilesintmp=s'  => \$rmnodefilesintmp,  # crappy, undocumented because it is called from the sudowrapper.
+    'x=s'                 => \$tstamp,            # crappy, undocumented because it is called from the sudowrapper.
     'r'                   => \$reformattmp,
     'reformat-tmp'        => \$reformattmp,
     'F'                   => \$fastkernelreboot,
@@ -794,9 +813,11 @@ sub check_options()
 
   $configuration = libkadeploy2::conflib->new();
 
-  #crappy
+  # crappy
   if ($rmnodefilesintmp) {
-    my $cmd="rm -f /tmp/kadeploy-".$username."*";
+    $nlist_ok=$temp_files_dir."/".$nlist_ok.$username."-*"."-nodes_ok.out".".".$tstamp;
+    $nlist_nok=$temp_files_dir."/".$nlist_nok.$username."-*"."-nodes_nok.out".".".$tstamp;
+    my $cmd="rm -f ".$nlist_ok." ".$nlist_nok;
     system($cmd);
     exit 1;
   }
