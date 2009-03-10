@@ -5,6 +5,7 @@ package libkadeploy2::cache;
 
 use File::Copy;
 use File::Path;
+use File::chdir;
 use libkadeploy2::pathlib;
 use libkadeploy2::debug;
 
@@ -117,8 +118,6 @@ sub already_in_cache($)
     
     if ( grep /$searchedfile/, "@_filesincache" ) { return 1; }
     else { return 0; }
-    
-    return 0 ;
 }
 
 sub check_files($)
@@ -161,6 +160,9 @@ sub put_in_cache_from_archive($$$$)
     
     ## Checks whether some filenames are fake (space/empty strings and so on)
     @files = libkadeploy2::cache::check_files(\@files);
+    
+    # To prevent bug with directory in 711 : error cannot fetch initial working directory
+    local $CWD = $_cachedirectory;
     
     ## Add eventually new files with caution
     ## If files are links => follow them 

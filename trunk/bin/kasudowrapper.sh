@@ -7,22 +7,23 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 TSTAMP=$( date +%Y%m%d-%H%M-%N )
 ROOT_HOMEDIR=$(getent passwd|grep $(echo $UID)|cut -d: -f6)
-KADEPLOY_USER_DIR=".kadeploy"
-NODES_LIST="__nodes_list"
-NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
+KADEPLOY_USER_DIR=__SUBST__
+NODES_LIST=__SUBST__
+TEMP_FILES_DIR=__SUBST__
+NL_FNAME=__SUBST__
 CLUSTER_NAME=""
 CLUSTER_FILES=""
 
 # Makefile Substituted variables
-DEPLOYCONFDIR=__SUBST__
-DEPLOYDIR=__SUBST__
-DEPLOYUSER=__SUBST__
-PERL5LIBDEPLOY=__SUBST__
+DEPLOYCONFDIR=/etc/kadeploy-2.1.7-testing
+DEPLOYDIR=/usr/local/kadeploy-2.1.7-testing
+DEPLOYUSER=deploy
+PERL5LIBDEPLOY=/usr/local/kadeploy-2.1.7-testing
 
 export DEPLOYDIR
 export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
 PREPEND=""
-
+NL_APPEND=""
 
 #===========
 # Functions
@@ -43,19 +44,12 @@ function warn()
 function kadeploy_split_nodes()
 {
     local nodeslist=$1
-    local current_cluster=""
-    
-    for node in $(cat $nodeslist); do 
+
+    for node in $(cat $nodeslist); do
+      # Induce cluster name from node hostname
       cluster=$(echo $node | cut -f1 -d"." | sed s/[-]*[0-9]*//g)
-      #
-      # Begin Patch [Acedeyn 01/12/2008
-      # If want to know for wich cluster belong the node, we have to check
-      # /etc/[<DEPLOY_CONF_DIR>]/deploy_cluster.conf
-      # line=(`grep ^$node ${DEPLOYCONFDIR}/deploy_cluster.conf`)
-      # cluster=${line[1]}
-      #### End Patch
-      # ?? next line
-      [ "$cluster" != "$current_cluster" ] && current_cluster=$cluster
+      # Induce cluster name from conf file ; access right issue !
+      # cluster=$(sudo -u $DEPLOYUSER  grep "^${node}" ${DEPLOYCONFDIR}/deploy_cluster.conf|cut -d' ' -f2)
       echo $node >> ${NL_FNAME}.${cluster}.${TSTAMP}
     done
 }
@@ -112,8 +106,7 @@ function clean_tmp_files()
 {
   ( rm -f ${NL_FNAME}.*.${TSTAMP} || \
   warn "failed to remove temporary files in ${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}" )
-  ( sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy --rmnodefilesintmp $USER  || \
-  warn "failed to remove temporary files in /tmp" )
+  sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy --rmnodefilesintmp $USER -x $NL_APPEND
 }
 
 
@@ -127,11 +120,11 @@ check_kadeploy_user_dir
 
 if [ -x $DEPLOYDIR/sbin/`basename $0` ]
 then
-    ( ( sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/`basename $0` "$@" ) || \
+    ( ( sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/$(basename $0) "$@" ) || \
       ( die "bad configuration ; please refer to \"kasetup -exportenv\"" ) )
 elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then 
     if [ "`basename $0`" != "kadeploy" ]; then
-      ( ( ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$@" ) || \
+      ( ( ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "$@" ) || \
 	( die "bad configuration ; please refer to \"kasetup -exportenv\"" ) )
     else
       remaining_args=""
@@ -155,18 +148,24 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	    script="$2"
 	    shift
 	    shift;;
+	  -a|--append)
+	    NL_APPEND="$2"
+	    shift
+	    shift;;
 	  *)
 	    remaining_args="$remaining_args $1"
 	    shift;;
 	esac
       done
 
+      if [ -z "$NL_APPEND" ]; then
+        NL_APPEND=$TSTAMP
+      fi
 	# split nodes into many lists as clusters implied in deployment
 	# Check cases whether nodes are provided by a file or a parameter's list
 	NLIST="${NL_FNAME}.${TSTAMP}"
 	if [ -n "$filename" ]; then
 	  cat ${filename}|sort -n|uniq > ${NLIST}
-	  # kadeploy_split_nodes $filename
 	elif [ -n "$node_list" ]; then
 	  echo ${node_list}|tr ' ' '\n'|sort -n|uniq > ${NLIST}
 	fi
@@ -174,8 +173,6 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	  kadeploy_split_nodes ${NLIST} && rm -f ${NLIST}
 	else
 	  die "Kadeploy called on empty node list"
-	  # sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` "$*"
-	  #  exit 0
 	fi
 
 	# Call Kadeploy for each cluster found
@@ -185,40 +182,44 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	    get_cluster_name $file
 	    cluster=$CLUSTER_NAME
 	    echo -e "\n==> Launching Kadeploy on $cluster nodes\n"
-	    cmd_args="$remaining_args -f ${NL_FNAME}.${cluster}.${TSTAMP} -z $cluster"
+	    cmd_args="$remaining_args -f ${NL_FNAME}.${cluster}.${TSTAMP} -z $cluster -x $NL_APPEND"
 	    set -- $cmd_args 
-	    echo "${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/`basename $0` \"$@\" &"
+	    ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "$@" &
 	  fi
 	done
 
 	#waiting all instances of kadeploy
 	wait
 
-	#copy nodes files in the current directory
-	cp /tmp/kadeploy-$USER*.out . 2>/dev/null
-
 	#copy ssh keys in root's authorized_keys
-	if [ $keys ]
-	then
-	    get_list_of_cluster_files
-	    for file in $CLUSTER_FILES; do 
-		if [ -f "$file" -a -s "$file" ]; then
-		  get_cluster_name $file
-		  cluster=$CLUSTER_NAME
-		  if [ -f ~/.ssh/id_rsa.pub ]; then
-		    echo "kaaddkeys -f \"kadeploy-${USER}-${cluster}-nodes_ok.out\" -C ${DEPLOYCONFDIR} -k ~/.ssh/id_rsa.pub"
-		  elif [ -f ~/.ssh/id_dsa.pub ]; then
-		    echo "kaaddkeys -f \"kadeploy-${USER}-${cluster}-nodes_ok.out\" -C ${DEPLOYCONFDIR} -k ~/.ssh/id_dsa.pub"
-		  fi
-		fi
-	    done
-	fi
+	get_list_of_cluster_files
+	for file in $CLUSTER_FILES; do 
+	  if [ -f "$file" -a -s "$file" ]; then
+	    get_cluster_name $file
+	    cluster=$CLUSTER_NAME
+	    # Beware to keep same file name between kasudowrapper and kadeploy:582
+	    nlist_ok="${TEMP_FILES_DIR}/kadeploy-${USER}-${cluster}-nodes_ok.out.${NL_APPEND}"
+	    nlist_nok="${TEMP_FILES_DIR}/kadeploy-${USER}-${cluster}-nodes_nok.out.${NL_APPEND}"
+	    #copy nodes files in the current directory
+	    cp $nlist_ok "${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/" 2>/dev/null
+	    cp $nlist_nok "${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/" 2>/dev/null
+	    if [ $keys ]; then
+	      if [ -f ~/.ssh/id_rsa.pub ]; then
+		kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_rsa.pub
+	      elif [ -f ~/.ssh/id_dsa.pub ]; then
+		kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_dsa.pub
+	      fi
+	    fi
+	  fi
+	done
 	
 	# Purge temporary generated files
 	clean_tmp_files
 	
 	# Launch a script after the deployment
-	( [ -e "$script" -a -x "$script" ] && $script ) || \
-	warn "$script not found or not executable"
+	if [ "$script" ]; then 
+	  ( [ -e "$script" -a -x "$script" ] && $script ) || \
+	  warn "$script not found or not executable"
+        fi
     fi
 fi

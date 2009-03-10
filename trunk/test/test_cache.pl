@@ -70,11 +70,11 @@ my $moncache=libkadeploy2::cache::get_cache_directory();
 print "le cache est " . $moncache . "\n";
 
 # my @files = ("vmlinuz", "initrd.img");
-# my @files = ("boot/vmlinuz", "boot/initrd");
- my @files = ("boot/kernel", "", "boot/initrd", "     ", "boot/xen", "boot/noyau");
+my @files = ("boot/vmlinuz", "boot/initrd");
+#  my @files = ("boot/kernel", "", "boot/initrd", "     ", "boot/xen", "boot/noyau");
 # my $arc = "image.tgz"; 
-# my $arc = "bug1850.tgz"; 
- my $arc = "env.tgz"; 
+my $arc = "bug1850.tgz"; 
+# my $arc = "env.tgz"; 
 my $strip = 1;
 
 my $f1 = @files[0];
@@ -111,17 +111,27 @@ libkadeploy2::cache::put_in_cache_from_archive(\@files, $arc, $strip, $env_id);
 
 my $dir = libkadeploy2::cache::get_cache_directory();
 $f1id = libkadeploy2::pathlib::strip_leading_dirs($f1id);
-$dir = $dir .  "/" . $f1id;
-print "### Age du fichier : " . $dir . "###\n";
-print "-M = " . ( -M $dir ) . "\n";
-print "-A = " . ( -A $dir ) . "\n";
-print "-C = " . ( -C $dir ) . "\n";
+my $dir1 = $dir .  "/" . $f1id;
+$dir1 = "/tmp/cache/f1";
+print "### Age du fichier : " . $dir1 . "###\n";
+print "-M = " . ( -M $dir1 ) . "\n";
+print "-A = " . ( -A $dir1 ) . "\n";
+print "-C = " . ( -C $dir1 ) . "\n";
 my $dir = libkadeploy2::cache::get_cache_directory();
 $f2id = libkadeploy2::pathlib::strip_leading_dirs($f2id);
-$dir = $dir .  "/" . $f2id;
-print "### Age du fichier : " . $dir . "###\n";
-print "-M = " . ( -M $dir ) . "\n";
-print "-A = " . ( -A $dir ) . "\n";
-print "-C = " . ( -C $dir ) . "\n";
+my $dir2 = $dir .  "/" . $f2id;
+$dir2 = "/tmp/cache/f3";
+print "### Age du fichier : " . $dir2 . "###\n";
+print "-M = " . ( -M $dir2 ) . "\n";
+print "-A = " . ( -A $dir2 ) . "\n";
+print "-C = " . ( -C $dir2 ) . "\n";
 
+my $f1m = ( -M $dir1);
+my $f2m = ( -M $dir2);
+
+if ( $f1m < $f2m) {
+    print "f1 plus jeune que f2\n";
+    } else {
+	print "f1 plus vieux que f2\n";
+}
 

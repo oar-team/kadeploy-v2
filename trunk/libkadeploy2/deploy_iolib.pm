@@ -13,8 +13,6 @@ use DBI;
 use libkadeploy2::conflib;
 use libkadeploy2::debug;
 use Time::Local;
-# ACedeyn : for timestamp of the deploy result
-use POSIX qw(strftime);
 use strict;
 
 ##############
@@ -95,7 +93,7 @@ sub set_deployment_features($$$$$$);
 
 # print and debug
 sub list_node($);
-sub debug_print($$$);
+sub debug_print($$$$);
 
 # deployment time
 sub set_time($$);
@@ -1793,10 +1791,11 @@ sub list_node($) {
 # prints database state and generate 2 files : 
 # parameters : base, deploy_id, cluster_name
 # return value : /
-sub debug_print($$$){
+sub debug_print($$$$){
     my $dbh = shift;
     my $deploy_id = shift;
-    my $cluster = shift;
+    my $nlist_ok = shift;
+    my $nlist_nok = shift;
     my %res;
 
     # gets interesting information
@@ -1827,23 +1826,15 @@ sub debug_print($$$){
 	$username=$ENV{USER};
     }
     my $ret_nodes_ok;
-
-    # ACedeyn : We need the deploy_date / deploy_id to make an uniq readable file
-    #          
-    my $deploy_date = strftime "%Y-%m-%d-%H%M%S", localtime ;
-    my $file_output="/tmp/kadeploy-".$username."-".$cluster."-".$deploy_date."-".$deploy_id."-nodes";
-    $ret_nodes_ok=open(NODES_OK,">".$file_output."_ok.out");
+    $ret_nodes_ok=open(NODES_OK,">".$nlist_ok);
     if (!$ret_nodes_ok) {
-	print "Can't create ".$file_output."_ok.out";
+	print "Can't create ".$nlist_ok."\n";
     }
     my $ret_nodes_nok;
-    $ret_nodes_nok=open(NODES_NOK,">".$file_output."_nok.out");
-    if (!$ret_nodes_ok) {
-	print "Can't create ".$file_output."_nok.out";
+    $ret_nodes_nok=open(NODES_NOK,">".$nlist_nok);
+    if (!$ret_nodes_nok) {
+	print "Can't create ".$nlist_nok."\n";
     }
-    # FIME: 1 I don't know why, but the file created is not in /tmp but in the user homedir...
-    #       2 This modification breaks the kaaddkey stuff in kasudowrapper...
-    ## /ACedeyn
 
     # prints information
     libkadeploy2::debug::debugl_light(3, "\nDeploy\tState\n");
