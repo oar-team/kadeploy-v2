@@ -37,6 +37,7 @@ my @hosts_to_reboot = (); # list of nodes to reboot
 my $verbose = 0;
 my $debug = 1;
 my $node_file;
+my $user_request_grub = 0;
 my $username = getpwuid($ENV{SUDO_UID}); # real user
 my $kareboot_usage = "Usage : kareboot [-s|--soft] \
 [-h|--hard] \
@@ -47,7 +48,8 @@ my $kareboot_usage = "Usage : kareboot [-s|--soft] \
 [-e|--environment name] \
 [-p|--partition partition] \
 [-kp|--kernel-parameters \"kernel parameters\"]\
-[-C|--configuration <configuration root directory>]\n";
+[-C|--configuration <configuration root directory>]\
+[--grub]\n";
 
 if (!@ARGV){
     print $kareboot_usage;
@@ -77,7 +79,8 @@ GetOptions('m=s'        => \@host_list,
   'verbose'             => \$verbose,
   'v'                   => \$verbose,
   'C=s'                 => \$conf_root_dir,
-  'configuration=s'     => \$conf_root_dir
+  'configuration=s'     => \$conf_root_dir, 
+  'grub!'               => \$user_request_grub
 );
 
 if (!$conf_root_dir eq "") {
@@ -283,7 +286,7 @@ foreach $host (@host_list){
 	  # grub and pxe
 	  my $ip = libkadeploy2::deploy_iolib::node_name_to_ip($base,$host);
 	  $node_info{$ip} = [$dev,$part];
-	  libkadeploy2::bootlib::manage_grub_pxe(\%node_info,\@env_info);
+	  libkadeploy2::bootlib::manage_grub_pxe(\%node_info,\@env_info, $user_request_grub);
 	  push (@hosts_to_reboot, $host);
 	}
 	libkadeploy2::deploy_iolib::disconnect($base);

@@ -36,7 +36,7 @@ sub set_mkfs_option($);
 sub halt($);
 
 ## declares the constants
-use constant KADEPLOY_VERSION => "2.1.7";
+use constant KADEPLOY_VERSION => "2.1.8";
 
 ## declares the options
 my $env = '';               # env name to be deployed
@@ -103,8 +103,12 @@ my $nlist_ok="kadeploy-";
 my $nlist_nok="kadeploy-";
 my $conf_root_dir;
 
-my $reformattmp=0; #by default, we don't reformat the /tmp partition
+# by default : do not reformat /tmp partition
+my $reformattmp=0; 
 my $fastkernelreboot=0;
+
+# User might request GRUB usage / NOT requested by default 
+my $user_request_grub=0; 
 
 if ($ENV{SUDO_USER})
 {  $username=$ENV{SUDO_USER}; }
@@ -489,7 +493,7 @@ my @to_reboot = @db_checked_hosts;
 
 
 # grub and pxe
-my $ret = libkadeploy2::bootlib::setup_grub_pxe($base,$deployment);
+my $ret = libkadeploy2::bootlib::setup_grub_pxe($base,$deployment,$user_request_grub);
 if ($ret != 1) {halt("Setup of PXE-grub failed")};
 
 libkadeploy2::debug::debugl(1, "### Reboot the nodes on the deployed environnment\n");
@@ -750,6 +754,8 @@ sub usages()
 \t[-u   | --use-prod-env]                          Use the production environment to deploy
 \t[-s   | --script      script]                    Launch a script after a deployment
 \t[-C   | --configuration <conf root directory>]   Configuration root directory
+\t[-a   | --append      suffix]                    Append a customized suffix to the lists of nodes
+\t[--grub]                                         Request GRUB usage, if available
 ";
 
 }
@@ -801,7 +807,8 @@ sub check_options()
     'u'                   => \$useprodenvtodeploy,
     'use-prod-env'        => \$useprodenvtodeploy,
     'C=s'                 => \$conf_root_dir,
-    'configuration=s'     => \$conf_root_dir
+    'configuration=s'     => \$conf_root_dir, 
+    'grub!'               => \$user_request_grub
   );
 
   # Get configuration root directory
@@ -822,11 +829,13 @@ sub check_options()
     exit 1;
   }
 
-    ## first read command options    
+    ## first read command options 
     if ($help) { usages(); exit(0); }
 
     if ($version) { version(); exit(0); }
 
+    if ($user_request_grub) { $user_request_grub = 1; }
+    
     if ((scalar(@host_list) && $node_file) || (!@host_list) && (!$node_file)) {
         print "ERROR : hosts have to be specified, using either the -m OR the -f option\n";
         exit 1;

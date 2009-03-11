@@ -152,6 +152,9 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	    NL_APPEND="$2"
 	    shift
 	    shift;;
+	  -h|--help)
+	    ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "--help"
+	    exit 0;;
 	  *)
 	    remaining_args="$remaining_args $1"
 	    shift;;

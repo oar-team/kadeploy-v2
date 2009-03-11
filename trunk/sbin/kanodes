@@ -43,9 +43,8 @@ GetOptions('z=s'            => \$clustername,
 	   'h!'             => \$help,
 	   'listnode!'      => \$listnode,
 	   'listpartition!' => \$listpartition,
-     'C=s'            => \$conf_root_dir,
-     'configuration=s' => \$conf_root_dir
-	   );
+           'C=s'            => \$conf_root_dir,
+           'configuration=s' => \$conf_root_dir);
 
 my $disk_id;
 my @host_id_list = ();
@@ -147,7 +146,7 @@ if ($iwanthelp)
 sub usage()
 {
     print "$0
-\t-c | --cluster                                 Cluster name to which nodes should be added (by default added to default cluster)
+\t--cluster                                      Cluster name to which nodes should be added (by default added to default cluster)
 \t-add                                           Add nodes from $nodesfile $nodespartitionfile
 \t-del [myhostname]                              Delete specified hostname
 \t-listnode                                      List node from DB

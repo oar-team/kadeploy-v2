@@ -19,8 +19,8 @@ use POSIX qw(:signal_h :errno_h :sys_wait_h);
 #}
 
 ## prototypes
-sub setup_grub_pxe($$);
-sub manage_grub_pxe($$);
+sub setup_grub_pxe($$$);
+sub manage_grub_pxe($$$);
 sub generate_grub_files($$$$$$$$);
 sub generate_nogrub_files($$$$$$$);
 sub setup_pxe($$$$);
@@ -45,13 +45,14 @@ sub register_conf {
 ## wrapper kadeploy - manage_grub_pxe
 ## parameters : base, deployment identifier
 ## return value : -1 in case of error, 1 otherwise
-sub setup_grub_pxe($$){
+sub setup_grub_pxe($$$){
     my $dbh = shift;
     my $deploy_id = shift;
-
+    my $user_request_grub = shift;
+    
     my @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($dbh,$deploy_id);
     my %node_info = libkadeploy2::deploy_iolib::deploy_id_to_node_info($dbh,$deploy_id);
-    my $ret = manage_grub_pxe(\%node_info,\@env_info);
+    my $ret = manage_grub_pxe(\%node_info,\@env_info, $user_request_grub);
     return $ret;
 }
 
@@ -59,10 +60,11 @@ sub setup_grub_pxe($$){
 ## setups grub and pxe 
 ## parameters : base, ref to host info, ref to env info
 ## return value : 1 if successful
-sub manage_grub_pxe($$){
+sub manage_grub_pxe($$$){
     my $ref_to_node_info = shift;
     my $ref_to_env_info  = shift;
-
+    my $user_request_grub = shift;
+    
     my %node_info = %{$ref_to_node_info};
     my @env_info  = @{$ref_to_env_info};
     
@@ -76,8 +78,29 @@ sub manage_grub_pxe($$){
     $env_archive = substr($env_archive,6);
 
     my $custom_kernel_parameters = $configuration->get_conf("custom_kernel_parameters");
+    libkadeploy2::debug::debugl(3, "GRUB request : ".$user_request_grub."\n");
     my $nogrub = 1;
     $nogrub = $configuration->get_conf("use_nogrub");
+    if ($nogrub) {
+	libkadeploy2::debug::debugl(3, "GRUB not available.\n");
+    } else {
+	libkadeploy2::debug::debugl(3, "GRUB available.\n");	
+    }
+    if (! $nogrub) {
+      # Check whether user has requested GRUB usage ; otherwise do not use GRUB (nogrub = 1)
+      if ($user_request_grub) {
+	# Use GRUB : available and user requested
+        $nogrub = 0;
+      } else {
+	# Do NOT use GRUB : available but NOT requested
+	$nogrub = 1;
+      }
+    }
+    if ($nogrub) { 
+	libkadeploy2::debug::debugl(3, "GRUB won't be used.\n");    
+    } else { 
+	libkadeploy2::debug::debugl(3, "GRUB will be used.\n");    
+    }
     
     my $clustername = $configuration->get_clustername();
     my $filename_append = "-" . $clustername;
