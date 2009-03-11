@@ -141,7 +141,7 @@ module EnvironmentManagement
       if (version == nil) then
         query = "SELECT * FROM environments WHERE name=\"#{name}\" \
                                              AND user=\"#{user}\" \
-                                             AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{user}\")"
+                                             AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{user}\" AND name=\"#{name}\")"
       else
         query = "SELECT * FROM environments WHERE name=\"#{name}\" \
                                              AND user=\"#{user}\" \

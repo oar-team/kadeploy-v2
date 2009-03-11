@@ -319,7 +319,9 @@ module MicroStepsLibrary
                                          files_in_archive,
                                          @config.common.kadeploy_cache_dir)
         files.each { |file|
-          res = res && File.move(@config.common.kadeploy_cache_dir + "/" + file, dest_dir + "/" + prefix_in_cache + file)
+          src = @config.common.kadeploy_cache_dir + "/" + file
+          dst = dest_dir + "/" + prefix_in_cache + file
+          res = res && File.move(src, dst)
         }
         return res
       else
@@ -1093,9 +1095,11 @@ module MicroStepsLibrary
             @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
             @config.exec_specific.breakpointed = true
             res= false
-          else
-            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
-                                                       @config.common.taktuk_connector)
+# Note: with the current prepost install used in Grid'5000, no script must be executed at the admin post-install
+# since it is only a set of variable
+#          else
+#            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+#                                                       @config.common.taktuk_connector)
           end
         }
       else

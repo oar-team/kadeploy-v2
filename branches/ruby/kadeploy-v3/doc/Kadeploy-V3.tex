@@ -304,7 +304,7 @@ There are three ways to set a deployment environment: using the production envir
 \subsection{Configuration of the production environment}
 TODO
 \subsection{Creation of the dedicated environment}
-TODO
+This methods consists in creating a kernel/initrd that contains all the tools required to perform a deployment. 
 \subsection{Creation of the NFSRoot environment}
 TODO
 \chapter{Client side configuration}
@@ -344,35 +344,39 @@ The Kadeploy client is actually the user interface for the Kadeploy software. It
 \begin{verbatim}
 > kadeploy -h
 Usage: kadeploy [options]
-Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Contact: kadeploy-devel@lists.grid5000.fr
 General options:
-  -a, --env-file ENVFILE           File containing the environment description
-  -b, --breakpoint MICROSTEP       Set a breakpoint just before launching the give micro-step 
-                                   (use this only if you know what you do)
-  -c, --set-custom-operations FILE Add some custom operations defined in a file
+  -a, --env-file ENVFILE           File containing the envrionement description
   -d, --debug-level VALUE          Debug level between 0 to 4
   -e, --env-name ENVNAME           Name of the recorded environment to deploy
   -f, --file MACHINELIST           Files containing list of nodes
-  -i, --ignore-nodes-deploying     Allow to deploy even on the nodes tagged as "currently deploying"
-                                   (use this only if you know what you do)
   -k, --key FILE                   Public key to copy in the root's authorized_keys
   -m, --machine MACHINE            Node to run on
-  -n, --disable-bootload-install   Disable the automatic installation of a bootloader for a Linux
-                                   based environment
+  -n, --output-ko-nodes FILENAME   File that will contain the nodes not correctly deployed
+  -o, --output-ok-nodes FILENAME   File that will contain the nodes correctly deployed
   -p, --partition_number NUMBER    Specify the partition number to use
   -r, --reformat-tmp               Reformat the /tmp partition
   -s, --script FILE                Execute a script at the end of the deployment
   -u, --user USERNAME              Specify the user
   -v, --env-version NUMVERSION     Number of version of the environment to deploy
   -w, --set-pxe-profile FILE       Set the PXE profile (use with caution)
-  -z, --force-steps STRING         Undocumented, for administration purpose only
+Advanced options:
+      --ignore-nodes-deploying     Allow to deploy even on the nodes tagged as "currently deploying" 
+                                   (use this only if you know what you do)
+      --disable-bootloader-install Disable the automatic installation of a bootloader for a Linux based environnment
+      --breakpoint MICROSTEP       Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)
+      --set-custom-operations FILE Add some custom operations defined in a file
+      --force-steps STRING         Undocumented, for administration purpose only
+
+
+
 \end{verbatim}
 \end{small}
 
 At least, Kadeploy must be called with one node and an environment. The nodes to deploy can be specified by using several \texttt{-m|--machine} options, or the \texttt{-f|--file} options (one node per line in the file), or a mix of both.
 The environment can be specified with the \texttt{-e|--env-name} option if you want to use an environment recorded in the environment database or with the \texttt{-a|--env-file} options if you want to use an environment described in a file. Refer to the~\ref{sec:kaenv} part for information about the environment description. Here are some examples:
 \begin{verbatim}
-> kadeploy -m gdx-5.orsay.grid5000.fr -e lenny-x64-nfs-1.0
+> kadeploy -m gdx-5.orsay.grid5000.fr -e lenny-x64-nfs-1.0 -o nodes_ok -n nodes_ko
 > kadeploy -f nodes -a custom_env.dsc
 > kadeploy -f nodes -m gdx-5.orsay.grid5000.fr -a custom_env.dsc
 \end{verbatim}
@@ -392,9 +396,10 @@ This command performs the deployment of the environment \textit{lenny-x64-nfs-1.
 \begin{verbatim}
 > kadeploy -f ~/machinefile \
            -e custom_env \
-           -l johnsmith
+           -l johnsmith \
+           -o nodes_ok -n nodes_ko
 \end{verbatim}
-This command uses the environment \textit{custom\_env} of the user \textit{johnsmith} to deploy the nodes specified in \textit{~/machinefile}. Refer to the part~\ref{sec:kaenv} about Kaenv to know more about the environment management.
+This command uses the environment \textit{custom\_env} of the user \textit{johnsmith} to deploy the nodes specified in \textit{~/machinefile}. The list of the nodes correctly deployed will be written in the file specified with the \texttt{-o|--output-ok-nodes} option. Idem for the nodes not correctly deployed with the \texttt{-o|--output-ko-nodes} option. Refer to the part~\ref{sec:kaenv} about Kaenv to know more about the environment management.
 
 \paragraph{Use case 3 - basic usage}
 \begin{verbatim}
@@ -411,7 +416,7 @@ This command performs the deployment of the environment described by the file \t
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e lenny-x64-nfs-1.0 \
            -d 4 \
-           -b "manage_user_post_install"
+           --breakpoint "manage_user_post_install"
 \end{verbatim}
 This kind of command can be used for debug purpose. It performs a deployment with the maximum debug level and it asks to stop the deployment workflow just before executing the \textit{manage\_user\_post\_install} micro-step. Thus you will be able to connect in the deployment environment and to debug what you want.
 
@@ -427,7 +432,7 @@ In some specific case, you may want to use a specific PXE profil to boot your no
 \begin{verbatim}
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e Custom_linux_env \
-           -n
+           --disable-bootloader-install
 \end{verbatim}
 If you deploy a Linux based environment and if the administrator choose to boot the nodes with the \textit{chainload} fashion, Kadeploy will install automatically a bootloader on the deployment partition. In some cases, you may want to bypass this installation because you have installed at the time of a previous deployment another bootloader. This allows to avoid the overriding of the installed bootloader. However, if no bootloader is installed or if the installed bootdloader is not able to boot your environment, the won't be reachable at the end of the deployment.
 
@@ -435,17 +440,17 @@ If you deploy a Linux based environment and if the administrator choose to boot 
 \begin{verbatim}
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e "FreeBSD 7.1" \
-           -z "SetDeploymentEnv|SetDeploymentEnvProd:2:100&
-               BroadcastEnv|BroadcastEnvChain:2:300&
-               BootNewEnv|BootNewEnvKexec:1:150"
+           --force-steps "SetDeploymentEnv|SetDeploymentEnvProd:2:100&
+                          BroadcastEnv|BroadcastEnvChain:2:300&
+                          BootNewEnv|BootNewEnvKexec:1:150"
 \end{verbatim}
-If you are a power user, you can specify the full Kadeploy workflow and bypass the default configuration. Use it at your own risk since the nodes may not support all the Kadeploy features like the \textit{Kexec} optimisation for instance. The syntax for the \texttt{-z|--force-steps} option is the same that for the \texttt{macrostep} field if the Kadeploy configuration (see the~\ref{sec:specific_config} part for the available values). The difference is that the three macrostep are defined on the same line, with the \texttt{\&} character as a delimiter between the macro-steps. Warning, you must define at least one implementation for each macro-step, without newline (unlike the example).
+If you are a power user, you can specify the full Kadeploy workflow and bypass the default configuration. Use it at your own risk since the nodes may not support all the Kadeploy features like the \textit{Kexec} optimisation for instance. The syntax for the \texttt{--force-steps} option is the same that for the \texttt{macrostep} field if the Kadeploy configuration (see the~\ref{sec:specific_config} part for the available values). The difference is that the three macrostep are defined on the same line, with the \texttt{\&} character as a delimiter between the macro-steps. Warning, you must define at least one implementation for each macro-step, without newline (unlike the example).
 
 \paragraph{Use case 8 - expert usage}
 \begin{verbatim}
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e lenny-x64-nfs-1.0 \
-           -c ~/custom_ops
+           --set-custom-operations ~/custom_ops
 \end{verbatim}
 For very specific purpose, you can add some custom operations in the deployment workflow. To do this, you have to specify these operations in a file where each line specify the operations that must be executed at the beginning of a micro-step. The syntax is: \texttt{macrostep,microstep@cmd1\%arg\%dir,cmd2\%arg\%dir,...,cmdN\%arg\%dir}. You can specify two kinds of operations: \textit{send} and \textit{exec}. For the \textit{send} operation, \texttt{arg} is used to specify a filename and \texttt{dir} is used to specify the destination directory. Concerning the \textit{exec} operation, \texttt{arg} is used to specify the command to execute and \texttt{dir} must be empty.
 
@@ -464,7 +469,7 @@ Kareboot can be used by using the \texttt{kareboot} command. The CLI looks like 
 \begin{verbatim}
 > kareboot -h
 Usage: kareboot [options]
-Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -c, --check-prod-env         Check if the production environment has been destroyed
   -d, --debug-level VALUE      Debug level between 0 to 4
@@ -501,7 +506,7 @@ Kaenv can be used by using the \texttt{kaenv} command. The CLI looks like this:
 \begin{verbatim}
 > kaenv -h
 Usage: kaenv [options]
-Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --add ENVFILE                    Add the environment to the environment database
   -c, --check-md5                      Check the md5sum of the tarball and the post-install files
@@ -584,9 +589,9 @@ Explanation of the fields used in the environment description:
 \item \texttt{author}: author of the environment.
 \item \texttt{tarball}: disk image of the environment. The syntax is: \texttt{file|kind|md5sum}. The allowed kinds are \texttt{tgz}, \texttt{tbz2}, \texttt{ddgz} and \texttt{ddbz2}.
 \item \texttt{postinstall}: post-install files.\\ The syntax is: \texttt{file1|kind|md5sum|script1,file2|kind|md5sum|script2, ...} The allowed kinds of files for post-installs are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug.
-\item \texttt{kernel}: path of the kernel in the tarball (relative to /boot).
+\item \texttt{kernel}: path of the kernel in the tarball (relative to /boot, must not be a link).
 \item \texttt{kernel\_params}: set of parameters that must be applied to the kernel for a correct boot.
-\item \texttt{initrd}: path of the initrd in the tarball (relative to /boot).
+\item \texttt{initrd}: path of the initrd in the tarball (relative to /boot, must not be a link).
 \item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball (relative to /boot). This fields is only required for the Xen based environments.
 \item \texttt{hypervisor\_params (opt)}: set of parameters that must be applied to the hypervisor for a correct boot. This fields is only required for the Xen based environments.
 \item \texttt{part}: default deployment partition.
@@ -601,7 +606,7 @@ Karights can be used by using the \texttt{karights} command (it is designed for 
 \begin{small}
 \begin{verbatim}
 Usage: karights [options]
-Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --add                    Add some rights to a user
   -d, --delete                 Delete some rights to a user
@@ -644,7 +649,7 @@ Kastat can be used by using the \texttt{kastat} command. The CLI looks like this
 \begin{small}
 \begin{verbatim}
 Usage: kastat [options]
-Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>
+Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --list-min-retries NB        Print the statistics about the nodes that need several attempts
   -b, --list-failure-rate          Print the failure rate for the nodes

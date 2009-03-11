@@ -113,7 +113,8 @@ module ConfigInformation
       exec_specific.custom_operations_file = String.new
       exec_specific.custom_operations = nil
       exec_specific.disable_bootloader_install = false
-
+      exec_specific.nodes_ok_file = String.new
+      exec_specific.nodes_ko_file = String.new
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -152,15 +153,12 @@ module ConfigInformation
     # Output
     # * returns true if the installation is correct, false otherwise
     def sanity_check(kind)
-      #### generic check
-      #common configuration file
-      if not File.readable?(CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE) then
-        puts "The #{CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE} file cannot be read"
-        return false
-      end
-      ### command specific check
       case kind
       when "kadeploy"
+        if not File.readable?(CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE) then
+          puts "The #{CONFIGURATION_FOLDER + "/" + COMMON_CONFIGURATION_FILE} file cannot be read"
+          return false
+        end
         #configuration node file
         if not File.readable?(CONFIGURATION_FOLDER + "/" + NODES_FILE) then
           puts "The #{CONFIGURATION_FOLDER + "/" + NODES_FILE} file cannot be read"
@@ -526,45 +524,16 @@ module ConfigInformation
     # Output
     # * returns true in case of success, false otherwise
     def Config.load_kadeploy_cmdline_options(nodes_desc, exec_specific)
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
-        opts.summary_width = 30
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.summary_width = 32
+        opts.banner = "Usage: kadeploy [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-a", "--env-file ENVFILE", "File containing the envrionement description") { |f|
           exec_specific.load_env_kind = "file"
           exec_specific.load_env_arg = f
-        }
-        opts.on("-b", "--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
-          exec_specific.breakpoint_on_microstep = m
-        }
-        opts.on("-c", "--set-custom-operations FILE", "Add some custom operations defined in a file") { |file|
-          exec_specific.custom_operations_file = file
-          if not File.readable?(file) then
-            puts "The file #{file} cannot be read"
-            return false
-          else
-            exec_specific.custom_operations = Hash.new
-            #example of line: macro_step,microstep@cmd1%arg%dir,cmd2%arg%dir,...,cmdN%arg%dir
-            IO.readlines(file).each { |line|
-              if (line =~ /\A\w+,\w+@\w+%.+%.+(,\w+%.+%.+)*\Z/) then
-                step = line.split("@")[0]
-                cmds = line.split("@")[1]
-                macro_step = step.split(",")[0]
-                micro_step = step.split(",")[1]
-                exec_specific.custom_operations[macro_step] = Hash.new if (not exec_specific.custom_operations.has_key?(macro_step))
-                exec_specific.custom_operations[macro_step][micro_step] = Array.new if (not exec_specific.custom_operations[macro_step].has_key?(micro_step))
-                cmds.split(",").each { |cmd|
-                  entry = cmd.split("%")
-                  exec_specific.custom_operations[macro_step][micro_step].push(entry)
-                }
-              end
-            }
-          end
         }
         opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
           debug_level = d.to_i
@@ -586,9 +555,6 @@ module ConfigInformation
             end
           }
         }
-        opts.on("-i", "--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
-          exec_specific.ignore_nodes_deploying = true
-        }
         opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
           if not File.readable?(f) then
             puts "The file #{f} cannot be read"
@@ -601,8 +567,11 @@ module ConfigInformation
             return false
           end
         }
-        opts.on("-n", "--disable-bootload-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
-          exec_specific.disable_bootloader_install = true
+        opts.on("-n", "--output-ko-nodes FILENAME", "File that will contain the nodes not correctly deployed")  { |f|
+          exec_specific.nodes_ko_file
+        }
+        opts.on("-o", "--output-ok-nodes FILENAME", "File that will contain the nodes correctly deployed")  { |f|
+          exec_specific.nodes_ok_file
         }
         opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
           exec_specific.deploy_part = p
@@ -631,7 +600,41 @@ module ConfigInformation
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           exec_specific.pxe_profile_file = file
         }
-        opts.on("-z", "--force-steps STRING", "Undocumented, for administration purpose only") { |s|
+        opts.separator "Advanced options:"
+        opts.on("--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
+          exec_specific.ignore_nodes_deploying = true
+        }
+        opts.on("--disable-bootloader-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
+          exec_specific.disable_bootloader_install = true
+        }
+        opts.on("--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
+          exec_specific.breakpoint_on_microstep = m
+        }
+        opts.on("--set-custom-operations FILE", "Add some custom operations defined in a file") { |file|
+          exec_specific.custom_operations_file = file
+          if not File.readable?(file) then
+            puts "The file #{file} cannot be read"
+            return false
+          else
+            exec_specific.custom_operations = Hash.new
+            #example of line: macro_step,microstep@cmd1%arg%dir,cmd2%arg%dir,...,cmdN%arg%dir
+            IO.readlines(file).each { |line|
+              if (line =~ /\A\w+,\w+@\w+%.+%.+(,\w+%.+%.+)*\Z/) then
+                step = line.split("@")[0]
+                cmds = line.split("@")[1]
+                macro_step = step.split(",")[0]
+                micro_step = step.split(",")[1]
+                exec_specific.custom_operations[macro_step] = Hash.new if (not exec_specific.custom_operations.has_key?(macro_step))
+                exec_specific.custom_operations[macro_step][micro_step] = Array.new if (not exec_specific.custom_operations[macro_step].has_key?(micro_step))
+                cmds.split(",").each { |cmd|
+                  entry = cmd.split("%")
+                  exec_specific.custom_operations[macro_step][micro_step].push(entry)
+                }
+              end
+            }
+          end
+        }
+        opts.on("--force-steps STRING", "Undocumented, for administration purpose only") { |s|
           s.split("&").each { |macrostep|
             macrostep_name = macrostep.split("|")[0]
             microstep_list = macrostep.split("|")[1]
@@ -781,13 +784,11 @@ module ConfigInformation
     # Output
     # * nothing
     def load_kaenv_cmdline_options
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
         opts.summary_width = 28
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.banner = "Usage: kaenv [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-a", "--add ENVFILE", "Add the environment to the environment database") { |f|
@@ -878,13 +879,11 @@ module ConfigInformation
     # Output
     # * nothing
     def load_karights_cmdline_options
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
         opts.summary_width = 28
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.banner = "Usage: karights [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-a", "--add", "Add some rights to a user") {
@@ -970,13 +969,11 @@ module ConfigInformation
     # Output
     # * returns true in case of success, false otherwise
     def load_kastat_cmdline_options
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
         opts.summary_width = 28
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.banner = "Usage: kastat [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-a", "--list-min-retries NB", "Print the statistics about the nodes that need several attempts") { |n|
@@ -1088,13 +1085,11 @@ module ConfigInformation
     # Output
     # * returns true in case of success, false otherwise
     def load_kareboot_cmdline_options(nodes_desc)
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
         opts.summary_width = 28
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.banner = "Usage: kareboot [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-c", "--check-prod-env", "Check if the production environment has been detroyed") { |d|
@@ -1176,13 +1171,11 @@ module ConfigInformation
     # Output
     # * returns true in case of success, false otherwise
     def load_kaconsole_cmdline_options(nodes_desc)
-      progname = File::basename($PROGRAM_NAME)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
         opts.summary_width = 28
-        opts.program_name = progname
-        opts.banner = "Usage: #{progname} [options]"
-        opts.separator "Contact: Emmanuel Jeanvoine <emmanuel.jeanvoine@inria.fr>"
+        opts.banner = "Usage: kaconsole [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
         opts.on("-m", "--machine MACHINE", "Obtain a console on the given machines") { |hostname|          
