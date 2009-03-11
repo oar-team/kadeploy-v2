@@ -81,7 +81,7 @@ main()
       -k | --kadeploy-tag)
       	local release="$2"
         KADEPLOY_TAG_RELEASE=$(echo $release | tr '[:lower:]' '[:upper:]')
-	KADEPLOY_TAG="${KADEPLOY_TAG_MARK} ${KADEPLOY_TAG_RELEASE}_TAG ${KADEPLOY_TAG_MARK}"
+	KADEPLOY_TAG="${KADEPLOY_TAG_MARK} KADEPLOY_${KADEPLOY_TAG_RELEASE}_TAG ${KADEPLOY_TAG_MARK}"
 	shift
         shift;;
       -i|--install)

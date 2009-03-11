@@ -7,18 +7,18 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 TSTAMP=$( date +%Y%m%d-%H%M-%N )
 ROOT_HOMEDIR=$(getent passwd|grep $(echo $UID)|cut -d: -f6)
-KADEPLOY_USER_DIR=__SUBST__
-NODES_LIST=__SUBST__
-TEMP_FILES_DIR=__SUBST__
-NL_FNAME=__SUBST__
+KADEPLOY_USER_DIR=".kadeploy"
+NODES_LIST="__nodes_list"
+TEMP_FILES_DIR="/tmp"
+NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
 CLUSTER_NAME=""
 CLUSTER_FILES=""
 
 # Makefile Substituted variables
-DEPLOYCONFDIR=/etc/kadeploy-2.1.7-testing
-DEPLOYDIR=/usr/local/kadeploy-2.1.7-testing
-DEPLOYUSER=deploy
-PERL5LIBDEPLOY=/usr/local/kadeploy-2.1.7-testing
+DEPLOYCONFDIR=__SUBST__
+DEPLOYDIR=__SUBST__
+DEPLOYUSER=__SUBST__
+PERL5LIBDEPLOY=__SUBST__
 
 export DEPLOYDIR
 export PERL5LIB=${PERL5LIBDEPLOY}/:$PERL5LIB
