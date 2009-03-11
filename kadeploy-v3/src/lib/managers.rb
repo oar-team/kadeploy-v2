@@ -435,7 +435,7 @@ module Managers
                   @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
                   @output.debugl(1, set.to_s(true))
                 }
-                @client.generate_files(@nodes_ok, @nodes_ko)
+                @client.generate_files(@nodes_ok, @config.exec_specific.nodes_ok_file, @nodes_ko, @config.exec_specific.nodes_ko_file)
                 @logger.dump
                 @queue_manager.send_exit_signal
                 @thread_set_deployment_environment.join

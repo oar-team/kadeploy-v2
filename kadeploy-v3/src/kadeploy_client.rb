@@ -59,27 +59,33 @@ class KadeployClient
   #
   # Arguments
   # * nodes_ok: instance of NodeSet that contains the nodes correctly deployed
+  # * file_ok: destination filename to store the nodes correctly deployed
   # * nodes_ko: instance of NodeSet that contains the nodes not correctly deployed
+  # * file_ko: destination filename to store the nodes not correctly deployed
   # Output
   # * nothing    
-  def generate_files(nodes_ok, nodes_ko)
-    File.delete("nodes_ok") if File.exist?("nodes_ok")
-    File.delete("nodes_ko") if File.exist?("nodes_ko")
-    t = nodes_ok.make_array_of_hostname
-    if (not t.empty?) then
-      file = File.new("nodes_ok", "w")
-      t.each { |n|
-        file.write("#{n}\n")
-      }
-      file.close
+  def generate_files(nodes_ok, file_ok, nodes_ko, file_ko)
+    if (file_ok != "") then
+      File.delete(file_ok) if File.exist?(file_ok)
+      t = nodes_ok.make_array_of_hostname
+      if (not t.empty?) then
+        file = File.new(file_ok, "w")
+        t.each { |n|
+          file.write("#{n}\n")
+        }
+        file.close
+      end
     end
-    t = nodes_ko.make_array_of_hostname
-    if (not t.empty?) then
-      file = File.new("nodes_ko", "w")
-      t.each { |n|
-        file.write("#{n}\n")
-      }
-      file.close
+    if (file_ko != "") then
+      File.delete(file_ko) if File.exist?(file_ko)
+      t = nodes_ko.make_array_of_hostname
+      if (not t.empty?) then
+        file = File.new(file_ko, "w")
+        t.each { |n|
+          file.write("#{n}\n")
+        }
+        file.close
+      end
     end
   end
 end
