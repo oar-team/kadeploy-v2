@@ -26,8 +26,8 @@ PREFIX=/usr/local
 #=======================================
 MAJOR = 2
 MINOR = 1
-SUBMINOR = 7
-SUBRELEASE = testing
+SUBMINOR = 8
+SUBRELEASE =
 
 
 #============================
@@ -292,26 +292,32 @@ files_uninstall :
 	@rm -rf $(BINDIR)
 	@rm -rf $(SBINDIR)
 	@rm -rf $(PERLDIR)/$(KADIR)
-	#@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
-     
+
+kahomedir_uninstall :
+	@echo "Deleting Kadeploy installation directory : $(KADEPLOYHOMEDIR)"
+	@rm -rf $(KADEPLOYHOMEDIR)/
+#@cd $(MANDIR) && rm -f $(KADEPLOY_MANPAGES)
+
+sudoers_uninstall :
 	@echo "Uninstalling sudowrapper ..."
 	@scripts/install/sudocheck -k $(KADEPLOY_VERSION_BRIEF) -u
 	
+usergroup_uninstall :
 	@echo "Removing deploy user and group ..."
 	@( grep -q $(DEPLOYUSER) /etc/passwd && userdel $(DEPLOYUSER) ) \
 	|| echo "user $(DEPLOYUSER) already removed."
 	@( grep -q $(DEPLOYGROUP) /etc/group && groupdel $(DEPLOYGROUP) ) \
 	|| echo "group $(DEPLOYGROUP) already removed."
 	
-	@echo "Deleting Kadeploy installation directory : $(KADEPLOYHOMEDIR)"
-	@rm -rf $(KADEPLOYHOMEDIR)/
+conf_uninstall :
 	@echo "Deleting Kadeploy configuration directory : $(KADEPLOYCONFDIR)"
 	@rm -rf $(KADEPLOYCONFDIR)/
-	@( [ -L $(KADEPLOYCONFDIR_LEGACY) ] && ( rm -f $(KADEPLOYCONFDIR_LEGACY) ) || echo "No previously existing $(KADEPLOYCONFDIR_LEGACY) found." )
 	@( [ -d $(KADEPLOYCONFDIR_LEGACY).old ] && ( mv $(KADEPLOYCONFDIR_LEGACY).old $(KADEPLOYCONFDIR_LEGACY) ) || echo No previously existing $(KADEPLOYCONFDIR_LEGACY).old found. )
+#@( [ -L $(KADEPLOYCONFDIR_LEGACY) ] && ( rm -f $(KADEPLOYCONFDIR_LEGACY) ) || echo "No previously existing $(KADEPLOYCONFDIR_LEGACY) found." )
 
-uninstall : root_check files_uninstall
+uninstall : root_check files_uninstall kahomedir_uninstall conf_uninstall sudoers_uninstall
 
+purge : uninstall usergroup_uninstall
 
 #############################
 # 
