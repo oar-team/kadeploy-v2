@@ -2,6 +2,7 @@
 
 use Getopt::Long;
 use libkadeploy2::confroot;
+use libkadeploy2::pathlib;
 
 Getopt::Long::Configure ("gnu_getopt");
 
@@ -74,6 +75,7 @@ if ($test == 0 ) {
 # $command = "cat $keyfile";
 # exec "$command | karemote $karemote_args";
 # return 1;
+my $prefix_dir = libkadeploy2::pathlib::get_leading_dirs($0);
 
-return (exec("karemote -c \"echo \$(cat $keyfile) >> $authorized_file\" ".$karemote_args));
+return (exec("$prefix_dir/karemote -c \"echo \$(cat $keyfile) >> $authorized_file\" ".$karemote_args));
 

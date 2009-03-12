@@ -36,7 +36,7 @@ sub get_leading_dirs($)
     my $f=shift;
     
     if ($f =~ m/[^\/]*\/.*/) {
-	$f =~ s/(^[\/a-zA-Z0-9\-_]*)\/[^\/]+/$1/;
+	$f =~ s/(^[\/a-zA-Z0-9\-\._]*)\/[^\/]+/$1/;
 	return($f);
     } else {
 	return ("");
