@@ -322,4 +322,4 @@ if (!$hard) {
     $nodes_set->rebootMyNodes("hardboot");
 }
 
-exit(1);
+exit(0);
