@@ -188,7 +188,7 @@ sub put_in_cache_from_archive($$$$)
 	    {
 		my $prev_archivefile = $archivefile;
 		# print "===> tar -C ".$_cachedirectory." --strip ".$strip." -xvzf ".$archive." ".$archivefile."\n";
-		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory/$_subcachedir --strip $strip -xvzf $archive $archivefile");
+		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory/$_subcachedir --strip $strip -xvzf $archive $archivefile 2>&1 >/dev/null");
 		# print "??? we are doing readlink of ".$archivefile."\n";
 		$file = readlink $_cachedirectory."/".$_subcachedir."/".$archivefile;
 		# print "??? readlink result = ".$file."\n";
