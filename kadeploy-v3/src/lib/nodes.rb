@@ -300,7 +300,7 @@ module Nodes
     # Set the deployment state on a NodeSet
     #
     # Arguments
-    # * state: state of the nodes (deploying or deployed)
+    # * state: state of the nodes (prod_env, deploying or deployed)
     # * env_id: id of the environment deployed on the nodes
     # * db: database handler
     # Output
@@ -326,6 +326,11 @@ module Nodes
           query = "UPDATE nodes SET state=\"deployed\" WHERE hostname=\"#{node.hostname}\""
           db.run_query(query)
         }
+      when "prod_env"
+         @set.each { |node|
+          query = "UPDATE nodes SET state=\"prod_env\" WHERE hostname=\"#{node.hostname}\""
+          db.run_query(query)
+        }       
       else
         return false
       end

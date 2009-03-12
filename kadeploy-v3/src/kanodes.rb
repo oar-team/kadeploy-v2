@@ -1,0 +1,70 @@
+#!/usr/bin/ruby -w
+
+#Kadeploy libs
+require 'config'
+require 'db'
+
+#Ruby libs
+require 'drb'
+
+
+
+# List the information about the nodes
+#
+# Arguments
+# * config: instance of Config
+# * db: database handler
+# Output
+# * prints the information about the nodes in a CSV format
+def list(config, db)
+  if config.exec_specific.node_list.empty? then
+    query = "SELECT nodes.hostname, nodes.state, environments.name, environments.version, environments.user \
+             FROM nodes, environments \
+             WHERE nodes.env_id = environments.id \
+             ORDER BY nodes.hostname"
+  else
+    nodes = String.new
+    config.exec_specific.node_list.each_index { |i|
+      nodes += "nodes.hostname=\"#{config.exec_specific.node_list[i]}\" "
+      nodes += "OR " if (i < config.exec_specific.node_list.length - 1)
+    }
+
+    query = "SELECT nodes.hostname, nodes.state, environments.name, environments.version, environments.user \
+             FROM nodes, environments \
+             WHERE nodes.env_id = environments.id \
+             AND (#{nodes})
+             ORDER BY nodes.hostname"
+  end
+  res = db.run_query(query)
+  res.each { |row|
+    puts "#{row[0]},#{row[1]},#{row[2]},#{row[3]},#{row[4]}"
+  }
+end
+
+def _exit(exit_code, dbh)
+  dbh.disconnect if (dbh != nil)
+  exit(exit_code)
+end
+
+
+config = ConfigInformation::Config.new("kanodes")
+
+#Connect to the Kadeploy server to get the common configuration
+client_config = ConfigInformation::Config.load_client_config_file
+DRb.start_service()
+uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_port}"
+kadeploy_server = DRbObject.new(nil, uri)
+config.common = kadeploy_server.get_common_config
+
+if (config.check_config("kanodes") == true) then
+  db = Database::DbFactory.create(config.common.db_kind)
+  db.connect(config.common.deploy_db_host,
+             config.common.deploy_db_login,
+             config.common.deploy_db_passwd,
+             config.common.deploy_db_name)
+
+  list(config, db)
+  _exit(0, db)
+else
+  _exit(1, db)
+end

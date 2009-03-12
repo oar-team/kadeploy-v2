@@ -49,6 +49,8 @@ module ConfigInformation
           load_kareboot_exec_specific(nodes_desc)
         when "kaconsole"
           load_kaconsole_exec_specific(nodes_desc)
+        when "kanodes"
+          load_kanodes_exec_specific
         when "empty"
         else
           raise "Invalid configuration kind: #{kind}"
@@ -62,7 +64,7 @@ module ConfigInformation
     # Check the config of the Kadeploy tools
     #
     # Arguments
-    # * kind: tool (kadeploy, kaenv, karights, kastat, kareboot, kaconsole)
+    # * kind: tool (kadeploy, kaenv, karights, kastat, kareboot, kaconsole, kanodes)
     # Output
     # * calls the chack_config method that correspond to the selected tool
     def check_config(kind)
@@ -79,6 +81,8 @@ module ConfigInformation
         check_kareboot_config
       when "kaconsole"
         check_kaconsole_config
+      when "kanodes"
+        check_kanodes_config
       end
     end
 
@@ -1056,6 +1060,54 @@ module ConfigInformation
        }
       return true
     end
+
+##################################
+#       Kanodes specific         #
+##################################
+
+    # Load the kanodes specific stuffs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def load_kanodes_exec_specific
+      @exec_specific = OpenStruct.new
+      @exec_specific.node_list = Array.new
+      load_kanodes_cmdline_options
+    end
+
+    # Load the command-line options of kanodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true in case of success, false otherwise
+    def load_kanodes_cmdline_options
+      opts = OptionParser::new do |opts|
+        opts.summary_indent = "  "
+        opts.summary_width = 28
+        opts.banner = "Usage: kanodes [options]"
+        opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
+        opts.separator ""
+        opts.separator "General options:"
+        opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
+          @exec_specific.node_list.push(m)
+        }
+      end
+      opts.parse!(ARGV)
+    end
+
+    # Check the whole configuration of the kanodes execution
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * returns true if the options used are correct, false otherwise
+    def check_kanodes_config
+      return true
+    end
+
 
 ##################################
 #       Kareboot specific        #
