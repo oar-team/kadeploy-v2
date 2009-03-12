@@ -89,8 +89,8 @@ function check_kadeploy_call()
 # Extract cluster name from nodes list sorted by cluster filename
 function get_cluster_name()
 {
-  local file=$1
-  CLUSTER_NAME=$(basename $file|sed -e 's/^.*\.\([a-zA-Z0-9\-_]*\)\..*$/\1/g')
+  local file=$(basename $1)
+  CLUSTER_NAME=$(echo $file|sed -e 's/^.*\.\([a-zA-Z0-9]*\)\..*$/\1/g')      
 }
 
 #________________________________________________________________
