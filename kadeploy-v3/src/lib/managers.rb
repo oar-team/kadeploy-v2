@@ -293,6 +293,7 @@ module Managers
     @db = nil
     @deployments_table_lock = nil
     @mutex = nil
+    @thread_tab = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
 
@@ -330,13 +331,10 @@ module Managers
       @reboot_window = reboot_window
       @nodes_check_window = nodes_check_window
       @mutex = Mutex.new
+      @thread_tab = Array.new
       @logger = Debug::Logger.new(@nodeset, @config, @db, 
                                   @config.exec_specific.true_user, deploy_id, Time.now, 
                                   @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version, syslog_lock)
-#      @logger.set("user", @config.exec_specific.true_user)
-#      @logger.set("deploy_id", deploy_id)
-#      @logger.set("start", Time.now)
-#      @logger.set("env", @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version)
 
       @thread_set_deployment_environment = Thread.new {
         launch_thread_for_macro_step("SetDeploymentEnv")
@@ -350,6 +348,24 @@ module Managers
       @thread_process_finished_nodes = Thread.new {
         launch_thread_for_macro_step("ProcessFinishedNodes")
       }
+    end
+
+    # Kill all the thread of a Kadeploy instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def kill_instance
+      @thread_tab.each { |tid|
+        Thread.kill(tid)
+      }
+      Thread.kill(@thread_set_deployment_environment)
+      Thread.kill(@thread_broadcast_environment)
+      Thread.kill(@thread_boot_new_environment)
+      Thread.kill(@thread_process_finished_nodes)
+      @logger.set("success", false, @nodeset)
+      @logger.dump
     end
 
     # Launch a thread for a macro step
@@ -375,41 +391,42 @@ module Managers
               instance_timeout = macro_step_instance[2]
               case kind
               when "SetDeploymentEnv"
-                SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
-                                                                          instance_max_retries,
-                                                                          instance_timeout,
-                                                                          cluster,
-                                                                          set,
-                                                                          @queue_manager,
-                                                                          @reboot_window,
-                                                                          @nodes_check_window,
-                                                                          @output,
-                                                                          @logger).run
+                tid = SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
+                                                                                instance_max_retries,
+                                                                                instance_timeout,
+                                                                                cluster,
+                                                                                set,
+                                                                                @queue_manager,
+                                                                                @reboot_window,
+                                                                                @nodes_check_window,
+                                                                                @output,
+                                                                                @logger).run
               when "BroadcastEnv"
-                BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
-                                                                 instance_max_retries, 
-                                                                 instance_timeout,
-                                                                 cluster,
-                                                                 set,
-                                                                 @queue_manager,
-                                                                 @reboot_window,
-                                                                 @nodes_check_window,
-                                                                 @output,
-                                                                 @logger).run
+                tid = BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
+                                                                       instance_max_retries, 
+                                                                       instance_timeout,
+                                                                       cluster,
+                                                                       set,
+                                                                       @queue_manager,
+                                                                       @reboot_window,
+                                                                       @nodes_check_window,
+                                                                       @output,
+                                                                       @logger).run
               when "BootNewEnv"
-                BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
-                                                             instance_max_retries,
-                                                             instance_timeout,
-                                                             cluster,
-                                                             set,
-                                                             @queue_manager,
-                                                             @reboot_window,
-                                                             @nodes_check_window,
-                                                             @output,
-                                                             @logger).run
+                tid = BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
+                                                                   instance_max_retries,
+                                                                   instance_timeout,
+                                                                   cluster,
+                                                                   set,
+                                                                   @queue_manager,
+                                                                   @reboot_window,
+                                                                   @nodes_check_window,
+                                                                   @output,
+                                                                   @logger).run
               else
                 raise "Invalid macro step name"
               end
+              @thread_tab.push(tid)
               #let's free the memory after the launch of the threads
               GC.start
             }

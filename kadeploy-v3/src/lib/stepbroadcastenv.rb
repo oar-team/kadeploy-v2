@@ -110,9 +110,9 @@ module BroadcastEnvironment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -152,6 +152,7 @@ module BroadcastEnvironment
           @queue_manager.decrement_active_threads
         end    
       }
+      return tid
     end
   end
 
@@ -161,9 +162,9 @@ module BroadcastEnvironment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -203,6 +204,7 @@ module BroadcastEnvironment
           @queue_manager.decrement_active_threads
         end
       }
+      return tid
     end
   end
 
@@ -212,9 +214,9 @@ module BroadcastEnvironment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -255,6 +257,7 @@ module BroadcastEnvironment
           @queue_manager.decrement_active_threads
         end
       }
+      return tid
     end
   end
 
@@ -264,11 +267,14 @@ module BroadcastEnvironment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
-      @queue_manager.decrement_active_threads
+      tid = Thread.new {
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+        @queue_manager.decrement_active_threads
+      }
+      return tid
     end
   end
 end

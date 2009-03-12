@@ -13,9 +13,11 @@ require 'socket'
 
 class KadeployClient
   @kadeploy_server = nil
-
+  attr_accessor :workflow_id
+  
   def initialize(kadeploy_server)
     @kadeploy_server = kadeploy_server
+    @workflow_id = -1
   end
   
   # Print a message (RPC)
@@ -88,10 +90,22 @@ class KadeployClient
       end
     end
   end
+  
+  # Set the workflow id (RPC)
+  #
+  # Arguments
+  # * id: id of the workflow
+  # Output
+  # * nothing
+  def set_workflow_id(id)
+    @workflow_id = id
+  end
+
 end
 
 def _exit(exit_code, dbh)
   dbh.disconnect if (dbh != nil)
+  DRb.stop_service()
   exit(exit_code)
 end
 
@@ -140,7 +154,11 @@ if (exec_specific_config != nil) then
       puts "The URI #{DRb.uri} is not correct"
       _exit(1, db)
     end
-    
+    Signal.trap("INT") do
+      puts "SIGINT trapped, let's clean everything ..."
+      kadeploy_server.kill_instance(kadeploy_client.workflow_id)
+      _exit(1, db)
+    end
     if (exec_specific_config != nil) then
       if (exec_specific_config.pxe_profile_file != "") then
         IO.readlines(exec_specific_config.pxe_profile_file).each { |l|
