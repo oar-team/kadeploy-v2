@@ -215,7 +215,6 @@ module MicroStepsLibrary
         end
       }
       CmdCtrlWrapper::run(pr)
-      #classify_nodes(CmdCtrlWrapper::get_results(pr))
       return classify_only_good_nodes(CmdCtrlWrapper::get_results(pr))
     end
 
@@ -314,15 +313,19 @@ module MicroStepsLibrary
         files.each { |file|
           files_in_archive.push("boot/" + file)
         }
+        tmpdir = get_tmpdir()
         res = extract_files_from_archive(archive,
                                          @config.exec_specific.environment.tarball["kind"],
                                          files_in_archive,
-                                         @config.common.kadeploy_cache_dir)
+                                         tmpdir)
         files.each { |file|
-          src = @config.common.kadeploy_cache_dir + "/" + file
+          src = tmpdir + "/" + file
           dst = dest_dir + "/" + prefix_in_cache + file
           res = res && File.move(src, dst)
         }
+        if (Dir.rmdir(tmpdir) != 0) then
+          @output.debugl(4, "Cannot remove the #{tmpdir} directory")
+        end
         return res
       else
         return true
@@ -568,6 +571,20 @@ module MicroStepsLibrary
       return ((@config.exec_specific.custom_operations != nil) && 
               @config.exec_specific.custom_operations.has_key?(macro_step) && 
               @config.exec_specific.custom_operations[macro_step].has_key?(micro_step))
+    end
+
+    # Create a tmp directory
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return the path of the tmp directory
+    def get_tmpdir
+      pr = CmdCtrlWrapper::init
+      CmdCtrlWrapper::add_cmd(pr, "mktemp -d", "none")
+      CmdCtrlWrapper::run(pr)
+      path = CmdCtrlWrapper::get_output(pr)
+      return path.chomp
     end
 
     public
