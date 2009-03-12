@@ -199,7 +199,7 @@ installdirs:
 	@mkdir -p $(KASBINDIR)
 	@mkdir -p $(KALIBDIR)/libkadeploy2
 	@mkdir -p $(PERLDIR)/$(KADIR)
-	@mkdir -p -m 700 $(KADEPLOYCONFDIR)
+	@mkdir -p -m 700 $(KADEPLOYCONFDIR)/.ssh
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(SBINDIR)
 
@@ -210,7 +210,6 @@ files_install:
 	@install -m 600 conf/clusternodes.conf $(KADEPLOYCONFDIR)/
 	@install -m 600 conf/clusterpartition.conf $(KADEPLOYCONFDIR)/
 	@chown -R $(DEPLOYUSER):root $(KADEPLOYCONFDIR)
-	@chmod -R 700 $(KADEPLOYCONFDIR)
 
 	@install -m 755 bin/kaconsole $(KABINDIR)/
 	@install -m 755 bin/kaenvironments  $(KABINDIR)/
@@ -242,6 +241,8 @@ files_install:
 # SSH key 
 	@install -m 600 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy $(KADEPLOYHOMEDIR)/.ssh/
 	@install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy.pub $(KADEPLOYHOMEDIR)/.ssh/
+	@install -m 600 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy $(KADEPLOYCONFDIR)/.ssh/
+	@install -m 644 addons/deployment_kernel_generation/debootstrap/ssh/id_deploy.pub $(KADEPLOYCONFDIR)/.ssh/
 
 conflink_install:
 	@( ( [ ! -e $(KADEPLOYCONFDIR_LEGACY) ] &&  ln -s $(KADEPLOYCONFDIR) $(KADEPLOYCONFDIR_LEGACY) ) || \
@@ -252,6 +253,7 @@ sudo_install:
 	@[ -e /etc/sudoers ] || ( echo "Error: No /etc/sudoers file. Is sudo installed ?" && exit 1 )
 	@sed -i "s%DEPLOYCONFDIR=__SUBST__%DEPLOYCONFDIR=$(KADEPLOYCONFDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYDIR=__SUBST__%DEPLOYDIR=$(KADEPLOYHOMEDIR)%" $(KABINDIR)/kasudowrapper.sh
+	@sed -i "s%DEPLOYBINDIR=__SUBST__%DEPLOYBINDIR=$(BINDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%DEPLOYUSER=__SUBST__%DEPLOYUSER=$(DEPLOYUSER)%" $(KABINDIR)/kasudowrapper.sh
 	@sed -i "s%PERL5LIBDEPLOY=__SUBST__%PERL5LIBDEPLOY=$(KALIBDIR)%" $(KABINDIR)/kasudowrapper.sh
 	@scripts/install/sudocheck -k $(KADEPLOY_VERSION_BRIEF) -u

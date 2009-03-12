@@ -17,6 +17,7 @@ CLUSTER_FILES=""
 # Makefile Substituted variables
 DEPLOYCONFDIR=__SUBST__
 DEPLOYDIR=__SUBST__
+DEPLOYBINDIR=__SUBST__
 DEPLOYUSER=__SUBST__
 PERL5LIBDEPLOY=__SUBST__
 
@@ -121,11 +122,11 @@ check_kadeploy_user_dir
 if [ -x $DEPLOYDIR/sbin/`basename $0` ]
 then
     ( ( sudo -u $DEPLOYUSER $DEPLOYDIR/sbin/$(basename $0) "$@" ) || \
-      ( die "bad configuration ; please refer to \"kasetup -exportenv\"" ) )
+      ( die "bad configuration" ) )
 elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then 
     if [ "`basename $0`" != "kadeploy" ]; then
       ( ( ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "$@" ) || \
-	( die "bad configuration ; please refer to \"kasetup -exportenv\"" ) )
+	( die "bad configuration" ) )
     else
       remaining_args=""
       node_list=""
@@ -208,9 +209,9 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	    cp $nlist_nok "${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/" 2>/dev/null
 	    if [ $keys ]; then
 	      if [ -f ~/.ssh/id_rsa.pub ]; then
-		kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_rsa.pub
+		${DEPLOYBINDIR}/kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_rsa.pub
 	      elif [ -f ~/.ssh/id_dsa.pub ]; then
-		kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_dsa.pub
+		${DEPLOYBINDIR}/kaaddkeys -f ${nlist_ok} -C ${DEPLOYCONFDIR} -k ~/.ssh/id_dsa.pub
 	      fi
 	    fi
 	  fi
