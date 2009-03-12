@@ -21,7 +21,10 @@ class KadeployServer
   @reboot_window = nil
   @nodes_check_window = nil
   @syslog_lock = nil
-  
+  @workflow_hash = nil
+  @workflow_hash_lock = nil
+  @workflow_hash_index = nil
+
   # Constructor of KadeployServer
   #
   # Arguments
@@ -44,6 +47,9 @@ class KadeployServer
     @syslog_lock = Mutex.new
     sock = TCPServer.open(@dest_host, @dest_port)
     @db = db
+    @workflow_info_hash = Hash.new
+    @workflow_info_hash_lock = Mutex.new
+    @workflow_info_hash_index = 0
 #    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
 #    opt = [1].pack("i")
 #    sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, opt)
@@ -66,6 +72,21 @@ class KadeployServer
     end
   end
 
+  # Record a Managers::WorkflowManager pointer
+  #
+  # Arguments
+  # * workflow_ptr: reference toward a Managers::WorkflowManager
+  # Output
+  # * return an id that allows to find the right Managers::WorkflowManager reference
+  def add_workflow_info(workflow_ptr)
+    @workflow_info_hash_lock.lock
+    id = @workflow_info_hash_index
+    @workflow_info_hash[id] = workflow_ptr
+    @workflow_info_hash_index += 1
+    @workflow_info_hash_lock.unlock
+    return id
+  end
+
   # Prevent a shared object related to the file transfers from any modifications, it must be called before a file transfer (RPC)
   #
   # Arguments
@@ -75,6 +96,12 @@ class KadeployServer
   def pre_send_file(file_name)
     @file_server_lock.lock
     @file_name = file_name
+  end
+
+  def kill_instance(id)
+    workflow = @workflow_info_hash[id]
+    workflow.kill_instance()
+    @workflow_info_hash.delete(id)
   end
 
   # Release a lock on a shared object, it must be called after a file transfer (RPC)
@@ -160,7 +187,8 @@ class KadeployServer
       }
     end
 
-    workflow=Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
+    workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
+    client.set_workflow_id(add_workflow_info(workflow))
     workflow.run
     #let's free memory at the end of the workflow
     GC.start

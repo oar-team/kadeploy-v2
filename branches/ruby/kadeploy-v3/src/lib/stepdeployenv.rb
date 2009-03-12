@@ -112,7 +112,7 @@ module SetDeploymentEnvironnment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       if @config.common.use_rsh_to_deploy == "true" then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
@@ -121,7 +121,7 @@ module SetDeploymentEnvironnment
         @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
         connector_port = @config.common.ssh_port
       end
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -162,6 +162,7 @@ module SetDeploymentEnvironnment
           @queue_manager.decrement_active_threads
         end
       }
+      return tid
     end
   end
 
@@ -171,7 +172,7 @@ module SetDeploymentEnvironnment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       if @config.common.use_rsh_to_deploy == "true" then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
@@ -180,7 +181,7 @@ module SetDeploymentEnvironnment
         @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
         connector_port = @config.common.ssh_port
       end
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -218,6 +219,7 @@ module SetDeploymentEnvironnment
           @queue_manager.decrement_active_threads
         end
       }
+      return tid
     end
   end
 
@@ -227,10 +229,10 @@ module SetDeploymentEnvironnment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -269,6 +271,7 @@ module SetDeploymentEnvironnment
           @queue_manager.decrement_active_threads
         end    
       }
+      return tid
     end
   end
 
@@ -279,7 +282,7 @@ module SetDeploymentEnvironnment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       if @config.common.use_rsh_to_deploy == "true" then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
@@ -288,7 +291,7 @@ module SetDeploymentEnvironnment
         @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
         connector_port = @config.common.ssh_port
       end
-      Thread.new {
+      tid = Thread.new {
         @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
         @nodes.duplicate_and_free(@nodes_ko)
         while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
@@ -329,6 +332,7 @@ module SetDeploymentEnvironnment
           @queue_manager.decrement_active_threads
         end
       }
+      return tid
     end
   end
 
@@ -338,11 +342,14 @@ module SetDeploymentEnvironnment
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return a thread id
     def run
       @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-      @queue_manager.next_macro_step(get_macro_step_name, @nodes)
-      @queue_manager.decrement_active_threads
+      tid = Thread.new {
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes)
+        @queue_manager.decrement_active_threads
+      }
+      return tid
     end
   end
 end
