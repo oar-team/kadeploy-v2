@@ -353,58 +353,63 @@ module ParallelOperations
             nodes_to_test.push(node)
           end
         }
-        callback = Proc.new { |ns|
-          tg = ThreadGroup.new
-          ns.set.each { |node|
-            tid = Thread.new {
-              all_ports_ok = true
-              if Ping.pingecho(node.hostname, 1, 22) then
-                ports_up.each { |port|
-                  begin
-                    s = TCPsocket.open(node.hostname, port)
-                    s.close
-                  rescue Errno::ECONNREFUSED
-                    all_ports_ok = false
-                    next
-                  rescue Errno::EHOSTUNREACH
-                    next
-                  end
-                }
-                if all_ports_ok then
-                  ports_down.each { |port|
+        # We launch a thread here because a client SIGINT would corrupt the nodes check  window 
+        # management, thus even a SIGINT is received, the reboot process will finish
+        tid = Thread.new {
+          callback = Proc.new { |ns|
+            tg = ThreadGroup.new
+            ns.set.each { |node|
+              tid = Thread.new {
+                all_ports_ok = true
+                if Ping.pingecho(node.hostname, 1, 22) then
+                  ports_up.each { |port|
                     begin
                       s = TCPsocket.open(node.hostname, port)
-                      all_ports_ok = false
                       s.close
                     rescue Errno::ECONNREFUSED
+                      all_ports_ok = false
                       next
                     rescue Errno::EHOSTUNREACH
                       next
                     end
                   }
+                  if all_ports_ok then
+                    ports_down.each { |port|
+                      begin
+                        s = TCPsocket.open(node.hostname, port)
+                        all_ports_ok = false
+                        s.close
+                      rescue Errno::ECONNREFUSED
+                        next
+                      rescue Errno::EHOSTUNREACH
+                        next
+                      end
+                    }
+                  end
+                  if all_ports_ok then
+                    node.state = "OK"
+                  else
+                    node.state = "KO"
+                  end
                 end
-                if all_ports_ok then
-                  node.state = "OK"
-                else
-                  node.state = "KO"
-                end
+              }
+              tg.add(tid)
+            }
+            #let's wait everybody
+            tg.list.each { |tid|
+              tid.join
+            }
+            a = String.new
+            @nodes.set.each{ |node|
+              if node.state == "KO" then
+                a += "#{node.hostname},"
               end
             }
-            tg.add(tid)
+            #puts "    -+-+- Missing nodes: #{a}"  if (a != "")
           }
-          #let's wait everybody
-          tg.list.each { |tid|
-            tid.join
-          }
-          a = String.new
-          @nodes.set.each{ |node|
-            if node.state == "KO" then
-              a += "#{node.hostname},"
-            end
-          }
-          puts "    -+-+- Missing nodes: #{a}"  if (a != "")
+          nodes_check_window.launch(nodes_to_test, &callback)
         }
-        nodes_check_window.launch(nodes_to_test, &callback)
+        tid.join
       end
 
       @nodes.set.each { |node|

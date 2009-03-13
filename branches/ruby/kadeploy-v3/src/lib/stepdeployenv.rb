@@ -51,6 +51,7 @@ module SetDeploymentEnvironnment
     @config = nil
     @logger = nil
     @start = nil
+    @instances = nil
 
     # Constructor ofSetDeploymentEnv
     #
@@ -81,8 +82,21 @@ module SetDeploymentEnvironnment
       @logger = logger
       @logger.set("step1", get_instance_name, @nodes)
       @logger.set("timeout_step1", @timeout, @nodes)
+      @instances = Array.new
       @start = Time.now.to_i
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @nodes_check_window, @config, cluster, output, get_instance_name)
+    end
+
+    # Kill all the running threads
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def kill
+      @instances.each { |tid|
+        Thread.kill(tid)
+      }
     end
 
     # Get the name of the current macro step
@@ -142,6 +156,7 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
@@ -199,6 +214,7 @@ module SetDeploymentEnvironnment
             result = result && @step.manage_admin_pre_install("tree")
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
@@ -251,6 +267,7 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)
@@ -312,6 +329,7 @@ module SetDeploymentEnvironnment
             result = result && @step.format_tmp_part
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step1_duration", Time.now.to_i - @start, @nodes_ok)

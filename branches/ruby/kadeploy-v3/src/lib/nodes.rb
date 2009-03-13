@@ -330,7 +330,12 @@ module Nodes
          @set.each { |node|
           query = "UPDATE nodes SET state=\"prod_env\" WHERE hostname=\"#{node.hostname}\""
           db.run_query(query)
-        }       
+        } 
+      when "aborted"
+        @set.each { |node|
+          query = "UPDATE nodes SET state=\"aborted\" WHERE hostname=\"#{node.hostname}\""
+          db.run_query(query)
+        }        
       else
         return false
       end
