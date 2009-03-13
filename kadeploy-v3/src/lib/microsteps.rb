@@ -228,32 +228,36 @@ module MicroStepsLibrary
     def reboot_wrapper(kind, use_rsh_for_reboot = false)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-
-      callback = Proc.new { |ns|
-        bad_nodes = Nodes::NodeSet.new
-        map = Array.new
-        map.push("soft")
-        map.push("hard")
-        map.push("very_hard")
-        index = map.index(kind)
-        finished = false
-        
-        while ((index < map.length) && (not finished))
-          bad_nodes = _reboot_wrapper(map[index], ns, use_rsh_for_reboot)
-          if (bad_nodes != nil) then
-            ns.free
-            index = index + 1
-            if (index < map.length) then
-              bad_nodes.duplicate_and_free(ns)
+      # We launch a thread here because a client SIGINT would corrupt the reboot window 
+      # management, thus even a SIGINT is received, the reboot process will finish
+      tid = Thread.new {
+        callback = Proc.new { |ns|
+          bad_nodes = Nodes::NodeSet.new
+          map = Array.new
+          map.push("soft")
+          map.push("hard")
+          map.push("very_hard")
+          index = map.index(kind)
+          finished = false
+          
+          while ((index < map.length) && (not finished))
+            bad_nodes = _reboot_wrapper(map[index], ns, use_rsh_for_reboot)
+            if (bad_nodes != nil) then
+              ns.free
+              index = index + 1
+              if (index < map.length) then
+                bad_nodes.duplicate_and_free(ns)
+              else
+                @nodes_ko.add(bad_nodes)
+              end
             else
-              @nodes_ko.add(bad_nodes)
+              finished = true
             end
-          else
-            finished = true
           end
-        end
+        }
+        @reboot_window.launch(node_set, &callback)
       }
-      @reboot_window.launch(node_set, &callback)
+      tid.join
     end
 
     # Extract some file from an archive

@@ -281,8 +281,11 @@ module Managers
     @thread_broadcast_environment = nil
     @thread_boot_new_environment = nil 
     @thread_process_finished_nodes = nil
+    @set_deployment_environment_instances = nil
+    @broadcast_environment_instances = nil
+    @boot_new_environment_instances = nil
     @queue_manager = nil
-    @output = nil
+    attr_accessor :output
     @rights = nil
     @nodeset = nil
     @config = nil
@@ -331,6 +334,9 @@ module Managers
       @reboot_window = reboot_window
       @nodes_check_window = nodes_check_window
       @mutex = Mutex.new
+      @set_deployment_environment_instances = Array.new
+      @broadcast_environment_instances = Array.new
+      @boot_new_environment_instances = Array.new
       @thread_tab = Array.new
       @logger = Debug::Logger.new(@nodeset, @config, @db, 
                                   @config.exec_specific.true_user, deploy_id, Time.now, 
@@ -350,22 +356,44 @@ module Managers
       }
     end
 
-    # Kill all the thread of a Kadeploy instance
+    # Kill all the threads of a Kadeploy workflow
     #
     # Arguments
     # * nothing
     # Output
     # * nothing
-    def kill_instance
+    def kill_workflow
+      @output.debugl(4, "Launching Mr Proper ...")
+      @set_deployment_environment_instances.each { |instance|
+        if (instance != nil) then
+          instance.kill()
+          @output.debugl(4, " *** Kill a set_deployment_environment_instance")
+        end
+      }
+      @broadcast_environment_instances.each { |instance|
+        if (instance != nil) then
+          @output.debugl(4, " *** Kill a broadcast_environment_instance")
+          instance.kill()
+        end
+      }
+      @boot_new_environment_instances.each { |instance|
+        if (instance != nil) then
+          @output.debugl(4, " *** Kill a boot_new_environment_instance")
+          instance.kill()
+        end
+      }
       @thread_tab.each { |tid|
+        @output.debugl(4, " *** Kill a main thread")
         Thread.kill(tid)
       }
       Thread.kill(@thread_set_deployment_environment)
       Thread.kill(@thread_broadcast_environment)
       Thread.kill(@thread_boot_new_environment)
       Thread.kill(@thread_process_finished_nodes)
+      @output.debugl(0, "Deployment aborted by user")
       @logger.set("success", false, @nodeset)
       @logger.dump
+      @nodeset.set_deployment_state("aborted", nil, @db)
     end
 
     # Launch a thread for a macro step
@@ -391,7 +419,7 @@ module Managers
               instance_timeout = macro_step_instance[2]
               case kind
               when "SetDeploymentEnv"
-                tid = SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
+                ptr = SetDeploymentEnvironnment::SetDeploymentEnvFactory.create(instance_name, 
                                                                                 instance_max_retries,
                                                                                 instance_timeout,
                                                                                 cluster,
@@ -400,9 +428,11 @@ module Managers
                                                                                 @reboot_window,
                                                                                 @nodes_check_window,
                                                                                 @output,
-                                                                                @logger).run
+                                                                                @logger)
+                @set_deployment_environment_instances.push(ptr)
+                tid = ptr.run
               when "BroadcastEnv"
-                tid = BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
+                ptr = BroadcastEnvironment::BroadcastEnvFactory.create(instance_name, 
                                                                        instance_max_retries, 
                                                                        instance_timeout,
                                                                        cluster,
@@ -411,9 +441,11 @@ module Managers
                                                                        @reboot_window,
                                                                        @nodes_check_window,
                                                                        @output,
-                                                                       @logger).run
+                                                                       @logger)
+                @broadcast_environment_instances.push(ptr)
+                tid = ptr.run
               when "BootNewEnv"
-                tid = BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
+                ptr = BootNewEnvironment::BootNewEnvFactory.create(instance_name, 
                                                                    instance_max_retries,
                                                                    instance_timeout,
                                                                    cluster,
@@ -422,7 +454,9 @@ module Managers
                                                                    @reboot_window,
                                                                    @nodes_check_window,
                                                                    @output,
-                                                                   @logger).run
+                                                                   @logger)
+                @boot_new_environment_instances.push(ptr)
+                tid = ptr.run
               else
                 raise "Invalid macro step name"
               end

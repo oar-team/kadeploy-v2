@@ -58,7 +58,7 @@ class KadeployServer
 #    sock.listen(10)
     if (sock.kind_of? TCPSocket) then
       Thread.new {
-        while (session = sock.accept)
+        while (session = sock.accept) do
           file = File.new(@config.common.kadeploy_cache_dir + "/" + @file_name, "w")
           while ((buf = session.recv(@tcp_buffer_size)) != "") do
             file.write(buf)
@@ -98,10 +98,19 @@ class KadeployServer
     @file_name = file_name
   end
 
-  def kill_instance(id)
-    workflow = @workflow_info_hash[id]
-    workflow.kill_instance()
-    @workflow_info_hash.delete(id)
+  # Kill a workflow (RPC)
+  #
+  # Arguments
+  # * id: id of the workflow
+  # Output
+  # * nothing  
+  def kill(id)
+    # id == -1 means that the workflow has not been launched yet
+    if (id != -1) then
+      workflow = @workflow_info_hash[id]
+      workflow.kill_workflow()
+      @workflow_info_hash.delete(id)
+    end
   end
 
   # Release a lock on a shared object, it must be called after a file transfer (RPC)
@@ -145,21 +154,6 @@ class KadeployServer
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].prod_part
   end
 
-  # Set the exec_specific configuration from the client side (RPC)
-  #
-  # Arguments
-  # * exec_specific: instance of Config.exec_specific
-  # Output
-  # * nothing
-#   def set_exec_specific_config(exec_specific)
-#     @config.exec_specific = exec_specific
-#     #overide the configuration if the steps are specified in the command line
-#     if (not @config.exec_specific.steps.empty?) then
-#       @config.exec_specific.node_list.group_by_cluster.each_key { |cluster|
-#         @config.cluster_specific[cluster].workflow_steps = @config.exec_specific.steps
-#       }
-#     end
-#   end
 
   # Launch the workflow from the client side (RPC)
   #
@@ -188,8 +182,25 @@ class KadeployServer
     end
 
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
-    client.set_workflow_id(add_workflow_info(workflow))
+    workflow_id = add_workflow_info(workflow)
+    client.set_workflow_id(workflow_id)
+    finished = false
+    Thread.new {
+      while (not finished) do
+        begin
+          client.test()
+        rescue DRb::DRbConnError
+          workflow.output.disable_client_output()
+          workflow.output.debugl(4, "Client disconnection")
+          workflow.kill_workflow()
+          @workflow_info_hash.delete(workflow_id)
+          finished = true
+        end
+        sleep(1)
+      end
+    }
     workflow.run
+    finished = true
     #let's free memory at the end of the workflow
     GC.start
   end
@@ -259,6 +270,7 @@ if (config.check_config("kadeploy") == true)
   if config.common.use_local_bt_tracker then
     Thread.new {
       puts "Launching the Bittorrent tracker"
+      res = system("rm -f #{config.common.kadeploy_cache_dir}/bt_download_state")
       res = system("bttrack --port #{config.common.bt_tracker_port} --dfile #{config.common.kadeploy_cache_dir}/bt_download_state &>/dev/null")
     }
   end

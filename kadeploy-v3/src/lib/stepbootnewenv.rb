@@ -47,6 +47,7 @@ module BootNewEnvironment
     @nodes_ko = nil
     @step = nil
     @start = nil
+    @instances = nil
 
     # Constructor of BootNewEnv
     #
@@ -77,8 +78,21 @@ module BootNewEnvironment
       @logger = logger
       @logger.set("step3", get_instance_name, @nodes)
       @logger.set("timeout_step3", @timeout, @nodes)
+      @instances = Array.new
       @start = Time.now.to_i
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @nodes_check_window, @config, cluster, output, get_instance_name)
+    end
+    
+    # Kill all the running threads
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def kill
+      @instances.each { |tid|
+        Thread.kill(tid)
+      }
     end
 
     # Get the name of the current macro step
@@ -126,6 +140,7 @@ module BootNewEnvironment
             result = result && @step.wait_reboot([@config.common.ssh_port],[@config.common.test_deploy_env_port])
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step3_duration", Time.now.to_i - @start, @nodes_ok)
@@ -176,6 +191,7 @@ module BootNewEnvironment
             result = result && @step.wait_reboot([@config.common.ssh_port],[@config.common.test_deploy_env_port])
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step3_duration", Time.now.to_i - @start, @nodes_ok)

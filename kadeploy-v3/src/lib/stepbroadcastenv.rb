@@ -49,6 +49,7 @@ module BroadcastEnvironment
     @nodes_ko = nil
     @step = nil
     @start = nil
+    @instances = nil
 
     # Constructor of BroadcastEnv
     #
@@ -79,8 +80,21 @@ module BroadcastEnvironment
       @logger = logger
       @logger.set("step2", get_instance_name, @nodes)
       @logger.set("timeout_step2", @timeout, @nodes)
+      @instances = Array.new
       @start = Time.now.to_i
       @step = MicroStepsLibrary::MicroSteps.new(@nodes_ok, @nodes_ko, @reboot_window, @nodes_check_window, @config, cluster, output, get_instance_name)
+    end
+
+    # Kill all the running threads
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def kill
+      @instances.each { |tid|
+        Thread.kill(tid)
+      }
     end
 
     # Get the name of the current macro step
@@ -132,6 +146,7 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
@@ -184,6 +199,7 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
@@ -237,6 +253,7 @@ module BroadcastEnvironment
             result = result && @step.switch_pxe("deploy_to_deployed_env")
             #End of micro steps
           }
+          @instances.push(instance_thread)
           if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)

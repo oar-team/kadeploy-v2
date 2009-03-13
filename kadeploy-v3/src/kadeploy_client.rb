@@ -40,6 +40,15 @@ class KadeployClient
     DRb.stop_service()
   end
 
+  # Test method to check that the client is still there (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
+  def test
+  end
+
   # Get a file from the client (RPC)
   #
   # Arguments
@@ -156,7 +165,7 @@ if (exec_specific_config != nil) then
     end
     Signal.trap("INT") do
       puts "SIGINT trapped, let's clean everything ..."
-      kadeploy_server.kill_instance(kadeploy_client.workflow_id)
+      kadeploy_server.kill(kadeploy_client.workflow_id)
       _exit(1, db)
     end
     if (exec_specific_config != nil) then

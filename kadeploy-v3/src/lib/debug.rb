@@ -10,7 +10,8 @@ module Debug
     @syslog = nil
     @syslog_dbg_level = nil
     @syslog_lock = nil
-
+    @client_output = nil
+    
     # Constructor of OutputControl
     #
     # Arguments
@@ -31,6 +32,11 @@ module Debug
       @syslog = syslog
       @syslog_dbg_level = syslog_dbg_level
       @syslog_lock = syslog_lock
+      @client_output = true
+    end
+
+    def disable_client_output
+      @client_output = false
     end
 
     # Print a message according to a specified debug level
@@ -41,7 +47,7 @@ module Debug
     # Output
     # * prints the message on the server and on the client
     def debugl(l, msg)
-      if (l <= @debug_level)
+      if ((l <= @debug_level) && @client_output)
         @client.print(msg)
       end
       server_str = "#{@deploy_id}|#{@user} -> #{msg}"
