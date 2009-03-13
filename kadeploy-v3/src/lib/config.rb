@@ -790,7 +790,7 @@ module ConfigInformation
     def load_kaenv_cmdline_options
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
-        opts.summary_width = 28
+        opts.summary_width = 36
         opts.banner = "Usage: kaenv [options]"
         opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""

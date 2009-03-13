@@ -27,25 +27,17 @@ def list_environments(config, db)
     else
       query = "SELECT * FROM environments ORDER BY name,version"
     end
-    res = db.run_query(query)
-    env.short_view_header
-    if (res != nil) then
-      res.each_hash { |row|
-        env.load_from_hash(row)
-        env.short_view
-      }
-    end
   else
     if (config.exec_specific.show_all_version == false) then
       query = "SELECT name, MAX(version) AS version, description, author, tarball, \
                       postinstall, kernel, kernel_params, \
                       initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                       FROM environments \
-                      WHERE user=\"#{config.exec_specific.user}\" \
-                      GROUP BY name"
+                      WHERE (user=\"#{config.exec_specific.user}\" OR user=\"deploy\") \
+                      GROUP BY user,name"
     else
-      query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\"
-                                          ORDER BY name,version"
+      query = "SELECT * FROM environments WHERE (user=\"#{config.exec_specific.user}\" OR user=\"deploy\") \
+                                          ORDER BY user,name,version"
     end
   end
   res = db.run_query(query)

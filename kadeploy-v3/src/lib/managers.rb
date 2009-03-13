@@ -556,7 +556,7 @@ module Managers
           }
         }
       end
-      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size, 12, /./)
+      Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size * 1024 * 1024, 12, /./)
     end
 
     # Main of WorkflowManager
