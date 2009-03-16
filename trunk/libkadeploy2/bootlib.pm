@@ -23,7 +23,7 @@ sub setup_grub_pxe($$$);
 sub manage_grub_pxe($$$);
 sub generate_grub_files($$$$$$$$);
 sub generate_nogrub_files($$$$$$$);
-sub setup_pxe($$$$);
+sub setup_pxe($$$$$);
 sub reboot($$$$);
 
 ## global variables declaration
@@ -86,7 +86,7 @@ sub manage_grub_pxe($$$){
     } else {
 	libkadeploy2::debug::debugl(3, "GRUB available.\n");	
     }
-    if (! $nogrub) {
+    if (!$nogrub) {
       # Check whether user has requested GRUB usage ; otherwise do not use GRUB (nogrub = 1)
       if ($user_request_grub) {
 	# Use GRUB : available and user requested
@@ -244,7 +244,7 @@ sub manage_grub_pxe($$$){
 	}
     }
     # sends grub image on the appropriate server
-    libkadeploy2::bootlib::setup_pxe(\@pxe_ips, \@pxe_kernels, \@pxe_initrds, $pxe_kernel_parameters);
+    libkadeploy2::bootlib::setup_pxe(\@pxe_ips, \@pxe_kernels, \@pxe_initrds, $pxe_kernel_parameters, $user_request_grub);
 
     return 1;
 }
@@ -577,12 +577,13 @@ sub generate_grub_files($$$$$$$$){
 ## setup_pxe generate files for the tftp/dhcp server
 ## parameters : ips, kernels, initrds in arrays
 ## return value : 1 if successful
-sub setup_pxe($$$$){
+sub setup_pxe($$$$$){
     my $ref_to_reboot = shift;
     my $ref_to_kernel = shift;
     my $ref_to_initrd = shift;
     my $pxe_kernel_parameters = shift;
-
+    my $user_request_grub = shift;
+    
     my @to_reboot = @{$ref_to_reboot};
     my @kernels = @{$ref_to_kernel};
     my @initrds = @{$ref_to_initrd};
@@ -590,6 +591,7 @@ sub setup_pxe($$$$){
     my $PROMPT = 1;
     my $DISPLAY = "messages";
     my $TIMEOUT = 50;
+    my $nogrub = 1;
 
     # Gets appropriate parameters from configuration file
     # my $network = conflibkadeploy2::get_conf("network");
@@ -605,8 +607,28 @@ sub setup_pxe($$$$){
     
     my $kernel;
     my $append="";
-    my $nogrub = $configuration->get_conf("use_nogrub");
-
+    $nogrub = $configuration->get_conf("use_nogrub");
+    if ($nogrub) {
+      libkadeploy2::debug::debugl(3, "GRUB not available.\n");
+    } else {
+      libkadeploy2::debug::debugl(3, "GRUB available.\n");
+    }
+    if (!$nogrub) {
+    # Check whether user has requested GRUB usage ; otherwise do not use GRUB (nogrub = 1)
+      if ($user_request_grub) {
+      # Use GRUB : available and user requested
+        $nogrub = 0;
+      } else {
+      # Do NOT use GRUB : available but NOT requested
+        $nogrub = 1;
+      }
+    }
+    if ($nogrub) {
+      libkadeploy2::debug::debugl(3, "GRUB won't be used.\n");
+    } else {
+      libkadeploy2::debug::debugl(3, "GRUB will be used.\n");
+    }
+    
     # Generate files in PXE directories and overwrite old ones
     # Note : loops on kernels and IPs.
     for (my $i=0; $i<scalar(@kernels); $i++) 

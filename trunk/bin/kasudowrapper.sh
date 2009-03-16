@@ -6,11 +6,11 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 TSTAMP=$( date +%Y%m%d-%H%M-%N )
-ROOT_HOMEDIR=$(getent passwd|grep $(echo $UID)|cut -d: -f6)
+ROOT_HOMEDIR=""
 KADEPLOY_USER_DIR=".kadeploy"
 NODES_LIST="__nodes_list"
 TEMP_FILES_DIR="/tmp"
-NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
+NL_FNAME=""
 CLUSTER_NAME=""
 CLUSTER_FILES=""
 
@@ -59,13 +59,22 @@ function kadeploy_split_nodes()
 # Check whether kadeploy User's directory exists
 function check_kadeploy_user_dir()
 {
-  local kudir="$ROOT_HOMEDIR/$KADEPLOY_USER_DIR"
+  local $kudir
   
+  if [ "$USER" == "root" -o "$UID" -eq 0 ]; then
+    ROOT_HOMEDIR="/root"
+  else
+    ROOT_HOMEDIR=$(getent passwd|grep $(echo $UID)|cut -d: -f6)
+  fi
+  if [ -n "$ROOT_HOMEDIR" ]; then
+    kudir="$ROOT_HOMEDIR/$KADEPLOY_USER_DIR"
+  else
+    Die "Non-existent home directory"
+  fi
   if [ ! -d "$kudir" ]; then
     ( mkdir ${kudir} || die "failed to create ${kudir}" )
     ( chmod 755 ${kudir} || die "failed to chmod ${kudir}" )
   fi
-
   if [ ! -r "$kudir" ]; then
     ( chmod 755 ${kudir} || die "failed to chmod ${kudir}" )
   fi
@@ -156,7 +165,10 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
 	  -h|--help)
 	    ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "--help"
 	    exit 0;;
-	  *)
+          --version)
+	    ${PREPEND} sudo -u $DEPLOYUSER $DEPLOYDIR/bin/$(basename $0) "--version"
+	    exit 0;;	      
+          *)
 	    remaining_args="$remaining_args $1"
 	    shift;;
 	esac
@@ -167,6 +179,7 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
       fi
 	# split nodes into many lists as clusters implied in deployment
 	# Check cases whether nodes are provided by a file or a parameter's list
+	NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
 	NLIST="${NL_FNAME}.${TSTAMP}"
 	if [ -n "$filename" ]; then
 	  cat ${filename}|sort -n|uniq > ${NLIST}

@@ -102,6 +102,11 @@ PERLDIR=/usr/lib/perl5/5.8.6
 HTMLDOC=/usr/bin/htmldoc
 XSLTPROC=/usr/bin/xsltproc
 TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
+else ifeq ($(DISTRIB), centos52)
+PERLDIR=/usr/lib/perl5/5.8.8
+HTMLDOC=/usr/bin/htmldoc
+XSLTPROC=/usr/bin/xsltproc
+TLDPOPXSL=/usr/share/xml/docbook/stylesheet/ldp/html/tldp-one-page.xsl
 else
 PERLDIR=/usr/share/perl/5.8
 HTMLDOC=/usr/bin/htmldoc
