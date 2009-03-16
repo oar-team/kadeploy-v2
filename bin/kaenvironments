@@ -15,7 +15,6 @@ use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
 use libkadeploy2::hexlib;
-use libkadeploy2::confroot;
 
 # DB accessors
 sub get_environments($);
@@ -56,8 +55,22 @@ my @hostlist;
 my $hostfile;
 my $clustername;
 my $deploy_user;
-my $conf_root_dir;
 
+## Configuration
+my $configuration = libkadeploy2::conflib->new();
+if ( !$configuration->check_conf()) {
+	      print "ERROR : problem occured while loading Kadeploy configuration file.\n";
+	      exit 1;
+}
+
+my $ka_install_dir = $configuration->get_conf("kadeploy2_directory");
+
+if ($ENV{SUDO_USER})
+{  $username=$ENV{SUDO_USER}; }
+else                     
+{ $username=$ENV{USER}; }
+
+		      
 # get the command-line options
 GetOptions('e=s'               => \@env_list,
            'environment=s'     => \@env_list,
@@ -71,31 +84,9 @@ GetOptions('e=s'               => \@env_list,
 	   'm=s'               => \@hostlist,
 	   'f=s'               => \$hostfile,
 	   'login=s'           => \@users,
-           'configuration=s'   => \$conf_root_dir,
 	   'h!'                => \$display_help,
 	   'help!'             => \$display_help,
 	   );
-
-
-if (!$conf_root_dir eq "") {
-      libkadeploy2::confroot::set_conf_rootdir($conf_root_dir);
-    }
-libkadeploy2::confroot::get_conf_rootdir();
-libkadeploy2::confroot::info();
-
-## Configuration
-my $configuration = libkadeploy2::conflib->new();
-if ( !$configuration->check_conf()) {
-	      print "ERROR : problem occured while loading Kadeploy configuration file.\n";
-	      exit 1;
-}
-my $ka_install_dir = $configuration->get_conf("kadeploy2_directory");
-
-if ($ENV{SUDO_USER})
-{  $username=$ENV{SUDO_USER}; }
-else                     
-{ $username=$ENV{USER}; }
-
 
 $user=$username;
 $spoofuser=$users[$#users]; #get last -l
@@ -105,13 +96,13 @@ else { $spoofuser=$username; }
 
 if (!$clustername eq "") {
 	$configuration->set_clustername($clustername);
-	print STDERR "using settings for cluster " . $clustername . "\n";
+	print "using settings for cluster " . $clustername . "\n";
 } else {
-	print STDERR "using settings for default cluster\n";
+	print "using settings for default cluster\n";
 }
 # load configuration files this part is overwritten by any specified nodelist
 if (!$configuration->check_conf()) {
-        print STDERR "ERROR : problem occured loading configuration file\n";
+        print "ERROR : problem occured loading configuration file\n";
         exit 1;
 }
 # register configuration
@@ -334,7 +325,7 @@ sub print_environment_envname_user($$)
 	
 	if (scalar(keys(%environments)) == 0) 
 	{
-	    print STDERR "No environment named '$env_name' with user $spoofuser\n";
+	    print "No environment named '$env_name' with user $spoofuser\n";
 	}
     }
     
@@ -348,17 +339,16 @@ sub print_environment_envname_user($$)
 
 sub print_usage() {
     print "Usage: \t$0 \n";
-    print "                                                                     - lists my recorded environments\n";
-    print "            -e | --environment env1 ...                              - lists a given environment\n";
-    print "            -a | --add env1 ...                                      - add this environment (it must be yours)\n";
-    print "            -d | --delete env1 ...                                   - delete this environment (it must be yours)\n";
-    print "            -l | --login  login                                      - list environment from user 'login'\n";
-    print "            --listlogin                                              - list all 'login' recorded\n";
-    print "            -c | --cluster clustername                               - gives information according to the named cluster\n";
-    print "            -m host                                                  - give last environment deployed on the host\n";
-    print "            -f nodesfile                                             - give last environment deployed on the nodesfile\n";
-    print "            -C | --configuration <Kadeploy configuration directory>  - configuration directory to use\n";
-    print "            -h | --help                                              - this help\n";
+    print "                                        - lists my recorded environments\n";
+    print "            -e | --environment env1 ... - lists a given environment\n";
+    print "            -a | --add env1 ...         - add this environment (it must be yours)\n";
+    print "            -d | --delete env1 ...      - delete this environment (it must be yours)\n";
+    print "            -l | --login  login         - list environment from user 'login'\n";
+    print "            --listlogin                 - list all 'login' recorded\n";
+    print "            -c | --cluster clustername  - gives information according to the named cluster\n";
+    print "            -m            host          - give last environment deployed on the host\n";
+    print "            -f            nodesfile     - give last environment deployed on the nodesfile\n";
+    print "            -h | --help                 - this help\n";
 }
 
 sub print_user()

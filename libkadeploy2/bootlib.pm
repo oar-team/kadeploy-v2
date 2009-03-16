@@ -19,8 +19,8 @@ use POSIX qw(:signal_h :errno_h :sys_wait_h);
 #}
 
 ## prototypes
-sub setup_grub_pxe($$$);
-sub manage_grub_pxe($$$);
+sub setup_grub_pxe($$);
+sub manage_grub_pxe($$);
 sub generate_grub_files($$$$$$$$);
 sub generate_nogrub_files($$$$$$$);
 sub setup_pxe($$$$);
@@ -45,14 +45,13 @@ sub register_conf {
 ## wrapper kadeploy - manage_grub_pxe
 ## parameters : base, deployment identifier
 ## return value : -1 in case of error, 1 otherwise
-sub setup_grub_pxe($$$){
+sub setup_grub_pxe($$){
     my $dbh = shift;
     my $deploy_id = shift;
-    my $user_request_grub = shift;
-    
+
     my @env_info = libkadeploy2::deploy_iolib::deploy_id_to_env_info($dbh,$deploy_id);
     my %node_info = libkadeploy2::deploy_iolib::deploy_id_to_node_info($dbh,$deploy_id);
-    my $ret = manage_grub_pxe(\%node_info,\@env_info, $user_request_grub);
+    my $ret = manage_grub_pxe(\%node_info,\@env_info);
     return $ret;
 }
 
@@ -60,11 +59,10 @@ sub setup_grub_pxe($$$){
 ## setups grub and pxe 
 ## parameters : base, ref to host info, ref to env info
 ## return value : 1 if successful
-sub manage_grub_pxe($$$){
+sub manage_grub_pxe($$){
     my $ref_to_node_info = shift;
     my $ref_to_env_info  = shift;
-    my $user_request_grub = shift;
-    
+
     my %node_info = %{$ref_to_node_info};
     my @env_info  = @{$ref_to_env_info};
     
@@ -78,29 +76,8 @@ sub manage_grub_pxe($$$){
     $env_archive = substr($env_archive,6);
 
     my $custom_kernel_parameters = $configuration->get_conf("custom_kernel_parameters");
-    libkadeploy2::debug::debugl(3, "GRUB request : ".$user_request_grub."\n");
     my $nogrub = 1;
     $nogrub = $configuration->get_conf("use_nogrub");
-    if ($nogrub) {
-	libkadeploy2::debug::debugl(3, "GRUB not available.\n");
-    } else {
-	libkadeploy2::debug::debugl(3, "GRUB available.\n");	
-    }
-    if (! $nogrub) {
-      # Check whether user has requested GRUB usage ; otherwise do not use GRUB (nogrub = 1)
-      if ($user_request_grub) {
-	# Use GRUB : available and user requested
-        $nogrub = 0;
-      } else {
-	# Do NOT use GRUB : available but NOT requested
-	$nogrub = 1;
-      }
-    }
-    if ($nogrub) { 
-	libkadeploy2::debug::debugl(3, "GRUB won't be used.\n");    
-    } else { 
-	libkadeploy2::debug::debugl(3, "GRUB will be used.\n");    
-    }
     
     my $clustername = $configuration->get_clustername();
     my $filename_append = "-" . $clustername;
@@ -173,13 +150,13 @@ sub manage_grub_pxe($$$){
 	    my $pxe_dest_folder = $tftp_destination_folder . "/" . $pxe_tftp_relative_folder;
 
 	    if ( $gen_pxe_entry ) {
+		libkadeploy2::debug::debugl(3, "generating PXE : first node : $ip\n");		
 		$firstipx=$iphexalized;
-		libkadeploy2::debug::debugl(3, "Generating PXE conf for [1st node] : $ip, kernel_path = $kernel_path, initrd_path = $initrd_path\n");
 		generate_nogrub_files($env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode, $env_id);
 		$gen_pxe_entry = 0; # generated once
 		$firstnode = 0;     # next processing different as for 1st node
 	    } else {
-		libkadeploy2::debug::debugl(3, "Generating PXE conf for [Other nodes] : $ip, kernel_path = $kernel_path, initrd_path = $initrd_path\n");
+		libkadeploy2::debug::debugl(3, "generating PXE : other nodes : $ip\n"); 
 		generate_nogrub_files($env_archive, $kernel_path, $initrd_path, $pxe_dest_folder, $firstipx, $firstnode, $env_id);
 	    }
 
@@ -187,19 +164,17 @@ sub manage_grub_pxe($$$){
 	    
 	    # Strip leading directories from kernel and initrd filenames for PXE setup configuration
 	    $current_kernel = libkadeploy2::pathlib::strip_leading_dirs($kernel_path);
-	    if (libkadeploy2::pathlib::check_multiboot($current_kernel)) {
+	    if (libkadeploy2::pathlib::check_multiboot_kernel($current_kernel)) {
 		$multiboot = 1;
-	    } else {
-		$multiboot = 0;
 	    }
-	    if (!$multiboot) {
+	    if (! $multiboot) {
 		$current_initrd = libkadeploy2::pathlib::strip_leading_dirs($initrd_path);
 	    } else {
 		$current_initrd = $initrd_path;
 	    }
 	    # Prepare the PXE setup
 	    push(@pxe_ips, $ip);
-	    if (!$multiboot) {
+	    if (! $multiboot) {
 		push(@pxe_kernels, $pxe_tftp_relative_folder.$current_kernel);
 		push(@pxe_initrds, $pxe_tftp_relative_folder.$current_initrd.$pxe_kernel_parameters);
 	    } else {
@@ -278,43 +253,24 @@ sub generate_nogrub_files($$$$$$$)
     my $file2;
     my $file3;
     my $file4;
-    
+   
     # Test if we are in multiboot case ($kernel_path = mboot.c32)
-    my $multiboot = libkadeploy2::pathlib::check_multiboot($file1);
+    my $multiboot = libkadeploy2::pathlib::check_multiboot_kernel($file1);
     if ($multiboot) {
 	# Retrieve each part between --- separator
-	my @mbfiles = split /-{3}/, $initrd_path;
+	my @mbfiles = split / --- /, $initrd_path;
 	$file2 = shift(@mbfiles); # Xen Hypervisor
 	$file3 = shift(@mbfiles); # Kernel
 	$file4 = shift(@mbfiles); # Ramdisk
 	
 	# Retrieve only the filename part
-	my @tfile2 = split /\s+/, $file2;
-	if (libkadeploy2::pathlib::is_valid($tfile2[0])) {
-	    $file2 = $tfile2[0];
-	    $file2 =~ s/^\s*//;
-	} else {
-	    $file2 = $tfile2[1];
-	    $file2 =~ s/^\s*//;
-	}
-	my @tfile3 = split /\s+/, $file3;
-	if (libkadeploy2::pathlib::is_valid($tfile3[0])) {
-	    $file3 = $tfile3[0];
-	    $file3 =~ s/^\s*//;
-        } else {
-	    $file3 = $tfile3[1];
-	    $file3 =~ s/^\s*//;
-	}
-	if (libkadeploy2::pathlib::is_valid($file4)) {
-	    my @tfile4 = split(/\s+/,$file4);
-	    if (libkadeploy2::pathlib::is_valid($tfile4[0])) {
-		$file4 = $tfile4[0];
-		$file4 =~ s/^\s*//;
-	    } else {
-		$file4 = $tfile4[1];
-		$file4 =~ s/^\s*//;
-	    }
-        }
+	my @tfile2 = split(/ /,$file2);
+        $file2 = $tfile2[0];
+	my @tfile3 = split(/ /,$file3);
+	$file3 = $tfile3[0];
+	my @tfile4 = split(/ /,$file4);
+	$file4 = $tfile4[0];
+	
     } elsif ($initrd_path) { 
 	$file2 = $initrd_path; 
     }
@@ -331,23 +287,19 @@ sub generate_nogrub_files($$$$$$$)
 	my @files;
 	# Strip leading / from filenames 	
 	# Do not add mboot.c32 at files to extract from archive in case of multiboot mode.
-	if (!$multiboot) {
+	if (! $multiboot) {
 	    $file1 = libkadeploy2::pathlib::strip_leading_slash($file1);
 	    push(@files, $file1);
 	}
-	if (($file2) && (libkadeploy2::pathlib::is_valid($file2))) {
+	if ($file2) {
 	    $file2 = libkadeploy2::pathlib::strip_leading_slash($file2);
 	    push(@files, $file2);
 	}
 	if ($multiboot) {
-	    if (libkadeploy2::pathlib::is_valid($file3)) {
-	      $file3 = libkadeploy2::pathlib::strip_leading_slash($file3);
-	      push(@files, $file3);
-	    }
-	    if (libkadeploy2::pathlib::is_valid($file4)) {
-	      $file4 = libkadeploy2::pathlib::strip_leading_slash($file4);
-	      push(@files, $file4);
-	    }
+	    $file3 = libkadeploy2::pathlib::strip_leading_slash($file3);
+	    push(@files, $file3);
+	    $file4 = libkadeploy2::pathlib::strip_leading_slash($file4);
+	    push(@files, $file4);
 	}
        
 	libkadeploy2::cache::put_in_cache_from_archive(\@files, $env_archive, 1, $env_id);
@@ -356,25 +308,21 @@ sub generate_nogrub_files($$$$$$$)
 	my $tftprelative = libkadeploy2::cache::get_cache_directory_tftprelative(1);
 	
         # Strip leading directories from filenames
-	if (!$multiboot) {
+	if (! $multiboot) {
 	    $file1 = libkadeploy2::pathlib::strip_leading_dirs($file1);
 	    libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file1.$env_id $file1");
 	}
 
-	if (libkadeploy2::pathlib::is_valid($file2)) {
+	if ($file2) {
 	    $file2 = libkadeploy2::pathlib::strip_leading_dirs($file2);
 	    libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file2.$env_id $file2");
 	}
 
 	if ($multiboot) {
-	    if (libkadeploy2::pathlib::is_valid($file3)) {
-	      $file3 = libkadeploy2::pathlib::strip_leading_dirs($file3);
-	      libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file3.$env_id $file3");
-	    }
-	    if (libkadeploy2::pathlib::is_valid($file4)) {
-	      $file4 = libkadeploy2::pathlib::strip_leading_dirs($file4);
-	      libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file4.$env_id $file4");
-	    }
+	    $file3 = libkadeploy2::pathlib::strip_leading_dirs($file3);
+	    libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file3.$env_id $file3");
+	    $file4 = libkadeploy2::pathlib::strip_leading_dirs($file4);
+	    libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s $tftprelative/$file4.$env_id $file4");
 	}
    }
    else 
@@ -390,25 +338,17 @@ sub generate_nogrub_files($$$$$$$)
 
        # Strip leading directories from kernel and initrd filenames
        # and make link to original file
-       if (!$multiboot) {
-	   $file1 = libkadeploy2::pathlib::strip_leading_dirs($file1);
-	   libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file1 $file1");
-       }
+       $file1 = libkadeploy2::pathlib::strip_leading_dirs($file1);
+       libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file1 $file1");
 
-       if (libkadeploy2::pathlib::is_valid($file2)) {
-	   $file2 = libkadeploy2::pathlib::strip_leading_dirs($file2);
-	   libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file2 $file2");
-       }
+       $file2 = libkadeploy2::pathlib::strip_leading_dirs($file2);
+       libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file2 $file2");
 
        if ($multiboot) {
-	   if (libkadeploy2::pathlib::is_valid($file3)) {
-	       $file3 = libkadeploy2::pathlib::strip_leading_dirs($file3);
-	       libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file3 $file3");
-	   }
-	   if (libkadeploy2::pathlib::is_valid($file4)) {
-	       $file4 = libkadeploy2::pathlib::strip_leading_dirs($file4);
-	       libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file4 $file4");
-	   }
+	   $file3 = libkadeploy2::pathlib::strip_leading_dirs($file3);
+           libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file3 $file3");
+	   $file4 = libkadeploy2::pathlib::strip_leading_dirs($file4);
+           libkadeploy2::debug::system_wrapper("cd $dest_folder && ln -s ../$firstipx/$file4 $file4");
        }
    }
    return 1;
@@ -611,20 +551,16 @@ sub setup_pxe($$$$){
     # Note : loops on kernels and IPs.
     for (my $i=0; $i<scalar(@kernels); $i++) 
     {
-	libkadeploy2::debug::debugl(3, "PXE files generation for current kernel = $kernels[$i], current initrd = $initrds[$i]\n");
 	my $current_kernel = $kernels[$i];
 	my $current_initrd = $initrds[$i];
-	my $multiboot = 0;
+	my $multiboot=0;
 	
-	if (libkadeploy2::pathlib::check_multiboot($current_kernel)) {
+	if ( ! (libkadeploy2::pathlib::check_multiboot_kernel($current_kernel)) ) {
 	    # Case we are NOT in multi-boot mode
-	    $multiboot = 1;
-	    libkadeploy2::debug::debugl(3, "--- Multiboot usecase detected\n");
-	} else {
-	    $multiboot = 0;
 	    $current_kernel = libkadeploy2::pathlib::strip_leading_dirs($current_kernel);
 	    $current_initrd =~ s/^[a-fA-F0-9]{8}\/(.*)$/$1/;
-	    libkadeploy2::debug::debugl(3, "Standard boot usecase selected\n");
+	} else {
+	   $multiboot=1;
 	}
 	
 	foreach my $ip (@to_reboot) {
@@ -636,42 +572,35 @@ sub setup_pxe($$$$){
 		# -------------
 		# PXE boot mode
 		# -------------
-		if (!$multiboot) {
+		if (! $multiboot) {
 		    # Case we are NOT in multiboot mode
 		    $kernel = $tftp_relative_path."/".$hex_ip."/".$current_kernel;
 		    $append = "initrd=".$tftp_relative_path."/".$hex_ip."/".$current_initrd;
 		} else {
 		    # Case we are in multiboot mode
 		    # Get each multiboot item 
-
-		    my @mbfiles = split /-{3}/,$current_initrd;
-		    my $a=1;
+		    my @mbfiles = split / --- /,$current_initrd;
+		    my $a=0;
 		    $append = "";
+		    
 		    foreach my $f (@mbfiles) {
 			# Foreach multiboot item :
 			# 1) Translate leading path into local PXE dirs
 			# 2) Keep local parameters
-			$f =~ s/^\s*//;
-			my @tf = split /\s+/, $f;
-			my $tff;
-			if (libkadeploy2::pathlib::is_valid($tf[0])) {
-			    $tff = $tf[0];
-			} else {
-			    $tff = $tf[1];
+			my @tf = split(/ /,$f);
+			$tf[0] = libkadeploy2::pathlib::strip_leading_dirs($tf[0]);
+			$tf[0] = $tftp_relative_path."/".$hex_ip."/".$tf[0];
+			foreach my $item (@tf) {
+			    $append = $append.$item." ";
 			}
-			$tff = libkadeploy2::pathlib::strip_leading_dirs($tff);
-			$tff = $tftp_relative_path."/".$hex_ip."/".$tff;
-			$append = $append.$tff." ";
-
-			if ( $a == 2 ) {
+			if ( $a == 1 ) {
 			    # Kernel item slot ; put PXE kernel parameters here
 			    $append = $append.$pxe_kernel_parameters." ";
 			}
-			if ( $a < scalar(@mbfiles) ) {
+			if ( $a++ < $#mbfiles ) {
 			    # End of multiboot item : put a --- separator
 			    $append = $append."--- ";
 			}
-			$a++;
 		    }
 		    # In multiboot mode : kernel = mboot.c32
 		    $kernel = libkadeploy2::pathlib::strip_leading_dirs($current_kernel);
@@ -683,7 +612,6 @@ sub setup_pxe($$$$){
                 $kernel = $tftp_relative_path . "/" . $current_kernel;
 		$append = "initrd=" . $tftp_relative_path . "/" . $current_initrd;
             }
-	    libkadeploy2::debug::debugl(3, "Building PXE boot conf : $append\n");
 	    
 	    open(DEST, "> $destination") or die "Couldn't open $destination for writing: $!\n";
 	    print DEST "$template_default_content\tKERNEL $kernel\n\tAPPEND $append";
@@ -729,9 +657,10 @@ sub reboot($$$$){
     my %child_pids = ();
     
     foreach my $host (@host_list){
-	if(!$cmd{$host}{$reboot}) {
+	if(!$cmd{$host}{$reboot}){
+	    print "WARNING : no $reboot command found for $host !\n";
 	    libkadeploy2::debug::debugl(3, "WARNING : no $reboot command found for $host !\n");
-	} else {
+	}else{
 	    # debug print
 	    # print "to be executed : $host -> $cmd{$host}{$reboot}\n";
 	    if (!defined($child_pid = fork())) {

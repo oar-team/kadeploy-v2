@@ -121,7 +121,7 @@ CREATE TABLE `partition` (
 DROP TABLE IF EXISTS `rights`;
 CREATE TABLE `rights` (
   `user` varchar(30) NOT NULL default '',
-  `node` varchar(255) NOT NULL default '',
+  `node` varchar(30) NOT NULL default '',
   `part` varchar(5) NOT NULL default '',
   PRIMARY KEY  (`user`,`node`,`part`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;

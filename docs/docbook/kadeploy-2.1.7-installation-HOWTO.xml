@@ -109,7 +109,6 @@ For instance, the following command should be working from frontend-dev :
 						<listitem><filename>libterm-readkey-perl</filename></listitem>
 						<listitem><filename>libdbi-perl</filename></listitem>
 						<listitem><filename>libdbd-mysql-perl</filename></listitem>
-						<listitem><filename>libfile-chdir-perl</filename></listitem>
 					</itemizedlist>
 				</para>
 			</sect2>

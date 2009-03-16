@@ -6,7 +6,7 @@
 
 use strict;
 use warnings;
-use POSIX ":sys_wait_h";
+
 use Getopt::Long;
 use libkadeploy2::conflib;
 use libkadeploy2::deploy_iolib;
@@ -18,10 +18,8 @@ sub usage();
 my $conf_root_dir;
 my @host_list = ();
 my $username = getpwuid($ENV{SUDO_UID}); # real user
-my $check_interval = 60;
 
 if (!@ARGV) { usage; }
-
 
 #-------------
 # Get options
@@ -69,40 +67,15 @@ foreach my $host (@host_list)
     }                                                                                              
 }
 
+
 foreach my $host (@host_list){
+    
     if(!$cmd{$host}{"console"}){
 	print "WARNING : no command found for $host !\n";
     }else{
-	my $pid = -1;
-	my $i = 0;
-	my $state = "";
-
-	$pid = fork();
-	if (not defined $pid) {
-	    print "Unable to fork";
-	    exit(0);
-	}
-	if ($pid == 0) {
-	    exec("$cmd{$host}{\"console\"}");
-	} else {
-	    $state = "running";
-	    my @hl=($host);
-	    while ((libkadeploy2::rights_iolib::check_lazy_rights_kadeploy($base,$username,\@hl) != 0) 
-		   && ($state eq "running")) {
-		for ($i = 1; $i < $check_interval; $i++) {
-		    if ($pid == waitpid($pid, WNOHANG)) {
-			$state = "reaped";
-			last;
-		    } else {
-			sleep(1);
-		    }
-		}
-	    }
-	    if ($state eq "running") {
-		kill("SIGKILL", $pid);
-		print("Console killed.\n");
-	    }
-	}
+	# debug print
+	# print "to be executed : $host -> $cmd{$host}{\"console\"}\n";
+	system("$cmd{$host}{\"console\"}");
     }
 }
 libkadeploy2::deploy_iolib::disconnect($base);

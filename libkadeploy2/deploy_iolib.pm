@@ -93,7 +93,7 @@ sub set_deployment_features($$$$$$);
 
 # print and debug
 sub list_node($);
-sub debug_print($$$$);
+sub debug_print($$$);
 
 # deployment time
 sub set_time($$);
@@ -1791,11 +1791,10 @@ sub list_node($) {
 # prints database state and generate 2 files : 
 # parameters : base, deploy_id, cluster_name
 # return value : /
-sub debug_print($$$$){
+sub debug_print($$$){
     my $dbh = shift;
     my $deploy_id = shift;
-    my $nlist_ok = shift;
-    my $nlist_nok = shift;
+    my $cluster = shift;
     my %res;
 
     # gets interesting information
@@ -1826,14 +1825,14 @@ sub debug_print($$$$){
 	$username=$ENV{USER};
     }
     my $ret_nodes_ok;
-    $ret_nodes_ok=open(NODES_OK,">".$nlist_ok);
+    $ret_nodes_ok=open(NODES_OK,">/tmp/kadeploy-".$username."-".$cluster."-nodes_ok.out");
     if (!$ret_nodes_ok) {
-	print "Can't create ".$nlist_ok."\n";
+	print "Can't create /tmp/kadeploy-".$username."-".$cluster."-nodes_ok.out";
     }
     my $ret_nodes_nok;
-    $ret_nodes_nok=open(NODES_NOK,">".$nlist_nok);
-    if (!$ret_nodes_nok) {
-	print "Can't create ".$nlist_nok."\n";
+    $ret_nodes_nok=open(NODES_NOK,">/tmp/kadeploy-".$username."-".$cluster."-nodes_nok.out");
+    if (!$ret_nodes_ok) {
+	print "Can't create /tmp/kadeploy-".$username."-".$cluster."-nodes_nok.out";
     }
 
     # prints information

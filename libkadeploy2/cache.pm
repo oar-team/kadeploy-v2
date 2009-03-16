@@ -3,10 +3,6 @@ package libkadeploy2::cache;
 # use strict;
 # use warnings;
 
-use File::Copy;
-use File::Path;
-use File::chdir;
-use libkadeploy2::pathlib;
 use libkadeploy2::debug;
 
 ## ================
@@ -16,7 +12,6 @@ use libkadeploy2::debug;
 my $_tftpdirectory;
 ## Directory path of Kadeploy environment files cache
 my $_cachedirectory;
-my $_subcachedir = "__sub";
 ## days count after which files are removed from cache
 my $_expirydelay    = 30;
 ## Array of files in cache
@@ -120,23 +115,6 @@ sub already_in_cache($)
     else { return 0; }
 }
 
-sub check_files($)
-{
-    my $f = shift;
-    my @arr_files = @{$f};
-   
-    my $count=@arr_files;
-    my @res;
-    my $a=0;
-    while ($a < $count) {
-	if ( libkadeploy2::pathlib::is_valid($arr_files[$a]) && (defined($arr_files[$a])) ) {
-	    push(@res, $arr_files[$a]);
-	}
-	$a++;
-    }
-    return (@res);
-}
-
 ## Put files in cache if they're not already in
 sub put_in_cache_from_archive($$$$)
 {
@@ -148,94 +126,41 @@ sub put_in_cache_from_archive($$$$)
     my $cachemodified = 0;
     my $agearchive    = 0;
     my $agecachefile  = 0;
-    my $original_file;
-    $strip=0;
 
-    $_subcachedir = $_subcachedir.".".$env_id;
-    
     if ( empty_cache() ) { read_files_in_cache(); }
     
     ## Clean cache from oldest files
     libkadeploy2::cache::clean_cache();
     
-    ## Checks whether some filenames are fake (space/empty strings and so on)
-    @files = libkadeploy2::cache::check_files(\@files);
-    
-    # To prevent bug with directory in 711 : error cannot fetch initial working directory
-    local $CWD = $_cachedirectory;
-    
-    ## Add eventually new files with caution
-    ## If files are links => follow them 
+    ## Securely add eventually new files
     foreach my $archivefile ( @files )
     {
-	# print "current archivefile = ".$archivefile."\n";
-	$cachefile = libkadeploy2::pathlib::strip_leading_dirs($archivefile);
+	my $cachefile = $archivefile;
+	# Strip leading directories from filename
+	$cachefile =~ s/.*\/([^\/]*)$/$1/;
 	$cachefileid = $cachefile.".".$env_id;
-	$original_file = $cachefile;
-	$archiveprefix = libkadeploy2::pathlib::get_leading_dirs($archivefile);
 	$agearchive = ( -M $archive );
 	$agecachefile = ( -C $_cachedirectory."/".$cachefileid );
-        # print "Archive : ".$archive." (age =  ".$agearchive." )\n";
-	# print "cache file : ".$_cachedirectory."/".$cachefile." (age = ".$agecachefile." )\n";
-	if ( ( $agearchive < $agecachefile ) || ( ! already_in_cache($cachefileid) ) )
+        # print $archive." : ".$agearchive." | ".$_cachedirectory."/".$cachefile." : ".$agecachefile."\n";
+	if ( ( ! already_in_cache($cachefileid) ) || ( $agearchive < $agecachefile ) )
 	{
-	    if (! -d $_cachedirectory."/".$_subcachedir) {
-		mkdir $_cachedirectory."/".$_subcachedir, 0755;
-	    }
 	    # print "cache::put_in_cache_from_archive :  adding " . $archivefile . "\n";
-	    my $still_a_link = 1;
-	    while ($still_a_link) 
+	    my $islink = 1;
+	    while ($islink) 
 	    {
-		my $prev_archivefile = $archivefile;
-		# print "===> tar -C ".$_cachedirectory." --strip ".$strip." -xvzf ".$archive." ".$archivefile."\n";
-		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory/$_subcachedir --strip $strip -xvzf $archive $archivefile 2>&1 >/dev/null");
-		# print "??? we are doing readlink of ".$archivefile."\n";
-		$file = readlink $_cachedirectory."/".$_subcachedir."/".$archivefile;
-		# print "??? readlink result = ".$file."\n";
-		if ($file) { 
-		  $still_a_link = 1;
-		  my $firstchar = $file;
-		  $firstchar =~ s/^(.{1}).*$/$1/;
-		    if ($firstchar eq "/") { 
-		    # dereferenced link is an absolute path
-		    # print "### ABSOLUTE link\n";
-		    $archivefile = libkadeploy2::pathlib::strip_leading_slash($file);
-		  } elsif ($firstchar eq ".") {
-		    # dereferenced link is a relative link
-		    # print "### RELATIVE link\n";
-		    $archivefile = libkadeploy2::pathlib::strip_dotdot($file);
-		  } else {
-		    # dereferenced link is a direct filename
-		    # print "### DIRECT link\n";
-		    # print "archiveprefix = ".$archiveprefix."\n";
-		    if ($archiveprefix =~ m/^$/) {
-			$archivefile = $file;
-		    } else {
-			$archivefile = $archiveprefix."/".$file;
-		    }
-		  }
-		  # remove currently extracted file in cache because it's a link
-		  $rootdir = libkadeploy2::pathlib::get_subdir_root($prev_archivefile);
-		  rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);  
-		} else {
-		  # current $archivefile is a true file
-		  $still_a_link = 0;
-		}
+		libkadeploy2::debug::system_wrapper("tar -C $_cachedirectory --strip $strip -xzf $archive $archivefile");
+		$file = readlink $_cachedirectory."/".$archivefile;
+		if ( ! $file ) { $islink = 0; }
 	    }
-	    copy($_cachedirectory."/".$_subcachedir."/".$archivefile, $_cachedirectory."/".$original_file.".".$env_id);
-	    $rootdir = libkadeploy2::pathlib::get_subdir_root($archivefile);
-	    rmtree($_cachedirectory."/".$_subcachedir."/".$rootdir, 0, 1);
+	    rename $_cachedirectory."/".$cachefile, $_cachedirectory."/".$cachefileid;
 	    $cachemodified = 1;
 	}
-	if (-d $_cachedirectory."/".$_subcachedir) {
-	    rmtree($_cachedirectory."/".$_subcachedir, 0, 1);
-        }
     }
     
     ## If cache modified, reload it
     if ( $cachemodified ) 
     { 
-	## print "cache::put_in_cache_from_archive : reload cache\n";
+	print "cache::put_in_cache_from_archive : reload cache\n";
 	read_files_in_cache();
 	$cachemodified = 0;
     }
