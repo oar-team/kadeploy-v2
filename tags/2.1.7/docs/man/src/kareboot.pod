@@ -1,0 +1,87 @@
+=head1 NAME
+
+kareboot - reboot a set of nodes.
+
+=head1 SYNOPSIS
+
+B<kareboot>  [[B<-n|--noreboot>] | [B<-s|--soft>] | [B<-h|--hard>] | [B<-d|--deploy>]] [[B<-e|--environment> environment_name] | [B<-p|--partition> partition]] [B<-kp|--kernel-parameters> "kernel parameters"] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-v|--verbose>]
+
+=head1 DESCRIPTION
+
+kareboot can execute software or hardware reboots on given nodes. It can execute five types of query : no reboot, simple reboot, deploy reboot, environment reboot and partition reboot. For all of them, the user can specify one or several hosts.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-n|--noreboot>
+
+Setup the next reboot for the target nodes without rebooting them.
+
+=item B<-s|--soft>
+
+Tries a soft reboot first, and then a hard reboot.
+
+=item B<-h|--hard>
+
+Hardware reboot only.
+
+=item B<-d|--deploy>
+
+Specify to reboot on the deployment kernel
+
+=item B<-e|--environment> environment_name
+
+Specifies the environment the target nodes should reboot on.
+
+=item B<-p|--partition> partition
+
+Specifies the partition the target nodes should reboot on.
+
+=item B<-kp|--kernel-parameters> "kernel parameters"
+
+Specifies custom kernel parameters for the selected nodes.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts.
+
+=item B<-f> nodefile
+
+Specifies a file containing a set of target nodes.
+
+=item B<-v, --verbose>
+
+verbose mode.
+
+=back
+
+=head1 EXAMPLE
+
+=over
+
+=item kareboot -s -m node7
+
+Simply reboot node7.
+
+=item kareboot -e debian4all -m node6 -m node7
+
+Reboot node6 and node7 on the first partition where the environement debian4all was successfully deployed.
+
+=item kareboot -s -p sda3 -m node3
+
+Reboot node3 on the environment deployed on partition sda3.
+
+=item kareboot -s -p sda3 -m node3 -kp "console=tty0 console=ttyS0,38400n8 param=foo"
+
+Reboot node3 on the environment deployed on partition sda3 with specific kernel parameter.
+
+=back
+
+=head1 SEE ALSO
+
+L<kaenvironments(1)>, L<karecordenv(1)>, L<kadeploy(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
