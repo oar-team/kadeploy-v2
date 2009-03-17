@@ -46,8 +46,11 @@ def _exit(exit_code, dbh)
   exit(exit_code)
 end
 
-
-config = ConfigInformation::Config.new("kanodes")
+begin
+  config = ConfigInformation::Config.new("kanodes")
+rescue
+  _exit(1, nil)
+end
 
 #Connect to the Kadeploy server to get the common configuration
 client_config = ConfigInformation::Config.load_client_config_file

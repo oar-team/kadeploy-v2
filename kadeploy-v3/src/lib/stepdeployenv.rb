@@ -128,7 +128,7 @@ module SetDeploymentEnvironnment
     # Output
     # * return a thread id
     def run
-      if @config.common.use_rsh_to_deploy == "true" then
+      if @config.common.use_rsh_to_deploy then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
         connector_port = @config.common.rsh_port
       else
@@ -189,7 +189,7 @@ module SetDeploymentEnvironnment
     # Output
     # * return a thread id
     def run
-      if @config.common.use_rsh_to_deploy == "true" then
+      if @config.common.use_rsh_to_deploy then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
         connector_port = @config.common.rsh_port
       else
@@ -301,7 +301,7 @@ module SetDeploymentEnvironnment
     # Output
     # * return a thread id
     def run
-      if @config.common.use_rsh_to_deploy == "true" then
+      if @config.common.use_rsh_to_deploy then
         @config.common.taktuk_connector = @config.common.taktuk_rsh_connector
         connector_port = @config.common.rsh_port
       else

@@ -59,42 +59,49 @@ end
 # * nothing
 def add_environment(config, db)
   env = EnvironmentManagement::Environment.new
-  env.load_from_file(config.exec_specific.file, config.exec_specific.check_md5)
-  query = "INSERT INTO environments (name, \
-                                    version, \
-                                    description, \
-                                    author, \
-                                    tarball, \
-                                    postinstall, \
-                                    kernel, \
-                                    kernel_params, \
-                                    initrd, \
-                                    hypervisor, \
-                                    hypervisor_params, \
-                                    part, \
-                                    fdisk_type, \
-                                    filesystem, \
-                                    user, \
-                                    environment_kind,
-                                    demolishing_env) \
-                            VALUES (\"#{env.name}\", \
-                                    \"#{env.version}\", \
-                                    \"#{env.description}\", \
-                                    \"#{env.author}\", \
-                                    \"#{env.flatten_tarball()}\", \
-                                    \"#{env.flatten_post_install()}\", \
-                                    \"#{env.kernel}\", \
-                                    \"#{env.kernel_params}\", \
-                                    \"#{env.initrd}\", \
-                                    \"#{env.hypervisor}\", \
-                                    \"#{env.hypervisor_params}\", \
-                                    \"#{env.part}\", \
-                                    \"#{env.fdisk_type}\", \
-                                    \"#{env.filesystem}\", \
-                                    \"#{env.user}\", \
-                                    \"#{env.environment_kind}\", \
-                                    \"#{env.demolishing_env}\")"
-  db.run_query(query)
+  if env.load_from_file(config.exec_specific.file, config.exec_specific.check_md5) then
+    query = "SELECT * FROM environments WHERE name=\"#{env.name}\" AND version=\"#{env.version}\" AND user=\"#{env.user}\""
+    res = db.run_query(query)
+    if (res.num_rows != 0) then
+      puts "An environment with the name #{env.name} and the version #{env.version} has already been recorder for the user #{env.user}"
+    else
+      query = "INSERT INTO environments (name, \
+                                         version, \
+                                         description, \
+                                         author, \
+                                         tarball, \
+                                         postinstall, \
+                                         kernel, \
+                                         kernel_params, \
+                                         initrd, \
+                                         hypervisor, \
+                                         hypervisor_params, \
+                                         part, \
+                                         fdisk_type, \
+                                         filesystem, \
+                                         user, \
+                                         environment_kind,
+                                         demolishing_env) \
+                                 VALUES (\"#{env.name}\", \
+                                         \"#{env.version}\", \
+                                         \"#{env.description}\", \
+                                         \"#{env.author}\", \
+                                         \"#{env.flatten_tarball()}\", \
+                                         \"#{env.flatten_post_install()}\", \
+                                         \"#{env.kernel}\", \
+                                         \"#{env.kernel_params}\", \
+                                         \"#{env.initrd}\", \
+                                         \"#{env.hypervisor}\", \
+                                         \"#{env.hypervisor_params}\", \
+                                         \"#{env.part}\", \
+                                         \"#{env.fdisk_type}\", \
+                                         \"#{env.filesystem}\", \
+                                         \"#{env.user}\", \
+                                         \"#{env.environment_kind}\", \
+                                         \"#{env.demolishing_env}\")"
+      db.run_query(query)
+    end
+  end
 end
 
 # Delete the environment specified in Config.exec_specific.env_name
@@ -108,12 +115,11 @@ def delete_environment(config, db)
   if (config.exec_specific.version != "") then
     query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
                                       AND version=\"#{config.exec_specific.version}\" \
-                                      AND user=\"#{ENV['USER']}\""
+                                      AND user=\"#{ENV['USER']}\"" #using $USER is not really good ...
   else
     query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                      AND user=\"#{ENV['USER']}\""    
+                                      AND user=\"#{ENV['USER']}\"" #using $USER is not really good ...
   end
-  db.run_query(query)
 end
 
 # Print the environment designed by Config.exec_specific.env_name and that belongs to the user specified in Config.exec_specific.user
@@ -182,7 +188,11 @@ def _exit(exit_code, dbh)
   exit(exit_code)
 end
 
-config = ConfigInformation::Config.new("kaenv")
+begin
+  config = ConfigInformation::Config.new("kaenv")
+rescue
+  _exit(1, nil)
+end
 
 #Connect to the Kadeploy server to get the common configuration
 client_config = ConfigInformation::Config.load_client_config_file
@@ -204,7 +214,7 @@ if (config.check_config("kaenv") == true)
   when "add"
     add_environment(config, db)
   when "delete"
-    delete_environment(config,db)
+    delete_environment(config, db)
   when "print"
     print_environment(config, db)
   when "remove-demolishing-tag"

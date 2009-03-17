@@ -265,7 +265,11 @@ class KadeployServer
   end
 end
 
-config = ConfigInformation::Config.new("kadeploy")
+begin
+  config = ConfigInformation::Config.new("kadeploy")
+rescue
+  exit(1)
+end
 if (config.check_config("kadeploy") == true)
   if config.common.use_local_bt_tracker then
     Thread.new {
@@ -278,7 +282,7 @@ if (config.check_config("kadeploy") == true)
   Signal.trap("INT") do
     puts "SIGINT trapped, let's clean everything ..."
     db.disconnect
-    exit 1
+    exit(1)
   end
   db.connect(config.common.deploy_db_host,
              config.common.deploy_db_login,

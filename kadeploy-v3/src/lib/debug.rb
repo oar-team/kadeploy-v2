@@ -2,6 +2,17 @@
 require 'syslog'
 
 module Debug
+  # Print an error message
+  #
+  # Arguments
+  # * msg: error message
+  # Output
+  # * nothing
+  def Debug::client_error(msg)
+    puts "ERROR: #{msg}."
+    puts "       Use the -h or --help option for correct use."
+  end
+
   class OutputControl
     @debug_level = 0
     @client = nil

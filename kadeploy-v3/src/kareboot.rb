@@ -49,7 +49,11 @@ uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_
 kadeploy_server = DRbObject.new(nil, uri)
 common_config = kadeploy_server.get_common_config
 
-config = ConfigInformation::Config.new("kareboot", common_config.nodes_desc)
+begin
+  config = ConfigInformation::Config.new("kareboot", common_config.nodes_desc)
+rescue
+  _exit(1, nil)
+end
 config.common = common_config
 
 
