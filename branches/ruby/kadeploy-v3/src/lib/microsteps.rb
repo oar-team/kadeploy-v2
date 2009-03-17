@@ -1087,17 +1087,21 @@ module MicroStepsLibrary
     # * return true if the admin preinstall has been successfully uncompressed, false otherwise
     def ms_manage_admin_pre_install(scattering_kind)
       res = true
-      @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
-        res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
-        if (preinstall["script"] == "breakpoint") then
-          @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
-          @config.exec_specific.breakpointed = true
-          res= false
-        else
-          res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{preinstall["script"]})",
-                                                     @config.common.taktuk_connector)
-        end
-      }
+      if (@config.cluster_specific[@cluster].admin_pre_install != nil) then
+        @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
+          res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
+          if (preinstall["script"] == "breakpoint") then
+            @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
+            @config.exec_specific.breakpointed = true
+            res = false
+          elsif (preinstall["script"] != "none")
+            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{preinstall["script"]})",
+                                                       @config.common.taktuk_connector)
+          end
+        }
+      else
+        @output.debugl(4, "Bypass the admin preinstalls")
+      end
       return res
     end
 
@@ -1109,18 +1113,16 @@ module MicroStepsLibrary
     # * return true if the admin postinstall has been successfully uncompressed, false otherwise   
     def ms_manage_admin_post_install(scattering_kind)
       res = true
-      if (@config.exec_specific.environment.environment_kind != "other") then
+      if (@config.exec_specific.environment.environment_kind != "other") && (@config.cluster_specific[@cluster].admin_post_install != nil) then
         @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
           res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
           if (postinstall["script"] == "breakpoint") then 
             @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
             @config.exec_specific.breakpointed = true
             res= false
-# Note: with the current prepost install used in Grid'5000, no script must be executed at the admin post-install
-# since it is only a set of variable
-#          else
-#            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
-#                                                       @config.common.taktuk_connector)
+          elsif (postinstall["script"] != "none")
+            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+                                                       @config.common.taktuk_connector)
           end
         }
       else
@@ -1144,7 +1146,7 @@ module MicroStepsLibrary
             @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
             @config.exec_specific.breakpointed = true
             res= false
-          else
+          elsif (postinstall["script"] != "none")
             res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
                                                        @config.common.taktuk_connector)
           end

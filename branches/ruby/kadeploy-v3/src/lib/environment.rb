@@ -32,59 +32,64 @@ module EnvironmentManagement
     # * check_md5: specify if the md5sum of the tarball and the post-install files must be checked
     # Output
     # * returns true if the environment can be loaded correctly, false otherwise
-    # * raises an exception if the file does not exist
     def load_from_file(file, check_md5)
       if not File.exist?(file)
-        put "#{file} does not exist"
+        put "The file \"#{file}\" does not exist"
         return false
       else
-        @hypervisor = String.new
-        @hypervisor_params = String.new
+        @postinstall = nil
+        @demolishing_env = "0"
         IO::read(file).split("\n").each { |line|
-          if /^(\w+)\ :\ (.+)/ =~ line then
+          if /\A(\w+)\ :\ (.+)\Z/ =~ line then
             content = Regexp.last_match
             attr = content[1]
             val = content[2]
             case attr
             when "name"
-              @name = val
+              if val =~ /\A\w+\Z/ then
+                @name = val
+              else
+                puts "The environment name must only contain [a-zA-Z0-9_] characters"
+                return false
+              end
             when "version"
-              @version = val
+              if val =~ /\A\d+\Z/ then
+                @version = val
+              else
+                puts "The environment version must be a number"
+                return false
+              end
             when "description"
               @description = val
             when "author"
               @author = val
             when "tarball"
               #filename|tgz|md5sum
-              if val =~ /.+|\w+|\w+/ then
+              if val =~ /\A.+\|tgz|tbz2|ddgz|ddbz2\|\w+\Z/ then
                 @tarball = Hash.new
                 tmp = val.split("|")
                 @tarball["file"] = tmp[0]
                 @tarball["kind"] = tmp[1]
                 @tarball["md5"] = tmp[2]
               else
-                puts "invalid entry for tarball"
+                puts "The environment tarball must be described like filename|kind|md5sum where kind is tgz, tbz2, ddgz, or ddbz2"
                 return false
               end
             when "postinstall"
               #filename|tgz|md5sum,filename|tgz|md5sum,...
-              if val =~ /.+|\w+|\w+(,.+|\w+|\w+)*/ then
+              if val =~ /\A.+\|tgz|tbz2\|\w+(,.+\|tgz|tbz2\|\w+)*\Z/ then
                 @postinstall = Array.new
                 val.split(",").each { |tmp|
                   tmp2 = tmp.split("|")
                   entry = Hash.new
                   entry["file"] = tmp2[0]
                   entry["kind"] = tmp2[1]
-                  if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
-                    puts "Only tgz and tbz2 file kinds are allowed for postinstall files"
-                    return false
-                  end
                   entry["md5"] = tmp2[2]
                   entry["script"] = tmp2[3]
                   @postinstall.push(entry)
                 }
               else
-                puts "invalid entry for postinstall"
+                puts "The environment postinstall must be described like filename1|kind1|md5sum1,filename2|kind2|md5sum2,...  where kind is tgz or tbz2"
                 return false
               end
             when "kernel"
@@ -103,17 +108,20 @@ module EnvironmentManagement
               @fdisk_type = val
             when "filesystem"
               @filesystem = val
-            when "user"
-              @user = val
             when "environment_kind"
-              if (val == "linux") || (val == "xen") || (val == "other") then
+              if val =~ /\Alinux|xen|other\Z/ then
                 @environment_kind = val
               else
-                puts "#{val} is an invalid environment kind (linux and other are authorized)"
+                puts "The environment kind must be linux, xen or other"
                 return false
               end
             when "demolishing_env"
-              @demolishing_env = val
+              if val =~ /\A\d+\Z/ then
+                @demolishing_env = val
+              else
+                puts "The environment demolishing_env must be a number"
+                return false
+              end
             else
               puts "#{attr} is an invalid attribute"
               return false
@@ -121,6 +129,13 @@ module EnvironmentManagement
           end
         }
       end
+      if ((@name == nil) || (@version == nil) || (@tarball == nil) ||  (@kernel == nil) ||
+          (@initrd == nil) || (@fdisk_type == nil) || (@filesystem == nil) || (@environment_kind == nil)) then
+        puts "The name, version, tarball, kernel, initrd, fdisk_tupe, filesystem and environment_kind are mandatory"
+        return false
+      end
+      
+      @user = ENV["USER"]
       if check_md5 then
         return check_md5_digest
       else
@@ -175,21 +190,33 @@ module EnvironmentManagement
       @tarball["file"] = val[0]
       @tarball["kind"] = val[1]
       @tarball["md5"] = val[2]
-      @postinstall = Array.new
-      hash["postinstall"].split(",").each { |tmp|
-        val = tmp.split("|")
-        entry = Hash.new
-        entry["file"] = val[0]
-        entry["kind"] = val[1]
-        entry["md5"] = val[2]
-        entry["script"] = val[3]
-        @postinstall.push(entry)
-      }
+      if (hash["postinstall"] != "") then
+        @postinstall = Array.new
+        hash["postinstall"].split(",").each { |tmp|
+          val = tmp.split("|")
+          entry = Hash.new
+          entry["file"] = val[0]
+          entry["kind"] = val[1]
+          entry["md5"] = val[2]
+          entry["script"] = val[3]
+          @postinstall.push(entry)
+        }
+      else
+        @postinstall = nil
+      end
       @kernel = hash["kernel"]
       @kernel_params = hash["kernel_params"]
       @initrd = hash["initrd"]
-      @hypervisor = hash["hypervisor"]
-      @hypervisor_params = hash["hypervisor_params"]
+      if (hash["hypervisor"] != "") then
+        @hypervisor = hash["hypervisor"] 
+      else
+        @hypervisor = nil
+      end
+      if (hash["hypervisor_params"] != "") then
+        @hypervisor_params = hash["hypervisor_params"]
+      else
+        @hypervisor_params = nil 
+      end
       @part = hash["part"]
       @fdisk_type = hash["fdisk_type"]
       @filesystem = hash["filesystem"]
@@ -255,16 +282,15 @@ module EnvironmentManagement
       puts "description : #{@description}"
       puts "author : #{@author}"
       puts "tarball : #{flatten_tarball()}"
-      puts "postinstall : #{flatten_post_install()}"
+      puts "postinstall : #{flatten_post_install()}" if (@postinstall != nil)
       puts "kernel : #{@kernel}"
       puts "kernel_params : #{@kernel_params}"
       puts "initrd : #{@initrd}"
-      puts "hypervisor : #{@hypervisor}" if (@hypervisor != "")
-      puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != "")
+      puts "hypervisor : #{@hypervisor}" if (@hypervisor != nil)
+      puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != nil)
       puts "part : #{@part}"
       puts "fdisk_type : #{@fdisk_type}"
       puts "filesystem : #{@filesystem}"
-      puts "user : #{@user}"
       puts "environment_kind : #{@environment_kind}"
       puts "demolishing_env : #{@demolishing_env}"
     end
@@ -275,10 +301,12 @@ module EnvironmentManagement
 
     def flatten_post_install
       s = String.new
-      @postinstall.each_index { |i|
-        s += "#{@postinstall[i]["file"]}|#{@postinstall[i]["kind"]}|#{@postinstall[i]["md5"]}|#{@postinstall[i]["script"]}"
-        s += "," if (i < @postinstall.length - 1)
-      }
+      if (@postinstall != nil) then
+        @postinstall.each_index { |i|
+          s += "#{@postinstall[i]["file"]}|#{@postinstall[i]["kind"]}|#{@postinstall[i]["md5"]}|#{@postinstall[i]["script"]}"
+          s += "," if (i < @postinstall.length - 1)
+        }
+      end
       return s
     end
   end

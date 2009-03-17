@@ -26,7 +26,11 @@ uri = "druby://#{client_config.kadeploy_server}:#{client_config.kadeploy_server_
 kadeploy_server = DRbObject.new(nil, uri)
 
 common_config = kadeploy_server.get_common_config
-config = ConfigInformation::Config.new("kaconsole", common_config.nodes_desc)
+begin
+  config = ConfigInformation::Config.new("kaconsole", common_config.nodes_desc)
+rescue
+  _exit(1, nil)
+end
 config.common = common_config
 
 if (config.check_config("kaconsole") == true) then
@@ -51,7 +55,7 @@ if (config.check_config("kaconsole") == true) then
           state = "reaped"
           break
         else
-          sleep 1
+          sleep(1)
         end
       }
     end
