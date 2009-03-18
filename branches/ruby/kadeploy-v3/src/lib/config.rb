@@ -1009,7 +1009,7 @@ module ConfigInformation
           @exec_specific.show_all_version = true
         }
         opts.on("-u", "--user USERNAME", "Specify the user") { |u|
-          if /\A\w+\Z/ =~ u then
+          if /\A(\w+)|\*\Z/ =~ u then
             @exec_specific.user = u
           else
             Debug::client_error("Invalid user name")

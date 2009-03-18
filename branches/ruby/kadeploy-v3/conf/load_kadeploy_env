@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KADEPLOY_INSTALL_DIR=/home/ejeanvoi/work/kadeploy-svn/branches/ruby/kadeploy-v3
+KADEPLOY_INSTALL_DIR=/usr/local/kadeploy3
 export KADEPLOY_INSTALL_DIR
 export RUBYLIB=$RUBYLIB:$KADEPLOY_INSTALL_DIR/src/lib:$KADEPLOY_INSTALL_DIR/src/contrib:$KADEPLOY_INSTALL_DIR/src/contrib/cmdctrl-0.3/lib
 
