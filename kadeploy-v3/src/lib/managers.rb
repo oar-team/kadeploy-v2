@@ -317,7 +317,7 @@ module Managers
       @deployments_table_lock = deployments_table_lock
       @config = config
       @client = client
-      deploy_id = Time.now.to_i #we use the timestamp as a deploy_id
+      deploy_id = Time.now.to_f #we use the timestamp as a deploy_id
       if (@config.exec_specific.debug_level != nil) then
         @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client, 
                                            @config.exec_specific.true_user, deploy_id,
@@ -532,16 +532,18 @@ module Managers
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
       end
 
-      @config.exec_specific.environment.postinstall.each { |postinstall|
-        local_postinstall = use_local_path_dirname(postinstall["file"])
-        if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
-          @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
-          @client.get_file(postinstall["file"])
-        else
-          system("touch -a #{local_postinstall}")
-        end
-        postinstall["file"] = local_postinstall
-      }
+      if (@config.exec_specific.environment.postinstall != nil) then
+        @config.exec_specific.environment.postinstall.each { |postinstall|
+          local_postinstall = use_local_path_dirname(postinstall["file"])
+          if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
+            @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
+            @client.get_file(postinstall["file"])
+          else
+            system("touch -a #{local_postinstall}")
+          end
+          postinstall["file"] = local_postinstall
+        }
+      end
 
       if (@config.exec_specific.custom_operations != nil) then
         @config.exec_specific.custom_operations.each_key { |macro_step|
