@@ -29,9 +29,9 @@ export LC_ALL="C"
 EOF
 
 mkdir -p $DIR/root/.ssh
-cat ssh/id_deploy.pub > $DIR/root/.ssh/authorized_keys
+cat ../../ssh/ssh/id_deploy.pub > $DIR/root/.ssh/authorized_keys
 mkdir -p $DIR/.keys
-cp ssh/* $DIR/.keys/
+cp ../../ssh/* $DIR/.keys/
 
 cat > $DIR/etc/nsswitch.conf <<EOF
 passwd:     files
