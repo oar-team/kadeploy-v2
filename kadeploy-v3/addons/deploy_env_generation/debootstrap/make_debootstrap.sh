@@ -17,7 +17,7 @@ mkdir -p $DIR
 
 $DEBOOTSTRAP --include=$DEBOOTSTRAP_INCLUDE_PACKAGES --exclude=$DEBOOTSTRAP_EXCLUDE_PACKAGE lenny $DIR
 
-(cd $DIR/bin ; ln -s bash ash)
+chroot $DIR apt-get -y --force-yes install ash 2>/dev/null
 
 echo "127.0.0.1       localhost" > $DIR/etc/hosts
 
