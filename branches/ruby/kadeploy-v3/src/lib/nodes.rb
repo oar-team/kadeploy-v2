@@ -290,8 +290,10 @@ module Nodes
       }
       query = "SELECT hostname FROM nodes WHERE state=\"deploying\" AND date > #{Time.now.to_i - purge} AND (#{list})"
       res = db.run_query(query)
-      while (row = res.fetch_row) do
-        bad_nodes.push(get_node_by_host(row[0]).clone)
+      if (res != nil) then
+        while (row = res.fetch_row) do
+          bad_nodes.push(get_node_by_host(row[0]).clone)
+        end
       end
       good_nodes = diff(bad_nodes)
       return [good_nodes, bad_nodes]

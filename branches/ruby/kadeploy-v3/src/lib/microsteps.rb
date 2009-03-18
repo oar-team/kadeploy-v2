@@ -649,7 +649,25 @@ module MicroStepsLibrary
         end
       end
     end
-    
+
+    # Send the SSH key in the deployment environment
+    #
+    # Arguments
+    # * scattering_kind:  kind of taktuk scatter (tree, chain)
+    # Output
+    # * return true if the keys have been successfully copied, false otherwise
+    def ms_send_key_in_deploy_env(scattering_kind)
+      if (@config.exec_specific.key != "") then
+        cmd = "cat - >>/root/.ssh/authorized_keys"
+        return parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.key,
+                                                         cmd,
+                                                         scattering_kind,
+                                                         @config.common.taktuk_connector,
+                                                         "0")
+      end
+      return true
+    end
+
     # Change the PXE configuration
     #
     # Arguments
@@ -952,14 +970,15 @@ module MicroStepsLibrary
     end
 
 
-    # Send SSH keys ont the nodes
+    # Send the SSH key in the deployed environment
     #
     # Arguments
     # * scattering_kind:  kind of taktuk scatter (tree, chain)
     # Output
     # * return true if the keys have been successfully copied, false otherwise
     def ms_send_key(scattering_kind)
-      if (@config.exec_specific.key != "") then
+      if ((@config.exec_specific.key != "") && ((@config.exec_specific.environment.tarball["kind"] == "tgz") ||
+                                                (@config.exec_specific.environment.tarball["kind"] == "tbz2"))) then
         cmd = "cat - >>#{@config.common.environment_extraction_dir}/root/.ssh/authorized_keys"
         return parallel_exec_cmd_with_input_file_wrapper(@config.exec_specific.key,
                                                          cmd,
