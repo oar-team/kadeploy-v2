@@ -53,10 +53,11 @@ class KadeployClient
   #
   # Arguments
   # * file_name: name of the file on the client side
+  # * prefix: prefix to add to the file_name
   # Output
   # * nothing  
-  def get_file(file_name)
-    @kadeploy_server.pre_send_file(File.basename(file_name))
+  def get_file(file_name, prefix)
+    @kadeploy_server.pre_send_file(prefix + File.basename(file_name))
     sock = TCPSocket.new(@kadeploy_server.dest_host, @kadeploy_server.dest_port)
     file = File.open(file_name)
     while (buf = file.read(@kadeploy_server.tcp_buffer_size))

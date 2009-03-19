@@ -506,8 +506,8 @@ module Managers
     # * file: name of the file on the client side
     # Output
     # * returns the name of the file in the local cache directory
-    def use_local_path_dirname(file)
-      return @config.common.kadeploy_cache_dir + "/" + File.basename(file)
+    def use_local_path_dirname(file, prefix)
+      return @config.common.kadeploy_cache_dir + "/" + prefix + File.basename(file)
     end
 
     # Grab files from the client side (tarball, ssh public key, user postinstall, files for custom operations)
@@ -517,10 +517,12 @@ module Managers
     # Output
     # * nothing
     def grab_user_files
-      local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball["file"])
+      env_prefix = "e-#{@config.exec_specific.environment.id}--"
+      user_prefix = "u-#{@config.exec_specific.true_user}--"
+      local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball["file"], env_prefix)
       if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball["md5"]) then
         @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball["file"]}")
-        @client.get_file(@config.exec_specific.environment.tarball["file"])
+        @client.get_file(@config.exec_specific.environment.tarball["file"], env_prefix)
       else
         system("touch -a #{local_tarball}")
       end
@@ -528,16 +530,16 @@ module Managers
 
       if @config.exec_specific.key != "" then
         @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
-        @client.get_file(@config.exec_specific.key)
-        @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key)
+        @client.get_file(@config.exec_specific.key, user_prefix)
+        @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key, user_prefix)
       end
 
       if (@config.exec_specific.environment.postinstall != nil) then
         @config.exec_specific.environment.postinstall.each { |postinstall|
-          local_postinstall = use_local_path_dirname(postinstall["file"])
+          local_postinstall = use_local_path_dirname(postinstall["file"], env_prefix)
           if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
             @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
-            @client.get_file(postinstall["file"])
+            @client.get_file(postinstall["file"], env_prefix)
           else
             system("touch -a #{local_postinstall}")
           end
@@ -551,8 +553,8 @@ module Managers
             @config.exec_specific.custom_operations[macro_step][micro_step].each { |entry|
               if (entry[0] == "send") then
                 @output.debugl(4, "Grab the file #{entry[1]} for custom operations")
-                @client.get_file(entry[1])
-                entry[1] = use_local_path_dirname(entry[1])
+                @client.get_file(entry[1], user_prefix)
+                entry[1] = use_local_path_dirname(entry[1], user_prefix)
               end
             }
           }
