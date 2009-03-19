@@ -64,7 +64,7 @@ function check_kadeploy_user_dir()
   if [ "$USER" == "root" -o "$UID" -eq 0 ]; then
     ROOT_HOMEDIR="/root"
   else
-    ROOT_HOMEDIR=$(getent passwd|grep "^${USER}:"|cut -d: -f6)
+    ROOT_HOMEDIR=$(getent passwd|grep $(echo $UID)|cut -d: -f6)
   fi
   if [ -n "$ROOT_HOMEDIR" ]; then
     kudir="$ROOT_HOMEDIR/$KADEPLOY_USER_DIR"
