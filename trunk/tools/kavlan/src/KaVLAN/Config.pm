@@ -50,12 +50,13 @@ sub parseConfigurationFile{
                 }
             } else {
 #Remove spaces from the line
-                $_ =~ s/ //g;
+                $_ =~ s/^\s+//g;
+                $_ =~ s/\s+$//g;
 #Remove the \n and the \t
                 $_ =~ s/\n//;
                 $_ =~ s/\t//g;
 #Split the informations around the '='
-                ($key,$value) = split(/=/,$_);
+                ($key,$value) = split(/\s*=\s*/,$_);
 #Do the association between the line and the upper block which is the information for
                 if($typeLine =~ m/Switch/){
                     $switch[$nbSwitch]{$key}=$value;

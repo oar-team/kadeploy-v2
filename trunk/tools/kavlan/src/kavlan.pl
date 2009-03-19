@@ -12,18 +12,13 @@ package kavlan;
 use strict;
 use Getopt::Long;
 
-use SNMP;
-
-use const;
-use vlan;
+use lib "/usr/local/lib/perl5";
 
 use Data::Dumper;
 
+use const;
+# use vlan;
 use KaVLAN::Config;
-use KaVLAN::summit;
-use KaVLAN::hp3400cl;
-use KaVLAN::Cisco3750;
-use KaVLAN::Foundry;
 use KaVLAN::RightsMgt;
 
 my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
@@ -68,65 +63,6 @@ my ($site,$router,$switch) = KaVLAN::Config::parseConfigurationFile();
 
 $const::VLAN_DEFAULT_NAME=$site->{"VlanDefaultName"};
 
-#-----------------------------
-# GET APPLIANCE CONFIGURATION
-#-----------------------------
-
-#Get the configurations informations of the appliances
-my $routerConfig;
-my @switchConfig;
-
-#Verifying if the -s option is activated to avoid loading router configuration
-if(not defined $options{"s"}){
-    if($router->{"Type"} eq "summit"){$routerConfig = KaVLAN::summit->new();}
-    elsif($router->{"Type"} eq "hp3400cl"){$routerConfig =  KaVLAN::hp3400cl->new();}
-    elsif($router->{"Type"} eq "Cisco3750"){$routerConfig = KaVLAN::Cisco3750->new();}
-    elsif($router->{"Type"} eq "Foundry"){$routerConfig = KaVLAN::Foundry->new();}
-    else{&mydie("ERROR : The router type doesn't exist");}
-}
-
-#We are loading all the switch information
-foreach my $i (0 .. $#{$switch}){
-    if($switch->[$i]{"Type"} eq "summit"){
-        $switchConfig[$i] = KaVLAN::summit->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "hp3400cl"){
-        $switchConfig[$i] =  KaVLAN::hp3400cl->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "Cisco3750"){
-        $switchConfig[$i] = KaVLAN::Cisco3750->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "Foundry"){
-        $switchConfig[$i] = KaVLAN::Foundry->new();
-    }
-    else{
-        &mydie("ERROR : The switch type doesn't exist");
-    }
-}
-
-#---------------------------------------
-# INITIALIZATION OF SNMP COMMUNICATIONS
-#---------------------------------------
-
-#SNMP informations
-my $COMMUNITY = (defined $site->{"SNMPCommunity"}) ? $site->{"SNMPCommunity"} : "private";
-my $routerSession;
-my @switchSession;
-
-#Create the SNMP sessions
-if(not defined $options{"s"}){
-    $routerSession= new SNMP::Session(DestHost => $router->{"IP"},
-            Community => $COMMUNITY,
-            Version => "2c",
-            Timeout => 300000);
-}
-foreach my $i (0 .. $#{$switch}){
-    print "establish session to remote SNMP server $switch->[$i]{IP}\n" if ($const::VERBOSE);
-    $switchSession[$i]= new SNMP::Session(DestHost => $switch->[$i]{"IP"},
-            Community => $COMMUNITY,
-            Version => "2c",
-            Timeout => 300000);
-}
 
 #--------------------------
 # MANAGE DATABASE
@@ -143,8 +79,12 @@ my $dbh = &KaVLAN::RightsMgt::connect($dbhost,$dbname,$dbuser,$dbpasswd);
 # MANAGE ARGUMENTS
 #--------------------------
 
-# TODO: unsecure, just for testing.
-my $USER= $ENV{USER};
+my $USER;
+if ($ENV{KAUSER}) {
+    $USER=$ENV{KAUSER};
+} else {
+    $USER=$ENV{USER};
+}
 
 if ($options{"r"}) {   # get-network-range
     my $VLAN  = &get_vlan();
@@ -170,6 +110,7 @@ if ($options{"r"}) {   # get-network-range
     if  ($options{'i'}) { # vlan id is set
         @nodes = get_nodes($options{"f"}, $options{"m"});
     } elsif ($options{'j'}) {
+        &mydie("Can't specify nodes with -f or -m when jobid is given, abort!") if ($options{"f"} or $options{"m"});
         # use OAR job id to get the nodes
         @nodes = &get_nodes_from_oarjob($options{"j"});
     } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
@@ -182,12 +123,10 @@ if ($options{"r"}) {   # get-network-range
     if (defined $VLAN) {
         &KaVLAN::Config::check_nodes_configuration(\@nodes,$site,$switch);
         unless (&KaVLAN::RightsMgt::check_rights_nodelist($dbh, $USER,\@nodes,$VLAN)) {
-            die "No rights to change VLAN, abort" ;
+            &mydie ("User does not have appropriate rights on VLAN, abort") ;
         }
         &const::verbose("User $USER has enough rights to change the VLAN of all nodes, continue");
-        foreach my $node (@nodes) {
-            &set_vlan($node,$VLAN);
-        }
+        &set_vlan(\@nodes,$VLAN);
     } else {
         &mydie("No VLAN found, abort!");
     }
@@ -225,18 +164,15 @@ if ($options{"r"}) {   # get-network-range
 ## -----------------------------------------------------------------------
 
 sub set_vlan {
-    my $node = shift;
+    my $nodes = shift;
     my $VLAN = shift;
-    my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
-    my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
-
+    my $backend_cmd =  $site->{"BackendCmd"};
     # we have already checked before (in check_nodes_configuration
     # )that the indice is defined and we have rights to modify the
     # port, therefore, we can skip checks here
-    my $otherMode;
-    $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
-    &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-    print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"q"};
+    &KaVLAN::RightsMgt::disconnect($dbh);
+    my $nodelist = join(" ",@{$nodes});
+    exec("$backend_cmd -s -i $VLAN $nodelist" );
 }
 
 sub get_vlan {
@@ -374,7 +310,7 @@ sub usage(){
     my $status= shift;
     $status=1 unless defined $status;
 print "Version $const::VERSION
-USAGE : $0 [options]
+USAGE : kavlan [options]
        -r|--get-network-range
        -g|--get-network-gateway
        -l|--get-nodelist
