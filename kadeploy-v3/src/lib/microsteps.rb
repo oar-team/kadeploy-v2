@@ -298,7 +298,7 @@ module MicroStepsLibrary
       must_extract = false
       archive = @config.exec_specific.environment.tarball["file"]
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+      prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
       files.each { |file|
         if not (File.exist?(dest_dir + "/" + prefix_in_cache + file)) then
           must_extract = true
@@ -706,7 +706,7 @@ module MicroStepsLibrary
         else
           case @config.common.bootloader
           when "pure_pxe"
-            prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+            prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
             case @config.exec_specific.environment.environment_kind
             when "linux"
               kernel = prefix_in_cache + @config.exec_specific.environment.kernel
@@ -753,7 +753,7 @@ module MicroStepsLibrary
                                                    @config.common.tftp_cfg)
             else
               # @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
-              prefix_in_cache = "e" + @config.exec_specific.environment.id + "v" + @config.exec_specific.environment.version + "--"
+              prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
               kernel = prefix_in_cache + @config.exec_specific.environment.kernel
               initrd = prefix_in_cache + @config.exec_specific.environment.initrd
               hypervisor = prefix_in_cache + @config.exec_specific.environment.hypervisor
