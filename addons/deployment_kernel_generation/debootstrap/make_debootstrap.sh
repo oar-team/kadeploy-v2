@@ -4,15 +4,14 @@ DIR=debootstrap
 SCRIPTS_DIR=scripts
 
 DEBOOTSTRAP="/usr/sbin/debootstrap"
-DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,grub
+DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,grub,hdparm
 DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,adduser,cron,logrotate,laptop-detect,tasksel,tasksel-data,dhcp3-client,dhcp3-common,wget
 
 
 mkdir -p $DIR
 
 $DEBOOTSTRAP --include=$DEBOOTSTRAP_INCLUDE_PACKAGES --exclude=$DEBOOTSTRAP_EXCLUDE_PACKAGE etch $DIR
-
-(cd $DIR/bin ; ln -s bash ash)
+chroot $DIR apt-get -y --force-yes install ash 2>/dev/null
 
 echo "127.0.0.1       localhost" > $DIR/etc/hosts
 
