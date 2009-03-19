@@ -31,7 +31,7 @@ my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
 my $OARSTAT="oarstat"; # oarstat command
 my $VLAN_PROPERTY_NAME="vlan"; # OAR property name of the VLAN ressource
 my $VLAN_RANGE_NAME="NetVlan"; # config name of network range (site section)
-my $VLAN_GATEWAY_NAME="IPVlan"; # config name of network range (router section)
+my $VLAN_GATEWAY_NAME="IPVlan"; # config name of network gateway (router section)
 
 # Verify that there is at least one argument
 if($#ARGV < 0){
@@ -82,7 +82,7 @@ if(not defined $options{"s"}){
     elsif($router->{"Type"} eq "hp3400cl"){$routerConfig =  KaVLAN::hp3400cl->new();}
     elsif($router->{"Type"} eq "Cisco3750"){$routerConfig = KaVLAN::Cisco3750->new();}
     elsif($router->{"Type"} eq "Foundry"){$routerConfig = KaVLAN::Foundry->new();}
-    else{die "ERROR : The router type doesn't exist";}
+    else{&mydie("ERROR : The router type doesn't exist");}
 }
 
 #We are loading all the switch information
@@ -100,7 +100,7 @@ foreach my $i (0 .. $#{$switch}){
         $switchConfig[$i] = KaVLAN::Foundry->new();
     }
     else{
-        die "ERROR : The switch type doesn't exist";
+        &mydie("ERROR : The switch type doesn't exist");
     }
 }
 
@@ -136,7 +136,7 @@ my $dbpasswd = $site->{DbPasswd};
 my $dbhost   = $site->{DbHost};
 my $dbname   = $site->{DbName};
 
-die "Database not configured correctly, check your configuration file" unless ($dbuser and $dbpasswd and $dbhost and $dbname);
+&mydie("Database not configured correctly, check your configuration file") unless ($dbuser and $dbpasswd and $dbhost and $dbname);
 my $dbh = &KaVLAN::RightsMgt::connect($dbhost,$dbname,$dbuser,$dbpasswd);
 
 #--------------------------
@@ -151,18 +151,14 @@ if ($options{"r"}) {   # get-network-range
     if ($site->{$VLAN_RANGE_NAME.$VLAN}) {
         print $site->{$VLAN_RANGE_NAME.$VLAN}."\n";
     } else {
-        print STDERR "ERROR : Unknown network range for vlan $VLAN\n";
-        print STDERR "ERROR : please check your configuration file\n";
-        exit 1;
+        &mydie("ERROR : Unknown network range for vlan $VLAN\nERROR : please check your configuration file");
     }
 } elsif ($options{"g"}) { # get-network-gateway
     my $VLAN  = &get_vlan();
     if ($router->{$VLAN_GATEWAY_NAME.$VLAN}) {
         print $router->{$VLAN_GATEWAY_NAME.$VLAN}."\n";
     } else {
-        print STDERR "ERROR : Unknown network gateway for vlan $VLAN\n";
-        print STDERR "ERROR : please check your configuration file\n";
-        exit 1;
+        &mydie("ERROR : Unknown network gateway for vlan $VLAN\nERROR : please check your configuration file");
     }
 } elsif ($options{"d"} ){ # disable dhcp server for the given vlan
     # TODO
@@ -178,11 +174,10 @@ if ($options{"r"}) {   # get-network-range
         @nodes = &get_nodes_from_oarjob($options{"j"});
     } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
         # use OAR nodefile
-        print "use oar nodefile: $OAR_NODEFILE\n" unless $options{"quiet"};
+        print "use oar nodefile: $OAR_NODEFILE\n" unless $options{"q"};
         @nodes = get_nodes($OAR_NODEFILE, "");
     } else {
-        print "No nodes specified: use -m, -f or -j\n";
-        exit 1;
+        &mydie("No nodes specified: use -m, -f or -j");
     };
     if (defined $VLAN) {
         &KaVLAN::Config::check_nodes_configuration(\@nodes,$site,$switch);
@@ -194,9 +189,9 @@ if ($options{"r"}) {   # get-network-range
             &set_vlan($node,$VLAN);
         }
     } else {
-        die "No VLAN found, abort!";
+        &mydie("No VLAN found, abort!");
     }
-    print "all nodes are configured in the vlan $VLAN\n" unless $options{"quiet"};
+    print "all nodes are configured in the vlan $VLAN\n" unless $options{"q"};
 } elsif ($options{"V"} ){ # get vlan id of job
     print &get_vlan_from_oar($options{'j'});
     print "\n";
@@ -218,7 +213,7 @@ if ($options{"r"}) {   # get-network-range
     @nodes = map { s/^(\w+-\d+)\./$1\-vlan-$VLAN\./; $_ } @nodes_default;
     foreach (@nodes) {print "$_\n";};
 } else {
-    die "no action specified, abort";
+    &mydie("no action specified, abort");
 }
 
 
@@ -241,7 +236,7 @@ sub set_vlan {
     my $otherMode;
     $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
     &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
-    print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"quiet"};
+    print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"q"};
 }
 
 sub get_vlan {
@@ -269,7 +264,7 @@ sub get_vlan_from_oar {
         &const::verbose("try to get VLAN id from OAR_PROPERTIES file");
         return &get_vlan_property($OAR_PROPERTIES,"");
     } else {
-        die "no job specified, use -j";
+        &mydie("no job specified, use -j");
     }
 }
 
@@ -290,9 +285,8 @@ sub get_nodes_from_oarjob {
         close(OARSTAT);
         return @nodes_default;
     } else {
-        die "Wrong jobid given ($JOBID), abort!";
+        &mydie("Wrong jobid given ($JOBID), abort!");
     }
-
 }
 
 # return: list of nodes, or die if empty nodelist
@@ -339,13 +333,13 @@ sub check_node_name {
 sub check_vlan {
     my $vlan_id = shift;
 
-    die "no vlan_id " unless defined $vlan_id;
+    &mydie("no vlan_id") unless defined $vlan_id;
     if ($vlan_id =~ m/default/i) {
         return $const::DEFAULT_NAME;
     } elsif ($vlan_id =~ m/^\d+$/)  {
         return $vlan_id if ($vlan_id >= 1 and $vlan_id <= $const::VLAN_MAX_ID);
     };
-    die "abort: bad VLAN id ($vlan_id)";
+    &mydie("abort: bad VLAN id ($vlan_id)");
 }
 
 sub get_vlan_property {
@@ -367,7 +361,13 @@ sub get_vlan_property {
         }
     }
     close(PROP);
-    die "Can't find VLAN from OAR properties of job $jobid, abort";
+    &mydie("Can't find VLAN from OAR properties of job $jobid, abort");
+}
+
+sub mydie {
+    my $msg  = shift;
+    print STDERR "$msg\n" unless $options{"q"};
+    exit 1;
 }
 
 sub usage(){
