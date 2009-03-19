@@ -29,10 +29,9 @@ module EnvironmentManagement
     #
     # Arguments
     # * file: filename
-    # * check_md5: specify if the md5sum of the tarball and the post-install files must be checked
     # Output
     # * returns true if the environment can be loaded correctly, false otherwise
-    def load_from_file(file, check_md5)
+    def load_from_file(file)
       if not File.exist?(file)
         put "The file \"#{file}\" does not exist"
         return false
@@ -64,32 +63,42 @@ module EnvironmentManagement
             when "author"
               @author = val
             when "tarball"
-              #filename|tgz|md5sum
-              if val =~ /\A.+\|tgz|tbz2|ddgz|ddbz2\|\w+\Z/ then
+              #filename|tgz
+              if val =~ /\A.+\|(tgz|tbz2|ddgz|ddbz2)\Z/ then
                 @tarball = Hash.new
                 tmp = val.split("|")
                 @tarball["file"] = tmp[0]
+                if not File.readable?(@tarball["file"]) then
+                  puts "The tarball file #{@tarball["file"]} cannot be read"
+                  return false
+                end
                 @tarball["kind"] = tmp[1]
-                @tarball["md5"] = tmp[2]
+                puts "Computing the md5sum for #{@tarball["file"]}"
+                @tarball["md5"] = get_md5(@tarball["file"])
               else
                 puts "The environment tarball must be described like filename|kind|md5sum where kind is tgz, tbz2, ddgz, or ddbz2"
                 return false
               end
             when "postinstall"
-              #filename|tgz|md5sum,filename|tgz|md5sum,...
-              if val =~ /\A.+\|tgz|tbz2\|\w+(,.+\|tgz|tbz2\|\w+)*\Z/ then
+              #filename|tgz|script,filename|tgz|script...
+              if val =~ /\A.+\|(tgz|tbz2)\|.+(,.+\|(tgz|tbz2)\|.+)*\Z/ then
                 @postinstall = Array.new
                 val.split(",").each { |tmp|
                   tmp2 = tmp.split("|")
                   entry = Hash.new
                   entry["file"] = tmp2[0]
+                  if not File.readable?(entry["file"]) then
+                    puts "The post-install file #{entry["file"]} cannot be read"
+                    return false
+                  end
                   entry["kind"] = tmp2[1]
-                  entry["md5"] = tmp2[2]
-                  entry["script"] = tmp2[3]
+                  puts "Computing the md5sum for #{entry["file"]}"
+                  entry["md5"] = get_md5(entry["file"])
+                  entry["script"] = tmp2[2]
                   @postinstall.push(entry)
                 }
               else
-                puts "The environment postinstall must be described like filename1|kind1|md5sum1,filename2|kind2|md5sum2,...  where kind is tgz or tbz2"
+                puts "The environment postinstall must be described like filename1|kind1|script1,filename2|kind2|script2,...  where kind is tgz or tbz2"
                 return false
               end
             when "kernel"
@@ -131,16 +140,11 @@ module EnvironmentManagement
       end
       if ((@name == nil) || (@version == nil) || (@tarball == nil) ||  (@kernel == nil) ||
           (@initrd == nil) || (@fdisk_type == nil) || (@filesystem == nil) || (@environment_kind == nil)) then
-        puts "The name, version, tarball, kernel, initrd, fdisk_tupe, filesystem and environment_kind are mandatory"
+        puts "The name, version, tarball, kernel, initrd, fdisk_type, filesystem and environment_kind are mandatory"
         return false
       end
       
       @user = ENV["USER"]
-      if check_md5 then
-        return check_md5_digest
-      else
-        return true
-      end
     end
 
     # Load an environment from a database
@@ -249,6 +253,16 @@ module EnvironmentManagement
       return true
     end
 
+    # Compute de md5 of a file
+    #
+    # Arguments
+    # * file: filename
+    # Output
+    # * return the md5 of the file
+    def get_md5(file)
+      return Digest::MD5.hexdigest(File.read(file))
+    end
+
     # Print the header
     #
     # Arguments
@@ -296,10 +310,25 @@ module EnvironmentManagement
     end
 
     def flatten_tarball
-      return "#{@tarball["file"]}|#{@tarball["kind"]}|#{@tarball["md5"]}"
+      return "#{@tarball["file"]}|#{@tarball["kind"]}"
     end
 
     def flatten_post_install
+      s = String.new
+      if (@postinstall != nil) then
+        @postinstall.each_index { |i|
+          s += "#{@postinstall[i]["file"]}|#{@postinstall[i]["kind"]}|#{@postinstall[i]["script"]}"
+          s += "," if (i < @postinstall.length - 1)
+        }
+      end
+      return s
+    end
+
+    def flatten_tarball_with_md5
+      return "#{@tarball["file"]}|#{@tarball["kind"]}|#{@tarball["md5"]}"
+    end
+
+    def flatten_post_install_with_md5
       s = String.new
       if (@postinstall != nil) then
         @postinstall.each_index { |i|

@@ -960,7 +960,6 @@ module ConfigInformation
       @exec_specific.user = ENV['USER'] #By default, we use the current user
       @exec_specific.show_all_version = false
       @exec_specific.version = String.new
-      @exec_specific.check_md5 = false
       return load_kaenv_cmdline_options()
     end
 
@@ -986,9 +985,6 @@ module ConfigInformation
             @exec_specific.operation = "add"
             @exec_specific.file = f
           end
-        }
-        opts.on("-c" , "--check-md5", "Check the md5sum of the tarball and the post-install files") {
-          @exec_specific.check_md5 = true
         }
         opts.on("-d", "--delete ENVNAME", "Delete the environment from the environment database") { |n|
           @exec_specific.operation = "delete"
@@ -1023,7 +1019,15 @@ module ConfigInformation
             Debug::client_error("Invalid version number")
             return false
           end
-        }               
+        }
+        opts.on("--update-tarball-md5 ENVNAME", "Update the MD5 value of the tarball") { |n|
+          @exec_specific.operation = "update-tarball-md5"
+          @exec_specific.env_name = n
+        }
+        opts.on("--update-postinstalls-md5 ENVNAME", "Update the MD5 value of the postinstall files") { |n|
+          @exec_specific.operation = "update-postinstalls-md5"
+          @exec_specific.env_name = n
+        }
       end
       begin
         opts.parse!(ARGV)
@@ -1052,6 +1056,8 @@ module ConfigInformation
       when "delete"
       when "list"
       when "print"
+      when "update-tarball-md5"
+      when "update-postinstalls-md5"
       when "remove-demolishing-tag"
       else
         Debug::client_error("You must choose an operation")
