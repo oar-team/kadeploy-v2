@@ -11,9 +11,6 @@ package kavlan;
 
 use strict;
 use Getopt::Long;
-
-use lib "/usr/local/lib/perl5";
-
 use Data::Dumper;
 
 use const;
@@ -108,15 +105,15 @@ if ($options{"r"}) {   # get-network-range
     my @nodes;
     my $VLAN  = &get_vlan();
     if  ($options{'i'}) { # vlan id is set
-        @nodes = get_nodes($options{"f"}, $options{"m"});
+        @nodes = &KaVLAN::Config::get_nodes($options{"f"}, $options{"m"});
     } elsif ($options{'j'}) {
         &mydie("Can't specify nodes with -f or -m when jobid is given, abort!") if ($options{"f"} or $options{"m"});
         # use OAR job id to get the nodes
         @nodes = &get_nodes_from_oarjob($options{"j"});
     } elsif ($OAR_NODEFILE) { # no job or vlan id specified, look for OAR env. variables
         # use OAR nodefile
-        print "use oar nodefile: $OAR_NODEFILE\n" unless $options{"q"};
-        @nodes = get_nodes($OAR_NODEFILE, "");
+        print "Take node list from OAR nodefile: $OAR_NODEFILE\n" unless $options{"q"};
+        @nodes = &KaVLAN::Config::get_nodes($OAR_NODEFILE, "");
     } else {
         &mydie("No nodes specified: use -m, -f or -j");
     };
@@ -142,7 +139,7 @@ if ($options{"r"}) {   # get-network-range
     if ($JOBID) {
         @nodes_default = &get_nodes_from_oarjob($JOBID);
     } elsif ($OAR_NODEFILE) {
-        @nodes_default = &get_nodes($OAR_NODEFILE, "");
+        @nodes_default = &KaVLAN::Config::get_nodes($OAR_NODEFILE, "");
     } else {
         die "get node list: no job specified, use -j";
     }
@@ -167,10 +164,11 @@ sub set_vlan {
     my $nodes = shift;
     my $VLAN = shift;
     my $backend_cmd =  $site->{"BackendCmd"};
+    &KaVLAN::RightsMgt::disconnect($dbh);
+    &mydie("Backend command not configured ! abort") unless ($backend_cmd);
     # we have already checked before (in check_nodes_configuration
     # )that the indice is defined and we have rights to modify the
     # port, therefore, we can skip checks here
-    &KaVLAN::RightsMgt::disconnect($dbh);
     my $nodelist = join(" ",@{$nodes});
     exec("$backend_cmd -s -i $VLAN $nodelist" );
 }
@@ -225,45 +223,6 @@ sub get_nodes_from_oarjob {
     }
 }
 
-# return: list of nodes, or die if empty nodelist
-sub get_nodes {
-    my $nodefile = shift;  # filename
-    my $nodes    = shift;  # arrayref
-
-    my @nodelist;
-    if ($nodefile) {
-        # open file, uniquify nodes
-        open(NODEFILE, "uniq $nodefile|") or die "can't open nodefile ($nodefile), abort ! $!";
-        while (<NODEFILE>) {
-            chomp;
-            if (&check_node_name($_)) {
-                push @nodelist, $_;
-            } else {
-                warn "skip node $_";
-            }
-        }
-        close(NODEFILE);
-    }
-
-    if ($nodes) {
-        &const::verbose("read node list (-m )");
-        my %seen = ();
-        foreach my $elem ( @$nodes )
-            {
-                next unless &check_node_name($elem);
-                next if $seen{ $elem }++;
-                push @nodelist, $elem;
-            }
-    }
-    return @nodelist;
-}
-
-# check if node name is valid (with or without domain)
-# => node-XX.site.grid5000.fr or node-xx-ethXX.site.grid5000.fr
-sub check_node_name {
-    my $nodename = shift;
-    return $nodename =~ m/^\w+-\d+(-\w+)?(\.\w+\.\w+\.\w+)?$/;
-}
 
 # check vlan_id parameter when given by the user
 sub check_vlan {

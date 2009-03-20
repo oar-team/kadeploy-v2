@@ -2,6 +2,7 @@
 
 USERNAME=`id -u -n`
 KAVLANUSER=kavlan
-KAVLANSERV=services
 export KAUSER=$USERNAME
-sudo -u $KAVLANUSER /usr/local/sbin/kavlan-front.pl $*
+export PERL5LIB=/usr/local/kavlan/perl5
+export KAVLANDIR=/usr/local/kavlan
+exec sudo -u $KAVLANUSER $KAVLANDIR/cmd/`basename $0` "$@"

@@ -8,7 +8,7 @@
 
 package KaVLAN::Config;
 
-@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort check_nodes_configuration);
+@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort check_nodes_configuration get_nodes);
 
 use warnings;
 use strict;
@@ -249,6 +249,46 @@ sub check_nodes_configuration {
             die "ERROR : you can't modify this port";
         }
     }
+}
+
+# return: list of nodes, or die if empty nodelist
+sub get_nodes {
+    my $nodefile = shift;  # filename
+    my $nodes    = shift;  # arrayref
+
+    my @nodelist;
+    if ($nodefile) {
+        # open file, uniquify nodes
+        open(NODEFILE, "uniq $nodefile|") or die "can't open nodefile ($nodefile), abort ! $!";
+        while (<NODEFILE>) {
+            chomp;
+            if (&check_node_name($_)) {
+                push @nodelist, $_;
+            } else {
+                warn "skip node $_";
+            }
+        }
+        close(NODEFILE);
+    }
+
+    if ($nodes) {
+        &const::verbose("read node list (-m )");
+        my %seen = ();
+        foreach my $elem ( @$nodes )
+            {
+                next unless &check_node_name($elem);
+                next if $seen{ $elem }++;
+                push @nodelist, $elem;
+            }
+    }
+    return @nodelist;
+}
+
+# check if node name is valid (with or without domain)
+# => node-XX.site.grid5000.fr or node-xx-ethXX.site.grid5000.fr
+sub check_node_name {
+    my $nodename = shift;
+    return $nodename =~ m/^\w+-\d+(-\w+)?(\.\w+\.\w+\.\w+)?$/;
 }
 
 1;
