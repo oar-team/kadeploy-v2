@@ -10,13 +10,10 @@
 package kavlan;
 
 use strict;
+use lib "/usr/local/kavlan/perl5";
+
 use Getopt::Long;
-
 use SNMP;
-use lib "/usr/local/lib/perl5";
-
-use Data::Dumper;
-
 use const;
 use vlan;
 use KaVLAN::Config;
@@ -130,7 +127,7 @@ if ($ENV{KAUSER}) {
 }
 
 if ($options{"s"} ){ # set vlan for given nodes
-    my @nodes=@ARGV;
+    my @nodes = &KaVLAN::Config::get_nodes($options{"f"}, $options{"m"});
     my $VLAN  = $options{'i'};
     if (defined $VLAN) {
         &KaVLAN::Config::check_nodes_configuration(\@nodes,$site,$switch);
