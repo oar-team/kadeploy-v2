@@ -169,8 +169,8 @@ sub set_vlan {
     # we have already checked before (in check_nodes_configuration
     # )that the indice is defined and we have rights to modify the
     # port, therefore, we can skip checks here
-    my $nodelist = join(" ",@{$nodes});
-    exec("$backend_cmd -s -i $VLAN $nodelist" );
+    my $nodelist = join(" -m ",@{$nodes});
+    exec("$backend_cmd -s -i $VLAN -m $nodelist" );
 }
 
 sub get_vlan {
