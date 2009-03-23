@@ -13,6 +13,7 @@ TEMP_FILES_DIR="/tmp"
 NL_FNAME=""
 CLUSTER_NAME=""
 CLUSTER_FILES=""
+TMP_USED=0
 
 # Makefile Substituted variables
 DEPLOYCONFDIR=__SUBST__
@@ -55,8 +56,46 @@ function kadeploy_split_nodes()
     done
 }
 
-#_______________________________________________
-# Check whether kadeploy User's directory exists
+#___________________________
+# Check if directory exists
+check_dir_exists()
+{
+  local dir=$1
+  if [ ! -d "$dir" ]; then
+    ( mkdir ${dir} || die "failed to create ${dir}" )
+  fi
+  ( chmod 755 ${dir} || die "failed to chmod ${dir}" )	    
+}
+
+#______________________________________
+# Check if directory is open to others
+check_access()
+{
+  local dir=$1
+  or=$(stat ${dir} -c "%A"|sed -e 's/^.......//g')
+  if [ "$or" == "r-x" -o "$or" == "rwx" ]; then
+    return 0
+  else
+    return 1
+  fi	    
+} 
+
+#__________________________________________________________________
+# Check if Kadeploy user's directory is accessible for deploy user
+check_kudir_access()
+{
+  check_access ${ROOT_HOMEDIR}
+  if [ "$?" -eq 0 ]; then
+    check_access ${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}
+    if [ "$?" -eq 0 ]; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+#___________________________________________
+# Check if kadeploy User's directory exists
 function check_kadeploy_user_dir()
 {
   local $kudir
@@ -69,15 +108,9 @@ function check_kadeploy_user_dir()
   if [ -n "$ROOT_HOMEDIR" ]; then
     kudir="$ROOT_HOMEDIR/$KADEPLOY_USER_DIR"
   else
-    Die "Non-existent home directory"
+    die "Non-existent home directory"
   fi
-  if [ ! -d "$kudir" ]; then
-    ( mkdir ${kudir} || die "failed to create ${kudir}" )
-    ( chmod 755 ${kudir} || die "failed to chmod ${kudir}" )
-  fi
-  if [ ! -r "$kudir" ]; then
-    ( chmod 755 ${kudir} || die "failed to chmod ${kudir}" )
-  fi
+  check_dir_exists ${kudir}
 }
 
 #____________________________________
@@ -117,6 +150,9 @@ function clean_tmp_files()
   ( rm -f ${NL_FNAME}.*.${TSTAMP} || \
   warn "failed to remove temporary files in ${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}" )
   sudo -u $DEPLOYUSER $DEPLOYDIR/bin/kadeploy --rmnodefilesintmp $USER -x $NL_APPEND
+  if [ "$TMP_USED" -eq 1 ]; then
+    rm -rf ${TEMP_FILES_DIR}/${KADEPLOY_USER_DIR}_${USER}
+  fi
 }
 
 
@@ -179,7 +215,17 @@ elif [ -x $DEPLOYDIR/bin/`basename $0` ]; then
       fi
 	# split nodes into many lists as clusters implied in deployment
 	# Check cases whether nodes are provided by a file or a parameter's list
-	NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
+	check_kudir_access
+	if [ "$?" -eq 0 ]; then
+	  NL_FNAME="${ROOT_HOMEDIR}/${KADEPLOY_USER_DIR}/${NODES_LIST}"
+	else
+	  # Kadeploy user's directory not accessible to deploy user
+	  # -> switch to /tmp for nodes list file
+	  tmp_kudir="${TEMP_FILES_DIR}/${KADEPLOY_USER_DIR}_${USER}"
+	  check_dir_exists ${tmp_kudir}
+	  NL_FNAME="${tmp_kudir}/${NODES_LIST}"
+	  TMP_USED=1
+	fi
 	NLIST="${NL_FNAME}.${TSTAMP}"
 	if [ -n "$filename" ]; then
 	  cat ${filename}|sort -n|uniq > ${NLIST}
