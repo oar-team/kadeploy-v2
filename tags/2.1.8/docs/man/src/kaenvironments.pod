@@ -1,0 +1,79 @@
+=head1 NAME
+
+kaenvironments - list and remove an environment.
+
+=head1 SYNOPSIS
+
+B<kaenvironments>  B<-e|--environment> environment_name [B<-l> username] [B<-c|--cluster> clustername]
+
+B<kaenvironments>  B<-a|--add> environment_file [B<-c|--cluster> clustername]
+
+B<kaenvironments>  B<-d|--delete> environment_name [B<-c|--cluster> clustername]
+
+B<kaenvironments>  B<-m|--machine> hostname
+
+=head1 DESCRIPTION
+
+kaenvironments displays the registered environments, you can see all the information of an environment of an environment specified with I<-e> on delete it, if it is yours, with I<-d>.
+
+You can list another user's environment with I<-l>.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-e|--environment> environment_name
+
+Specifies the name of the environment to display.
+
+=item B<-l> username
+
+Specifies the environment's owner, by defaut the user issuing kaenvironments command.
+
+=item B<-c|--cluster> clustername
+
+For I<some> multicluster installation: specifies the cluster, by default it uses the default cluster. B<In most of the cases useless>. Necessary, for example, for a single kadeploy installation targetting multiple clusters with different CPUs architecture.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host to scan: it lists deployed environments.
+
+=item B<-a|--add> environment file
+
+Specifies the filename that contains the environment to add.
+
+=item B<-d|--delete> environment_name
+
+Specifies the environment to delete.
+
+=back
+
+=head1 EXAMPLE
+
+=over
+
+=item kaenvironments
+
+Lists environments available for deployment.
+
+=item kaenvironments -e debian4all
+
+Displays details of the debian4all environment.
+
+=item kaenvironments -l jleduc -e debian4jul
+
+Displays details of jleduc's debian4jul environement.
+
+=item kaenvironments -d myenvironement
+
+Deletes environment myenvironment.
+
+=back 
+
+=head1 SEE ALSO
+
+L<karecordenv(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

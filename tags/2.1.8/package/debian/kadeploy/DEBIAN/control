@@ -1,0 +1,12 @@
+Package: kadeploy
+Version: 2.1.7
+Architecture: all
+Maintainer: Kadeploy Staff <kadeploy-staff@lists.grid5000.fr>
+Installed-Size: 148
+Depends: mysql-client (>= 4.0), perl, rsh-client
+Suggests: mysql-server, dhcp3-server, syslinux, atftpd
+Section: contrib/misc
+Priority: optional
+Description: Kadeploy is a management system of installable OS images, designed for cluster deployment.
+
+
