@@ -24,6 +24,8 @@ module SetDeploymentEnvironnment
       case kind
       when "SetDeploymentEnvUntrusted"
         return SetDeploymentEnvUntrusted.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "SetDeploymentEnvUntrustedCustomPreInstall"
+        return SetDeploymentEnvUntrustedCustomPreInstall.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "SetDeploymentEnvNfsroot"
         return SetDeploymentEnvNfsroot.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "SetDeploymentEnvProd"
