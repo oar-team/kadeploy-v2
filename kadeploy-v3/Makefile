@@ -1,9 +1,91 @@
+CURRENT_DIR:=$(shell pwd)
+DEPLOY_USER=deploy
+KADEPLOY_ROOT=$(CURRENT_DIR)
+DEPLOY_USER=deploy
+SRC=$(KADEPLOY_ROOT)/src
+SBIN=$(KADEPLOY_ROOT)/sbin
+CONF=$(KADEPLOY_ROOT)/conf
+ADDONS=$(KADEPLOY_ROOT)/addons
+TEST=$(KADEPLOY_ROOT)/test
+PKG=$(KADEPLOY_ROOT)/pkg
+
 doc: cleandoc
 	@echo "Generating doc"
-	@rdoc --exclude src/contrib --exclude test --include src --all --diagram --line-numbers --inline-source -A cattr_accessor=object
+	@rdoc --exclude src/contrib --exclude test --include src --all --diagram --line-numbers --inline-source -A cattr_accessor=object --op doc/api
 
 cleandoc:
-	@rm -rf doc
+	@rm -rf doc/api
 
-mrproper: cleandoc
+install_src:
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/*.rb /usr/local/kadeploy3/src
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/lib/*.rb /usr/local/kadeploy3/src/lib
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/*.rb /usr/local/kadeploy3/src/contrib
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
+	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/commands/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
+
+install_conf:
+	@install -o $(DEPLOY_USER) -m 600 $(CONF)/conf /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 600 $(CONF)/specific_conf* /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 600 $(CONF)/nodes /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 600 $(CONF)/cmd /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 600 $(CONF)/fdisk* /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 755 $(CONF)/load_kadeploy_env /etc/kadeploy3
+	@install -o $(DEPLOY_USER) -m 644 $(CONF)/client_conf /etc/kadeploy3
+
+install_bin:
+	@install -o $(DEPLOY_USER) -m 755 $(BIN)/* /usr/bin
+
+install_sbin:
+	@install -o $(DEPLOY_USER) -m 700 $(SBIN)/* /usr/sbin
+
+install_debootstrap:
+	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/linuxrc /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
+	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/mkdev /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
+	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/make_debootstrap.sh /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
+	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/make_kernel.sh /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
+	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/scripts/* /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap/scripts
+
+install_test:
+	@install -o $(DEPLOY_USER) -m 644 $(TEST)/envfile.dsc /usr/local/kadeploy3/test
+	@install -o $(DEPLOY_USER) -m 700 $(TEST)/blackbox_tests.rb /usr/local/kadeploy3/test
+
+install_rc_script:
+	@install -m 644 $(ADDONS)/rc/kadeploy_server /etc/init.d
+
+install_ssh_key:
+	@install -o $(DEPLOY_USER) -m 400 $(ADDONS)/ssh/id_deploy /.keys
+
+install_files: install_src install_conf install_bin install_sbin install_debootstrap install_test install_rc_script install_ssh_key
+
+mktree:
+	@mkdir -p /usr/local/kadeploy3
+	@mkdir -p /usr/local/kadeploy3/src
+	@mkdir -p /usr/local/kadeploy3/src/lib
+	@mkdir -p /usr/local/kadeploy3/addons
+	@mkdir -p /usr/local/kadeploy3/addons/deploy_env_generation
+	@mkdir -p /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
+	@mkdir -p /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap/scripts
+	@mkdir -p /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap/ssh
+	@mkdir -p /usr/local/kadeploy3/db
+	@mkdir -p /usr/local/kadeploy3/test
+	@mkdir -p /usr/local/kadeploy3/src/contrib
+	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3
+	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
+	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
+	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
+	@mkdir -p /etc/kadeploy3
+	@mkdir -p /.keys
+
+install: mktree install_files
+
+clean:
+	@rm -rf /usr/local/kadeploy3
+	@rm  /.keys/id_deploy
+	@rm /usr/sbin/kadeploy_server /usr/sbin/karights
+	@rm /usr/bin/kaconsole /usr/bin/kadeploy /usr/bin/kaenv /usr/bin/kanodes /usr/bin/kareboot /usr/bin/kastat
+deb-pkg:
+	@(cd $(PKG); make package; mv kadeploy-v3.deb $(CURRENT_DIR); make clean; cd $(CURRENT_DIR))
+
+mrproper: cleandoc clean
 	@find . -name '*~' | xargs rm -f	
