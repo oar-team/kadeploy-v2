@@ -45,12 +45,7 @@ module EnvironmentManagement
             val = content[2]
             case attr
             when "name"
-              if val =~ /\A\w+\Z/ then
-                @name = val
-              else
-                puts "The environment name must only contain [a-zA-Z0-9_] characters"
-                return false
-              end
+              @name = val
             when "version"
               if val =~ /\A\d+\Z/ then
                 @version = val
@@ -113,7 +108,7 @@ module EnvironmentManagement
               @hypervisor_params = val
             when "part"
               @part = val
-            when "fdisk_type"
+            when "fdisktype"
               @fdisk_type = val
             when "filesystem"
               @filesystem = val
@@ -303,7 +298,7 @@ module EnvironmentManagement
       puts "hypervisor : #{@hypervisor}" if (@hypervisor != nil)
       puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != nil)
       puts "part : #{@part}"
-      puts "fdisk_type : #{@fdisk_type}"
+      puts "fdisktype : #{@fdisk_type}"
       puts "filesystem : #{@filesystem}"
       puts "environment_kind : #{@environment_kind}"
       puts "demolishing_env : #{@demolishing_env}"

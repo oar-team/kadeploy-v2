@@ -136,7 +136,7 @@ def print_environment(config, db)
     if (config.exec_specific.version != "") then
       version = config.exec_specific.version
     else
-      version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+      version = get_max_version(db, config.exec_specific.env_name, config.exec_specific.user)
     end
     query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
                                         AND user=\"#{config.exec_specific.user}\" \
