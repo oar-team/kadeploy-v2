@@ -36,9 +36,9 @@ DROP TABLE IF EXISTS `log`;
 CREATE TABLE IF NOT EXISTS `log` (
   `deploy_id` varchar(16) NOT NULL,
   `hostname` varchar(50) NOT NULL,
-  `step1` varchar(35) NOT NULL,
-  `step2` varchar(35) NOT NULL,
-  `step3` varchar(35) NOT NULL,
+  `step1` varchar(45) NOT NULL,
+  `step2` varchar(45) NOT NULL,
+  `step3` varchar(45) NOT NULL,
   `timeout_step1` smallint(5) unsigned NOT NULL,
   `timeout_step2` smallint(5) unsigned NOT NULL,
   `timeout_step3` smallint(5) unsigned NOT NULL,

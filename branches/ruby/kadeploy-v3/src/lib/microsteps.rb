@@ -377,12 +377,12 @@ module MicroStepsLibrary
       line1 = line2 = line3 = ""
       case kind
       when "linux"
-        line1 = "/boot/#{@config.exec_specific.environment.kernel}"
-        line2 = "/boot/#{@config.exec_specific.environment.initrd}"
+        line1 = "#{@config.exec_specific.environment.kernel}"
+        line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
-        line1 = "/boot/#{@config.exec_specific.environment.hypervisor} #{@config.exec_specific.environment.hypervisor_params}"
-        line2 = "/boot/#{@config.exec_specific.environment.kernel}"
-        line3 = "/boot/#{@config.exec_specific.environment.initrd}"
+        line1 = "#{@config.exec_specific.environment.hypervisor} #{@config.exec_specific.environment.hypervisor_params}"
+        line2 = "#{@config.exec_specific.environment.kernel}"
+        line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
       end
@@ -406,12 +406,12 @@ module MicroStepsLibrary
       line1 = line2 = line3 = ""
       case kind
       when "linux"
-        line1 = "/boot/#{@config.exec_specific.environment.kernel}"
-        line2 = "/boot/#{@config.exec_specific.environment.initrd}"
+        line1 = "#{@config.exec_specific.environment.kernel}"
+        line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
-        line1 = "/boot/#{@config.exec_specific.environment.hypervisor}"
-        line2 = "/boot/#{@config.exec_specific.environment.kernel}"
-        line3 = "/boot/#{@config.exec_specific.environment.initrd}"
+        line1 = "#{@config.exec_specific.environment.hypervisor}"
+        line2 = "#{@config.exec_specific.environment.kernel}"
+        line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
       end
@@ -591,6 +591,20 @@ module MicroStepsLibrary
       return path.chomp
     end
 
+    # Create a string containing the environment variables for pre/post installs
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return the string containing the environment variables for pre/post installs
+    def set_env
+      env = String.new
+      env = "KADEPLOY_CLUSTER=\"#{@cluster}\""
+      env += " KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\""
+      env += " KADEPLOY_DEPLOY_PART=\"#{get_deploy_part_str()}\""
+      return env
+    end
+
     public
 
     # Test if a timeout is reached
@@ -636,6 +650,8 @@ module MicroStepsLibrary
                 @output.debugl(3, "--- #{method_sym.to_s}")
                 @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
                 send(real_method, *args)
+              else
+                return false
               end
             else
               @output.debugl(3, "--- #{method_sym.to_s}")
@@ -810,8 +826,8 @@ module MicroStepsLibrary
         reboot_wrapper("very_hard")
       when "kexec"
         if (@config.exec_specific.environment.environment_kind == "linux") then
-          kernel = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.kernel}"
-          initrd = "#{@config.common.environment_extraction_dir}/boot/#{@config.exec_specific.environment.initrd}"
+          kernel = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.kernel}"
+          initrd = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.initrd}"
           kernel_params = @config.exec_specific.environment.kernel_params
           root_part = @config.exec_specific.environment.part
           #Warning, this require the /usr/local/bin/kexec_detach script
@@ -1098,6 +1114,7 @@ module MicroStepsLibrary
       end
     end
 
+
     # Send and execute the admin preinstalls on the nodes
     #
     # Arguments
@@ -1114,7 +1131,7 @@ module MicroStepsLibrary
             @config.exec_specific.breakpointed = true
             res = false
           elsif (preinstall["script"] != "none")
-            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{preinstall["script"]})",
+            res = res && parallel_exec_command_wrapper("(#{set_env()} #{@config.common.rambin_path}/#{preinstall["script"]})",
                                                        @config.common.taktuk_connector)
           end
         }
@@ -1140,7 +1157,7 @@ module MicroStepsLibrary
             @config.exec_specific.breakpointed = true
             res= false
           elsif (postinstall["script"] != "none")
-            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+            res = res && parallel_exec_command_wrapper("#{set_env()} #{@config.common.rambin_path}/#{postinstall["script"]})",
                                                        @config.common.taktuk_connector)
           end
         }
@@ -1166,7 +1183,7 @@ module MicroStepsLibrary
             @config.exec_specific.breakpointed = true
             res= false
           elsif (postinstall["script"] != "none")
-            res = res && parallel_exec_command_wrapper("(KADEPLOY_CLUSTER=\"#{@cluster}\" KADEPLOY_ENV=\"#{@config.exec_specific.environment.name}\" #{@config.common.rambin_path}/#{postinstall["script"]})",
+            res = res && parallel_exec_command_wrapper("(#{set_env()} #{@config.common.rambin_path}/#{postinstall["script"]})",
                                                        @config.common.taktuk_connector)
           end
         }
