@@ -20,7 +20,7 @@ def parse_opts
   opts = OptionParser::new do |opts|
     opts.summary_indent = "  "
     opts.summary_width = 28
-    opts.banner = "Usage: ruby env_migrate.rb [options]"
+    opts.banner = "Usage: env_migrate [options]"
     opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
     opts.separator ""
     opts.separator "General options:"
@@ -104,9 +104,9 @@ def dump_new_env(fields, env_kind)
     puts "postinstall : #{fields["filesite"].gsub('file://','')}|#{guess_extension(fields["filesite"])}|traitement.ash /rambin"
   end
   if (env_kind == "linux") || (env_kind == "other") then
-    puts "kernel : #{fields["kernelpath"].gsub('/boot/','')}"
+    puts "kernel : #{fields["kernelpath"]}"
     puts "kernel_params : #{fields["kernelparam"]}"
-    puts "initrd : #{fields["initrdpath"].gsub('/boot/','')}"
+    puts "initrd : #{fields["initrdpath"]}"
   elsif (env_kind == "xen") then
     kernel_tab = fields["initrdpath"].split(' --- ')
     tmp = kernel_tab[0].split(' ')
