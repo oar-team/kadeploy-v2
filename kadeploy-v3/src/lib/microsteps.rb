@@ -300,14 +300,14 @@ module MicroStepsLibrary
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
       prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
       files.each { |file|
-        if not (File.exist?(dest_dir + "/" + prefix_in_cache + file)) then
+        if not (File.exist?(dest_dir + "/" + prefix_in_cache + File.basename(file))) then
           must_extract = true
         end
       }
       if not must_extract then
         files.each { |file|
           #If the archive has been modified, re-extraction required
-          if (File.mtime(archive).to_i > File.atime(dest_dir + "/" + prefix_in_cache + file).to_i) then
+          if (File.mtime(archive).to_i > File.atime(dest_dir + "/" + prefix_in_cache + File.basename(file)).to_i) then
             must_extract = true
           end
         }
@@ -315,7 +315,7 @@ module MicroStepsLibrary
       if must_extract then
         files_in_archive = Array.new
         files.each { |file|
-          files_in_archive.push("boot/" + file)
+          files_in_archive.push(file)
         }
         tmpdir = get_tmpdir()
         res = extract_files_from_archive(archive,
@@ -323,8 +323,8 @@ module MicroStepsLibrary
                                          files_in_archive,
                                          tmpdir)
         files.each { |file|
-          src = tmpdir + "/" + file
-          dst = dest_dir + "/" + prefix_in_cache + file
+          src = tmpdir + "/" + File.basename(file)
+          dst = dest_dir + "/" + prefix_in_cache + File.basename(file)
           res = res && File.move(src, dst)
         }
         if (Dir.rmdir(tmpdir) != 0) then
@@ -725,8 +725,8 @@ module MicroStepsLibrary
             prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
             case @config.exec_specific.environment.environment_kind
             when "linux"
-              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
-              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
+              kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
+              initrd = prefix_in_cache + File.basename(@config.exec_specific.environment.initrd)
               images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
               res = system("touch -a #{images_dir}/#{kernel}")
               res = res && system("touch -a #{images_dir}/#{initrd}")
@@ -738,9 +738,9 @@ module MicroStepsLibrary
                                                             @config.common.tftp_images_path,
                                                             @config.common.tftp_cfg)
             when "xen"
-              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
-              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
-              hypervisor = prefix_in_cache + @config.exec_specific.environment.hypervisor
+              kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
+              initrd = prefix_in_cache + File.basename(@config.exec_specific.environment.initrd)
+              hypervisor = prefix_in_cache + File.basename(@config.exec_specific.environment.hypervisor)
               images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
               res = system("touch -a #{images_dir}/#{kernel}")
               res = res && system("touch -a #{images_dir}/#{initrd}")
@@ -759,7 +759,7 @@ module MicroStepsLibrary
             Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
                                @config.common.tftp_images_max_size * 1024 * 1024,
                                6,
-                               /^.+--e\d+v\d+$/)
+                               /^e\d+--.+$/)
           when "chainload_pxe"
             if (@config.exec_specific.environment.environment_kind != "xen") then
               PXEOperations::set_pxe_for_chainload(@nodes_ok.make_array_of_ip,
@@ -770,9 +770,9 @@ module MicroStepsLibrary
             else
               # @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
               prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
-              kernel = prefix_in_cache + @config.exec_specific.environment.kernel
-              initrd = prefix_in_cache + @config.exec_specific.environment.initrd
-              hypervisor = prefix_in_cache + @config.exec_specific.environment.hypervisor
+              kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
+              initrd = prefix_in_cache + File.basename(@config.exec_specific.environment.initrd)
+              hypervisor = prefix_in_cache + File.basename(@config.exec_specific.environment.hypervisor)
               images_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
               res = system("touch -a #{images_dir}/#{kernel}")
               res = res && system("touch -a #{images_dir}/#{initrd}")
@@ -790,7 +790,7 @@ module MicroStepsLibrary
               Cache::clean_cache(@config.common.tftp_repository + "/" + @config.common.tftp_images_path,
                                  @config.common.tftp_images_max_size * 1024 * 1024,
                                  6,
-                                 /^.+--e\d+v\d+$/)              
+                                 /^e\d+--.+$/)              
             end
           end
         end
@@ -1030,12 +1030,12 @@ module MicroStepsLibrary
       when "pure_pxe"
         case @config.exec_specific.environment.environment_kind
         when "linux"
-          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
-                                            @config.exec_specific.environment.initrd])
+          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel.sub(/\A\//,''),
+                                            @config.exec_specific.environment.initrd.sub(/\A\//,'')])
         when "xen"
-          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
-                                            @config.exec_specific.environment.initrd,
-                                            @config.exec_specific.environment.hypervisor])
+          return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel.sub(/\A\//,''),
+                                            @config.exec_specific.environment.initrd.sub(/\A\//,''),
+                                            @config.exec_specific.environment.hypervisor.sub(/\A\//,'')])
         when "other"
           @output.debugl(0, "Only linux and xen environments can be booted with a pure PXE configuration")
           return false
@@ -1051,9 +1051,9 @@ module MicroStepsLibrary
           when "xen"
 #           return install_grub2_on_nodes("xen")
             @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
-            return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel,
-                                              @config.exec_specific.environment.initrd,
-                                              @config.exec_specific.environment.hypervisor])
+            return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel.sub(/\A\//,''),
+                                              @config.exec_specific.environment.initrd.sub(/\A\//,''),
+                                              @config.exec_specific.environment.hypervisor.sub(/\A\//,'')])
 
           when "other"
             #in this case, the bootloader must be installed by the user (dd partition)
