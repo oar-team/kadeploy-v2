@@ -29,7 +29,7 @@ export LC_ALL="C"
 EOF
 
 mkdir -p $DIR/root/.ssh
-cat ../../ssh/ssh/id_deploy.pub > $DIR/root/.ssh/authorized_keys
+cat ../../ssh/id_deploy.pub > $DIR/root/.ssh/authorized_keys
 mkdir -p $DIR/.keys
 cp ../../ssh/* $DIR/.keys/
 

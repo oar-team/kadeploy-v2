@@ -832,7 +832,7 @@ module ConfigInformation
         return false
       end
 
-      if (exec_specific.nodes_ok_file == exec_specific.nodes_ko_file) then
+      if (exec_specific.nodes_ok_file != "") && (exec_specific.nodes_ok_file == exec_specific.nodes_ko_file) then
         Debug::client_error("The files used for the output of the OK and the KO nodes must not be the same")
         return false
       end
