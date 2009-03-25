@@ -17,6 +17,6 @@ dia: $(dia-files:%.dia=%.pdf)
 	epstopdf "$<"
 
 clean:
-	-rm -f *.aux *.dvi *~ *.bbl *.blg *.log *.toc *.ps *.pdf
+	-rm -f *.aux *.dvi *~ *.bbl *.blg *.log *.toc *.ps *.pdf *.out
 
 .PHONY: clean pdf

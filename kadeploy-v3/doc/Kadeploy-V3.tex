@@ -22,13 +22,13 @@
 
 \chapter{Installation}
 \section{Requirements}
-\subsection{Packages}
+\subsection{Packages}\label{sec:required-packages}
 Kadeploy requires the following softwares (the Debian packages available in the Lenny flavor are given):
 \begin{itemize}
 \item \texttt{ruby1.8}
 \item \texttt{rubylibmysql-ruby}
 \item \texttt{libopenssl-ruby}
-\item l\texttt{ibneedle-ruby1.8}
+\item \texttt{ibneedle-ruby1.8}
 \item \texttt{libnet-ssh-ruby1.8}
 \item \texttt{libtermios-ruby1.8}
 \item \texttt{bittorrent}
@@ -55,9 +55,92 @@ Once the database is created and the user granted, you can use the SQL script pr
 \section{Kadeploy installation}
 Since Kadeploy is based on a client/server architecture, you must perform the install on both the server and the client if it is not the same machine.
 
-On a Debian, Kadeploy can be easily installed with a Debian package provided.
+Two ways are provided to install Kadeploy, a basic installer and a Debian package. In both cases, you had to ensure that a user \texttt{deploy} is existing on your system. This user is used to execute the Kadeploy server. Furthermore, all the installation oprations must be performed with root rights.
 
-TODO: install with Makefile. 
+\subsection{Basic installation}
+First of all , you have to uncompress the Kadeploy tarball.
+\begin{small}
+\begin{verbatim}
+> tar xzf kadeploy-v3.tar.gz -C DESTINATION_DIR
+\end{verbatim}
+\end{small}
+
+\noindent Then, if you want to install the server part, just execute:
+\begin{small}
+\begin{verbatim}
+> make install_common
+> make install_server
+\end{verbatim}
+\end{small}
+
+\noindent If you want to install the client part, execute:
+\begin{small}
+\begin{verbatim}
+> make install_common
+> make install_client
+\end{verbatim}
+\end{small}
+
+\noindent If you want to install the server part and the client part on the same host, execute:
+\begin{small}
+\begin{verbatim}
+> make install_all
+\end{verbatim}
+\end{small}
+
+\noindent In order to preserve a previous configuration, the configuration directory \texttt{/etc/kadeploy3} is saved, if existing, to a directory named \texttt{/etc/kadeploy3-save-TIMESTAMP} where \texttt{TIMESTAMP} is the moment of the new installation launch.
+
+\noindent Finally, Kadeploy can be simply uninstalled by executing:
+\begin{small}
+\begin{verbatim}
+> make uninstall
+\end{verbatim}
+\end{small}
+
+\noindent In case of uninstallation, the configuration directory \texttt{/etc/kadeploy3} is not removed.
+
+\subsection{Debian package}
+The following installation method works only an Debian based distribution.
+\subsubsection{Build}
+\noindent First, you have to uncompress the Kadeploy tarball. 
+\begin{small}
+\begin{verbatim}
+> tar xzf kadeploy-v3.tar.gz -C DESTINATION_DIR
+\end{verbatim}
+\end{small}
+
+\noindent Then you must generate the packages. So you have to execute:
+\begin{small}
+\begin{verbatim}
+> make dep-pkg
+\end{verbatim}
+\end{small}
+This will generate three Debian package: \texttt{kadeploy-v3-common.deb}, \texttt{kadeploy-v3-client.deb}, and \texttt{kadeploy-v3-server.deb}.
+\subsubsection{Installation}
+\noindent On the server side, you have to install the \texttt{kadeploy-v3-common.deb} and \texttt{kadeploy-v3-server.deb} packages.
+\begin{small}
+\begin{verbatim}
+> dpkg -i kadeploy-v3-common.deb
+> dpkg -i kadeploy-v3-server.deb
+\end{verbatim}
+\end{small}
+
+\noindent On the client side, you have to install the \texttt{kadeploy-v3-common.deb} and \texttt{kadeploy-v3-client.deb} packages.
+\begin{small}
+\begin{verbatim}
+> dpkg -i kadeploy-v3-common.deb
+> dpkg -i kadeploy-v3-client.deb
+\end{verbatim}
+\end{small}
+
+\noindent In the want to use the same host for the client and the server part, just install the three packages:
+\begin{small}
+\begin{verbatim}
+> dpkg -i kadeploy-v3-common.deb
+> dpkg -i kadeploy-v3-client.deb
+> dpkg -i kadeploy-v3-server.deb
+\end{verbatim}
+\end{small}
 
 \chapter{Server side configuration}
 Normally, the configuration of Kadeploy is located in \texttt{/etc/kadeploy} but it can be located anywhere else if you set the \texttt{KADEPLOY\_CONFIG\_DIR} variable in the environment.
