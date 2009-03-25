@@ -666,10 +666,10 @@ description : https://www.grid5000.fr/index.php/Etch-x64-xen-1.0
 author : John Smith
 tarball : /grid5000/etch-x64-xen-1.0.tgz|tgz
 postinstall : /home/john/test/post_install.tgz|tgz|traitement.sh
-kernel : vmlinuz-2.6.18-6-xen-amd64
+kernel : /boot/vmlinuz-2.6.18-6-xen-amd64
 kernel_params : console=tty0 console=ttyS1,38400n8
-initrd : initrd.img-2.6.18-6-xen-amd64
-hypervisor : xen-3.0.3-1-amd64.gz
+initrd : /boot/initrd.img-2.6.18-6-xen-amd64
+hypervisor : /boot/xen-3.0.3-1-amd64.gz
 hypervisor_params : dom0_mem=1000000
 part : /dev/sda3
 fdisktype : 83
@@ -687,10 +687,10 @@ Explanation of the fields used in the environment description:
 \item \texttt{author}: author of the environment.
 \item \texttt{tarball}: disk image of the environment. The syntax is: \texttt{file|kind}. The allowed kinds are \texttt{tgz}, \texttt{tbz2}, \texttt{ddgz} and \texttt{ddbz2}.
 \item \texttt{postinstall}: post-install files.\\ The syntax is: \texttt{file1|kind|script1,file2|kind|script2, ...} The allowed kinds of files for post-installs are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
-\item \texttt{kernel}: path of the kernel in the tarball (relative to /boot, must not be a link).
+\item \texttt{kernel}: path of the kernel in the tarball (must not be a link).
 \item \texttt{kernel\_params}: set of parameters that must be applied to the kernel for a correct boot.
-\item \texttt{initrd}: path of the initrd in the tarball (relative to /boot, must not be a link).
-\item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball (relative to /boot). This fields is only required for the Xen based environments.
+\item \texttt{initrd}: path of the initrd in the tarball (must not be a link).
+\item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball (must not be a link). This fields is only required for the Xen based environments.
 \item \texttt{hypervisor\_params (opt)}: set of parameters that must be applied to the hypervisor for a correct boot. This fields is only required for the Xen based environments.
 \item \texttt{part}: default deployment partition.
 \item \texttt{fdisktype}: partition type in hexadecimal (\texttt{83} for Linux, \texttt{a4} for FreeBSD, ...). This is used as an input for fdisk.
@@ -809,7 +809,7 @@ Then, the old \texttt{filebase} and \texttt{filesite} have been modified and ren
 
 Kadeploy 3 considers three kinds of environments: \textit{linux}, \textit{xen}, and \textit{other}. The environment kind must be specified with the field \texttt{environment\_kind}.
 \begin{itemize}
-\item If you choose the \textit{linux} kind, you can fill the new \texttt{kernel} field by using the old \texttt{kernelpath} field and by removing the \texttt{/boot/}. This is the same thing with the new \texttt{initrd} field where you can use the old \texttt{initrdpath} without the \texttt{/boot/}. The new \texttt{kernel\_params} field can be filled with the old \texttt{kernelparam}.
+\item If you choose the \textit{linux} kind, you can fill the new \texttt{kernel} field by using the old \texttt{kernelpath} field. This is the same thing with the new \texttt{initrd} field where you can use the old \texttt{initrdpath}. The new \texttt{kernel\_params} field can be filled with the old \texttt{kernelparam}.
 \item If you choose the \textit{xen}, you must use the fields of a \textit{linux} environment and the new \texttt{hypervisor} and \texttt{hypervisor\_params}. You do not have to specify anymore the use of mboot.c32, this is automatically handled by Kadeploy 3.
 \item If you choose the \textit{other} kind (typically for OS like FreeBSD), you can fill the \texttt{kernel}, \texttt{kernel\_params} and \texttt{initrd} with any value.
 \end{itemize}
