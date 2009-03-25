@@ -504,16 +504,15 @@ module ConfigInformation
                   @cluster_specific[cluster].drivers.push(driver)
                 }
               when "admin_pre_install"
-                #filename|kind|md5sum|script,filename|kind|md5sum|script,...
-                if val =~ /\A.+\|(tgz|tbz2)\|\w+\|.+(,.+\|(tgz|tbz2)\|\w+\|.+)*\Z/ then
+                #filename|kind|script,filename|kind|script,...
+                if val =~ /\A.+\|(tgz|tbz2)\|.+(,.+\|(tgz|tbz2)\|.+)*\Z/ then
                   @cluster_specific[cluster].admin_pre_install = Array.new
                   val.split(",").each { |tmp|
                     val = tmp.split("|")
                     entry = Hash.new
                     entry["file"] = val[0]
                     entry["kind"] = val[1]
-                    entry["md5"] = val[2]
-                    entry["script"] = val[3]
+                    entry["script"] = val[2]
                     @cluster_specific[cluster].admin_pre_install.push(entry)
                   }
                 elsif val =~ /\Ano_pre_install\Z/ then
@@ -523,16 +522,15 @@ module ConfigInformation
                   return false
                 end
               when "admin_post_install"
-                #filename|tgz|md5sum|script,filename|tgz|md5sum|script,...
-                if val =~ /\A.+\|(tgz|tbz2)\|\w+\|.+(,.+\|(tgz|tbz2)\|\w+\|.+)*\Z/ then
+                #filename|tgz|script,filename|tgz|script,...
+                if val =~ /\A.+\|(tgz|tbz2)\|.+(,.+\|(tgz|tbz2)\|.+)*\Z/ then
                   @cluster_specific[cluster].admin_post_install = Array.new
                   val.split(",").each { |tmp|
                     val = tmp.split("|")
                     entry = Hash.new
                     entry["file"] = val[0]
                     entry["kind"] = val[1]
-                    entry["md5"] = val[2]
-                    entry["script"] = val[3]
+                    entry["script"] = val[2]
                     @cluster_specific[cluster].admin_post_install.push(entry)
                   }
                 elsif val =~ /\Ano_post_install\Z/ then
@@ -902,13 +900,10 @@ module ConfigInformation
           return false
         end
         #admin_pre_install file
-        @cluster_specific[cluster].admin_pre_install.each { |entry|
-          if not File.exist?(entry["file"]) then
-            puts "The admin_pre_install file #{entry["file"]} does not exist"
-            return false
-          else
-            if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
-              puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
+        if (cluster_specific[cluster].admin_pre_install != nil) then
+          @cluster_specific[cluster].admin_pre_install.each { |entry|
+            if not File.exist?(entry["file"]) then
+              puts "The admin_pre_install file #{entry["file"]} does not exist"
               return false
             else
               if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
@@ -916,25 +911,22 @@ module ConfigInformation
                 return false
               end
             end
-          end
-        }
+          }
+        end
         #admin_post_install file
-        @cluster_specific[cluster].admin_post_install.each { |entry|
-          if not File.exist?(entry["file"]) then
-            puts "The admin_pre_install file #{entry["file"]} does not exist"
-            return false
-          else
-            if not (Digest::MD5.hexdigest(File.read(entry["file"])) == entry["md5"]) then
-              puts "The md5sum of #{entry["file"]} does not correspond to the value specified in the configuration"
+        if (@cluster_specific[cluster].admin_post_install != nil) then
+          @cluster_specific[cluster].admin_post_install.each { |entry|
+            if not File.exist?(entry["file"]) then
+              puts "The admin_pre_install file #{entry["file"]} does not exist"
               return false
             else
               if ((entry["kind"] != "tgz") && (entry["kind"] != "tbz2")) then
-                puts "Only tgz and tbz2 file kinds are allowed for postinstall files"
+              puts "Only tgz and tbz2 file kinds are allowed for postinstall files"
                 return false
               end
             end
-          end
-        }
+          }
+        end
       }
       return true
     end
