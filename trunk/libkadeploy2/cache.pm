@@ -3,6 +3,7 @@ package libkadeploy2::cache;
 # use strict;
 # use warnings;
 
+use Cwd;
 use File::Copy;
 use File::Path;
 use File::chdir;
@@ -162,7 +163,8 @@ sub put_in_cache_from_archive($$$$)
     @files = libkadeploy2::cache::check_files(\@files);
     
     # To prevent bug with directory in 711 : error cannot fetch initial working directory
-    local $CWD = $_cachedirectory;
+    local $old_cwd = cwd();
+    chdir $_cachedirectory;
     
     ## Add eventually new files with caution
     ## If files are links => follow them 
@@ -239,7 +241,7 @@ sub put_in_cache_from_archive($$$$)
 	read_files_in_cache();
 	$cachemodified = 0;
     }
-    
+    chdir $old_cwd;    
     return 1;
 }
 
