@@ -172,13 +172,16 @@ class KadeployServer
     #We create a new instance of Config with a specific exec_specific part
     config = ConfigInformation::Config.new("empty")
     config.common = @config.common.clone
-    config.cluster_specific = @config.cluster_specific.clone
     config.exec_specific = exec_specific
+    config.cluster_specific = Hash.new
     #overide the configuration if the steps are specified in the command line
     if (not exec_specific.steps.empty?) then
       exec_specific.node_list.group_by_cluster.each_key { |cluster|
-        config.cluster_specific[cluster].workflow_steps = exec_specific.steps
+        config.cluster_specific[cluster] = ConfigInformation::ClusterSpecificConfig.new
+        @config.cluster_specific[cluster].duplicate(config.cluster_specific[cluster], exec_specific.steps)
       }
+    else
+      config.cluster_specific = @config.cluster_specific.clone
     end
 
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
