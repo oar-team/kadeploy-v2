@@ -33,10 +33,10 @@ def list_environments(config, db)
                       postinstall, kernel, kernel_params, \
                       initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                       FROM environments \
-                      WHERE (user=\"#{config.exec_specific.user}\" OR user=\"deploy\") \
+                      WHERE user=\"#{config.exec_specific.user}\" \
                       GROUP BY user,name"
     else
-      query = "SELECT * FROM environments WHERE (user=\"#{config.exec_specific.user}\" OR user=\"deploy\") \
+      query = "SELECT * FROM environments WHERE (user=\"#{config.exec_specific.user}\" \
                                           ORDER BY user,name,version"
     end
   end
