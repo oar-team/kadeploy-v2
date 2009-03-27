@@ -725,7 +725,7 @@ module ConfigInformation
           exec_specific.nodes_ok_file = f
         }
         opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
-          if /\A[1-9]\d*\Z/ =~ p then
+          if /\A[1-9]\d+\Z/ =~ p then
             exec_specific.deploy_part = p
           else
             Debug::client_error("Invalid partition number")
