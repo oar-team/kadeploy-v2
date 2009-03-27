@@ -128,7 +128,7 @@ class KadeployServer
   # Arguments
   # * nothing
   # Output
-  # * nothing
+  # * return a CommonConfig instance
   def get_common_config
     return @config.common
   end
@@ -138,18 +138,27 @@ class KadeployServer
   # Arguments
   # * cluster: name of the cluster concerned
   # Output
-  # * nothing
+  # * return the name of the default deployment partition
   def get_default_deploy_part(cluster)
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].deploy_part
   end
 
+  # Get the block device (RPC)
+  #
+  # Arguments
+  # * cluster: name of the cluster concerned
+  # Output
+  # * return the name of the block device
+  def get_block_device(cluster)
+    return @config.cluster_specific[cluster].block_device
+  end
 
   # Get the production partition (RPC)
   #
   # Arguments
   # * cluster: name of the cluster concerned
   # Output
-  # * nothing
+  # * return the production partition
   def get_prod_part(cluster)
     return @config.cluster_specific[cluster].block_device + @config.cluster_specific[cluster].prod_part
   end

@@ -142,7 +142,7 @@ if (exec_specific_config != nil) then
   #The rights must be checked for each cluster if the node_list contains nodes from several clusters
   exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
     if (exec_specific_config.deploy_part != "") then 
-      part = exec_specific_config.deploy_part
+      part = kadeploy_server.get_block_device(cluster) + exec_specific_config.deploy_part
     else
       part = kadeploy_server.get_default_deploy_part(cluster)
     end
