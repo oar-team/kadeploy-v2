@@ -260,6 +260,72 @@ module MicroStepsLibrary
       tid.join
     end
 
+    # Test if the given symlink is an absolute link
+    #
+    # Arguments
+    # * link: link
+    # Output
+    # * return true if link is an aboslute link, false otherwise
+    def is_absolute_link?(link)
+      return (/\A\/.*\Z/ =~ link)
+    end
+
+    # Test if the given symlink is a relative link
+    #
+    # Arguments
+    # * link: link
+    # Output
+    # * return true if link is a relative link, false otherwise
+    def is_relative_link?(link)
+      return (/\A(\.\.\/)+.*\Z/ =~ link)
+    end
+
+    # Get the number of ../ groups at the beginning of a string
+    #
+    # Arguments
+    # * str: string
+    # Output
+    # * return the number of ../ groups at the beginning of str
+    def get_nb_dotdotslash(str)
+      /\A((\.\.\/)+).*\Z/  =~ str
+      content = Regexp.last_match
+      return content[1].length / 3
+    end
+
+    # Remove a given number of subdirs in a dirname
+    #
+    # Arguments
+    # * dir: dirname
+    # * nb: number of subdirs to remove
+    # Output
+    # * return a dirname on which nb subdirs have been removed
+    def remove_sub_paths(dir, nb)
+      tmp = dir
+      while (nb > 0)
+        pos = tmp.rindex("/")
+        if (pos != nil) then
+          tmp = tmp[0, pos]
+        else
+          tmp = ""
+        end
+        nb = nb - 1
+      end
+      return tmp
+    end
+
+    # Remove the ../ at the beginning of a string
+    #
+    # Arguments
+    # * str: string
+    # Output
+    # * return a string without the ../ characters at the beginning
+    def remove_dotdotslash(str)
+      /\A(\.\.\/)+(.*)\Z/  =~ str
+      content = Regexp.last_match
+      return content[2]
+    end
+
+
     # Extract some file from an archive
     #
     # Arguments
@@ -270,18 +336,46 @@ module MicroStepsLibrary
     # Output
     # * return true if the file are extracted correctly, false otherwise
     def extract_files_from_archive(archive, archive_kind, file_array, dest_dir)
-      file_array.each { |f|
-        case archive_kind
-        when "tgz"
-          cmd = "tar -C #{dest_dir} --strip 1 -xzf #{archive} #{f}"          
-        when "tbz2"
-          cmd = "tar -C #{dest_dir} --strip 1 -xjf #{archive} #{f}"
-        else
-          raise "The kind #{archive_kind} of archive is not supported"
+      file_array.each { |file|
+        all_links_followed = false
+        initial_file = file
+        while (not all_links_followed) 
+          prev_file = file
+          case archive_kind
+          when "tgz"
+            cmd = "tar -C #{dest_dir} -xzf #{archive} #{file}"          
+          when "tbz2"
+            cmd = "tar -C #{dest_dir} -xjf #{archive} #{file}"
+          else
+            raise "The kind #{archive_kind} of archive is not supported"
+          end
+          if not system(cmd) then
+            @output.debugl(0, "The file #{file} cannot be extracted")
+            return false
+          end
+
+          if File.symlink?("#{dest_dir}/#{file}") then
+            link = File.readlink("#{dest_dir}/#{file}")
+            if is_absolute_link?(link) then
+              file = link.sub(/\A\//,"")
+            elsif is_relative_link?(link) then
+              base_dir = remove_sub_paths(File.dirname(file), get_nb_dotdotslash(link))
+              file = (base_dir + "/" + remove_dotdotslash(link)).sub(/\A\//,"")
+            else
+              dirname = File.dirname(file)
+              if (dirname == ".") then
+                file = link
+              else
+                file = "#{dirname.sub(/\A\.\//,"")}/#{link}"
+              end
+            end
+          else
+            all_links_followed = true
+          end
         end
-        if not system(cmd) then
-          @output.debugl(0, "The file #{f} cannot be extracted")
-          return false
+        dest = File.basename(initial_file)
+        if (file != dest) then
+          system("mv #{dest_dir}/#{file} #{dest_dir}/#{dest}")
         end
       }
       return true

@@ -19,25 +19,39 @@ def list_environments(config, db)
   env = EnvironmentManagement::Environment.new
   if (config.exec_specific.user == "*") then #we show the environments of all the users
     if (config.exec_specific.show_all_version == false) then
-      query = "SELECT name, MAX(version) AS version, description, author, tarball, \
-                    postinstall, kernel, kernel_params, \
-                    initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
-                    FROM environments \
-                    GROUP BY name"
+      if (config.exec_specific.version != "") then
+        query = "SELECT * FROM environments WHERE version=\"#{config.exec_specific.version}\" \
+                          GROUP BY name \
+                          ORDER BY user,name"
+      else
+        query = "SELECT name, MAX(version) AS version, description, author, tarball, \
+                        postinstall, kernel, kernel_params, \
+                        initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                        FROM environments \
+                        GROUP BY name \
+                        ORDER BY user,name"
+      end
     else
-      query = "SELECT * FROM environments ORDER BY name,version"
+      query = "SELECT * FROM environments ORDER BY user,name,version"
     end
   else
     if (config.exec_specific.show_all_version == false) then
-      query = "SELECT name, MAX(version) AS version, description, author, tarball, \
-                      postinstall, kernel, kernel_params, \
-                      initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
-                      FROM environments \
-                      WHERE user=\"#{config.exec_specific.user}\" \
-                      GROUP BY user,name"
+      if (config.exec_specific.version != "") then
+        query = "SELECT * FROM environments \
+                          WHERE (user=\"#{config.exec_specific.user}\" AND version=\"#{config.exec_specific.version}\") \
+                          ORDER BY name"
+      else
+        query = "SELECT name, MAX(version) AS version, description, author, tarball, \
+                        postinstall, kernel, kernel_params, \
+                        initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                        FROM environments \
+                        WHERE user=\"#{config.exec_specific.user}\" \
+                        GROUP BY name \
+                        ORDER BY name"
+      end
     else
       query = "SELECT * FROM environments WHERE (user=\"#{config.exec_specific.user}\" \
-                                          ORDER BY user,name,version"
+                                          ORDER BY name,version"
     end
   end
   res = db.run_query(query)
