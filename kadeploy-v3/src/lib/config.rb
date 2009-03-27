@@ -1005,8 +1005,8 @@ module ConfigInformation
           end
         }
         opts.on("-v", "--version NUMBER", "Specify the version") { |v|
-          if /\A\d+\Z/ =~ u then
-            @exec_specific.env_version = v
+          if /\A\d+\Z/ =~ v then
+            @exec_specific.version = v
           else
             Debug::client_error("Invalid version number")
             return false

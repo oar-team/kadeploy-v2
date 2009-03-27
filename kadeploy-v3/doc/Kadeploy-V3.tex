@@ -142,6 +142,20 @@ This will generate three Debian package: \texttt{kadeploy-v3-common.deb}, \textt
 \end{verbatim}
 \end{small}
 
+\section{Launching the Kadeploy server}
+After being installed and configured, the Kadeploy server can be run either interactively:
+\begin{small}
+\begin{verbatim}
+> /usr/local/kadeploy3/sbin/kadeploy_server
+\end{verbatim}
+\end{small}
+\noindent or in background using the rc script:
+\begin{small}
+\begin{verbatim}
+> /etc/init.d/kadeploy_server start
+\end{verbatim}
+\end{small}
+
 \chapter{Server side configuration}
 Normally, the configuration of Kadeploy is located in \texttt{/etc/kadeploy} but it can be located anywhere else if you set the \texttt{KADEPLOY\_CONFIG\_DIR} variable in the environment.
 
@@ -687,10 +701,10 @@ Explanation of the fields used in the environment description:
 \item \texttt{author}: author of the environment.
 \item \texttt{tarball}: disk image of the environment. The syntax is: \texttt{file|kind}. The allowed kinds are \texttt{tgz}, \texttt{tbz2}, \texttt{ddgz} and \texttt{ddbz2}.
 \item \texttt{postinstall}: post-install files.\\ The syntax is: \texttt{file1|kind|script1,file2|kind|script2, ...} The allowed kinds of files for post-installs are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
-\item \texttt{kernel}: path of the kernel in the tarball (must not be a link).
+\item \texttt{kernel}: path of the kernel in the tarball.
 \item \texttt{kernel\_params}: set of parameters that must be applied to the kernel for a correct boot.
-\item \texttt{initrd}: path of the initrd in the tarball (must not be a link).
-\item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball (must not be a link). This fields is only required for the Xen based environments.
+\item \texttt{initrd}: path of the initrd in the tarball.
+\item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball. This fields is only required for the Xen based environments.
 \item \texttt{hypervisor\_params (opt)}: set of parameters that must be applied to the hypervisor for a correct boot. This fields is only required for the Xen based environments.
 \item \texttt{part}: default deployment partition.
 \item \texttt{fdisktype}: partition type in hexadecimal (\texttt{83} for Linux, \texttt{a4} for FreeBSD, ...). This is used as an input for fdisk.
