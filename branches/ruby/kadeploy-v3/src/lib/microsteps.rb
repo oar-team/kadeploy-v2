@@ -6,6 +6,7 @@ require 'cmdctrl_wrapper'
 require 'pxe_ops'
 require 'cache'
 require 'bittorrent'
+require 'process_management'
 
 #Ruby libs
 require 'ftools'
@@ -576,14 +577,14 @@ module MicroStepsLibrary
         @output.debugl(4, "Error while launching the bittorrent download")
         return false
       end
-      sleep(10)
+      sleep(2)
       if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, @config.common.bt_tracker_port) then
         @output.debugl(0, "A timeout for the bittorrent download has been reached")
-        Process.kill("SIGKILL", seed_pid)
+        ProcessManagement::killall(seed_pid)
         return false
       end
       @output.debugl(4, "Shutdown the seed for #{torrent}")
-      Process.kill("SIGKILL", seed_pid)
+      ProcessManagement::killall(seed_pid)
       
       case tarball_kind
       when "tgz"
@@ -600,6 +601,10 @@ module MicroStepsLibrary
       end
       if not parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector) then
         @output.debugl(4, "Error while uncompressing the tarball")
+        return false
+      end
+      if not parallel_exec_command_wrapper("rm /tmp/#{File.basename(tarball_file)}", @config.common.taktuk_connector) then
+        @output.debugl(4, "Error while cleaning the /tmp")
         return false
       end
       return true
