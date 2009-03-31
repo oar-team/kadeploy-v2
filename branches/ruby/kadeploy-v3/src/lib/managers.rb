@@ -505,9 +505,38 @@ module Managers
     # Arguments
     # * file: name of the file on the client side
     # Output
-    # * returns the name of the file in the local cache directory
+    # * return the name of the file in the local cache directory
     def use_local_path_dirname(file, prefix)
       return @config.common.kadeploy_cache_dir + "/" + prefix + File.basename(file)
+    end
+
+    # Grab a file from the client side or locally
+    #
+    # Arguments
+    # * client_file: client file to grab
+    # * local_file: name of the file in the local cache
+    # * expected_md5: expected md5 for the client file
+    # * file_tag: tag used to specify the kind of file to grab
+    # * prefix: prefix used to store the file in the cache
+    # Output
+    # * return true if everything is successfully performed, false otherwise
+    def grab_file(client_file, local_file, expected_md5, file_tag, prefix)
+      if (not File.exist?(local_file)) || (Digest::MD5.hexdigest(File.read(local_file)) != expected_md5) then
+        #We first check if the file can be reached locally
+        if (File.readable?(client_file) && (Digest::MD5.hexdigest(File.read(client_file)) == expected_md5)) then
+          @output.debugl(4, "Doing a local copy for the #{file_tag} #{client_file}")
+          system("cp #{client_file} #{local_file}")
+        else
+          @output.debugl(4, "Grab the #{file_tag} #{client_file}")
+          if not @client.get_file(client_file, prefix) then
+            @output.debugl(0, "Unable to grab the #{file_tag} #{client_file}")
+            return false
+          end
+        end
+      else
+        system("touch -a #{local_file}")
+      end
+      return true
     end
 
     # Grab files from the client side (tarball, ssh public key, user postinstall, files for custom operations)
@@ -515,33 +544,31 @@ module Managers
     # Arguments
     # * nothing
     # Output
-    # * nothing
+    # * return true if the files have been successfully grabbed, false otherwise
     def grab_user_files
       env_prefix = "e-#{@config.exec_specific.environment.id}--"
       user_prefix = "u-#{@config.exec_specific.true_user}--"
       local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball["file"], env_prefix)
-      if (not File.exist?(local_tarball)) || (Digest::MD5.hexdigest(File.read(local_tarball)) != @config.exec_specific.environment.tarball["md5"]) then
-        @output.debugl(4, "Grab the tarball file #{@config.exec_specific.environment.tarball["file"]}")
-        @client.get_file(@config.exec_specific.environment.tarball["file"], env_prefix)
-      else
-        system("touch -a #{local_tarball}")
+      if not grab_file(@config.exec_specific.environment.tarball["file"], local_tarball, 
+                       @config.exec_specific.environment.tarball["md5"], "tarball file", env_prefix) then 
+        return false
       end
       @config.exec_specific.environment.tarball["file"] = local_tarball
 
       if @config.exec_specific.key != "" then
         @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
-        @client.get_file(@config.exec_specific.key, user_prefix)
+        if not @client.get_file(@config.exec_specific.key, user_prefix) then
+          @output.debugl(0, "Unable to grab the file #{@config.exec_specific.key}")
+          return false
+        end
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key, user_prefix)
       end
 
       if (@config.exec_specific.environment.postinstall != nil) then
         @config.exec_specific.environment.postinstall.each { |postinstall|
           local_postinstall = use_local_path_dirname(postinstall["file"], env_prefix)
-          if (not File.exist?(local_postinstall)) || (Digest::MD5.hexdigest(File.read(local_postinstall)) != postinstall["md5"]) then
-            @output.debugl(4, "Grab the postinstall file #{postinstall["file"]}")
-            @client.get_file(postinstall["file"], env_prefix)
-          else
-            system("touch -a #{local_postinstall}")
+          if not grab_file(postinstall["file"], local_postinstall, postinstall["md5"], "postinstall file", env_prefix) then 
+            return false
           end
           postinstall["file"] = local_postinstall
         }
@@ -553,7 +580,10 @@ module Managers
             @config.exec_specific.custom_operations[macro_step][micro_step].each { |entry|
               if (entry[0] == "send") then
                 @output.debugl(4, "Grab the file #{entry[1]} for custom operations")
-                @client.get_file(entry[1], user_prefix)
+                if not @client.get_file(entry[1], user_prefix) then
+                  @output.debugl(0, "Unable to grab the file #{entry[1]}")
+                  return false
+                end
                 entry[1] = use_local_path_dirname(entry[1], user_prefix)
               end
             }
@@ -561,6 +591,7 @@ module Managers
         }
       end
       Cache::clean_cache(@config.common.kadeploy_cache_dir, @config.common.kadeploy_cache_size * 1024 * 1024, 12, /./)
+      return true
     end
 
     # Main of WorkflowManager
@@ -586,12 +617,15 @@ module Managers
       nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db)
       @deployments_table_lock.unlock
       if (not nodes_ok.empty?) then
-        grab_user_files
-        @queue_manager.next_macro_step(nil, nodes_ok)
-        @thread_process_finished_nodes.join
-        @deployments_table_lock.lock
-        nodes_ok_backup.set_deployment_state("deployed", nil, @db)
-        @deployments_table_lock.unlock
+        if grab_user_files then
+          @queue_manager.next_macro_step(nil, nodes_ok)
+          @thread_process_finished_nodes.join
+          @deployments_table_lock.lock
+          nodes_ok_backup.set_deployment_state("deployed", nil, @db)
+          @deployments_table_lock.unlock
+        else
+          @output.debugl(1, "Some error occurs when grabbing the files")
+        end
       else
         @output.debugl(1, "All the nodes have been discarded ...")
       end
