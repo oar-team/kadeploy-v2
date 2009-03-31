@@ -63,6 +63,7 @@ module PXEOperations
   # Arguments
   # * ips: array of ip (aaa.bbb.ccc.ddd string representation)
   # * kernel: basename of the vmlinuz file
+  # * kernel_params: kernel parameters
   # * initrd: basename of the initrd file
   # * boot_part: path of the boot partition
   # * tftp_repository: absolute path to the TFTP repository
@@ -70,7 +71,7 @@ module PXEOperations
   # * tftp_cfg: relative path to the TFTP configuration repository
   # Output
   # * returns the value of write_pxe
-  def PXEOperations::set_pxe_for_linux(ips, kernel, initrd, boot_part, tftp_repository, tftp_img, tftp_cfg)
+  def PXEOperations::set_pxe_for_linux(ips, kernel, kernel_params, initrd, boot_part, tftp_repository, tftp_img, tftp_cfg)
     if /\Ahttp:\/\/.+/ =~ kernel then
       kernel_line = "\tKERNEL " + kernel + "\n" #gpxelinux
     else
@@ -81,7 +82,11 @@ module PXEOperations
     else
       append_line = "\tAPPEND initrd=" + tftp_img + "/" + initrd #pxelinux
     end
-    append_line += " root=" + boot_part if (boot_part != "")
+    if (boot_part != "")
+      append_line += " root=" + boot_part + " " + kernel_params
+    else
+      append_line += " " + kernel_params
+    end
     append_line += "\n"
     msg = get_pxe_header() + kernel_line + append_line
     return write_pxe(ips, msg, tftp_repository, tftp_cfg)
