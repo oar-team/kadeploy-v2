@@ -28,7 +28,7 @@ def list_environments(config, db)
                         postinstall, kernel, kernel_params, \
                         initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                         FROM environments \
-                        GROUP BY name \
+                        GROUP BY user,name \
                         ORDER BY user,name"
       end
     else

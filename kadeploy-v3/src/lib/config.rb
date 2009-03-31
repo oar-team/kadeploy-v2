@@ -757,7 +757,7 @@ module ConfigInformation
           end
         }
         opts.on("-v", "--env-version NUMVERSION", "Number of version of the environment to deploy") { |n|
-          if /\A\d+\Z/ =~ u then
+          if /\A\d+\Z/ =~ n then
             exec_specific.env_version = n
           else
             Debug::client_error("Invalid version number")

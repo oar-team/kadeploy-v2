@@ -8,24 +8,25 @@ require 'process_management'
 
 #Ruby libs
 require 'drb'
+require 'socket'
 
 class KadeployServer
   @config = nil
   @client = nil
-  attr_reader :file_server_lock
+ # attr_reader :file_server_lock
   attr_reader :deployments_table_lock
   attr_reader :tcp_buffer_size
   attr_reader :dest_host
   attr_reader :dest_port
   @db = nil
-  @file_name = nil #any access to file_name must be protected with file_server_lock
+#  @file_name = nil #any access to file_name must be protected with file_server_lock
   @reboot_window = nil
   @nodes_check_window = nil
   @syslog_lock = nil
   @workflow_hash = nil
   @workflow_hash_lock = nil
   @workflow_hash_index = nil
-
+  
   # Constructor of KadeployServer
   #
   # Arguments
@@ -43,34 +44,12 @@ class KadeployServer
     @reboot_window = reboot_window
     @nodes_check_window = nodes_check_window
     puts "Launching the Kadeploy file server"
-    @file_server_lock = Mutex.new
     @deployments_table_lock = Mutex.new
     @syslog_lock = Mutex.new
-    sock = TCPServer.open(@dest_host, @dest_port)
     @db = db
     @workflow_info_hash = Hash.new
     @workflow_info_hash_lock = Mutex.new
     @workflow_info_hash_index = 0
-#    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-#    opt = [1].pack("i")
-#    sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, opt)
-#    sockaddr = Socket.pack_sockaddr_in(@dest_port, @dest_host)
-#    sock.bind(sockaddr)
-#    sock.listen(10)
-    if (sock.kind_of? TCPSocket) then
-      Thread.new {
-        while (session = sock.accept) do
-          file = File.new(@config.common.kadeploy_cache_dir + "/" + @file_name, "w")
-          while ((buf = session.recv(@tcp_buffer_size)) != "") do
-            file.write(buf)
-          end
-          file.close
-          session.close
-        end
-      }
-    else
-      raise "Can not open a socket on port #{@dest_port}"
-    end
   end
 
   # Record a Managers::WorkflowManager pointer
@@ -88,15 +67,36 @@ class KadeployServer
     return id
   end
 
-  # Prevent a shared object related to the file transfers from any modifications, it must be called before a file transfer (RPC)
+  # Create a socket server designed to copy a file from to client to the server cache (RPC)
   #
   # Arguments
-  # * file_name: name of the file that will be transfered
+  # * filename: name of the destination file
   # Output
-  # * nothing
-  def pre_send_file(file_name)
-    @file_server_lock.lock
-    @file_name = file_name
+  # * return the port allocated to the socket server
+  def create_a_socket_server(filename)
+    sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    sockaddr = Socket.pack_sockaddr_in(0, @config.common.kadeploy_server)
+    begin
+      sock.bind(sockaddr)
+    rescue
+      return -1
+    end
+    port = Socket.unpack_sockaddr_in(sock.getsockname)[0].to_i
+    Thread.new {
+      sock.listen(10)
+      begin
+        session = sock.accept
+        file = File.new(@config.common.kadeploy_cache_dir + "/" + filename, "w")
+        while ((buf = session[0].recv(@tcp_buffer_size)) != "") do
+          file.write(buf)
+        end
+        file.close
+        session[0].close
+      rescue
+        puts "The client has been probably disconnected..."
+      end
+    }
+    return port
   end
 
   # Kill a workflow (RPC)
@@ -112,16 +112,6 @@ class KadeployServer
       workflow.kill_workflow()
       @workflow_info_hash.delete(id)
     end
-  end
-
-  # Release a lock on a shared object, it must be called after a file transfer (RPC)
-  #
-  # Arguments
-  # * nothing
-  # Output
-  # * nothing
-  def post_send_file
-    @file_server_lock.unlock
   end
 
   # Get the common configuration (RPC)

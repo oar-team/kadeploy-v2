@@ -55,17 +55,23 @@ class KadeployClient
   # * file_name: name of the file on the client side
   # * prefix: prefix to add to the file_name
   # Output
-  # * nothing  
+  # * return true if the file has been successfully transfered, false otherwise
   def get_file(file_name, prefix)
-    @kadeploy_server.pre_send_file(prefix + File.basename(file_name))
-    sock = TCPSocket.new(@kadeploy_server.dest_host, @kadeploy_server.dest_port)
-    file = File.open(file_name)
-    while (buf = file.read(@kadeploy_server.tcp_buffer_size))
-      sock.send(buf, 0)
+    port = @kadeploy_server.create_a_socket_server(prefix + File.basename(file_name))
+    if port != -1 then
+      sock = TCPSocket.new(@kadeploy_server.dest_host, port)
+      file = File.open(file_name)
+      tcp_buffer_size = @kadeploy_server.tcp_buffer_size
+      while (buf = file.read(tcp_buffer_size))
+        sock.send(buf, 0)
+      end
+      sock.close
+      return true
+    else
+      return false
     end
-    sock.close
-    @kadeploy_server.post_send_file
   end
+
 
   # Print the results of the deployment (RPC)
   #
