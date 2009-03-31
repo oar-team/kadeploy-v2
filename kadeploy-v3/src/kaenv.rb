@@ -50,7 +50,7 @@ def list_environments(config, db)
                         ORDER BY name"
       end
     else
-      query = "SELECT * FROM environments WHERE (user=\"#{config.exec_specific.user}\" \
+      query = "SELECT * FROM environments WHERE user=\"#{config.exec_specific.user}\" \
                                           ORDER BY name,version"
     end
   end

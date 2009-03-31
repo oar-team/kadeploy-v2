@@ -422,9 +422,7 @@ module MicroStepsLibrary
           dst = dest_dir + "/" + prefix_in_cache + File.basename(file)
           res = res && File.move(src, dst)
         }
-        if (Dir.rmdir(tmpdir) != 0) then
-          @output.debugl(4, "Cannot remove the #{tmpdir} directory")
-        end
+        system("rm -rf #{tmpdir}")
         return res
       else
         return true
@@ -473,10 +471,13 @@ module MicroStepsLibrary
       case kind
       when "linux"
         line1 = "#{@config.exec_specific.environment.kernel}"
+        line1 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
         line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
-        line1 = "#{@config.exec_specific.environment.hypervisor} #{@config.exec_specific.environment.hypervisor_params}"
+        line1 = "#{@config.exec_specific.environment.hypervisor}"
+        line1 += " #{@config.exec_specific.environment.hypervisor_params}" if @config.exec_specific.environment.hypervisor_params != ""
         line2 = "#{@config.exec_specific.environment.kernel}"
+        line2 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
         line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
@@ -502,10 +503,13 @@ module MicroStepsLibrary
       case kind
       when "linux"
         line1 = "#{@config.exec_specific.environment.kernel}"
+        line1 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
         line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
         line1 = "#{@config.exec_specific.environment.hypervisor}"
+        line1 += " #{@config.exec_specific.environment.hypervisor_params}" if @config.exec_specific.environment.hypervisor_params != ""
         line2 = "#{@config.exec_specific.environment.kernel}"
+        line2 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
         line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
@@ -795,6 +799,7 @@ module MicroStepsLibrary
       when "prod_to_deploy_env"
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
                                                @config.cluster_specific[@cluster].deploy_kernel,
+                                               "",
                                                @config.cluster_specific[@cluster].deploy_initrd,
                                                "",
                                                @config.common.tftp_repository,
@@ -831,6 +836,7 @@ module MicroStepsLibrary
               res = res && system("touch -a #{images_dir}/#{initrd}")
               res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
                                                             kernel,
+                                                            @config.exec_specific.environment.kernel_params,
                                                             initrd,
                                                             @config.exec_specific.environment.part,
                                                             @config.common.tftp_repository,
@@ -896,6 +902,7 @@ module MicroStepsLibrary
       when "back_to_prod_env"
         res = PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,   
                                                @config.cluster_specific[@cluster].prod_kernel,
+                                               "",
                                                @config.cluster_specific[@cluster].prod_initrd,
                                                "",
                                                @config.common.tftp_repository,
