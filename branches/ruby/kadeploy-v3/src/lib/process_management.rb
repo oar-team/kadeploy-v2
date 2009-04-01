@@ -41,7 +41,10 @@ module ProcessManagement
       if not list.empty? then
         list.each { |pid|
           ProcessManagement::kill_tree(pid)
-          Process.kill(9, pid)
+          begin
+            Process.kill(9, pid)
+          rescue
+          end
         }
       else
         finished = true
@@ -59,6 +62,9 @@ module ProcessManagement
   # * nothing
   def ProcessManagement::killall(pid)
     ProcessManagement::kill_tree(pid)
-    Process.kill(9, pid)
+    begin
+      Process.kill(9, pid)
+    rescue
+    end
   end
 end

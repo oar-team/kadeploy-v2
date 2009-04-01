@@ -39,7 +39,6 @@ class KadeployServer
   def initialize(config, reboot_window, nodes_check_window, db)
     @config = config
     @dest_host = @config.common.kadeploy_server
-    @dest_port = @config.common.kadeploy_file_server_port
     @tcp_buffer_size = @config.common.kadeploy_tcp_buffer_size
     @reboot_window = reboot_window
     @nodes_check_window = nodes_check_window
@@ -276,29 +275,15 @@ rescue
   exit(1)
 end
 if (config.check_config("kadeploy") == true)
-  bt_pid = 0
-  if config.common.use_local_bt_tracker then
-    bt_pid = fork {
-      puts "Launching the Bittorrent tracker"
-      system("rm -f #{config.common.kadeploy_cache_dir}/bt_download_state")
-      exec("bttrack --port #{config.common.bt_tracker_port} --dfile #{config.common.kadeploy_cache_dir}/bt_download_state &>/dev/null")
-    }
-  end
   db = Database::DbFactory.create(config.common.db_kind)
   Signal.trap("TERM") do
     puts "TERM trapped, let's clean everything ..."
     db.disconnect
-    if (bt_pid != 0) then
-      ProcessManagement::killall(bt_pid)
-    end
     exit(1)
   end
   Signal.trap("INT") do
     puts "SIGINT trapped, let's clean everything ..."
     db.disconnect
-    if (bt_pid != 0) then
-      ProcessManagement::killall(bt_pid)
-    end
     exit(1)
   end
   db.connect(config.common.deploy_db_host,

@@ -188,7 +188,6 @@ tarball_dest_dir = /tmp
 environment_extraction_dir = /mnt/dest
 kadeploy_server = fgdx2.orsay.grid5000.fr
 kadeploy_server_port = 25300
-kadeploy_file_server_port = 25302
 kadeploy_tcp_buffer_size = 8192
 kadeploy_cache_dir = /tmp/kadeploy_cache
 kadeploy_cache_size = 500000
@@ -213,9 +212,7 @@ mkfs_options = ext2@-b 4096 -O sparse_super,filetype,resize_inode,dir_index|\
                ext3@-b 4096 -O sparse_super,filetype,resize_inode,dir_index
 demolishing_env_threshold = 2
 bt_tracker_ip = 172.24.100.2
-bt_tracker_port = 6969
 bt_download_timeout = 1800
-use_local_bt_tracker = true
 \end{verbatim}
 \end{small}
 
@@ -241,7 +238,6 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
 \item \texttt{environment\_extraction\_dir}: extraction directory for the tarball in the deployment environment.
 \item \texttt{kadeploy\_server}: hostname of the Kadeploy server.
 \item \texttt{kadeploy\_server\_port}: port of the Kadeploy server.
-\item \texttt{kadeploy\_file\_server\_port}: port of the Kadeploy file server. The file server is used to transfer the files specified in an environment description in the server cache.
 \item \texttt{kadeploy\_tcp\_buffer\_size}: TCP buffer size for the Kadeploy file server.
 \item \texttt{kadeploy\_cache\_dir}: absolute path of the Kadeploy cache. The cache dir is used to store the files of a user in a deployment.
 \item \texttt{kadeploy\_cache\_size}: size in MB of the Kadeploy cache.
@@ -265,9 +261,7 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
 \item \texttt{mkfs\_options}: options for mkfs. The options for several FS can be defined here with the following syntax: fstype1@options|fstype2@options|... (no newline is expected)
 \item \texttt{demolishing\_env\_threshold}: maximum number of reboot failures (on the production environment) before considering that an environment is demolishing.
 \item \texttt{bt\_tracker\_ip}: ip of the Bittorrent tracker.
-\item \texttt{bt\_tracker\_port}: port of the Bittorrent tracker.
 \item \texttt{bt\_download\_timeout}: timeout for the Bittorrent file download.
-\item \texttt{use\_local\_bt\_tracker}: launch a Bittorrent tracker with the kadeploy server (expected values are true or false).
 \end{itemize}
 
 \section{Cluster-specific configuration files}\label{sec:specific_config}

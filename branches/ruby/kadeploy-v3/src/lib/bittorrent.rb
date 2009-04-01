@@ -3,10 +3,18 @@ require 'cmdctrl_wrapper'
 
 #Ruby libs
 require 'tempfile'
+require 'process_management'
 
 module Bittorrent
-  private
+  DEFAULT_BITTORRENT_PORT = 6969
 
+  private
+  # Get the hash reference of a torrent
+  #
+  # Arguments
+  # * torrent: path to the torrent file
+  # Output
+  # * return the hash reference of the torrent
   def Bittorrent::get_torrent_hash(torrent)
     cmd = "btshowmetainfo #{torrent} | grep hash | sed 's/info hash.....: //'"
     pr = CmdCtrlWrapper::init
@@ -16,6 +24,14 @@ module Bittorrent
     return hash.chomp
   end
 
+  # Get the remaining leechers of a torrent
+  #
+  # Arguments
+  # * torrent_hash: hash reference to a torrent
+  # * track_ip: ip of the tracker
+  # * tracker_port: port of the tracker
+  # Output
+  # * return the number of remaining leechers or -1 if something went wrong
   def Bittorrent::get_remaining_download(torrent_hash, tracker_ip, tracker_port)
     #first, we get a temporary file
     temp = Tempfile.new("bttrack_wget")
@@ -37,6 +53,29 @@ module Bittorrent
 
 
   public
+
+  # Launch a Bittorrent tracker
+  #
+  # Arguments
+  # * file: filename of the download state file
+  # Output
+  # * return the pid of the tracker and its port
+  def Bittorrent::launch_tracker(file)
+    port = DEFAULT_BITTORRENT_PORT
+    try_another_port = true
+    while try_another_port
+      pid = Process.fork {
+        exec("bttrack --port #{port} --dfile file &>/dev/null" )
+      }
+      sleep(2)
+      if Process.waitpid(pid, Process::WNOHANG) then
+        port += 1
+      else
+        try_another_port = false
+      end
+    end
+    return pid, port
+  end
 
   # Make the torrent file
   #
@@ -99,7 +138,7 @@ module Bittorrent
       if (get_remaining_download(torrent_hash, tracker_ip, tracker_port) == 0) then
         finished = true
       else
-        sleep(10)
+        sleep(2)
       end
     end
     return finished

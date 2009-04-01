@@ -89,9 +89,11 @@
       @host_list.each { |host|
         node_found = false
         res = @db.run_query(query)
-        while ((hash = res.fetch_hash) && (node_found == false)) do
-          if ((hash["node"] == host) || (hash["node"] == "*")) then
-            node_found = true
+        if res != nil then
+          while ((node_found == false) && (hash = res.fetch_hash)) do
+            if ((hash["node"] == host) || (hash["node"] == "*")) then
+              node_found = true
+            end
           end
         end
         if (node_found == false) then
