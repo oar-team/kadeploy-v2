@@ -9,7 +9,7 @@ deploy_db_name = deploy
 deploy_db_login = deploy
 deploy_db_passwd = deploy
 rights_kind = db
-taktuk_ssh_connector = ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey -o BatchMode=yes -i /root/.ssh/id_deploy
+taktuk_ssh_connector = ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey -o BatchMode=yes -i /root/.ssh/id_deploy -l root
 taktuk_rsh_connector = rsh -l root
 taktuk_tree_arity = 0
 taktuk_auto_propagate = false
@@ -17,7 +17,6 @@ tarball_dest_dir = /tmp
 environment_extraction_dir = /mnt/dest
 kadeploy_server = g5kdev
 kadeploy_server_port = 25300
-kadeploy_file_server_port = 25302
 kadeploy_tcp_buffer_size = 8192
 kadeploy_cache_dir = /tmp/kadeploy_cache
 kadeploy_cache_size = 500000
@@ -41,6 +40,4 @@ rambin_path = /rambin
 mkfs_options = ext2@-b 4096 -O sparse_super,filetype,resize_inode,dir_index|ext3@-b 4096 -O sparse_super,filetype,resize_inode,dir_index
 demolishing_env_threshold = 2
 bt_tracker_ip = fgdx2
-bt_tracker_port = 6969
 bt_download_timeout = 1800
-use_local_bt_tracker = true

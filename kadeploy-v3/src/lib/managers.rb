@@ -612,9 +612,11 @@ module Managers
         @output.debugl(1, "The nodes #{nodes_ko.to_s} are already involved in deployment, let's discard them") if (not nodes_ko.empty?)
       end
       #We backup the set of nodes used in the deployement to be able to update their deployment state at the end of the deployment
-      nodes_ok_backup = Nodes::NodeSet.new
-      nodes_ok.duplicate(nodes_ok_backup)
-      nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db)
+      if not nodes_ok.empty? then
+        nodes_ok_backup = Nodes::NodeSet.new
+        nodes_ok.duplicate(nodes_ok_backup)
+        nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db)
+      end
       @deployments_table_lock.unlock
       if (not nodes_ok.empty?) then
         if grab_user_files then

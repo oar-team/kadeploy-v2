@@ -241,8 +241,6 @@ module ConfigInformation
               @common.kadeploy_server = val
             when "kadeploy_server_port"
               @common.kadeploy_server_port = val.to_i
-            when "kadeploy_file_server_port"
-              @common.kadeploy_file_server_port = val.to_i
             when "kadeploy_tcp_buffer_size"
               @common.kadeploy_tcp_buffer_size = val.to_i
             when "kadeploy_cache_dir"
@@ -377,25 +375,11 @@ module ConfigInformation
                 puts "Invalid value for the bt_tracker_ip field"
                 return false
               end
-            when "bt_tracker_port"
-              if val =~ /\A\d+\Z/ then
-                @common.bt_tracker_port = val
-              else
-                puts "Invalid value for the bt_tracker_port field"
-                return false
-              end
             when "bt_download_timeout"
               if val =~ /\A\d+\Z/ then
                 @common.bt_download_timeout = val.to_i
               else
                 puts "Invalid value for the bt_download_timeout field"
-                return false
-              end
-            when "use_local_bt_tracker"  
-              if val =~ /\Atrue|false\Z/ then        
-                @common.use_local_bt_tracker = (val == "true")
-              else
-                puts "Invalid value for the use_local_bt_tracker field"
                 return false
               end
             end
@@ -1530,7 +1514,6 @@ module ConfigInformation
     attr_accessor :tarball_dest_dir
     attr_accessor :kadeploy_server
     attr_accessor :kadeploy_server_port
-    attr_accessor :kadeploy_file_server_port
     attr_accessor :kadeploy_tcp_buffer_size
     attr_accessor :kadeploy_cache_dir
     attr_accessor :kadeploy_cache_size
@@ -1554,9 +1537,7 @@ module ConfigInformation
     attr_accessor :rambin_path
     attr_accessor :mkfs_options
     attr_accessor :demolishing_env_threshold
-    attr_accessor :use_local_bt_tracker
     attr_accessor :bt_tracker_ip
-    attr_accessor :bt_tracker_port
     attr_accessor :bt_download_timeout
 
     # Constructor of CommonConfig
@@ -1581,15 +1562,15 @@ module ConfigInformation
           (@deploy_db_login == nil) || (@deploy_db_passwd == nil) || (@rights_kind == nil) || (@nodes_desc == nil) ||
           (@taktuk_ssh_connector == nil) || (@taktuk_rsh_connector == nil) ||
           (@taktuk_tree_arity == nil) || (@taktuk_auto_propagate == nil) || (@tarball_dest_dir == nil) ||
-          (@kadeploy_server == nil) || (@kadeploy_server_port == nil) || (@kadeploy_file_server_port == nil) ||
+          (@kadeploy_server == nil) || (@kadeploy_server_port == nil) ||
           (@kadeploy_tcp_buffer_size == nil) || (@kadeploy_cache_dir == nil) || (@kadeploy_cache_size == nil) ||
           (@ssh_port == nil) || (@rsh_port == nil) || (@test_deploy_env_port == nil) || (@use_rsh_to_deploy == nil) ||
           (@environment_extraction_dir == nil) || (@log_to_file == nil) || (@log_to_syslog == nil) || (@log_to_db == nil) ||
           (@dbg_to_syslog == nil) || (@dbg_to_syslog_level == nil) || (@reboot_window == nil) || 
           (@reboot_window_sleep_time == nil) || (@nodes_check_window == nil) || (@nfsroot_kernel == nil) ||
           (@nfs_server == nil) || (@bootloader == nil) || (@purge_deployment_timer == nil) || (@rambin_path == nil) ||
-          (@mkfs_options == nil) || (@demolishing_env_threshold == nil) || (@use_local_bt_tracker == nil) ||
-          (@bt_tracker_ip == nil) || (@bt_tracker_port == nil) || (@bt_download_timeout == nil)) then
+          (@mkfs_options == nil) || (@demolishing_env_threshold == nil) ||
+          (@bt_tracker_ip == nil) || (@bt_download_timeout == nil)) then
         puts "Some fields are missing in the common configuration file"
         return false
       else
@@ -1628,6 +1609,9 @@ module ConfigInformation
     # * nothing        
     def initialize
       @workflow_steps = Array.new
+      @drivers = nil
+      @admin_pre_install = nil
+      @admin_post_install = nil
     end
     
 
