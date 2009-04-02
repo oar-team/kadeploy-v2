@@ -346,7 +346,7 @@ module ParallelOperations
       start = Time.now.tv_sec
 
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
-        sleep(2)
+        sleep(5)
         nodes_to_test = Nodes::NodeSet.new
         @nodes.set.each { |node|
           if node.state == "KO" then
@@ -405,7 +405,7 @@ module ParallelOperations
                 a += "#{node.hostname},"
               end
             }
-            #puts "    -+-+- Missing nodes: #{a}"  if (a != "")
+#            puts "    -+-+- Missing nodes: #{a}"  if (a != "")
           }
           nodes_check_window.launch(nodes_to_test, &callback)
         }
