@@ -564,8 +564,8 @@ module MicroStepsLibrary
     # * return true if the operation is correctly performed, false otherwise
     def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
       torrent = "#{tarball_file}.torrent"
-      btdownload_state = Tempfile.new("btdownload_state")
-      tracker_pid, tracker_port = Bittorrent::launch_tracker(btdownload_state.path)
+      btdownload_state = "/tmp/btdownload_state#{Time.now.to_f}"
+      tracker_pid, tracker_port = Bittorrent::launch_tracker(btdownload_state)
       if not Bittorrent::make_torrent(tarball_file, @config.common.bt_tracker_ip, tracker_port) then
         @output.debugl(0, "The torrent file (#{torrent}) has not been created")
         return false
@@ -576,14 +576,14 @@ module MicroStepsLibrary
         return false
       end
       if not parallel_send_file_command_wrapper(torrent, "/tmp", "tree", @config.common.taktuk_connector) then
-        @output.debugl(4, "Error while sending the torrent file")
+        @output.debugl(0, "Error while sending the torrent file")
         return false
       end
       if not parallel_exec_command_wrapper("/usr/local/bin/bittorrent_detach /tmp/#{File.basename(torrent)}", @config.common.taktuk_connector) then
-        @output.debugl(4, "Error while launching the bittorrent download")
+        @output.debugl(0, "Error while launching the bittorrent download")
         return false
       end
-      sleep(10)
+      sleep(20)
       if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, tracker_port) then
         @output.debugl(0, "A timeout for the bittorrent download has been reached")
         ProcessManagement::killall(seed_pid)
@@ -593,7 +593,7 @@ module MicroStepsLibrary
       ProcessManagement::killall(seed_pid)
       @output.debugl(4, "Shutdown the tracker for #{torrent}")
       ProcessManagement::killall(tracker_pid)
-      btdownload_state.close(true)
+      system("rm -f #{btdownload_state}")
       case tarball_kind
       when "tgz"
         cmd = "tar xzf /tmp/#{File.basename(tarball_file)} -C #{deploy_mount_point}"
@@ -611,7 +611,7 @@ module MicroStepsLibrary
         @output.debugl(4, "Error while uncompressing the tarball")
         return false
       end
-      if not parallel_exec_command_wrapper("rm /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
+      if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
         @output.debugl(4, "Error while cleaning the /tmp")
         return false
       end
@@ -1210,7 +1210,6 @@ module MicroStepsLibrary
     # Output
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
-      start = Time.now.to_i
       if  (scattering_kind == "bittorrent") then
         res= send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
                                                            @config.exec_specific.environment.tarball["kind"],
@@ -1223,8 +1222,6 @@ module MicroStepsLibrary
                                                        @config.common.environment_extraction_dir,
                                                        @config.exec_specific.environment.part)
       end
-      total = Time.now.to_i - start
-      p "SEND ENV #{total} seconds"
       return res
     end
 

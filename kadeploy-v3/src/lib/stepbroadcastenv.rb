@@ -212,7 +212,7 @@ module BroadcastEnvironment
         #After several retries, some nodes may still be in an incorrect state
         if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
-          if not replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
             @queue_manager.decrement_active_threads
           end
@@ -258,15 +258,15 @@ module BroadcastEnvironment
             if not @nodes_ok.empty? then
               @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
               @nodes_ok.duplicate_and_free(instance_node_set)
-              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
-            end
+               @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
+             end
           end
           @remaining_retries -= 1
         end
         #After several retries, some nodes may still be in an incorrect state
         if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
           #Maybe some other instances are defined
-          if not replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
             @queue_manager.add_to_bad_nodes_set(@nodes_ko)
             @queue_manager.decrement_active_threads
           end

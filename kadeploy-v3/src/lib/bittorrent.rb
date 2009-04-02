@@ -65,10 +65,10 @@ module Bittorrent
     try_another_port = true
     while try_another_port
       pid = Process.fork {
-        exec("bttrack --port #{port} --dfile file &>/dev/null" )
+        exec("bttrack --port #{port} --dfile #{file} --max_give 5000 2>&1 >/dev/null")
       }
       sleep(2)
-      if Process.waitpid(pid, Process::WNOHANG) then
+      if Process.waitpid(pid, Process::WNOHANG) != nil then
         port += 1
       else
         try_another_port = false
@@ -86,7 +86,7 @@ module Bittorrent
   # Output
   # * return true if the torrent file has been correctly generated, false otherwise
   def Bittorrent::make_torrent(filename, tracker_ip, tracker_port)
-    cmd = "btmakemetafile #{filename} http://#{tracker_ip}:#{tracker_port}/announce &>/dev/null"
+    cmd = "btmakemetafile #{filename} http://#{tracker_ip}:#{tracker_port}/announce 2>&1 >/dev/null"
     return system(cmd)
   end
 
@@ -98,7 +98,7 @@ module Bittorrent
   # Output
   # * return the pid of the forked process, -1 if the operation has not been performed correcty
   def Bittorrent::launch_seed(torrent, kadeploy_cache)
-    cmd = "cd #{kadeploy_cache} ; btdownloadheadless #{torrent} &>/dev/null"
+    cmd = "cd #{kadeploy_cache} ; btdownloadheadless #{torrent} 2>&1 >/dev/null"
     pid = fork {
       exec(cmd)
     }
@@ -138,7 +138,7 @@ module Bittorrent
       if (get_remaining_download(torrent_hash, tracker_ip, tracker_port) == 0) then
         finished = true
       else
-        sleep(2)
+        sleep(3)
       end
     end
     return finished
