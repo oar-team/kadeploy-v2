@@ -55,13 +55,16 @@ module ConfigInformation
         when "empty"
           res = true
         else
-          raise "Invalid configuration kind: #{kind}"
+          puts "Invalid configuration kind: #{kind}"
+          raise
         end
         if not res then
-          raise "Problem in configuration"
+          puts "Problem in configuration"
+          raise
         end
       else
-        raise "Unsane configuration"
+        puts "Unsane configuration"
+        raise
       end
     end
 
@@ -140,7 +143,8 @@ module ConfigInformation
           Debug::client_error("You must choose an environment")
           return nil
         else
-          raise "Invalid method for environment loading"
+          puts "Invalid method for environment loading"
+          raise
         end
         return exec_specific
       else
@@ -538,6 +542,9 @@ module ConfigInformation
             end
           end
         }
+        if @cluster_specific[cluster].check_all_fields_filled(cluster) == false then
+          return false
+        end
       }
       return true
     end
@@ -630,15 +637,20 @@ module ConfigInformation
     # * hostname: hostname of the node
     # * cluster: cluster whom the node belongs to
     # Output
-    # * return an instance of NodeCmd
+    # * return an instance of NodeCmd or raise an exception if the cluster specific config has not been read
     def generate_commands(hostname, cluster)
       cmd = Nodes::NodeCmd.new
-      cmd.reboot_soft_rsh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_rsh, hostname)
-      cmd.reboot_soft_ssh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_ssh, hostname)
-      cmd.reboot_hard = replace_hostname(@cluster_specific[cluster].cmd_hard_reboot, hostname)
-      cmd.reboot_very_hard = replace_hostname(@cluster_specific[cluster].cmd_very_hard_reboot, hostname)
-      cmd.console = replace_hostname(@cluster_specific[cluster].cmd_console, hostname)
-      return cmd
+      if @cluster_specific.has_key?(cluster) then
+        cmd.reboot_soft_rsh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_rsh, hostname)
+        cmd.reboot_soft_ssh = replace_hostname(@cluster_specific[cluster].cmd_soft_reboot_ssh, hostname)
+        cmd.reboot_hard = replace_hostname(@cluster_specific[cluster].cmd_hard_reboot, hostname)
+        cmd.reboot_very_hard = replace_hostname(@cluster_specific[cluster].cmd_very_hard_reboot, hostname)
+        cmd.console = replace_hostname(@cluster_specific[cluster].cmd_console, hostname)
+        return cmd
+      else
+        puts "Missing specific config file for the cluster #{cluster}"
+        raise
+      end
     end
 
 
@@ -880,9 +892,6 @@ module ConfigInformation
       end
      
       @cluster_specific.each_key { |cluster|
-        if not @cluster_specific[cluster].check_all_fields_filled(cluster) then
-          return false
-        end
         #admin_pre_install file
         if (cluster_specific[cluster].admin_pre_install != nil) then
           @cluster_specific[cluster].admin_pre_install.each { |entry|
@@ -1609,6 +1618,21 @@ module ConfigInformation
     # * nothing        
     def initialize
       @workflow_steps = Array.new
+      @deploy_kernel = nil
+      @deploy_initrd = nil
+      @block_device = nil
+      @deploy_part = nil
+      @prod_part = nil
+      @prod_kernel = nil
+      @prod_initrd = nil
+      @tmp_part = nil
+      @timeout_reboot = nil
+      @cmd_soft_reboot_rsh = nil
+      @cmd_soft_reboot_ssh = nil
+      @cmd_hard_reboot = nil
+      @cmd_very_hard_reboot = nil
+      @cmd_console = nil
+      @fdisk_file = nil
       @drivers = nil
       @admin_pre_install = nil
       @admin_post_install = nil
