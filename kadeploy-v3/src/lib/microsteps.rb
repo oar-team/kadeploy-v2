@@ -563,6 +563,10 @@ module MicroStepsLibrary
     # Output
     # * return true if the operation is correctly performed, false otherwise
     def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
+      if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
+        @output.debugl(4, "Error while cleaning the /tmp")
+        return false
+      end
       torrent = "#{tarball_file}.torrent"
       btdownload_state = "/tmp/btdownload_state#{Time.now.to_f}"
       tracker_pid, tracker_port = Bittorrent::launch_tracker(btdownload_state)
@@ -584,7 +588,8 @@ module MicroStepsLibrary
         return false
       end
       sleep(20)
-      if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, tracker_port) then
+      expected_clients = @nodes_ok.length
+      if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, tracker_port, expected_clients) then
         @output.debugl(0, "A timeout for the bittorrent download has been reached")
         ProcessManagement::killall(seed_pid)
         return false

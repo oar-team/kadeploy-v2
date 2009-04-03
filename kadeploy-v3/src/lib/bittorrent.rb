@@ -51,6 +51,33 @@ module Bittorrent
     end
   end
 
+  # Get the number of completed downloads for a torrent
+  #
+  # Arguments
+  # * torrent_hash: hash reference to a torrent
+  # * track_ip: ip of the tracker
+  # * tracker_port: port of the tracker
+  # Output
+  # * return the number of completed downloads or -1 if something went wrong
+  def Bittorrent::get_downloaded(torrent_hash, tracker_ip, tracker_port)
+    #first, we get a temporary file
+    temp = Tempfile.new("bttrack_wget")
+    #then, we grab the HTML output of bttrack
+    cmd = "wget --quiet -O #{temp.path} http://#{tracker_ip}:#{tracker_port} ; grep #{torrent_hash} #{temp.path} | sed 's/\"//g'"
+    pr = CmdCtrlWrapper::init
+    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
+    CmdCtrlWrapper::run(pr)
+    html_output = CmdCtrlWrapper::get_output(pr)
+    temp.unlink
+    if /<tr><td.+\/td><td.+\/td><td.+\/td><td align=right><code>(\d+)<\/code><\/td><\/tr>/ =~ html_output then
+      content = Regexp.last_match
+      nb = content[1].to_i
+      return nb
+    else
+      return -1
+    end
+  end
+
 
   public
 
@@ -128,14 +155,17 @@ module Bittorrent
   # Arguments
   # * timeout: timeout
   # * torrent: name of the torrent
+  # * tracker_port: port of tracker
+  # * expected_clients: number of expected clients
   # Output
   # * return true if the download is finished before the timeout, false otherwise
-  def Bittorrent::wait_end_of_download(timeout, torrent, tracker_ip, tracker_port)
+  def Bittorrent::wait_end_of_download(timeout, torrent, tracker_ip, tracker_port, expected_clients)
     finished = false
     start = Time.now.to_i
     torrent_hash = get_torrent_hash(torrent)
     while ((Time.now.to_i - start) < timeout) && (not finished)
-      if (get_remaining_download(torrent_hash, tracker_ip, tracker_port) == 0) then
+      current_dl = get_downloaded(torrent_hash, tracker_ip, tracker_port)
+      if (current_dl == expected_clients) then
         finished = true
       else
         sleep(3)
