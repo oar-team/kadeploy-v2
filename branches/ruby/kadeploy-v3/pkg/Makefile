@@ -8,6 +8,7 @@ BIN=$(KADEPLOY_ROOT)/bin
 SBIN=$(KADEPLOY_ROOT)/sbin
 CONF=$(KADEPLOY_ROOT)/conf
 ADDONS=$(KADEPLOY_ROOT)/addons
+DB=$(KADEPLOY_ROOT)/db
 TEST=$(KADEPLOY_ROOT)/test
 default: package_all
 
@@ -52,6 +53,9 @@ install_test:
 install_rc_script:
 	@install -m 644 $(ADDONS)/rc/kadeploy_server $(DEB_ROOT_SERVER)/etc/init.d
 
+install_db_script:
+	@install -m 644 $(DB)/db_creation.sql $(DEB_ROOT_COMMON)/usr/local/kadeploy3/db
+
 install_ssh_key:
 	@install -o $(DEPLOY_USER) -m 400 $(ADDONS)/ssh/id_deploy $(DEB_ROOT_SERVER)/.keys
 
@@ -87,7 +91,7 @@ package_client: tree_client install_conf_client install_bin
 	@dpkg-deb --build $(DEB_ROOT_CLIENT) kadeploy-v3-client.deb
 package_server: tree_server install_conf_server install_rc_script install_ssh_key install_sbin
 	@dpkg-deb --build $(DEB_ROOT_SERVER) kadeploy-v3-server.deb	
-package_common: tree_common install_conf_common install_src install_debootstrap install_test
+package_common: tree_common install_conf_common install_src install_debootstrap install_test install_db_script
 	@dpkg-deb --build $(DEB_ROOT_COMMON) kadeploy-v3-common.deb
 
 package_all: package_client package_server package_common
