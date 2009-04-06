@@ -22,6 +22,7 @@ my $OAR_PROPERTIES=$ENV{'OAR_RESOURCE_PROPERTIES_FILE'};
 my $OAR_NODEFILE=$ENV{'OAR_NODEFILE'};
 my $OARSTAT="oarstat"; # oarstat command
 my $VLAN_PROPERTY_NAME="vlan"; # OAR property name of the VLAN ressource
+my $VM_PREFIX="kavlan"; # Virtual machine name prefix (name should be "kavlan-VLANID")
 my $VLAN_RANGE_NAME="NetVlan"; # config name of network range (site section)
 my $VLAN_GATEWAY_NAME="IPVlan"; # config name of network gateway (router section)
 
@@ -37,6 +38,7 @@ GetOptions(\%options,
         "r|get-network-range",
         "g|get-network-gateway",
         "d|disable-dhcp",
+        "e|enable-dhcp",
         "i|vlan-id=s",
         "l|get-nodelist",
         "V|get-vlan-id",
@@ -98,9 +100,19 @@ if ($options{"r"}) {   # get-network-range
         &mydie("ERROR : Unknown network gateway for vlan $VLAN\nERROR : please check your configuration file");
     }
 } elsif ($options{"d"} ){ # disable dhcp server for the given vlan
-    # TODO
     my $VLAN  = &get_vlan();
-    die "disable dhcp server: not implemented";
+    if (defined $VLAN) {
+    exec("ssh $VM_PREFIX-$VLAN sudo /etc/init.d/dhcp3-server stop" );
+    } else {
+        &mydie("No VLAN found, abort!");
+    }
+} elsif ($options{"e"} ){ # disable dhcp server for the given vlan
+    my $VLAN  = &get_vlan();
+    if (defined $VLAN) {
+    exec("ssh $VM_PREFIX-$VLAN sudo /etc/init.d/dhcp3-server start" );
+    } else {
+        &mydie("No VLAN found, abort!");
+    }
 } elsif ($options{"s"} ){ # set vlan for given nodes
     my @nodes;
     my $VLAN  = &get_vlan();
@@ -248,7 +260,7 @@ sub get_vlan_property {
     while (<PROP>) {
         chomp;
         foreach my $prop (split /\s+\,\s+/) {
-            if ($prop =~ m/$VLAN_PROPERTY_NAME\s+\=\s+\'(\w+)\'/) {
+            if ($prop =~ m/$VLAN_PROPERTY_NAME\s+\=\s+\'(\d+)\'/) {
                 &const::verbose("found vlan = $1");
                 close(PROP);
                 return $1;
@@ -273,8 +285,9 @@ USAGE : kavlan [options]
        -r|--get-network-range
        -g|--get-network-gateway
        -l|--get-nodelist
-          --get-vlan-id              print VLAN ID of job (needs -j JOBID)
+       -V|--get-vlan-id              print VLAN ID of job (needs -j JOBID)
        -d|--disable-dhcp
+       -e|--enable-dhcp
        -i|--vlan_id <VLANID>
        -s                            set vlan for given node(s)
        -f|--filenode <NODEFILE>
