@@ -45,7 +45,7 @@ if (config.check_config("kaconsole") == true) then
   set.push(config.exec_specific.node)
   if (CheckRights::CheckRightsFactory.create(common_config.rights_kind, set, db, part).granted?) then
     pid = Process.fork {
-      exec(config.exec_specific.node.cmd.console)
+      exec("#{config.exec_specific.node.cmd.console} #{config.exec_specific.node.hostname}")
     }
     state = "running"
     while ((CheckRights::CheckRightsFactory.create(common_config.rights_kind, set, db, part).granted?) &&
@@ -61,6 +61,7 @@ if (config.check_config("kaconsole") == true) then
     end
     if (state == "running") then
       Process.kill("SIGKILL", pid)
+      system("reset")
       puts "Console killed"
     end
   else
