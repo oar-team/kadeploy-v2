@@ -1355,6 +1355,7 @@ module ConfigInformation
       @exec_specific.check_prod_env = false
       @exec_specific.true_user = ENV['USER']
       @exec_specific.breakpoint_on_microstep = "none"
+      @exec_specific.key = String.new
       return load_kareboot_cmdline_options(nodes_desc)
     end
 
@@ -1367,7 +1368,7 @@ module ConfigInformation
     def load_kareboot_cmdline_options(nodes_desc)
       opts = OptionParser::new do |opts|
         opts.summary_indent = "  "
-        opts.summary_width = 28
+        opts.summary_width = 30
         opts.banner = "Usage: kareboot [options]"
         opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
@@ -1388,11 +1389,19 @@ module ConfigInformation
             Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific)
           }
         }
-        opts.on("-k", "--kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot)") { |k|
-          @exec_specific.reboot_kind = k
+        opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
+          if not File.readable?(f) then
+            Debug::client_error("The file #{f} cannot be read")
+            return false
+          else
+            @exec_specific.key = File.expand_path(f)
+          end
         }
         opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
           Config.add_to_node_list(hostname, nodes_desc, @exec_specific)
+        }
+        opts.on("-r", "--reboot-kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot, deploy_env)") { |k|
+          @exec_specific.reboot_kind = k
         }
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           @exec_specific.pxe_profile_file = file
@@ -1422,7 +1431,7 @@ module ConfigInformation
         Debug::client_error("Invalid debug level")
         return false
       end
-      authorized_ops = ["back_to_prod_env", "set_pxe", "simple_reboot"]
+      authorized_ops = ["back_to_prod_env", "set_pxe", "simple_reboot", "deploy_env"]
       if not authorized_ops.include?(@exec_specific.reboot_kind) then
         Debug::client_error("Invalid kind of reboot: #{@exec_specific.reboot_kind}")
         return false
@@ -1433,6 +1442,10 @@ module ConfigInformation
       end
       if (@exec_specific.reboot_kind == "set_pxe") && (@exec_specific.pxe_profile_file == "") then
         Debug::client_error("The set_pxe reboot must be used with the -w option")
+        return false
+      end
+      if (@exec_specific.key != "") && (@exec_specific.reboot_kind != "deploy_env") then
+        Debug::client_error("The -k option can be only used with the deploy_env reboot kind")
         return false
       end
       return true
