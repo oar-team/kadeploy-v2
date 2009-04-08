@@ -19,7 +19,6 @@ class KadeployServer
   attr_reader :dest_host
   attr_reader :dest_port
   @db = nil
-#  @file_name = nil #any access to file_name must be protected with file_server_lock
   @reboot_window = nil
   @nodes_check_window = nil
   @syslog_lock = nil
@@ -248,6 +247,8 @@ class KadeployServer
           step.switch_pxe("set_pxe", pxe_profile_msg)
         when "simple_reboot"
           #no need to change the PXE profile
+        when "deploy_env"
+          step.switch_pxe("prod_to_deploy_env")
         else
           raise "Invalid kind of reboot: #{@reboot_kind}"
         end
@@ -260,6 +261,9 @@ class KadeployServer
             step.nodes_ko.tag_demolishing_env(@db)
             return_value = 1
           end
+        end
+        if (exec_specific.reboot_kind == "deploy_env") then
+          step.send_key_in_deploy_env("tree")
         end
       }
     end
