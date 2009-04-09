@@ -775,8 +775,13 @@ module ConfigInformation
         opts.on("--disable-bootloader-install", "Disable the automatic installation of a bootloader for a Linux based environnment") {
           exec_specific.disable_bootloader_install = true
         }
-        opts.on("--breakpoint MICROSTEP", "Set a breakpoint just before lauching the give micro-step (use this only if you know what you do)") { |m|
-          exec_specific.breakpoint_on_microstep = m
+        opts.on("--breakpoint MICROSTEP", "Set a breakpoint just before lauching the given micro-step, the syntax is macrostep:microstep (use this only if you know what you do)") { |m|
+          if (m =~ /\A[a-zA-Z0-9_]+:[a-zA-Z0-9_]+\Z/)
+            exec_specific.breakpoint_on_microstep = m
+          else
+            Debug::client_error("The value #{m} for the breakpoint entry is invalid")
+            return false
+          end
         }
         opts.on("--set-custom-operations FILE", "Add some custom operations defined in a file") { |file|
           exec_specific.custom_operations_file = file
