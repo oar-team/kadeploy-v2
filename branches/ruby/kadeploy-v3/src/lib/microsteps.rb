@@ -752,24 +752,27 @@ module MicroStepsLibrary
       else
         real_method = "ms_#{method_sym.to_s}".to_sym
         if (self.class.method_defined? real_method) then
-          if (@config.exec_specific.breakpoint_on_microstep == method_sym.to_s) then
-            @output.debugl(0, "BRK #{method_sym.to_s}: #{@nodes_ok.to_s}")
-            @config.exec_specific.breakpointed = true
-            return false
-          else
-            if custom_methods_attached?(@macro_step, method_sym.to_s) then
-              if run_custom_methods(@macro_step, method_sym.to_s) then
-                @output.debugl(3, "--- #{method_sym.to_s}")
-                @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
-                send(real_method, *args)
-              else
-                return false
-              end
-            else
+          if (@config.exec_specific.breakpoint_on_microstep != "none") then
+            brk_on_macrostep = @config.exec_specific.breakpoint_on_microstep.split(":")[0]
+            brk_on_microstep = @config.exec_specific.breakpoint_on_microstep.split(":")[1]
+            if ((brk_on_macrostep == @macro_step) && (brk_on_microstep == method_sym.to_s)) then
+              @output.debugl(0, "BRK #{method_sym.to_s}: #{@nodes_ok.to_s}")
+              @config.exec_specific.breakpointed = true
+              return false
+            end
+          end
+          if custom_methods_attached?(@macro_step, method_sym.to_s) then
+            if run_custom_methods(@macro_step, method_sym.to_s) then
               @output.debugl(3, "--- #{method_sym.to_s}")
               @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
               send(real_method, *args)
+            else
+              return false
             end
+          else
+            @output.debugl(3, "--- #{method_sym.to_s}")
+            @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
+            send(real_method, *args)
           end
         else
           @output.debugl(0, "Wrong method: #{method_sym} #{real_method}!!!")
