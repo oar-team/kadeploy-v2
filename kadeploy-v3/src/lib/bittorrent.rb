@@ -125,7 +125,8 @@ module Bittorrent
   # Output
   # * return the pid of the forked process, -1 if the operation has not been performed correcty
   def Bittorrent::launch_seed(torrent, kadeploy_cache)
-    cmd = "cd #{kadeploy_cache} ; btdownloadheadless #{torrent} 2>&1 >/dev/null"
+#    cmd = "cd #{kadeploy_cache} ; btdownloadheadless #{torrent} 2>&1 >/dev/null"
+    cmd = "cd #{kadeploy_cache} ; ctorrent #{torrent} 2>&1 >/dev/null"
     pid = fork {
       exec(cmd)
     }

@@ -14,7 +14,7 @@ module ConfigInformation
   COMMON_CONFIGURATION_FILE = "conf"
   CLIENT_CONFIGURATION_FILE = "client_conf"
   SPECIFIC_CONFIGURATION_FILE_PREFIX = "specific_conf_"
-  FDISK_FILE_PREFIX = "fdisk_"
+  PARTITION_FILE_PREFIX = "partition_file_"
 
   class Config
     public
@@ -429,7 +429,7 @@ module ConfigInformation
       Dir[CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX + "*"].each { |f|
         cluster = String.new(f).sub(CONFIGURATION_FOLDER + "/" + SPECIFIC_CONFIGURATION_FILE_PREFIX, "")
         @cluster_specific[cluster] = ClusterSpecificConfig.new
-        @cluster_specific[cluster].fdisk_file = CONFIGURATION_FOLDER + "/" + FDISK_FILE_PREFIX + cluster
+        @cluster_specific[cluster].partition_file = CONFIGURATION_FOLDER + "/" + PARTITION_FILE_PREFIX + cluster
         IO.readlines(f).each { |line|
           if not (/^#/ =~ line) then #we ignore commented lines
             if /(.+)\ \=\ (.+)/ =~ line then
@@ -538,6 +538,13 @@ module ConfigInformation
                   tmp.push([instance_name, instance_max_retries, instance_timeout])
                 }
                 @cluster_specific[cluster].workflow_steps.push(MacroStep.new(macrostep_name, tmp))
+              when "partition_creation_kind"
+                if val =~ /\Afdisk|parted\Z/ then
+                  @cluster_specific[cluster].partition_creation_kind = val
+                else
+                  puts "Invalid value for the partition_creation_kind in the #{cluster} config file. Expected values are fdisk or parted"
+                  return false
+                end
               end
             end
           end
@@ -1623,7 +1630,8 @@ module ConfigInformation
     attr_accessor :cmd_hard_reboot
     attr_accessor :cmd_very_hard_reboot
     attr_accessor :cmd_console
-    attr_accessor :fdisk_file
+    attr_accessor :partition_creation_kind
+    attr_accessor :partition_file
     attr_accessor :drivers
     attr_accessor :admin_pre_install
     attr_accessor :admin_post_install
@@ -1650,10 +1658,11 @@ module ConfigInformation
       @cmd_hard_reboot = nil
       @cmd_very_hard_reboot = nil
       @cmd_console = nil
-      @fdisk_file = nil
       @drivers = nil
       @admin_pre_install = nil
       @admin_post_install = nil
+      @partition_creation_kind = nil
+      @partition_file = nil
     end
     
 
@@ -1680,10 +1689,11 @@ module ConfigInformation
       dest.cmd_hard_reboot = @cmd_hard_reboot.clone
       dest.cmd_very_hard_reboot = @cmd_very_hard_reboot.clone
       dest.cmd_console = @cmd_console.clone
-      dest.fdisk_file = @fdisk_file.clone
       dest.drivers = @drivers.clone if (@drivers != nil)
       dest.admin_pre_install = @admin_pre_install.clone if (@admin_pre_install != nil)
       dest.admin_post_install = @admin_post_install.clone if (@admin_post_install != nil)
+      dest.partition_creation_kind = @partition_creation_kind.clone
+      dest.partition_file = @partition_file.clone
     end
 
     # Check if all the fields of the common configuration file are filled
@@ -1696,7 +1706,7 @@ module ConfigInformation
       if ((@deploy_kernel == nil) || (@deploy_initrd == nil) || (@block_device == nil) || (@deploy_part == nil) || (@prod_part == nil) || 
           (@prod_kernel == nil) || (@prod_initrd == nil) || (@tmp_part == nil) || (@workflow_steps == nil) || (@timeout_reboot == nil) ||
           (@cmd_soft_reboot_rsh == nil) || (@cmd_soft_reboot_ssh == nil) || (@cmd_hard_reboot == nil) || (@cmd_very_hard_reboot == nil) ||
-          (@cmd_console == nil) || (@fdisk_file == nil)) then
+          (@cmd_console == nil) || (@partition_creation_kind == nil) || (@partition_file == nil)) then
         puts "Some fields are missing in the specific configuration file for #{cluster}"
         return false
       else
