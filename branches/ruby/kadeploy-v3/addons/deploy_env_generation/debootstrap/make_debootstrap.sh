@@ -1,23 +1,19 @@
 #!/bin/bash
-BITTORRENT=0
 DIR=debootstrap
 SCRIPTS_DIR=scripts
 
 DEBOOTSTRAP="/usr/sbin/debootstrap"
-if [ $BITTORRENT -eq 1 ]
-then
-    DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,taktuk,grub-pc,bittorrent
-else
-    DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,taktuk,grub-pc
-fi
-DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,adduser,cron,logrotate,laptop-detect,tasksel,tasksel-data,dhcp3-client,dhcp3-common,wget
 
+DEBOOTSTRAP_INCLUDE_PACKAGES=dhcpcd,openssh-client,openssh-server,kexec-tools,bzip2,taktuk,grub-pc,ctorrent,hdparm,parted
+
+DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,adduser,cron,logrotate,laptop-detect,tasksel,tasksel-data,dhcp3-client,dhcp3-common,wget
 
 mkdir -p $DIR
 
 $DEBOOTSTRAP --include=$DEBOOTSTRAP_INCLUDE_PACKAGES --exclude=$DEBOOTSTRAP_EXCLUDE_PACKAGE lenny $DIR
 
 chroot $DIR apt-get -y --force-yes install ash 2>/dev/null
+chroot $DIR apt-get -y --force-yes clean 2>/dev/null
 
 echo "127.0.0.1       localhost" > $DIR/etc/hosts
 
@@ -58,23 +54,6 @@ EOF
 cp linuxrc $DIR/
 cp mkdev $DIR/dev
 
-if [ $BITTORRENT -eq 1 ]
-then
-# Ugly patch for bittorrent required because btdownloadheadless is launched without terminal
-    patch $DIR/usr/bin/btdownloadheadless.bittorrent -i - <<EOF
-152,153c152,153
-<         import curses
-<         curses.initscr()
----
-> #        import curses
-> #        curses.initscr()
-155c155
-<         curses.endwin()
----
-> #        curses.endwin()
-EOF
-fi
-
 cp $SCRIPTS_DIR/* $DIR/usr/local/bin
 
 chmod +x $DIR/usr/local/bin/*
@@ -83,12 +62,7 @@ mkdir $DIR/mnt/dest
 mkdir $DIR/rambin
 mkdir $DIR/mnt/tmp
 
-if [ $BITTORRENT -eq 0 ]
-then
-    for d in `find $DIR/usr/share -mindepth 1 -maxdepth 1|grep -v perl`
-    do
-	rm -rf $d
-    done
-fi
-
-rm -rf $DIR/var/cache/apt/*
+for d in `find $DIR/usr/share -mindepth 1 -maxdepth 1|grep -v perl`
+do
+    rm -rf $d
+done

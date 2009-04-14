@@ -717,6 +717,52 @@ module MicroStepsLibrary
       return env
     end
 
+    # Perform a fdisk on the nodes
+    #
+    # Arguments
+    # * env: kind of environment on wich the fdisk operation is performed
+    # Output
+    # * return true if the fdisk has been successfully performed, false otherwise
+    def do_fdisk(env)
+      case env
+      when "prod_env"
+        expected_status = "256" #Strange thing, fdisk can not reload the partition table so it exits with 256
+      when "untrusted_env"
+        expected_status = "0"
+      else
+        @output.debugl(0, "Invalid kind of deploy environment: #{env}")
+        return false
+      end
+      temp = Tempfile.new("fdisk_#{@cluster}")
+      system("cat #{@config.cluster_specific[@cluster].partition_file}|sed 's/PARTTYPE/#{@config.exec_specific.environment.fdisk_type}/' > #{temp.path}")
+      res = parallel_exec_cmd_with_input_file_wrapper(temp.path,
+                                                      "fdisk #{@config.cluster_specific[@cluster].block_device}",
+                                                      "tree",
+                                                      @config.common.taktuk_connector,
+                                                      expected_status)
+      temp.unlink
+      return res
+    end
+
+    # Perform a parted on the nodes
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return true if the parted has been successfully performed, false otherwise
+    def do_parted
+      temp = Tempfile.new("parted_#{@cluster}")
+      system("cat #{@config.cluster_specific[@cluster].partition_file}|sed 's/PARTTYPE/#{@config.exec_specific.environment.parted_type}/' > #{temp.path}")
+      res = parallel_exec_cmd_with_input_file_wrapper(temp.path,
+                                                      "cat - > /rambin/parted_script && chmod +x /rambin/parted_script && /rambin/parted_script #{@config.cluster_specific[@cluster].block_device}",
+                                                      "tree",
+                                                      @config.common.taktuk_connector,
+                                                      "0")
+        
+      temp.unlink
+      return res
+    end
+
     public
 
     # Test if a timeout is reached
@@ -997,31 +1043,19 @@ module MicroStepsLibrary
       return parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector)
     end
 
-    # Perform a fdisk on the ndoes
+    # Create the partition table on the nodes
     #
     # Arguments
-    # * nothing
+    # * env: kind of environment on wich the patition creation is performed (prod_env or untrusted_env)
     # Output
-    # * return true if the fdisk has been successfully performed, false otherwise
-    def ms_fdisk(kind)
-      case kind
-      when "prod_env"
-        expected_status = "256" #Strange thing, fdisk can not reload the partition table so it exits with 256
-      when "untrusted_env"
-        expected_status = "0"
-      else
-        @output.debugl(0, "Invalid kind of deploy environment: #{kind}")
-        return false
+    # * return true if the operation has been successfully performed, false otherwise
+    def ms_create_partition_table(env)
+      case @config.cluster_specific[@cluster].partition_creation_kind
+      when "fdisk"
+        return do_fdisk(env)
+      when "parted"
+        return do_parted
       end
-      temp = Tempfile.new("fdisk_#{@cluster}")
-      system("cat #{@config.cluster_specific[@cluster].fdisk_file}|sed 's/PARTTYPE/#{@config.exec_specific.environment.fdisk_type}/' > #{temp.path}")
-      res = parallel_exec_cmd_with_input_file_wrapper(temp.path,
-                                                      "fdisk #{@config.cluster_specific[@cluster].block_device}",
-                                                      "tree",
-                                                      @config.common.taktuk_connector,
-                                                      expected_status)
-      temp.unlink
-      return res
     end
 
     # Perform the deployment part on the nodes
@@ -1036,13 +1070,13 @@ module MicroStepsLibrary
         if @config.common.mkfs_options.has_key?(@config.exec_specific.environment.filesystem) then
           opts = @config.common.mkfs_options[@config.exec_specific.environment.filesystem]
           return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
-                                              umount #{get_deploy_part_str()} 2>/dev/null; \
-                                              mkfs -t #{@config.exec_specific.environment.filesystem} #{opts} #{get_deploy_part_str()}",
+                                               umount #{get_deploy_part_str()} 2>/dev/null; \
+                                               mkfs -t #{@config.exec_specific.environment.filesystem} #{opts} #{get_deploy_part_str()}",
                                                @config.common.taktuk_connector)
         else
           return parallel_exec_command_wrapper("mkdir -p #{@config.common.environment_extraction_dir}; \
-                                              umount #{get_deploy_part_str()} 2>/dev/null; \
-                                              mkfs -t #{@config.exec_specific.environment.filesystem} #{get_deploy_part_str()}",
+                                               umount #{get_deploy_part_str()} 2>/dev/null; \
+                                               mkfs -t #{@config.exec_specific.environment.filesystem} #{get_deploy_part_str()}",
                                                @config.common.taktuk_connector)
         end
       else
