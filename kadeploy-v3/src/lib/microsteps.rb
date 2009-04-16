@@ -751,16 +751,11 @@ module MicroStepsLibrary
     # Output
     # * return true if the parted has been successfully performed, false otherwise
     def do_parted
-      temp = Tempfile.new("parted_#{@cluster}")
-      system("cat #{@config.cluster_specific[@cluster].partition_file}|sed 's/PARTTYPE/#{@config.exec_specific.environment.parted_type}/' > #{temp.path}")
-      res = parallel_exec_cmd_with_input_file_wrapper(temp.path,
-                                                      "cat - > /rambin/parted_script && chmod +x /rambin/parted_script && /rambin/parted_script #{@config.cluster_specific[@cluster].block_device}",
-                                                      "tree",
-                                                      @config.common.taktuk_connector,
-                                                      "0")
-        
-      temp.unlink
-      return res
+      return parallel_exec_cmd_with_input_file_wrapper(@config.cluster_specific[@cluster].partition_file,
+                                                       "cat - > /rambin/parted_script && chmod +x /rambin/parted_script && /rambin/parted_script",
+                                                       "tree",
+                                                       @config.common.taktuk_connector,
+                                                       "0")
     end
 
     public
@@ -809,14 +804,14 @@ module MicroStepsLibrary
           end
           if custom_methods_attached?(@macro_step, method_sym.to_s) then
             if run_custom_methods(@macro_step, method_sym.to_s) then
-              @output.debugl(3, "--- #{method_sym.to_s}")
+              @output.debugl(3, "--- #{method_sym.to_s} (#{@cluster} cluster)")
               @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
               send(real_method, *args)
             else
               return false
             end
           else
-            @output.debugl(3, "--- #{method_sym.to_s}")
+            @output.debugl(3, "--- #{method_sym.to_s} (#{@cluster} cluster)")
             @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
             send(real_method, *args)
           end
@@ -1054,7 +1049,7 @@ module MicroStepsLibrary
       when "fdisk"
         return do_fdisk(env)
       when "parted"
-        return do_parted
+        return do_parted()
       end
     end
 
@@ -1252,18 +1247,20 @@ module MicroStepsLibrary
     # Output
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
+      start = Time.now.to_i
       if  (scattering_kind == "bittorrent") then
         res= send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
-                                                           @config.exec_specific.environment.tarball["kind"],
-                                                           @config.common.environment_extraction_dir,
-                                                           @config.exec_specific.environment.part)
+                                                         @config.exec_specific.environment.tarball["kind"],
+                                                         @config.common.environment_extraction_dir,
+                                                         @config.exec_specific.environment.part)
       else
         res= send_tarball_and_uncompress_with_taktuk(scattering_kind,
-                                                       @config.exec_specific.environment.tarball["file"],
-                                                       @config.exec_specific.environment.tarball["kind"],
-                                                       @config.common.environment_extraction_dir,
-                                                       @config.exec_specific.environment.part)
+                                                     @config.exec_specific.environment.tarball["file"],
+                                                     @config.exec_specific.environment.tarball["kind"],
+                                                     @config.common.environment_extraction_dir,
+                                                     @config.exec_specific.environment.part)
       end
+      @output.debugl(4, "Broadcast time: #{Time.now.to_i - start} seconds")
       return res
     end
 

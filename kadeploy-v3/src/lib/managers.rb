@@ -471,10 +471,10 @@ module Managers
             end
             # Only the first instance that reaches the end has to manage the exit
             if @mutex.try_lock then
-              while ((not @queue_manager.one_last_active_thread?) || (not @queue_manager.empty?))
-                sleep 1
-              end
-              if @queue_manager.one_last_active_thread? then
+              tid = Thread.new {
+                while ((not @queue_manager.one_last_active_thread?) || (not @queue_manager.empty?))
+                  sleep 1
+                end
                 @logger.set("success", true, @nodes_ok)
                 @nodes_ok.group_by_cluster.each_pair { |cluster, set|
                   @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
@@ -493,7 +493,10 @@ module Managers
                 @thread_broadcast_environment.join
                 @thread_boot_new_environment.join
                 @mutex.unlock
-              end
+              }
+              @thread_tab.push(tid)
+            else
+              @queue_manager.decrement_active_threads
             end
           end
         end
@@ -620,7 +623,9 @@ module Managers
       @deployments_table_lock.unlock
       if (not nodes_ok.empty?) then
         if grab_user_files then
-          @queue_manager.next_macro_step(nil, nodes_ok)
+          nodes_ok.group_by_cluster.each_pair { |cluster, set|
+            @queue_manager.next_macro_step(nil, set)
+          }
           @thread_process_finished_nodes.join
           @deployments_table_lock.lock
           nodes_ok_backup.set_deployment_state("deployed", nil, @db)
