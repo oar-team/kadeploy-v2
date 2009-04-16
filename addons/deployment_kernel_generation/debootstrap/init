@@ -80,10 +80,10 @@ if [ $IPADDR ]; then
         ifconfig ${ETH_DEV} ${IPADDR} netmask ${NETMASK} broadcast ${BROADCAST}
 else
         DHCP_OK=
-	DHCPFILE=/var/lib/dhcpcd/dhcpcd-#{ETH_DEV}.info
+	DHCPFILE=/var/lib/dhcpcd/dhcpcd-${ETH_DEV}.info
 
         echo -n "Using DHCP for device ${ETH_DEV}" > ${TTY}
-        dhcpcd -d -t 200 ${ETH_DEV}
+        dhcpcd -H -d -t 200 ${ETH_DEV}
         for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
         do
                 echo -n "."  > ${TTY}
@@ -104,11 +104,12 @@ fi
 . ${DHCPFILE}
 
 # set hostname and its resolution
-hostname dukie
-
+echo "${HOSTNAME}" > /etc/hostname
+echo "${IPADDR} ${HOSTNAME}.${DNSDOMAIN}" >> /etc/hosts
 
 echo "dukie" > /etc/DukeLinux.hostname
 echo "${IPADDR}" > /etc/DukeLinux.ip
+
 
 # configure DNS with dhcp info
 
@@ -150,4 +151,7 @@ fi
 
 /usr/sbin/sshd
 
-exec /sbin/init
+while true
+do
+	/bin/netcat -l -p 25300
+done

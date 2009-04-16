@@ -10,10 +10,10 @@ DEBOOTSTRAP_EXCLUDE_PACKAGE=vim-common,vim-tiny,traceroute,manpages,man-db,addus
 
 mkdir -p $DIR
 
-$DEBOOTSTRAP --include=$DEBOOTSTRAP_INCLUDE_PACKAGES --exclude=$DEBOOTSTRAP_EXCLUDE_PACKAGE etch $DIR
+$DEBOOTSTRAP --include=$DEBOOTSTRAP_INCLUDE_PACKAGES --exclude=$DEBOOTSTRAP_EXCLUDE_PACKAGE lenny $DIR
 chroot $DIR apt-get -y --force-yes install ash 2>/dev/null
 
-echo "127.0.0.1       localhost" > $DIR/etc/hosts
+echo "127.0.0.1 localhost" > $DIR/etc/hosts
 
 echo "localhost" >  $DIR/etc/hostname
 
@@ -45,7 +45,7 @@ aliases:    files nisplus
 EOF
 
 
-cp linuxrc $DIR/
+cp init $DIR/sbin
 cp mkdev $DIR/dev
 
 cp $SCRIPTS_DIR/* $DIR/usr/local/bin

@@ -4,7 +4,7 @@
 nodesfile="/nodes.txt"
 
 # connector
-connector="ssh -i /root/.ssh/id_deploy -o StrictHostKeyChecking=no -q""
+connector="ssh -i /root/.ssh/id_deploy -o StrictHostKeyChecking=no -q"
 
 # named pipes
 entry_pipe="/entry_pipe"
