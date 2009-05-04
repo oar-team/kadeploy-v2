@@ -103,7 +103,8 @@ fi
 . ${DHCPFILE}
 
 # set hostname and its resolution
-echo "${HOSTNAME}" > /etc/hostname
+echo "${HOSTNAME}.${DNSDOMAIN}" > /etc/hostname
+echo "${IPADDR} ${HOSTNAME}.${DNSDOMAIN} ${HOSTNAME}" >> /etc/hosts
 
 
 # configure DNS with dhcp info

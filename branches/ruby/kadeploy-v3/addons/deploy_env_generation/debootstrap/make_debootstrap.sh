@@ -36,7 +36,7 @@ group:      files
 hosts:      files dns
 
 ethers:     files
-etmasks:   files
+etmasks:    files
 networks:   files
 protocols:  files
 rpc:        files
@@ -50,6 +50,10 @@ automount:  files
 aliases:    files nisplus
 EOF
 
+#We add the deploy user with root rights
+head -n 1 $DIR/etc/passwd |sed -e 's/root/deploy/1' -e 's/root/deploy/1'>> $DIR/etc/passwd
+head -n 1 $DIR/etc/shadow |sed 's/root/deploy/' >> $DIR/etc/shadow
+head -n 1 $DIR/etc/shadow- |sed 's/root/deploy/' >> $DIR/etc/shadow-
 
 cp linuxrc $DIR/
 cp mkdev $DIR/dev
