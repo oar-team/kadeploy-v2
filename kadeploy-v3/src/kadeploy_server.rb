@@ -172,7 +172,7 @@ class KadeployServer
     config.common = @config.common.clone
     config.exec_specific = exec_specific
     config.cluster_specific = Hash.new
-    #overide the configuration if the steps are specified in the command line
+    #Overide the configuration if the steps are specified in the command line
     if (not exec_specific.steps.empty?) then
       exec_specific.node_list.group_by_cluster.each_key { |cluster|
         config.cluster_specific[cluster] = ConfigInformation::ClusterSpecificConfig.new
@@ -180,6 +180,16 @@ class KadeployServer
       }
     else
       config.cluster_specific = @config.cluster_specific.clone
+      #If the environment specifies a preinstall, we override the automata to use specific preinstall
+      if (exec_specific.environment.preinstall != nil) then
+        puts "A specific presinstall will be used with this environment"
+        exec_specific.node_list.group_by_cluster.each_key { |cluster|
+          instance = config.cluster_specific[cluster].get_macro_step("SetDeploymentEnv").get_instance
+          max_retries = instance[1]
+          timeout = instance[2]
+          config.cluster_specific[cluster].replace_macro_step("SetDeploymentEnv", ["SetDeploymentEnvUntrustedCustomPreInstall", max_retries, timeout])
+        }
+      end
     end
 
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)

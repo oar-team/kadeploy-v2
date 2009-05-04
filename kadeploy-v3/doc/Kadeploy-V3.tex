@@ -28,7 +28,7 @@ Kadeploy requires the following softwares (the Debian packages available in the 
 \item \texttt{ruby1.8}
 \item \texttt{rubylibmysql-ruby}
 \item \texttt{libopenssl-ruby}
-\item \texttt{ibneedle-ruby1.8}
+\item \texttt{libneedle-ruby1.8}
 \item \texttt{libnet-ssh-ruby1.8}
 \item \texttt{libtermios-ruby1.8}
 \item \texttt{bittorrent}
@@ -45,18 +45,18 @@ To allow the network booting, you must specify in the DHCP configuration file th
 
 Finally, the TFTP images directory (see~\ref{sec:general_config} part) must contain the following files: pxelinux.0 and/or gpxelinux.0, chain.c32, and mboot.c32. These files can be found in the Syslinux software (\url{http://syslinux.zytor.com}), the 3.73 version is at least required.
 
-\subsection{HTTP server (optionnal)}
+\subsection{HTTP server (optional)}
 In order to use the HTTP fetching capabilites of gpxelinux, an HTTP server must be configured and must contain the production environment kernel/initrtd and the deployment environment kernel/initrd (see~\ref{sec:specific_config} part).
 
 \subsection{MySql}
-A MySql server must be configured with a database and a user dedicated to Kadeploy. The rights on this database must be granted to the chosen user, from the Kadeploy server. The server used to host the database, the database name, the dedicated user and its password must be specified in the general Kadelpoy configuration (see~\ref{sec:general_config} part).
+A MySql server must be configured with a database and a user dedicated to Kadeploy. The rights on this database must be granted to the chosen user, from the Kadeploy server. The server used to host the database, the database name, the dedicated user and its password must be specified in the general Kadeploy configuration (see~\ref{sec:general_config} part).
 
 Once the database is created and the user granted, you can use the SQL script provided in the distribution (\texttt{db/db\_creation.sql}) to create the tables in the database.
 
 \section{Kadeploy installation}
 Since Kadeploy is based on a client/server architecture, you must perform the install on both the server and the client if it is not the same machine.
 
-Two ways are provided to install Kadeploy, a basic installer and a Debian package. In both cases, you had to ensure that a user \texttt{deploy} is existing on your system. This user is used to execute the Kadeploy server. Furthermore, all the installation oprations must be performed with root rights.
+Two ways are provided to install Kadeploy, a basic installer and a Debian package. In both cases, you had to ensure that a user \texttt{deploy} is existing on your system. This user is used to execute the Kadeploy server. Furthermore, all the installation operations must be performed with root rights.
 
 \subsection{Basic installation}
 First of all , you have to uncompress the Kadeploy tarball.
@@ -224,7 +224,7 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
 \item \texttt{tftp\_repository}: absolute path of the TFTP repository.
 \item \texttt{tftp\_images\_path}: relative path of the TFTP image sub-repository.
 \item \texttt{tftp\_images\_max\_size}: maximal size in MB of the TFTP image repository.
-\item \texttt{tftp\_cfg}: relative path of the TFTP configuration repositor.
+\item \texttt{tftp\_cfg}: relative path of the TFTP configuration repository.
 \item \texttt{db\_kind}: database kind (only mysql is available now).
 \item \texttt{deploy\_db\_host}: hostname of the database.
 \item \texttt{deploy\_db\_name}: name of the Kadeploy database.
@@ -291,8 +291,8 @@ cmd_very_hard_reboot = /usr/local/kadeploy/bin/reboot_RSA.exp HOSTNAME_SHORT
 cmd_console = /usr/local/kadeploy/bin/console HOSTNAME_SHORT
 drivers = ata_piix,ata_generic
 partition_creation_kind = fdisk
-admin_pre_install = /g5k/admin_pre_install.tgz|tgz|8a5e0b4fd05a54def639c1b4432e84e6|launch.sh
-admin_post_install = /g5k/admin_post_install.tgz|tgz|ce08c8b89d3ac279b9ae61c5c6851fa9|launch.sh
+admin_pre_install = /g5k/admin_pre_install.tgz|tgz|launch.sh
+admin_post_install = /g5k/admin_post_install.tgz|tgz|launch.sh
 
 #Automata description
 macrostep = SetDeploymentEnv|SetDeploymentEnvProd:1:200,SetDeploymentEnvUntrusted:1:400
@@ -319,9 +319,9 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
 \item \texttt{cmd\_very\_hard\_reboot}: generic very hard reboot command. You can use the HOSTNAME\_FQDN and HOSTNAME\_SHORT variables in the command-line.
 \item \texttt{drivers}: list of drivers that must be loaded in the deployment environment. The syntax is: driver1,driver2,driver3,...
 \item \texttt{partition\_creation\_kind}: tool used to create the partition table. The expected values are \texttt{fdisk} or \texttt{parted}.
-\item \texttt{admin\_pre\_install}: list of pre-install to execute at the pre-install of a deployment. The syntax is: file1|kind\_file1|script1,file2|kind\_file2|script2, ... The kind of file must be tgz or tbz2. The \textit{no\_pre\_install} value can also be used if no administrator preinstall must be executed. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
-\item \texttt{admin\_post\_install}: list of post-install to execute at the post-install of a deployment. The syntax is: file1|kind\_file1|script1,file2|kind\_file2|script2, ... The kind of file must be tgz or tbz2. The \textit{no\_post\_install} value can also be used if no administrator postinstall must be executed. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
-\item \texttt{macrostep}: list of implementations for a macro-step. The syntax is: macrostepname|implem1:nb\_retry:timeout,implem2:nb\_retry:timeoute,... There are 3 macro-steps, so you must specifiy one line in the specific configuration file for each one. Here is the list of the macro-step and their implementation:
+\item \texttt{admin\_pre\_install}: list of pre-install to execute at the pre-install of a deployment. The syntax is: file1|kind\_file1|script1,file2|kind\_file2|script2, ... The kind of file must be tgz or tbz2. The \textit{no\_pre\_install} value can also be used if no administrator pre-install must be executed. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
+\item \texttt{admin\_post\_install}: list of post-install to execute at the post-install of a deployment. The syntax is: file1|kind\_file1|script1,file2|kind\_file2|script2, ... The kind of file must be tgz or tbz2. The \textit{no\_post\_install} value can also be used if no administrator post-install must be executed. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
+\item \texttt{macrostep}: list of implementations for a macro-step. The syntax is: macrostepname|implem1:nb\_retry:timeout,implem2:nb\_retry:timeout,... There are 3 macro-steps, so you must specifiy one line in the specific configuration file for each one. Here is the list of the macro-step and their implementation:
   \begin{itemize}
   \item \texttt{SetDeploymentEnv}
     \begin{itemize}
@@ -335,6 +335,7 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
   \item \texttt{BroadcastEnv}
     \begin{itemize}
       \item \texttt{BroadcastEnvChain}
+      \item \texttt{BroadcastEnvKastafior}
       \item \texttt{BroadcastEnvTree}
       \item \texttt{BroadcastEnvBittorrent}
       \item \texttt{BroadcastEnvDummy}
@@ -417,6 +418,10 @@ After the execution of \texttt{make\_kernel.sh}, a directory prefixed with \text
 
 \subsection{Creation of the NFSRoot environment}
 TODO
+
+\section{Configuration of the deploy user}
+In order to use the Kastafior based file broadcaster (\texttt{BroadcastEnvKastafior} macro-step), the server must be able to perform an ssh connection on itself. Thus, you must add the deploy key installed in the \texttt{/.keys/id\_deploy.pub} in the \texttt{.ssh/authorized\_keys} file of the \texttt{deploy} user. This step is optional if you do not plan to use the \texttt{BroadcastEnvKastafior} macro-step.
+
 \chapter{Client side configuration}
 On the client side, you only have to configure the file named \texttt{client\_conf}. This file only defines two values used to find the kadeploy server: \texttt{kadeploy\_server} and \texttt{kadeploy\_server\_port}.
 
@@ -649,7 +654,7 @@ This command lists the environment of the user \textit{johnsmith}. If you use ``
 
 \paragraph{Use case 3}
 \begin{verbatim}
-> kaenv -p FreeBSD -v 3 -u johnsmit
+> kaenv -p FreeBSD -v 3 -u johnsmith
 \end{verbatim}
 This command lists prints the version \textit{3} of the environment \textit{FreeBSD} that belongs to \textit{johnsmith}. If no version number is given, the last version of the environment is printed. To print an environment you own, there is no need to use the \texttt{-u|--user} option.
 
@@ -681,7 +686,7 @@ This command is useful if you modify the tarball of the environment \textit{sidx
 \begin{verbatim}
 > kaenv --update-postinstalls-md5 sidx64-base
 \end{verbatim}
-This command does the same thing than the precedent one but it concerns the postinstall files. This operation is required if something change in the postinstall files, otherwise the environment will be unusable.
+This command does the same thing than the precedent one but it concerns the post-install files. This operation is required if something change in the post-install files, otherwise the environment will be unusable.
 
 \subsubsection{Environment description}\label{sec:env_desc}
 Each line if an environment description must follow the pattern: \texttt{key : value} (note that the spaces around the \texttt{:} are mandatory.
@@ -693,6 +698,7 @@ version : 1
 description : https://www.grid5000.fr/index.php/Etch-x64-xen-1.0
 author : John Smith
 tarball : /grid5000/etch-x64-xen-1.0.tgz|tgz
+preinstall : /home/john/test/pre_install.tgz|tgz|launch.sh
 postinstall : /home/john/test/post_install.tgz|tgz|traitement.sh
 kernel : /boot/vmlinuz-2.6.18-6-xen-amd64
 kernel_params : console=tty0 console=ttyS1,38400n8
@@ -714,7 +720,8 @@ Explanation of the fields used in the environment description:
 \item \texttt{version}: version of the environment.
 \item \texttt{author}: author of the environment.
 \item \texttt{tarball}: disk image of the environment. The syntax is: \texttt{file|kind}. The allowed kinds are \texttt{tgz}, \texttt{tbz2}, \texttt{ddgz} and \texttt{ddbz2}.
-\item \texttt{postinstall}: post-install files.\\ The syntax is: \texttt{file1|kind|script1,file2|kind|script2, ...} The allowed kinds of files for post-installs are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
+\item \texttt{preinstall (opt)}: pre-install file.\\ The syntax is: \texttt{file|kind|script}. The allowed kinds of files are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched. Warning, if the \texttt{preinstall} field is fulfilled, the entire \texttt{SetDeploymentEnv} step defined by the administrator will be bypassed. Refer to the~\ref{sec:custom-preinstall} part concerning build of a pre-install.
+\item \texttt{postinstall}: post-install files.\\ The syntax is: \texttt{file1|kind|script1,file2|kind|script2, ...}. The allowed kinds of files for post-installs are \texttt{tgz} and \texttt{tbz2}. For debug purpose, you can use the keyword \texttt{breakpoint} instead of a script. Thus, the file will be transfered, the deployment workflow will be stopped and you will be able to connect in the deployment environment to debug. Finally, the script value can be \textit{none} if no script must be launched.
 \item \texttt{kernel}: path of the kernel in the tarball.
 \item \texttt{kernel\_params}: set of parameters that must be applied to the kernel for a correct boot.
 \item \texttt{initrd}: path of the initrd in the tarball.
@@ -869,12 +876,31 @@ To use \texttt{env\_migrate}, you have to choose the kind of environment you wis
 Here are two examples:
 \begin{small}
 \begin{verbatim}
->env_migrate -e envname_in_kaenvironments_db -k linux
->env_migrate -f envfile_in_2_1_x_format.dsc -k xen
+> env_migrate -e envname_in_kaenvironments_db -k linux
+> env_migrate -f envfile_in_2_1_x_format.dsc -k xen
 \end{verbatim}
 \end{small}
 
 If everything went right, the output of \texttt{env\_migrate} shows the description in the new format. You can redirect this output to a file and use this file as an input for \texttt{kaenv}.
+
+\section{Build a custom pre-install}\label{sec:custom-preinstall}
+The goal of the pre-install in the Kadeploy workflow is to prepare the disk of the nodes before the copy of the environment. It can include:
+\begin{itemize}
+\item setting disk parameters (with hdparm for instance) ;
+\item partitioning the disk (with fdisk or parted) ;
+\item formating the deployment and the \texttt{/tmp} partition ;
+\item mounting partition(s).
+\end{itemize}
+
+You can do want you want in the pre-install but you must that Kadeploy will extract the environment in the directory defined by the \texttt{environment\_extraction\_dir} field of the general configuration file (see the part~\ref{sec:general_config}). Commonly, this directory is \texttt{/mnt/dest}. Thus, you have to mount all the partitions you need in this directory. If you wish to deploy the environment onto several partitions, you can use for instance the following map:
+\begin{itemize}
+\item /dev/sda3 $\mapsto$ /mnt/dest
+\item /dev/sda4 $\mapsto$ /mnt/dest/var
+\item /dev/sda5 $\mapsto$ /mnt/dest/usr
+\item /dev/sda6 $\mapsto$ /mnt/dest/tmp
+\end{itemize}
+
+If you choose to mount more than one partition in the pre-install, remember to unmount all the partitions excepted the one mounted on \texttt{environment\_extraction\_dir} (\texttt{/mnt/dest} in principle) in the post-install step. Indeed, the common Kadeploy workflow will automatically unmount the partition mounted on \texttt{environment\_extraction\_dir}. Thus, if other partitions are mounted, the unmount will fail.
 
 \chapter{Developer guide}
 TODO

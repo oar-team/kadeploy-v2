@@ -702,11 +702,16 @@ module ConfigInformation
           exec_specific.load_env_arg = n
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
-          IO.readlines(f).sort.uniq.each { |hostname|
-            if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
-              return false
-            end
-          }
+          if not File.readable?(f) then
+            Debug::client_error("The file #{f} cannot be read")
+            return false
+          else
+            IO.readlines(f).sort.uniq.each { |hostname|
+              if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
+                return false
+              end
+            }
+          end
         }
         opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
           if not File.readable?(f) then
@@ -1021,6 +1026,10 @@ module ConfigInformation
           @exec_specific.operation = "update-tarball-md5"
           @exec_specific.env_name = n
         }
+        opts.on("--update-preinstall-md5 ENVNAME", "Update the MD5 value of the preinstall") { |n|
+          @exec_specific.operation = "update-preinstall-md5"
+          @exec_specific.env_name = n
+        }
         opts.on("--update-postinstalls-md5 ENVNAME", "Update the MD5 value of the postinstall files") { |n|
           @exec_specific.operation = "update-postinstalls-md5"
           @exec_specific.env_name = n
@@ -1054,6 +1063,7 @@ module ConfigInformation
       when "list"
       when "print"
       when "update-tarball-md5"
+      when "update-preinstall-md5"
       when "update-postinstalls-md5"
       when "remove-demolishing-tag"
       else
@@ -1254,6 +1264,10 @@ module ConfigInformation
     # Output
     # * return true if the options used are correct, false otherwise
     def check_kastat_config
+      if (@exec_specific.operation == "") then
+        Debug::client_error("You must choose an operation")
+        return false
+      end
       authorized_fields = ["user","hostname","step1","step2","step3", \
                            "timeout_step1","timeout_step2","timeout_step3", \
                            "retry_step1","retry_step2","retry_step3", \
@@ -1723,6 +1737,23 @@ module ConfigInformation
     def get_macro_step(name)
       @workflow_steps.each { |elt| return elt if (elt.name == name) }
       return nil
+    end
+
+    # Replace a macro step
+    #
+    # Arguments
+    # * name: name of the macro step
+    # * new_instance: new instance array ([instance_name, instance_max_retries, instance_timeout])
+    # Output
+    # * nothing
+    def replace_macro_step(name, new_instance)
+      @workflow_steps.delete_if { |elt|
+        elt.name == name
+      }
+      instances = Array.new
+      instances.push(new_instance)
+      macro_step = MacroStep.new(name, instances)
+      @workflow_steps.push(macro_step)
     end
   end
 

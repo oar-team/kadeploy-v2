@@ -44,6 +44,9 @@ install_bin:
 install_sbin:
 	@install -o $(DEPLOY_USER) -m 700 $(SBIN)/* /usr/sbin
 
+install_kastafior:
+	@install -o $(DEPLOY_USER) -m 755 $(ADDONS)/kastafior/kastafior /usr/bin
+
 install_debootstrap:
 	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/linuxrc /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
 	@install -o $(DEPLOY_USER) -m 700 $(ADDONS)/deploy_env_generation/debootstrap/mkdev /usr/local/kadeploy3/addons/deploy_env_generation/debootstrap
@@ -92,7 +95,7 @@ install_common: tree_common install_conf_common install_src install_debootstrap 
 
 install_client: tree_client install_conf_client install_bin
 
-install_server: tree_server install_conf_server install_rc_script install_ssh_key install_sbin
+install_server: tree_server install_conf_server install_rc_script install_ssh_key install_sbin install_kastafior
 
 install_all: install_common install_client install_server
 

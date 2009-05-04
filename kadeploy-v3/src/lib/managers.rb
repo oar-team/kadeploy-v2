@@ -2,7 +2,6 @@
 require 'debug'
 require 'nodes'
 require 'config'
-require 'managers'
 require 'cache'
 require 'stepdeployenv'
 require 'stepbroadcastenv'
@@ -542,7 +541,7 @@ module Managers
       return true
     end
 
-    # Grab files from the client side (tarball, ssh public key, user postinstall, files for custom operations)
+    # Grab files from the client side (tarball, ssh public key, preinstall, user postinstall, files for custom operations)
     #
     # Arguments
     # * nothing
@@ -567,6 +566,15 @@ module Managers
         @config.exec_specific.key = use_local_path_dirname(@config.exec_specific.key, user_prefix)
       end
 
+      if (@config.exec_specific.environment.preinstall != nil) then
+        preinstall = @config.exec_specific.environment.preinstall
+        local_preinstall = use_local_path_dirname(preinstall["file"], env_prefix)
+        if not grab_file(preinstall["file"], local_preinstall, preinstall["md5"], "preinstall file", env_prefix) then 
+          return false
+        end
+        preinstall["file"] = local_preinstall
+      end
+      
       if (@config.exec_specific.environment.postinstall != nil) then
         @config.exec_specific.environment.postinstall.each { |postinstall|
           local_postinstall = use_local_path_dirname(postinstall["file"], env_prefix)

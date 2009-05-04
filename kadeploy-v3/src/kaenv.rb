@@ -25,7 +25,7 @@ def list_environments(config, db)
                           ORDER BY user,name"
       else
         query = "SELECT name, MAX(version) AS version, description, author, tarball, \
-                        postinstall, kernel, kernel_params, \
+                        preinstall, postinstall, kernel, kernel_params, \
                         initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                         FROM environments \
                         GROUP BY user,name \
@@ -42,7 +42,7 @@ def list_environments(config, db)
                           ORDER BY name"
       else
         query = "SELECT name, MAX(version) AS version, description, author, tarball, \
-                        postinstall, kernel, kernel_params, \
+                        preinstall, postinstall, kernel, kernel_params, \
                         initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                         FROM environments \
                         WHERE user=\"#{config.exec_specific.user}\" \
@@ -84,6 +84,7 @@ def add_environment(config, db)
                                          description, \
                                          author, \
                                          tarball, \
+                                         preinstall, \
                                          postinstall, \
                                          kernel, \
                                          kernel_params, \
@@ -101,6 +102,7 @@ def add_environment(config, db)
                                          \"#{env.description}\", \
                                          \"#{env.author}\", \
                                          \"#{env.flatten_tarball_with_md5()}\", \
+                                         \"#{env.flatten_pre_install_with_md5()}\", \
                                          \"#{env.flatten_post_install_with_md5()}\", \
                                          \"#{env.kernel}\", \
                                          \"#{env.kernel_params}\", \
@@ -219,6 +221,34 @@ def update_tarball_md5(config, db)
   }
 end
 
+# Update the md5sum of the preinstall
+#
+# * config: instance of Config
+# * db: database handler
+# Output
+# * nothing
+def update_preinstall_md5(config, db)
+  if (config.exec_specific.version != "") then
+    version = config.exec_specific.version
+  else
+    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+  end
+  query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
+                                      AND user=\"#{ENV['USER']}\" \
+                                      AND version=\"#{version}\""
+  res = db.run_query(query)
+  res.each_hash  { |row|
+    env = EnvironmentManagement::Environment.new
+    env.load_from_hash(row)
+    tarball = "#{env.preinstall["file"]}|#{env.preinstall["kind"]}|#{env.get_md5(env.preinstall["file"])}|#{env.preinstall["script"]}"
+    
+    query2 = "UPDATE environments SET preinstall=\"#{tarball}\" WHERE name=\"#{config.exec_specific.env_name}\" \
+                                                             AND user=\"#{ENV['USER']}\" \
+                                                             AND version=\"#{version}\""
+    db.run_query(query2)
+  }
+end
+
 # Update the md5sum of the postinstall files
 #
 # * config: instance of Config
@@ -309,6 +339,8 @@ if (config.check_config("kaenv") == true)
     print_environment(config, db)
   when "update-tarball-md5"
     update_tarball_md5(config, db)
+  when "update-preinstall-md5"
+    update_preinstall_md5(config, db)
   when "update-postinstalls-md5"
     update_postinstalls_md5(config, db)
   when "remove-demolishing-tag"

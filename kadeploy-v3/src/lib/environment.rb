@@ -12,6 +12,7 @@ module EnvironmentManagement
     attr_reader :description
     attr_reader :author
     attr_accessor :tarball
+    attr_accessor :preinstall
     attr_accessor :postinstall
     attr_reader :kernel
     attr_reader :kernel_params
@@ -36,6 +37,7 @@ module EnvironmentManagement
         put "The file \"#{file}\" does not exist"
         return false
       else
+        @preinstall = nil
         @postinstall = nil
         @demolishing_env = "0"
         IO::read(file).split("\n").each { |line|
@@ -72,6 +74,23 @@ module EnvironmentManagement
                 @tarball["md5"] = get_md5(@tarball["file"])
               else
                 puts "The environment tarball must be described like filename|kind|md5sum where kind is tgz, tbz2, ddgz, or ddbz2"
+                return false
+              end
+            when "preinstall"
+              if val =~ /\A.+\|(tgz|tbz2)\|.+\Z/ then
+                entry = val.split("|")
+                @preinstall = Hash.new
+                @preinstall["file"] = entry[0]
+                @preinstall["kind"] = entry[1]
+                @preinstall["script"] = entry[2]
+                if not File.readable?(@preinstall["file"]) then
+                  puts "The pre-install file #{@preinstall["file"]} cannot be read"
+                  return false
+                end
+                puts "Computing the md5sum for #{@preinstall["file"]}"
+                @preinstall["md5"] = get_md5(@preinstall["file"])
+              else
+                puts "The environment preinstall must be described like filename|kind1|script where kind is tgz or tbz2"
                 return false
               end
             when "postinstall"
@@ -154,12 +173,12 @@ module EnvironmentManagement
     def load_from_db(name, version, user, dbh)
       if (version == nil) then
         query = "SELECT * FROM environments WHERE name=\"#{name}\" \
-                                             AND user=\"#{user}\" \
-                                             AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{user}\" AND name=\"#{name}\")"
+                                            AND user=\"#{user}\" \
+                                            AND version=(SELECT MAX(version) FROM environments WHERE user=\"#{user}\" AND name=\"#{name}\")"
       else
         query = "SELECT * FROM environments WHERE name=\"#{name}\" \
-                                             AND user=\"#{user}\" \
-                                             AND version=\"#{version}\""
+                                            AND user=\"#{user}\" \
+                                            AND version=\"#{version}\""
       end
       res = dbh.run_query(query)
       row = res.fetch_hash
@@ -189,6 +208,16 @@ module EnvironmentManagement
       @tarball["file"] = val[0]
       @tarball["kind"] = val[1]
       @tarball["md5"] = val[2]
+      if (hash["preinstall"] != "") then
+        @preinstall = Hash.new
+        val = hash["preinstall"].split("|")
+        @preinstall["file"] = val[0]
+        @preinstall["kind"] = val[1]
+        @preinstall["md5"] = val[2]
+        @preinstall["script"] = val[3]
+      else
+        @preinstall = nil
+      end
       if (hash["postinstall"] != "") then
         @postinstall = Array.new
         hash["postinstall"].split(",").each { |tmp|
@@ -291,6 +320,7 @@ module EnvironmentManagement
       puts "description : #{@description}"
       puts "author : #{@author}"
       puts "tarball : #{flatten_tarball()}"
+      puts "preinstall : #{flatten_pre_install()}" if (@preinstall != nil)
       puts "postinstall : #{flatten_post_install()}" if (@postinstall != nil)
       puts "kernel : #{@kernel}"
       puts "kernel_params : #{@kernel_params}"
@@ -308,6 +338,10 @@ module EnvironmentManagement
       return "#{@tarball["file"]}|#{@tarball["kind"]}"
     end
 
+    def flatten_pre_install
+      return "#{@preinstall["file"]}|#{@preinstall["kind"]}|#{@preinstall["script"]}"
+    end
+
     def flatten_post_install
       s = String.new
       if (@postinstall != nil) then
@@ -321,6 +355,10 @@ module EnvironmentManagement
 
     def flatten_tarball_with_md5
       return "#{@tarball["file"]}|#{@tarball["kind"]}|#{@tarball["md5"]}"
+    end
+
+    def flatten_pre_install_with_md5
+      return "#{@preinstall["file"]}|#{@preinstall["kind"]}|#{@preinstall["md5"]}|#{@preinstall["script"]}"
     end
 
     def flatten_post_install_with_md5

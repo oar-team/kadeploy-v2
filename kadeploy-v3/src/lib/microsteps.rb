@@ -10,6 +10,7 @@ require 'process_management'
 
 #Ruby libs
 require 'ftools'
+require 'socket'
 
 module MicroStepsLibrary
   class MicroSteps
@@ -552,6 +553,38 @@ module MicroStepsLibrary
                                                        @config.common.taktuk_connector,
                                                        "0")
     end
+
+    # Send a tarball with Kastafior and uncompress it on the nodes
+    #
+    # Arguments
+    # * tarball_file: path to the tarball
+    # * tarball_kind: kind of archive (tgz, tbz2, ddgz, ddbz2)
+    # * deploy_mount_point: deploy mount point
+    # * deploy_mount_part: deploy mount part
+    # Output
+    # * return true if the operation is correctly performed, false otherwise
+    def send_tarball_and_uncompress_with_kastafior(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
+      case tarball_kind
+      when "tgz"
+        cmd = "tar xz -C #{deploy_mount_point}"
+      when "tbz2"
+        cmd = "tar xj -C #{deploy_mount_point}"
+      when "ddgz"
+        cmd = "gzip -cd > #{deploy_part}"
+      when "ddbz2"
+        cmd = "bzip2 -cd > #{deploy_part}"
+      else
+        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        return false
+      end
+      list = String.new
+      list = "-m #{Socket.gethostname()}"
+      @nodes_ok.set.each { |node|
+        list += " -m #{node.hostname}"
+      }
+      return system("kastafior -c \\\"#{@config.common.taktuk_connector}\\\" #{list} -- -s \"cat #{tarball_file}\" -c \"#{cmd}\" -f")
+    end
+
 
     # Send a tarball with Bittorrent and uncompress it on the nodes
     #
@@ -1243,22 +1276,28 @@ module MicroStepsLibrary
     # Send and uncompress the user environment on the nodes
     #
     # Arguments
-    # * scattering_kind: kind of taktuk scatter (tree, chain)
+    # * scattering_kind: kind of taktuk scatter (tree, chain, kastafior)
     # Output
     # * return true if the environment has been successfully uncompressed, false otherwise
     def ms_send_environment(scattering_kind)
       start = Time.now.to_i
-      if  (scattering_kind == "bittorrent") then
+      case scattering_kind
+      when "bittorrent"
         res= send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
                                                          @config.exec_specific.environment.tarball["kind"],
                                                          @config.common.environment_extraction_dir,
                                                          @config.exec_specific.environment.part)
-      else
-        res= send_tarball_and_uncompress_with_taktuk(scattering_kind,
+      when "chain"
+        res= send_tarball_and_uncompress_with_taktuk("chain",
                                                      @config.exec_specific.environment.tarball["file"],
                                                      @config.exec_specific.environment.tarball["kind"],
                                                      @config.common.environment_extraction_dir,
                                                      @config.exec_specific.environment.part)
+      when "kastafior"
+        res= send_tarball_and_uncompress_with_kastafior(@config.exec_specific.environment.tarball["file"],
+                                                        @config.exec_specific.environment.tarball["kind"],
+                                                        @config.common.environment_extraction_dir,
+                                                        @config.exec_specific.environment.part)        
       end
       @output.debugl(4, "Broadcast time: #{Time.now.to_i - start} seconds")
       return res
@@ -1273,7 +1312,19 @@ module MicroStepsLibrary
     # * return true if the admin preinstall has been successfully uncompressed, false otherwise
     def ms_manage_admin_pre_install(scattering_kind)
       res = true
-      if (@config.cluster_specific[@cluster].admin_pre_install != nil) then
+      #First we check if the preinstall has been defined in the environment
+      if (@config.exec_specific.environment.preinstall != nil) then
+        preinstall = @config.exec_specific.environment.preinstall
+        res = send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
+        if (preinstall["script"] == "breakpoint") then
+          @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
+          @config.exec_specific.breakpointed = true
+          res = false
+        elsif (preinstall["script"] != "none")
+          res = res && parallel_exec_command_wrapper("(#{set_env()} #{@config.common.rambin_path}/#{preinstall["script"]})",
+                                                     @config.common.taktuk_connector)
+        end
+      elsif (@config.cluster_specific[@cluster].admin_pre_install != nil) then
         @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
           res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
           if (preinstall["script"] == "breakpoint") then

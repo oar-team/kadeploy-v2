@@ -23,6 +23,8 @@ module BroadcastEnvironment
       case kind
       when "BroadcastEnvChain"
         return BroadcastEnvChain.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "BroadcastEnvKastafior"
+        return BroadcastEnvKastafior.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvTree"
         return BroadcastEnvTree.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BroadcastEnvBittorrent"
@@ -139,6 +141,59 @@ module BroadcastEnvironment
             result = true
             #Here are the micro steps
             result = result && @step.send_environment("chain")
+            result = result && @step.manage_admin_post_install("tree")
+            result = result && @step.manage_user_post_install("tree")
+            result = result && @step.send_key("tree")
+            result = result && @step.install_bootloader
+            result = result && @step.switch_pxe("deploy_to_deployed_env")
+            #End of micro steps
+          }
+          @instances.push(instance_thread)
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
+            if not @nodes_ok.empty? then
+              @logger.set("step2_duration", Time.now.to_i - @start, @nodes_ok)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
+            end
+          end
+          @remaining_retries -= 1
+        end
+        #After several retries, some nodes may still be in an incorrect state
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
+          #Maybe some other instances are defined
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+            @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+            @queue_manager.decrement_active_threads
+          end
+        else
+          @queue_manager.decrement_active_threads
+        end    
+      }
+      return tid
+    end
+  end
+
+  class BroadcastEnvKastafior < BroadcastEnv
+    # Main of the BroadcastEnvKastafior instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a thread id
+    def run
+      tid = Thread.new {
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
+        @nodes.duplicate_and_free(@nodes_ko)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
+          instance_thread = Thread.new {
+            @logger.increment("retry_step2", @nodes_ko)
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(2, "Performing a BroadcastEnvKastafior step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps
+            result = result && @step.send_environment("kastafior")
             result = result && @step.manage_admin_post_install("tree")
             result = result && @step.manage_user_post_install("tree")
             result = result && @step.send_key("tree")

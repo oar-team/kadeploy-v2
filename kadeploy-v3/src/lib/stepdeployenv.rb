@@ -214,6 +214,7 @@ module SetDeploymentEnvironnment
             result = result && @step.switch_pxe("prod_to_deploy_env")
             result = result && @step.reboot("soft")
             result = result && @step.wait_reboot([connector_port,@config.common.test_deploy_env_port],[])
+            result = result && @step.send_key_in_deploy_env("tree")
             result = result && @step.manage_admin_pre_install("tree")
             #End of micro steps
           }
