@@ -1687,8 +1687,37 @@ module ConfigInformation
     # * workflow_steps: array of MacroStep
     # Output
     # * nothing      
-    def duplicate(dest, workflow_steps)
+    def duplicate_but_steps(dest, workflow_steps)
       dest.workflow_steps = workflow_steps
+      dest.deploy_kernel = @deploy_kernel.clone
+      dest.deploy_initrd = @deploy_initrd.clone
+      dest.block_device = @block_device.clone
+      dest.deploy_part = @deploy_part.clone
+      dest.prod_part = @prod_part.clone
+      dest.prod_kernel = @prod_kernel.clone
+      dest.prod_initrd = @prod_initrd.clone
+      dest.tmp_part = @tmp_part.clone
+      dest.timeout_reboot = @timeout_reboot
+      dest.cmd_soft_reboot_rsh = @cmd_soft_reboot_rsh.clone
+      dest.cmd_soft_reboot_ssh = @cmd_soft_reboot_ssh.clone
+      dest.cmd_hard_reboot = @cmd_hard_reboot.clone
+      dest.cmd_very_hard_reboot = @cmd_very_hard_reboot.clone
+      dest.cmd_console = @cmd_console.clone
+      dest.drivers = @drivers.clone if (@drivers != nil)
+      dest.admin_pre_install = @admin_pre_install.clone if (@admin_pre_install != nil)
+      dest.admin_post_install = @admin_post_install.clone if (@admin_post_install != nil)
+      dest.partition_creation_kind = @partition_creation_kind.clone
+      dest.partition_file = @partition_file.clone
+    end
+    
+    # Duplicate a ClusterSpecificConfig instance
+    #
+    # Arguments
+    # * dest: destination ClusterSpecificConfig instance
+    # Output
+    # * nothing      
+    def duplicate_all(dest)
+      dest.workflow_steps = @workflow_steps.clone
       dest.deploy_kernel = @deploy_kernel.clone
       dest.deploy_initrd = @deploy_initrd.clone
       dest.block_device = @block_device.clone
