@@ -176,20 +176,21 @@ class KadeployServer
     if (not exec_specific.steps.empty?) then
       exec_specific.node_list.group_by_cluster.each_key { |cluster|
         config.cluster_specific[cluster] = ConfigInformation::ClusterSpecificConfig.new
-        @config.cluster_specific[cluster].duplicate(config.cluster_specific[cluster], exec_specific.steps)
+        @config.cluster_specific[cluster].duplicate_but_steps(config.cluster_specific[cluster], exec_specific.steps)
+      }
+    #If the environment specifies a preinstall, we override the automata to use specific preinstall
+    elsif (exec_specific.environment.preinstall != nil) then
+      puts "A specific presinstall will be used with this environment"
+      exec_specific.node_list.group_by_cluster.each_key { |cluster|
+        config.cluster_specific[cluster] = ConfigInformation::ClusterSpecificConfig.new
+        @config.cluster_specific[cluster].duplicate_all(config.cluster_specific[cluster])
+        instance = config.cluster_specific[cluster].get_macro_step("SetDeploymentEnv").get_instance
+        max_retries = instance[1]
+        timeout = instance[2]
+        config.cluster_specific[cluster].replace_macro_step("SetDeploymentEnv", ["SetDeploymentEnvUntrustedCustomPreInstall", max_retries, timeout])
       }
     else
-      config.cluster_specific = @config.cluster_specific.clone
-      #If the environment specifies a preinstall, we override the automata to use specific preinstall
-      if (exec_specific.environment.preinstall != nil) then
-        puts "A specific presinstall will be used with this environment"
-        exec_specific.node_list.group_by_cluster.each_key { |cluster|
-          instance = config.cluster_specific[cluster].get_macro_step("SetDeploymentEnv").get_instance
-          max_retries = instance[1]
-          timeout = instance[2]
-          config.cluster_specific[cluster].replace_macro_step("SetDeploymentEnv", ["SetDeploymentEnvUntrustedCustomPreInstall", max_retries, timeout])
-        }
-      end
+      config.cluster_specific = @config.cluster_specific
     end
 
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)

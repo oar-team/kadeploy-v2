@@ -9,8 +9,8 @@ deploy_db_name = deploy
 deploy_db_login = deploy
 deploy_db_passwd = deploy
 rights_kind = db
-taktuk_ssh_connector = ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey -o BatchMode=yes -i /root/.ssh/id_deploy -l root
-taktuk_rsh_connector = rsh -l root
+taktuk_ssh_connector = ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey -o BatchMode=yes -i /root/.ssh/id_deploy
+taktuk_rsh_connector = rsh
 taktuk_tree_arity = 0
 taktuk_auto_propagate = false
 tarball_dest_dir = /tmp
