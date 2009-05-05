@@ -8,7 +8,7 @@
 
 package KaVLAN::Config;
 
-@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort check_nodes_configuration get_nodes);
+@EXPORT = qw(parseConfigurationFile getPortNumber getPortName canModifyPort check_nodes_configuration get_nodes printPortInformation);
 
 use warnings;
 use strict;
@@ -290,5 +290,42 @@ sub check_node_name {
     my $nodename = shift;
     return $nodename =~ m/^\w+-\d+(-\w+)?(\.\w+\.\w+\.\w+)?$/;
 }
+
+##########################################################################################
+# Print port information 
+# arg : Integer -> the port number
+#    Session -> the switch session
+#    Config -> a switch configuration
+# ret : 
+# rmq :
+##########################################################################################
+sub printPortInformation(){
+    my ($name,$port,$switchSession,$switchConfig)=@_;
+    my @ret;
+    my $val;
+
+#Check argument
+    if(not defined $port or not defined $switchSession or not defined $switchConfig){
+        die "ERROR : Not enough argument for $const::FUNC_NAME";
+    }
+
+#Get information of the port
+    my @info=$switchConfig->getPortInformation($port,$switchSession);
+
+    if ($#info > 0) {
+        print "$name TAGGED: ";
+        foreach my $i (1..$#info){
+            print $info[$i];
+            print "," unless $i == $#info;
+        }
+        print "\n";
+    }
+    if(defined $info[0]){
+        print "$name UNTAGGED: ";
+        print $info[0];
+        print "\n";
+    }
+}
+
 
 1;

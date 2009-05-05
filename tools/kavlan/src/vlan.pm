@@ -316,7 +316,7 @@ sub portInitialConfiguration(){
 
     # Change the port information
 
-    &const::verbose("Put the port ",$port," to the default vlan ");    
+    &const::verbose("Put the port ",$port," to the default vlan ");
     &addUntaggedPort($const::DEFAULT_NAME,$port,$switchSession,$switchConfig,$otherMode);
 
     # Remove the port of all vlan for the tag mode

@@ -158,7 +158,7 @@ if ($options{"r"}) {   # get-network-range
     die "no VLAN found" unless $VLAN;
     die "no nodes found" if ($#nodes_default < 0);
     # rewrite nodename: add -vlanX where X is the vlan ID
-    @nodes = map { s/^(\w+-\d+)\./$1\-vlan-$VLAN\./; $_ } @nodes_default;
+    @nodes = map { s/^(\w+-\d+)\./$1\-kavlan-$VLAN\./; $_ } @nodes_default;
     foreach (@nodes) {print "$_\n";};
 } else {
     &mydie("no action specified, abort");
@@ -253,7 +253,7 @@ sub get_vlan_property {
     my $filename = shift;
     my $jobid    = shift;
     if ( $jobid ) {
-        open(PROP, "$OARSTAT -p -j $jobid |") or die "can't start oarstat, abort ! $!";
+        open(PROP, "$OARSTAT -p -j $jobid|") or die "can't start oarstat, abort ! $!";
     } elsif (-f $filename ) {
         open(PROP, "< $filename") or die "can't open $filename, abort ! $!";
     }
@@ -291,7 +291,7 @@ USAGE : kavlan [options]
        -i|--vlan_id <VLANID>
        -s                            set vlan for given node(s)
        -f|--filenode <NODEFILE>
-       -j|--oar-jobid=XXXX
+       -j|--oar-jobid=<JOBID>
        -m|--machine <nodename>
        -q|--quiet                    quiet mode
        -h|--help                     print this help
