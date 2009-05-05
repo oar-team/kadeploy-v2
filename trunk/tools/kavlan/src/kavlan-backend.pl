@@ -39,6 +39,7 @@ GetOptions(\%options,
         "f|filenode=s",
         "m|machine=s@",
         "s|set",
+        "g|get",
         "q|quiet",
         "h|help",
         "v|verbose");
@@ -138,6 +139,13 @@ if ($options{"s"} ){ # set vlan for given nodes
         &mydie("No VLAN found, abort!");
     }
     print "all nodes are configured in the vlan $VLAN\n" unless $options{"q"};
+}elsif ($options{"g"} ){ # get vlan for given nodes
+    my @nodes = &KaVLAN::Config::get_nodes($options{"f"}, $options{"m"});
+    my $VLAN  = $options{'i'};
+    &KaVLAN::Config::check_nodes_configuration(\@nodes,$site,$switch);
+    foreach my $node (@nodes) {
+        &get_vlan($node,$VLAN);
+    }
 } else {
     &mydie("no action specified, abort");
 }
@@ -153,13 +161,19 @@ sub set_vlan {
     my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
     my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
 
-    # we have already checked before (in check_nodes_configuration
-    # )that the indice is defined and we have rights to modify the
-    # port, therefore, we can skip checks here
     my $otherMode;
     $otherMode=1 if($switch->[$indiceSwitch]{"Type"} eq "hp3400cl");
     &vlan::addUntaggedPort($VLAN,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch],$otherMode);
     print " ... node $node changed to vlan KAVLAN-$VLAN\n"  unless $options{"q"};
+}
+
+sub get_vlan {
+    my $node = shift;
+    my $VLAN = shift;
+    my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
+    my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
+
+    &KaVLAN::Config::printPortInformation($node,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch]);
 }
 
 sub mydie {
