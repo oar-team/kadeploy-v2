@@ -67,6 +67,7 @@ tree_client:
 	@mkdir -p $(DEB_ROOT_CLIENT)/etc/kadeploy3
 
 tree_server:
+	@mkdir -p $(DEB_ROOT_SERVER)/usr/bin
 	@mkdir -p $(DEB_ROOT_SERVER)/usr/sbin
 	@mkdir -p $(DEB_ROOT_SERVER)/etc/init.d
 	@mkdir -p $(DEB_ROOT_SERVER)/.keys
