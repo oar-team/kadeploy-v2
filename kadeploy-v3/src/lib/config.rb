@@ -373,7 +373,7 @@ module ConfigInformation
                 return false
               end
             when "bt_tracker_ip"
-              if val =~ /\A([1-9]\d{0,2}\.){3}[1-9]\d{0,2}\Z/ then
+              if val =~ /\A([0-9]\d{0,2}\.){3}[0-9]\d{0,2}\Z/ then
                 @common.bt_tracker_ip = val
               else
                 puts "Invalid value for the bt_tracker_ip field"
@@ -1341,6 +1341,11 @@ module ConfigInformation
         opts.separator "General options:"
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
           @exec_specific.node_list.push(m)
+        }
+        opts.on("-f", "--file MACHINELIST", "Only print information about the given machines")  { |f|
+          IO.readlines(f).sort.uniq.each { |hostname|
+            @exec_specific.node_list.push(hostname.chomp)
+          }
         }
       end
       begin

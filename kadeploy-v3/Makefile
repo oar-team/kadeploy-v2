@@ -88,7 +88,7 @@ tree_common:
 	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
 	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
 	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
-	@[ -d /etc/kadeploy3 ] && mv /etc/kadeploy3 /etc/kadeploy3-save-`date +"%s"`
+	@if [ -d /etc/kadeploy3 ]; then  mv /etc/kadeploy3 /etc/kadeploy3-save-`date +"%s"`; fi
 	@mkdir -p /etc/kadeploy3
 
 install_common: tree_common install_conf_common install_src install_debootstrap install_test

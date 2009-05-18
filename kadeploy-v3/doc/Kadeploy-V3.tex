@@ -223,8 +223,8 @@ Each line if the configuration file must follow the pattern: \texttt{key = value
 \item \texttt{debug\_level}: number between 0 and 4 that specifies the default debug level for the client. 0 means ``no debug'' and 4 means ``full debug''.
 \item \texttt{tftp\_repository}: absolute path of the TFTP repository.
 \item \texttt{tftp\_images\_path}: relative path of the TFTP image sub-repository.
-\item \texttt{tftp\_images\_max\_size}: maximal size in MB of the TFTP image repository.
-\item \texttt{tftp\_cfg}: relative path of the TFTP configuration repository.
+\item \texttt{tftp\_images\_max\_size}: maximal size in MB of the TFTP image repository. Warning, as far as the Kadeploy server is launched by the \texttt{deploy} user, \texttt{deploy} must have the rights to read in this directory.
+\item \texttt{tftp\_cfg}: relative path of the TFTP configuration repository. Warning, as far as the Kadeploy server is launched by the \texttt{deploy} user, \texttt{deploy} must have the rights to write in this directory.
 \item \texttt{db\_kind}: database kind (only mysql is available now).
 \item \texttt{deploy\_db\_host}: hostname of the database.
 \item \texttt{deploy\_db\_name}: name of the Kadeploy database.
@@ -445,6 +445,9 @@ Kaconsole is designed to provide a user to access to the consoles of the nodes o
 
 \subsection{Kastat}
 Kastat is designed to show several statistics about the deployments.
+
+\subsection{Kanodes}
+Kastat is designed to show the state of the nodes.
 
 \section{Use the Kadeploy tools}
 \subsection{Kadeploy server}
@@ -834,6 +837,35 @@ This commands prints the nodes that have a failure rate of at least 25\% from th
 > kastat -a 3 -s 1
 \end{verbatim}
 This commands prints the information about the deployments that requires at least 3 retries in the macro-step 1. If the \texttt{-s|--step} option is not set, the information about the deployments that requires at least 3 retries in any macro-step are printed.
+
+
+\subsection{Kanodes}\label{sec:kanodes}
+Kanodes can be used by using the \texttt{kanodes} command. The CLI looks like this:
+\begin{small}
+\begin{verbatim}
+> kanodes -h
+Usage: kanodes [options]
+Contact: kadeploy-devel@lists.grid5000.fr
+General options:
+  -m, --machine MACHINE        Only print information about the given machines
+  -f, --file MACHINELIST       Only print information about the given machines
+\end{verbatim}
+\end{small}
+
+We present now the use cases.
+\paragraph{Use case 1}
+\begin{verbatim}
+> kanodes
+\end{verbatim}
+This commands prints the state of all the nodes managed by a Kadeploy server.
+
+\paragraph{Use case 2}
+\begin{verbatim}
+> kanodes -m gdx-25.orsay.grid5000.fr -f machine_file
+\end{verbatim}
+This command prints the state of the node \textit{gdx-25.orsay.grid5000.fr} and of the nodes listed in the file \texttt{machine\_file}.
+
+
 
 \section{Migrate your environment for Kadeploy 2.1.x}
 Migrating your environments from Kadeploy 2.1.x is quite easy. Please refer to the~\ref{sec:env_desc} part to get the full information about the environment description with Kadeploy 3.

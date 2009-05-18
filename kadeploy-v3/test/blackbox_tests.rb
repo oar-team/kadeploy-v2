@@ -50,7 +50,7 @@ def _test_deploy(nodes, step1, step2, step3, test_name, key, env, ok = "nodes_ok
   system(cmd)
   if File.exist?(ko) then
     IO.readlines(ko).each { |node|
-      puts "The node #{node} has not been correctly deployed"
+      puts "The node #{node.chomp} has not been correctly deployed"
     }
   end
   if File.exist?(ok) then
@@ -119,6 +119,24 @@ def test_simultaneous_deployments(nodes, step1, step2, step3, test_name, key)
   end
 end
 
+def test_dummy(nodes, step1, step2, step3, test_name, ok = "nodes_ok", ko = "nodes_ko")
+  puts "# Launching test #{test_name}"
+  File.delete(ok) if File.exist?(ok)
+  File.delete(ko) if File.exist?(ko)
+  node_list = String.new
+  nodes.each { |node|
+    node_list += " -m #{node}"
+  }
+  cmd = "#{KADEPLOY} #{node_list} -e \"#{ENV_LIST.split(",")[0]}\" -d 0 --force-steps \"SetDeploymentEnv|#{step1}&BroadcastEnv|#{step2}&BootNewEnv|#{step3}\" -o #{ok} -n #{ko}"
+  start = Time.now.to_i
+  system(cmd)
+  if File.exist?(ko) then
+    puts "[ ERROR ] (#{Time.now.to_i - start}s)"
+  else
+    puts "[ PASSED ] (#{Time.now.to_i - start}s)"
+  end
+end
+
 nodes, key = load_cmdline_options
 if nodes.empty? then
   puts "You must specify at least on node, use --help option for correct use"
@@ -129,8 +147,10 @@ if (key == "") || (not File.readable?(key)) then
   exit(1)
 end
 
+puts "--------------- Dummy test ------------------"
+test_dummy(nodes, "SetDeploymentEnvDummy:1:10", "BroadcastEnvDummy:1:10", "BootNewEnvDummy:1:10", "Dummy")
+
 puts "----------- Simple deploy tests -------------"
-#  test_deploy(nodes, "SetDeploymentEnvDummy:1:10", "BroadcastEnvDummy:1:10", "BootNewEnvDummy:1:10", "Dummy", key)
 #  test_deploy(nodes, "SetDeploymentEnvProd:2:100", "BroadcastEnvChainWithFS:2:300", "BootNewEnvKexec:1:150", "ProdEnv - Kexec reboot")
 #  test_deploy(nodes, "SetDeploymentEnvUntrusted:1:500", "BroadcastEnvChain:1:400", "BootNewEnvKexec:1:400", "UntrustedEnv - Taktuk broadcast - Kexec reboot", key)
 test_deploy(nodes, "SetDeploymentEnvUntrusted:1:500", "BroadcastEnvChain:1:400", "BootNewEnvClassical:1:500", "UntrustedEnv - Taktuk broadcast - Classical reboot", key)

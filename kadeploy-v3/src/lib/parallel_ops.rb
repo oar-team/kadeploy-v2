@@ -162,8 +162,8 @@ module ParallelOperations
       tree['hosts'].each_value { |h|
         h['commands'].each_value { |x|
           @nodes.get_node_by_host(h['host_name']).last_cmd_exit_status = x['status']
-          @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output']
-          @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error']
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output'].chomp
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error'].chomp
         }
       }
     end
@@ -201,8 +201,8 @@ module ParallelOperations
       tree['hosts'].each_value { |h|
         h['commands'].each_value { |x|
           @nodes.get_node_by_host(h['host_name']).last_cmd_exit_status = x['status']
-          @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output']
-          @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error']
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stdout = x['output'].chomp
+          @nodes.get_node_by_host(h['host_name']).last_cmd_stderr = x['error'].chomp
         }
       }
     end

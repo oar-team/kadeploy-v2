@@ -355,6 +355,29 @@ module Managers
       }
     end
 
+    def finalize
+      @db = nil
+      @deployments_table_lock = nil
+      @config = nil
+      @client = nil
+      @output = nil
+      @nodes_ok = nil
+      @nodes_ko = nil
+      @nodeset = nil
+      @queue_manager = nil
+      @reboot_window = nil
+      @mutex = nil
+      @set_deployment_environment_instances = nil
+      @broadcast_environment_instances = nil
+      @boot_new_environment_instances = nil
+      @thread_tab = nil
+      @logger = nil
+      @thread_set_deployment_environment = nil
+      @thread_broadcast_environment = nil
+      @thread_boot_new_environment = nil
+      @thread_process_finished_nodes = nil
+    end
+
     # Kill all the threads of a Kadeploy workflow
     #
     # Arguments
@@ -363,6 +386,10 @@ module Managers
     # * nothing
     def kill_workflow
       @output.debugl(4, "Launching Mr Proper ...")
+      @output.debugl(0, "Deployment aborted by user")
+      @logger.set("success", false, @nodeset)
+      @logger.dump
+      @nodeset.set_deployment_state("aborted", nil, @db)
       @set_deployment_environment_instances.each { |instance|
         if (instance != nil) then
           instance.kill()
@@ -389,10 +416,6 @@ module Managers
       Thread.kill(@thread_broadcast_environment)
       Thread.kill(@thread_boot_new_environment)
       Thread.kill(@thread_process_finished_nodes)
-      @output.debugl(0, "Deployment aborted by user")
-      @logger.set("success", false, @nodeset)
-      @logger.dump
-      @nodeset.set_deployment_state("aborted", nil, @db)
     end
 
     # Launch a thread for a macro step
@@ -641,6 +664,7 @@ module Managers
         else
           @output.debugl(1, "Some error occurs when grabbing the files")
         end
+        nodes_ok_backup = nil
       else
         @output.debugl(1, "All the nodes have been discarded ...")
       end
