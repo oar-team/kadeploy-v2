@@ -256,6 +256,7 @@ module MicroStepsLibrary
               finished = true
             end
           end
+          map.clear
         }
         @reboot_window.launch(node_set, &callback)
       }
@@ -418,6 +419,7 @@ module MicroStepsLibrary
                                          @config.exec_specific.environment.tarball["kind"],
                                          files_in_archive,
                                          tmpdir)
+        files_in_archive.clear
         files.each { |file|
           src = tmpdir + "/" + File.basename(file)
           dst = dest_dir + "/" + prefix_in_cache + File.basename(file)

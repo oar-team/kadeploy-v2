@@ -169,7 +169,7 @@ class KadeployServer
 
     #We create a new instance of Config with a specific exec_specific part
     config = ConfigInformation::Config.new("empty")
-    config.common = @config.common.clone
+    config.common = @config.common
     config.exec_specific = exec_specific
     config.cluster_specific = Hash.new
     #Overide the configuration if the steps are specified in the command line
@@ -197,7 +197,7 @@ class KadeployServer
     workflow_id = add_workflow_info(workflow)
     client.set_workflow_id(workflow_id)
     finished = false
-    Thread.new {
+    tid = Thread.new {
       while (not finished) do
         begin
           client.test()
@@ -205,7 +205,6 @@ class KadeployServer
           workflow.output.disable_client_output()
           workflow.output.debugl(4, "Client disconnection")
           workflow.kill_workflow()
-          @workflow_info_hash.delete(workflow_id)
           finished = true
         end
         sleep(1)
@@ -214,6 +213,15 @@ class KadeployServer
     workflow.run
     finished = true
     #let's free memory at the end of the workflow
+    tid = nil
+    @workflow_info_hash.delete(workflow_id)
+    workflow.finalize
+    config.cluster_specific = nil
+    config = nil
+    workflow = nil
+    exec_specific = nil
+    client = nil
+    DRb.stop_service()
     GC.start
   end
 
@@ -277,6 +285,7 @@ class KadeployServer
           step.send_key_in_deploy_env("tree")
         end
       }
+      config = nil
     end
     return return_value
   end

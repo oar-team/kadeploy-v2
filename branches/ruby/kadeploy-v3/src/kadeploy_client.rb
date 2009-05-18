@@ -121,7 +121,6 @@ end
 
 def _exit(exit_code, dbh)
   dbh.disconnect if (dbh != nil)
-  DRb.stop_service()
   exit(exit_code)
 end
 
@@ -186,6 +185,7 @@ if (exec_specific_config != nil) then
       if (exec_specific_config.script != "") then
         system(exec_specific_config.script)
       end
+      exec_specific_config = nil
     end
   else
     puts "You do not have the deployment rights on all the nodes"

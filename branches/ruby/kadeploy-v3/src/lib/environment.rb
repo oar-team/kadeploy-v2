@@ -358,7 +358,11 @@ module EnvironmentManagement
     end
 
     def flatten_pre_install_with_md5
-      return "#{@preinstall["file"]}|#{@preinstall["kind"]}|#{@preinstall["md5"]}|#{@preinstall["script"]}"
+      s = String.new
+      if (@preinstall != nil) then
+        s = "#{@preinstall["file"]}|#{@preinstall["kind"]}|#{@preinstall["md5"]}|#{@preinstall["script"]}"
+      end
+      return s
     end
 
     def flatten_post_install_with_md5
