@@ -1598,7 +1598,7 @@ module ConfigInformation
     # Arguments
     # * nothing
     # Output
-    # * nothing    
+    # * nothing
     def initialize
       @nodes_desc = Nodes::NodeSet.new
     end
@@ -1610,7 +1610,12 @@ module ConfigInformation
     # Output
     # * return true if all the fields are filled, false otherwise
     def check_all_fields_filled
-      if ((@debug_level == nil) || (@tftp_repository == nil) || (@tftp_images_path == nil) || (@tftp_cfg == nil) || 
+      err_msg =  " field is missing in the common configuration file"
+      self.instance_variables.each{|i|
+        a = eval i
+        puts "Warning: " + i + err_msg if (a == nil)
+      }
+      if ((@debug_level == nil) || (@tftp_repository == nil) || (@tftp_images_path == nil) || (@tftp_cfg == nil) ||
           (@tftp_images_max_size == nil) || (@db_kind == nil) || (@deploy_db_host == nil) || (@deploy_db_name == nil) ||
           (@deploy_db_login == nil) || (@deploy_db_passwd == nil) || (@rights_kind == nil) || (@nodes_desc == nil) ||
           (@taktuk_ssh_connector == nil) || (@taktuk_rsh_connector == nil) ||
@@ -1624,7 +1629,7 @@ module ConfigInformation
           (@nfs_server == nil) || (@bootloader == nil) || (@purge_deployment_timer == nil) || (@rambin_path == nil) ||
           (@mkfs_options == nil) || (@demolishing_env_threshold == nil) ||
           (@bt_tracker_ip == nil) || (@bt_download_timeout == nil)) then
-        puts "Some fields are missing in the common configuration file"
+        puts "Some mandatory fields are missing in the common configuration file"
         return false
       else
         return true
@@ -1751,11 +1756,16 @@ module ConfigInformation
     # Output
     # * return true if all the fields are filled, false otherwise
     def check_all_fields_filled(cluster)
-      if ((@deploy_kernel == nil) || (@deploy_initrd == nil) || (@block_device == nil) || (@deploy_part == nil) || (@prod_part == nil) || 
+      err_msg =  " field is missing in the specific configuration file #{cluster}"
+      self.instance_variables.each{|i|
+        a = eval i
+        puts "Warning: " + i + err_msg if (a == nil)
+      }
+      if ((@deploy_kernel == nil) || (@deploy_initrd == nil) || (@block_device == nil) || (@deploy_part == nil) || (@prod_part == nil) ||
           (@prod_kernel == nil) || (@prod_initrd == nil) || (@tmp_part == nil) || (@workflow_steps == nil) || (@timeout_reboot == nil) ||
           (@cmd_soft_reboot_rsh == nil) || (@cmd_soft_reboot_ssh == nil) || (@cmd_hard_reboot == nil) || (@cmd_very_hard_reboot == nil) ||
           (@cmd_console == nil) || (@partition_creation_kind == nil) || (@partition_file == nil)) then
-        puts "Some fields are missing in the specific configuration file for #{cluster}"
+        puts "Some mandatory fields are missing in the specific configuration file for #{cluster}"
         return false
       else
         return true
