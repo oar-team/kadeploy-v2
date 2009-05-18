@@ -68,6 +68,7 @@ module ConfigInformation
       end
     end
 
+
     # Check the config of the Kadeploy tools
     #
     # Arguments
@@ -373,7 +374,7 @@ module ConfigInformation
                 return false
               end
             when "bt_tracker_ip"
-              if val =~ /\A([0-9]\d{0,2}\.){3}[0-9]\d{0,2}\Z/ then
+              if val =~ /\A\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}\Z/ then
                 @common.bt_tracker_ip = val
               else
                 puts "Invalid value for the bt_tracker_ip field"
@@ -564,7 +565,7 @@ module ConfigInformation
     # * return true in case of success, false otherwise
     def load_nodes_config_file
       IO.readlines(CONFIGURATION_FOLDER + "/" + NODES_FILE).each { |line|
-        if /(.*)\ (.*)\ (.*)/ =~ line
+        if /\A([A-Za-z0-9\.\-]+)\ (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})\ ([A-Za-z0-9\.\-]+)\Z/ =~ line
           content = Regexp.last_match
           host = content[1]
           ip = content[2]
@@ -707,7 +708,11 @@ module ConfigInformation
             return false
           else
             IO.readlines(f).sort.uniq.each { |hostname|
-              if not add_to_node_list(hostname.chomp, nodes_desc, exec_specific) then
+              if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then
+                Debug::client_error("Invalid hostname: #{hostname}")
+                return false
+              end
+              if (not add_to_node_list(hostname.chomp, nodes_desc, exec_specific)) then
                 return false
               end
             }
@@ -722,7 +727,11 @@ module ConfigInformation
           end
         }
         opts.on("-m", "--machine MACHINE", "Node to run on") { |hostname|
-          if not add_to_node_list(hostname, nodes_desc, exec_specific) then
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then 
+            Debug::client_error("Invalid hostname: #{hostname}")
+            return false
+          end
+          if (not add_to_node_list(hostname, nodes_desc, exec_specific)) then
             return false
           end
         }
@@ -733,7 +742,7 @@ module ConfigInformation
           exec_specific.nodes_ok_file = f
         }
         opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
-          if /\A[1-9]\d+\Z/ =~ p then
+          if /\A[1-9]\d*\Z/ =~ p then
             exec_specific.deploy_part = p
           else
             Debug::client_error("Invalid partition number")
@@ -1114,6 +1123,10 @@ module ConfigInformation
           @exec_specific.operation = "delete"
         }
         opts.on("-m", "--machine MACHINE", "Include the machine in the operation") { |m|
+          if (not (/\A[A-Za-z0-9\.\-]+\Z/ =~ m)) and (m != "*") then
+            Debug::client_error("Invalid hostname: #{m}")
+            return false
+          end
           @exec_specific.node_list.push(m)
         }
         opts.on("-p", "--part PARTNAME", "Include the partition in the operation") { |p|
@@ -1236,6 +1249,10 @@ module ConfigInformation
           @exec_specific.fields.push(f)
         }
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ m) then
+            Debug::client_error("Invalid hostname: #{m}")
+            return false
+          end
           @exec_specific.node_list.push(m)
         }
         opts.on("-s", "--step STEP", "Applies the retry filter on the given steps (1, 2 or 3)") { |s|
@@ -1340,12 +1357,25 @@ module ConfigInformation
         opts.separator ""
         opts.separator "General options:"
         opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~m) then
+            Debug::client_error("Invalid hostname: #{m}")
+            return false
+          end
           @exec_specific.node_list.push(m)
         }
         opts.on("-f", "--file MACHINELIST", "Only print information about the given machines")  { |f|
-          IO.readlines(f).sort.uniq.each { |hostname|
-            @exec_specific.node_list.push(hostname.chomp)
-          }
+          if not File.readable?(f) then
+            Debug::client_error("The file #{f} cannot be read")
+            return false
+          else
+            IO.readlines(f).sort.uniq.each { |hostname|
+              if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then
+                Debug::client_error("Invalid hostname: #{hostname}")
+                return false
+              end
+              @exec_specific.node_list.push(hostname.chomp)
+            }
+          end
         }
       end
       begin
@@ -1416,9 +1446,18 @@ module ConfigInformation
           end
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
-          IO.readlines(f).sort.uniq.each { |hostname|
-            Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific)
-          }
+          if not File.readable?(f) then
+            Debug::client_error("The file #{f} cannot be read")
+            return false
+          else
+            IO.readlines(f).sort.uniq.each { |hostname|
+              if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then
+                Debug::client_error("Invalid hostname: #{hostname}")
+                return false
+              end
+              Config.add_to_node_list(hostname.chomp, nodes_desc, @exec_specific)
+            }
+          end
         }
         opts.on("-k", "--key FILE", "Public key to copy in the root's authorized_keys") { |f|
           if not File.readable?(f) then
@@ -1428,7 +1467,11 @@ module ConfigInformation
             @exec_specific.key = File.expand_path(f)
           end
         }
-        opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|          
+        opts.on("-m", "--machine MACHINE", "Reboot the given machines") { |hostname|
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then
+            Debug::client_error("Invalid hostname: #{hostname}")
+            return false
+          end
           Config.add_to_node_list(hostname, nodes_desc, @exec_specific)
         }
         opts.on("-r", "--reboot-kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot, deploy_env)") { |k|
@@ -1512,7 +1555,11 @@ module ConfigInformation
         opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-m", "--machine MACHINE", "Obtain a console on the given machines") { |hostname|          
+        opts.on("-m", "--machine MACHINE", "Obtain a console on the given machines") { |hostname|
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~ hostname) then
+            Debug::client_error("Invalid hostname: #{hostname}")
+            return false
+          end
           n = nodes_desc.get_node_by_host(hostname)
           if (n != nil) then
             @exec_specific.node = n
