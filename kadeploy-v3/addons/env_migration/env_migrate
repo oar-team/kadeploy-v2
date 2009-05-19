@@ -119,7 +119,6 @@ def dump_new_env(fields, env_kind)
     puts "hypervisor : #{hypervisor_kernel}"
     puts "hypervisor_params : #{hypervisor_params}"
   end
-  puts "part : /dev/sda3"
   puts "fdisktype : #{fields["fdisktype"]}"
   puts "filesystem : #{fields["filesystem"]}"
   puts "environment_kind : #{env_kind}"

@@ -30,6 +30,56 @@ class KadeployClient
     puts msg
   end
 
+  # Prepare the client terminal for a progress bar (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
+  def progress_bar_start
+    printf "\033[s"
+  end
+
+  # Clean the client terminal after a progress bar (RPC)
+  #
+  # Arguments
+  # * nothing
+  # Output
+  # * nothing
+  def progress_bar_stop
+    printf "\033[u"
+  end
+
+  # Print a progress bar (RPC)
+  #
+  # Arguments
+  # * progress_val: percentage of progression
+  # * nb_missing: number of missing nodes
+  # Output
+  # * nothing
+  def progress_bar(progress_val, nb_missing)
+    str = String.new
+    bar_size = 30
+    val = (progress_val * bar_size).round
+    1.upto(bar_size) { |i|
+      if (i < val) then
+        str += "-"
+      elsif (i == val) then
+        str += ">"
+      else
+        str += " "
+      end
+    }
+    printf "\033[u\033[1D"
+    if (nb_missing > 1) then
+      printf "Reboot in progress |#{str}| --- #{nb_missing} nodes are missing"
+    else
+      printf "Reboot in progress |#{str}| --- #{nb_missing} node is missing"
+    end
+    printf "\033[K"
+    STDOUT.flush
+  end
+
   # Stop the DRB service and to release the client (RPC)
   #
   # Arguments
@@ -146,8 +196,12 @@ if (exec_specific_config != nil) then
   allowed_to_deploy = true
   #The rights must be checked for each cluster if the node_list contains nodes from several clusters
   exec_specific_config.node_list.group_by_cluster.each_pair { |cluster, set|
-    if (exec_specific_config.deploy_part != "") then 
-      part = kadeploy_server.get_block_device(cluster) + exec_specific_config.deploy_part
+    if (exec_specific_config.deploy_part != "") then
+      if (exec_specific_config.block_device != "") then
+          part = exec_specific_config.block_device + exec_specific_config.deploy_part
+        else
+          part = kadeploy_server.get_block_device(cluster) + exec_specific_config.deploy_part
+        end
     else
       part = kadeploy_server.get_default_deploy_part(cluster)
     end
@@ -161,7 +215,7 @@ if (exec_specific_config != nil) then
     #Launch the listener on the client
     kadeploy_client = KadeployClient.new(kadeploy_server)
     DRb.start_service(nil, kadeploy_client)
-    if /druby:\/\/([\w+.+]+):(\w+)/ =~ DRb.uri
+    if /druby:\/\/([\w\.\-]+):(\d+)/ =~ DRb.uri
       content = Regexp.last_match
       client_host = content[1]
       client_port= content[2]

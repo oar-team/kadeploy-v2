@@ -12,6 +12,7 @@ module ParallelOperations
     @taktuk_connector = nil
     @taktuk_tree_arity = nil
     @taktuk_auto_propagate = nil
+    @output = nil
 
     # Constructor of ParallelOps
     #
@@ -19,13 +20,15 @@ module ParallelOperations
     # * nodes: instance of NodeSet
     # * config: instance of Config
     # * taktuk_connector: specifies the connector to use with Taktuk
+    # * output: OutputControl instance
     # Output
     # * nothing
-    def initialize(nodes, config, taktuk_connector)
+    def initialize(nodes, config, taktuk_connector, output)
       @nodes = nodes
       @taktuk_connector = taktuk_connector
       @taktuk_tree_arity = config.common.taktuk_tree_arity
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
+      @output = output
     end
 
     def make_taktuk_header_cmd
@@ -345,6 +348,7 @@ module ParallelOperations
       sleep(20)
       start = Time.now.tv_sec
 
+      @output.progress_bar_start
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
         sleep(5)
         nodes_to_test = Nodes::NodeSet.new
@@ -399,18 +403,22 @@ module ParallelOperations
             tg.list.each { |tid|
               tid.join
             }
-            a = String.new
+            missing = 0
+            missing_str = String.new
             @nodes.set.each{ |node|
               if node.state == "KO" then
-                a += "#{node.hostname},"
+                missing += 1
+                missing_str += "#{node.hostname},"
               end
             }
-#            puts "    -+-+- Missing nodes: #{a}"  if (a != "")
+            progress_val = ((@nodes.length.to_f - missing.to_f) / @nodes.length.to_f)
+            @output.progress_barl(3, progress_val, missing)
           }
           nodes_check_window.launch(nodes_to_test, &callback)
         }
         tid.join
       end
+      @output.progress_bar_stop
 
       @nodes.set.each { |node|
         if node.state == "OK" then

@@ -46,6 +46,12 @@ module Debug
       @client_output = true
     end
 
+    # Disable the output redirection on the client
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
     def disable_client_output
       @client_output = false
     end
@@ -72,6 +78,40 @@ module Debug
         sl.log(Syslog::LOG_NOTICE, "#{server_str}")
         sl.close
         @syslog_lock.unlock
+      end
+    end
+
+    # Ask the client to prepare its terminal for a progress bar
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing
+    def progress_bar_start
+      @client.progress_bar_start if @client_output
+    end
+
+    # Ask the client to clean its terminal after a progress bar
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * nothing   
+    def progress_bar_stop
+      @client.progress_bar_stop if @client_output
+    end
+
+    # Ask the client to print a progress bar
+    #
+    # Arguments
+    # * l: debug level
+    # * progress_val: percentage of the progression
+    # * nb_missing: number of missing nodes
+    # Output
+    # * nothing   
+    def progress_barl(l, progress_val, nb_missing)
+      if ((l <= @debug_level) && @client_output)
+        @client.progress_bar(progress_val, nb_missing)
       end
     end
   end

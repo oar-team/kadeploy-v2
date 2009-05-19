@@ -100,7 +100,7 @@ module MicroStepsLibrary
     def parallel_exec_command_wrapper(cmd, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector, @output)
       classify_nodes(po.execute(cmd))
       return (not @nodes_ok.empty?)
     end
@@ -116,7 +116,7 @@ module MicroStepsLibrary
     def parallel_exec_command_wrapper_expecting_status(cmd, status, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector, @output)
       classify_nodes(po.execute_expecting_status(cmd, status))
       return (not @nodes_ok.empty?)
     end 
@@ -133,7 +133,7 @@ module MicroStepsLibrary
     def parallel_exec_command_wrapper_expecting_status_and_output(cmd, status, output, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector, @output)
       classify_nodes(po.execute_expecting_status_and_output(cmd, status, output))
       return (not @nodes_ok.empty?)
     end
@@ -150,7 +150,7 @@ module MicroStepsLibrary
     def parallel_send_file_command_wrapper(file, dest_dir, scattering_kind, taktuk_connector)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector, @output)
       classify_nodes(po.send_file(file, dest_dir, scattering_kind))
       return (not @nodes_ok.empty?)
     end
@@ -169,7 +169,7 @@ module MicroStepsLibrary
     def parallel_exec_cmd_with_input_file_wrapper(file, cmd, scattering_kind, taktuk_connector, status)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, taktuk_connector, @output)
       classify_nodes(po.exec_cmd_with_input_file(file, cmd, scattering_kind, status))
       return (not @nodes_ok.empty?)
     end
@@ -186,7 +186,7 @@ module MicroStepsLibrary
     def parallel_wait_nodes_after_reboot_wrapper(timeout, ports_up, ports_down, nodes_check_window)
       node_set = Nodes::NodeSet.new
       @nodes_ok.duplicate_and_free(node_set)
-      po = ParallelOperations::ParallelOps.new(node_set, @config, nil)
+      po = ParallelOperations::ParallelOps.new(node_set, @config, nil, @output)
       classify_nodes(po.wait_nodes_after_reboot(timeout, ports_up, ports_down, nodes_check_window))
       return (not @nodes_ok.empty?)
     end
@@ -440,7 +440,11 @@ module MicroStepsLibrary
     # * return the name of the deployment partition
     def get_deploy_part_str
       if (@config.exec_specific.deploy_part != "") then
-        return @config.cluster_specific[@cluster].block_device + @config.exec_specific.deploy_part
+        if (@config.exec_specific.block_device != "") then
+          return @config.exec_specific.block_device + @config.exec_specific.deploy_part
+        else
+          return @config.cluster_specific[@cluster].block_device + @config.exec_specific.deploy_part
+        end
       else
         return @config.cluster_specific[@cluster].block_device + @config.cluster_specific[@cluster].deploy_part
       end
@@ -926,7 +930,7 @@ module MicroStepsLibrary
                                                             kernel,
                                                             @config.exec_specific.environment.kernel_params,
                                                             initrd,
-                                                            @config.exec_specific.environment.part,
+                                                            get_deploy_part_str(),
                                                             @config.common.tftp_repository,
                                                             @config.common.tftp_images_path,
                                                             @config.common.tftp_cfg)
@@ -944,7 +948,7 @@ module MicroStepsLibrary
                                                           kernel,
                                                           @config.exec_specific.environment.kernel_params,
                                                           initrd,
-                                                          @config.exec_specific.environment.part,
+                                                          get_deploy_part_str(),
                                                           @config.common.tftp_repository,
                                                           @config.common.tftp_images_path,
                                                           @config.common.tftp_cfg)
@@ -976,7 +980,7 @@ module MicroStepsLibrary
                                                           kernel,
                                                           @config.exec_specific.environment.kernel_params,
                                                           initrd,
-                                                          @config.exec_specific.environment.part,
+                                                          get_deploy_part_str(),
                                                           @config.common.tftp_repository,
                                                           @config.common.tftp_images_path,
                                                           @config.common.tftp_cfg)
@@ -1023,7 +1027,7 @@ module MicroStepsLibrary
           kernel = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.kernel}"
           initrd = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.initrd}"
           kernel_params = @config.exec_specific.environment.kernel_params
-          root_part = @config.exec_specific.environment.part
+          root_part = get_deploy_part_str()
           #Warning, this require the /usr/local/bin/kexec_detach script
           return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
                                                @config.common.taktuk_connector)
@@ -1047,7 +1051,7 @@ module MicroStepsLibrary
         #we look if the / mounted partition is the deployment partition
         return parallel_exec_command_wrapper_expecting_status_and_output("(mount | grep \\ \\/\\  | cut -f 1 -d\\ )",
                                                                          ["0"],
-                                                                         @config.exec_specific.environment.part,
+                                                                         get_deploy_part_str(),
                                                                          @config.common.taktuk_connector)
       when "prod_env_booted"
         #we look if the / mounted partition is the default production partition
@@ -1268,7 +1272,7 @@ module MicroStepsLibrary
     def ms_umount_deploy_part
       if ((@config.exec_specific.environment.tarball["kind"] == "tgz") ||
           (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
-        return parallel_exec_command_wrapper("umount #{@config.exec_specific.environment.part}", @config.common.taktuk_connector)
+        return parallel_exec_command_wrapper("umount #{get_deploy_part_str()}", @config.common.taktuk_connector)
       else
         @output.debugl(4, "Bypass the umount of the deploy part")
         return true
@@ -1288,18 +1292,18 @@ module MicroStepsLibrary
         res= send_tarball_and_uncompress_with_bittorrent(@config.exec_specific.environment.tarball["file"],
                                                          @config.exec_specific.environment.tarball["kind"],
                                                          @config.common.environment_extraction_dir,
-                                                         @config.exec_specific.environment.part)
+                                                         get_deploy_part_str())
       when "chain"
         res= send_tarball_and_uncompress_with_taktuk("chain",
                                                      @config.exec_specific.environment.tarball["file"],
                                                      @config.exec_specific.environment.tarball["kind"],
                                                      @config.common.environment_extraction_dir,
-                                                     @config.exec_specific.environment.part)
+                                                     get_deploy_part_str())
       when "kastafior"
         res= send_tarball_and_uncompress_with_kastafior(@config.exec_specific.environment.tarball["file"],
                                                         @config.exec_specific.environment.tarball["kind"],
                                                         @config.common.environment_extraction_dir,
-                                                        @config.exec_specific.environment.part)        
+                                                        get_deploy_part_str())        
       end
       @output.debugl(4, "Broadcast time: #{Time.now.to_i - start} seconds")
       return res
@@ -1360,7 +1364,7 @@ module MicroStepsLibrary
             @config.exec_specific.breakpointed = true
             res= false
           elsif (postinstall["script"] != "none")
-            res = res && parallel_exec_command_wrapper("#{set_env()} #{@config.common.rambin_path}/#{postinstall["script"]})",
+            res = res && parallel_exec_command_wrapper("(#{set_env()} #{@config.common.rambin_path}/#{postinstall["script"]})",
                                                        @config.common.taktuk_connector)
           end
         }

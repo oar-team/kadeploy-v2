@@ -111,6 +111,7 @@ module ConfigInformation
       exec_specific.env_version = nil #By default we load the latest version
       exec_specific.user = ENV['USER'] #By default, we use the current user
       exec_specific.true_user = ENV['USER']
+      exec_specific.block_device = String.new
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
       exec_specific.script = String.new
@@ -690,6 +691,14 @@ module ConfigInformation
             exec_specific.load_env_arg = f
           end
         }
+        opts.on("-b", "--block-device BLOCKDEVICE", "Specify the block device to use") { |b|
+          if /\A[\w\/]+\Z/ =~ b then
+            exec_specific.block_device = b
+          else
+            Debug::client_error("Invalid block device")
+            return false
+          end
+        }
         opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
           if d =~ /\A[0-4]\Z/ then
             exec_specific.debug_level = d.to_i
@@ -741,7 +750,7 @@ module ConfigInformation
         opts.on("-o", "--output-ok-nodes FILENAME", "File that will contain the nodes correctly deployed")  { |f|
           exec_specific.nodes_ok_file = f
         }
-        opts.on("-p", "--partition_number NUMBER", "Specify the partition number to use") { |p|
+        opts.on("-p", "--partition-number NUMBER", "Specify the partition number to use") { |p|
           if /\A[1-9]\d*\Z/ =~ p then
             exec_specific.deploy_part = p
           else

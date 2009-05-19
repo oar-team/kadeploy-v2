@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS `environments` (
   `fdisk_type` varchar(2) default NULL,
   `filesystem` varchar(9) default NULL,
   `user` varchar(255) default 'nobody',
-  `part` varchar(20) NOT NULL,
   `allowed_users` varchar(512) NOT NULL,
   `environment_kind` varchar(10) NOT NULL,
   `demolishing_env` int(8) NOT NULL default '0',
