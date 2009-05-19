@@ -19,7 +19,6 @@ module EnvironmentManagement
     attr_reader :initrd
     attr_reader :hypervisor
     attr_reader :hypervisor_params
-    attr_reader :part
     attr_reader :fdisk_type
     attr_reader :filesystem
     attr_reader :user
@@ -125,8 +124,6 @@ module EnvironmentManagement
               @hypervisor = val
             when "hypervisor_params"
               @hypervisor_params = val
-            when "part"
-              @part = val
             when "fdisktype"
               @fdisk_type = val
             when "filesystem"
@@ -245,7 +242,6 @@ module EnvironmentManagement
       else
         @hypervisor_params = nil 
       end
-      @part = hash["part"]
       @fdisk_type = hash["fdisk_type"]
       @filesystem = hash["filesystem"]
       @user = hash["user"]
@@ -327,7 +323,6 @@ module EnvironmentManagement
       puts "initrd : #{@initrd}"
       puts "hypervisor : #{@hypervisor}" if (@hypervisor != nil)
       puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != nil)
-      puts "part : #{@part}"
       puts "fdisktype : #{@fdisk_type}"
       puts "filesystem : #{@filesystem}"
       puts "environment_kind : #{@environment_kind}"

@@ -414,6 +414,17 @@ This methods consists in creating a kernel/initrd that contains all the tools re
 
 The \texttt{make\_debootstrap.sh} script can be tuned if you want to add or remove some packages in the filesystem. To do this, you can modify the \texttt{DEBOOTSTRAP\_INCLUDE\_PACKAGES} and \texttt{DEBOOTSTRAP\_INCLUDE\_PACKAGES} values.
 
+The \texttt{make\_kernel.sh} script prompts the user the following things:
+\begin{itemize}
+\item the size of the uncompressed initrd in KB;
+\item the kernel version;
+\item the path to a kernel config file;
+\item the use of automatic configuration for the new fields in kernel configuration.
+\end{itemize}
+
+The size of the uncompressed initrd depends on what you have to put in your deployment environment. If you use the \texttt{make\_debootstrap.sh} script, the initrd size should be at least 200MB.
+Depending on the kernel version you choose, the script will fetch the vanilla kernel corresponding to this version. Once a kernel has been fetched, it won't be fetched again in another run. Thus, you have to delete the kernel file if you want to fetch it again. At the opposite, if you do not want to use the sources of the vanilla kernel but your own sources, you can put your own kernel (tar.bz2 compressed) in the current directory. The only requirement is to name the file with the following pattern: linux-\textit{version}.tar.bz2. Then, at the kernel version prompt, just enter the \textit{version} value.
+
 After the execution of \texttt{make\_kernel.sh}, a directory prefixed with \texttt{built-} will be created. This directory contains the kernel and the initrd files, prefixed with \texttt{deploy-}.
 
 \subsection{Creation of the NFSRoot environment}
@@ -465,6 +476,7 @@ Usage: kadeploy [options]
 Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --env-file ENVFILE           File containing the environment description
+  -b, --block-device BLOCKDEVICE   Specify the block device to use
   -d, --debug-level VALUE          Debug level between 0 to 4
   -e, --env-name ENVNAME           Name of the recorded environment to deploy
   -f, --file MACHINELIST           Files containing list of nodes
@@ -472,7 +484,7 @@ General options:
   -m, --machine MACHINE            Node to run on
   -n, --output-ko-nodes FILENAME   File that will contain the nodes not correctly deployed
   -o, --output-ok-nodes FILENAME   File that will contain the nodes correctly deployed
-  -p, --partition_number NUMBER    Specify the partition number to use
+  -p, --partition-number NUMBER    Specify the partition number to use
   -r, --reformat-tmp               Reformat the /tmp partition
   -s, --script FILE                Execute a script at the end of the deployment
   -u, --user USERNAME              Specify the user
@@ -708,7 +720,6 @@ kernel_params : console=tty0 console=ttyS1,38400n8
 initrd : /boot/initrd.img-2.6.18-6-xen-amd64
 hypervisor : /boot/xen-3.0.3-1-amd64.gz
 hypervisor_params : dom0_mem=1000000
-part : /dev/sda3
 fdisktype : 83
 filesystem : ext2
 user : johnsmith
@@ -730,7 +741,6 @@ Explanation of the fields used in the environment description:
 \item \texttt{initrd}: path of the initrd in the tarball.
 \item \texttt{hypervisor (opt)}: path of the hypervisor in the tarball. This fields is only required for the Xen based environments.
 \item \texttt{hypervisor\_params (opt)}: set of parameters that must be applied to the hypervisor for a correct boot. This fields is only required for the Xen based environments.
-\item \texttt{part}: default deployment partition.
 \item \texttt{fdisktype}: partition type in hexadecimal (\texttt{83} for Linux, \texttt{a4} for FreeBSD, ...). This is used as an input for fdisk.
 \item \texttt{filesystem}: type of filesystem wished on the deployment partition. It must be known by the mkfs command.
 \item \texttt{environment\_kind}: kind of environment. Expected values are linux, xen or other.
