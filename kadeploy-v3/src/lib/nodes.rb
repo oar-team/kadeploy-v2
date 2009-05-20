@@ -40,7 +40,7 @@ module Nodes
     # Arguments
     # * dbg(opt): boolean that specifies if the output contains stderr
     # Output
-    # * returns a string that contains the information
+    # * return a string that contains the information
     def to_s(dbg = false)
       if (dbg) && (last_cmd_stderr != nil) then
         return "#{@hostname} (#{@last_cmd_stderr})"
@@ -78,7 +78,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns true if the set is empty, false otherwise
+    # * return true if the set is empty, false otherwise
     def empty?
       return @set.empty?
     end
@@ -127,7 +127,7 @@ module Nodes
     # Arguments
     # * n: number of element to extract
     # Output
-    #  * returns a new NodeSet if there are enough elements in the source NodeSet, nil otherwise
+    #  * return a new NodeSet if there are enough elements in the source NodeSet, nil otherwise
     def extract(n)
       if (n <= @set.length) then
         new_set = NodeSet.new
@@ -145,7 +145,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns true if the state of all the nodes is OK     
+    # * return true if the state of all the nodes is OK     
     def all_ok?
       @set.each { |node|
         if node.state == "KO"
@@ -170,7 +170,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns an array of IP
+    # * return an array of IP
     def make_array_of_ip
       res = Array.new
       @set.each { |n|
@@ -184,7 +184,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns an array of hostname
+    # * return an array of hostname
     def make_array_of_hostname
       res = Array.new
       @set.each { |n|
@@ -198,7 +198,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns a string that contains the information
+    # * return a string that contains the information
     def to_s(dbg = false)
       s = String.new
       @set.each_index { |i|
@@ -213,7 +213,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns the number of elements
+    # * return the number of elements
     def length
       return @set.length
     end
@@ -223,7 +223,7 @@ module Nodes
     # Arguments
     # * nothing
     # Output
-    # * returns an Hash that groups the nodes by cluster (each entry is a NodeSet)
+    # * return an Hash that groups the nodes by cluster (each entry is a NodeSet)
     def group_by_cluster
       ht = Hash.new
       @set.each { |node| 
@@ -233,12 +233,22 @@ module Nodes
       return ht
     end
 
+    # Get the number of clusters involved in the NodeSet
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return the number of clusters involved
+    def get_nb_clusters
+      return group_by_cluster.length
+    end
+
     # Get a Node in a NodeSet by its hostname
     #
     # Arguments
     # * hostname: name of the node searched
     # Output
-    # * returns nil if the node can not be found
+    # * return nil if the node can not be found
     def get_node_by_host(hostname)
       @set.each { |node|
         return node if (node.hostname == hostname)

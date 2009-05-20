@@ -26,7 +26,7 @@ def list_environments(config, db)
       else
         query = "SELECT name, MAX(version) AS version, description, author, tarball, \
                         preinstall, postinstall, kernel, kernel_params, \
-                        initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                        initrd, hypervisor, hypervisor_params, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                         FROM environments \
                         GROUP BY user,name \
                         ORDER BY user,name"
@@ -43,7 +43,7 @@ def list_environments(config, db)
       else
         query = "SELECT name, MAX(version) AS version, description, author, tarball, \
                         preinstall, postinstall, kernel, kernel_params, \
-                        initrd, hypervisor, hypervisor_params, part, fdisk_type, filesystem, user, environment_kind, demolishing_env \
+                        initrd, hypervisor, hypervisor_params, fdisk_type, filesystem, user, environment_kind, demolishing_env \
                         FROM environments \
                         WHERE user=\"#{config.exec_specific.user}\" \
                         GROUP BY name \
@@ -91,7 +91,6 @@ def add_environment(config, db)
                                          initrd, \
                                          hypervisor, \
                                          hypervisor_params, \
-                                         part, \
                                          fdisk_type, \
                                          filesystem, \
                                          user, \
@@ -109,7 +108,6 @@ def add_environment(config, db)
                                          \"#{env.initrd}\", \
                                          \"#{env.hypervisor}\", \
                                          \"#{env.hypervisor_params}\", \
-                                         \"#{env.part}\", \
                                          \"#{env.fdisk_type}\", \
                                          \"#{env.filesystem}\", \
                                          \"#{env.user}\", \
