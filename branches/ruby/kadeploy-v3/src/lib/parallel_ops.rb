@@ -13,6 +13,7 @@ module ParallelOperations
     @taktuk_tree_arity = nil
     @taktuk_auto_propagate = nil
     @output = nil
+    @multicluster = nil
 
     # Constructor of ParallelOps
     #
@@ -29,6 +30,7 @@ module ParallelOperations
       @taktuk_tree_arity = config.common.taktuk_tree_arity
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
       @output = output
+      @multicluster = config.exec_specific.multicluster
     end
 
     def make_taktuk_header_cmd
@@ -348,7 +350,8 @@ module ParallelOperations
       sleep(20)
       start = Time.now.tv_sec
 
-      @output.progress_bar_start
+      tic = 0
+      @output.progress_bar_start if not @multicluster
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
         sleep(5)
         nodes_to_test = Nodes::NodeSet.new
@@ -403,22 +406,25 @@ module ParallelOperations
             tg.list.each { |tid|
               tid.join
             }
-            missing = 0
-            missing_str = String.new
-            @nodes.set.each{ |node|
-              if node.state == "KO" then
-                missing += 1
-                missing_str += "#{node.hostname},"
-              end
-            }
-            progress_val = ((@nodes.length.to_f - missing.to_f) / @nodes.length.to_f)
-            @output.progress_barl(3, progress_val, missing)
+            if not @multicluster then
+              missing = 0
+              missing_str = String.new
+              @nodes.set.each{ |node|
+                if node.state == "KO" then
+                  missing += 1
+                  missing_str += "#{node.hostname},"
+                end
+              }
+              progress_val = ((@nodes.length.to_f - missing.to_f) / @nodes.length.to_f)
+              @output.progress_barl(3, progress_val, missing, tic)
+            end
           }
           nodes_check_window.launch(nodes_to_test, &callback)
         }
         tid.join
+        tic += 1
       end
-      @output.progress_bar_stop
+      @output.progress_bar_stop if not @multicluster
 
       @nodes.set.each { |node|
         if node.state == "OK" then

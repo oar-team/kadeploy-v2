@@ -107,11 +107,12 @@ module Debug
     # * l: debug level
     # * progress_val: percentage of the progression
     # * nb_missing: number of missing nodes
+    # * tic: number of tics
     # Output
     # * nothing   
-    def progress_barl(l, progress_val, nb_missing)
+    def progress_barl(l, progress_val, nb_missing, tic)
       if ((l <= @debug_level) && @client_output)
-        @client.progress_bar(progress_val, nb_missing)
+        @client.progress_bar(progress_val, nb_missing, tic)
       end
     end
   end

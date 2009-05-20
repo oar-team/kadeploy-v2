@@ -47,6 +47,9 @@ class KadeployClient
   # Output
   # * nothing
   def progress_bar_stop
+    printf "\033[u\033[1D"
+    printf " "
+    printf "\033[K"
     printf "\033[u"
   end
 
@@ -55,11 +58,12 @@ class KadeployClient
   # Arguments
   # * progress_val: percentage of progression
   # * nb_missing: number of missing nodes
+  # * tic: number of tics
   # Output
   # * nothing
-  def progress_bar(progress_val, nb_missing)
+  def progress_bar(progress_val, nb_missing, tic)
     str = String.new
-    bar_size = 30
+    bar_size = 25
     val = (progress_val * bar_size).round
     1.upto(bar_size) { |i|
       if (i < val) then
@@ -70,11 +74,13 @@ class KadeployClient
         str += " "
       end
     }
+    char_array = [ "-", "\\", "|", "/"]
+    animated_char = char_array[tic % char_array.length]
     printf "\033[u\033[1D"
     if (nb_missing > 1) then
-      printf "Reboot in progress |#{str}| --- #{nb_missing} nodes are missing"
+      printf "#{animated_char} Reboot in progress |#{str}| --- #{nb_missing} nodes are missing"
     else
-      printf "Reboot in progress |#{str}| --- #{nb_missing} node is missing"
+      printf "#{animated_char} Reboot in progress |#{str}| --- #{nb_missing} node is missing"
     end
     printf "\033[K"
     STDOUT.flush

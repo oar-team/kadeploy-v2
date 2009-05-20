@@ -128,6 +128,7 @@ module ConfigInformation
       exec_specific.disable_bootloader_install = false
       exec_specific.nodes_ok_file = String.new
       exec_specific.nodes_ko_file = String.new
+      exec_specific.multicluster = false
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
