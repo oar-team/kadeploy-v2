@@ -62,6 +62,7 @@ module MicroStepsLibrary
       end
       if not good_bad_array[1].empty? then
         good_bad_array[1].each { |n|
+          @config.set_node_state(n.hostname, "", "" "ko")
           @nodes_ko.push(n)
         }
       end
@@ -585,7 +586,7 @@ module MicroStepsLibrary
       end
       list = String.new
       list = "-m #{Socket.gethostname()}"
-      @nodes_ok.set.each { |node|
+      @nodes_ok.make_sorted_array_of_nodes.each { |node|
         list += " -m #{node.hostname}"
       }
       return system("kastafior -c \\\"#{@config.common.taktuk_connector}\\\" #{list} -- -s \"cat #{tarball_file}\" -c \"#{cmd}\" -f")
@@ -830,6 +831,9 @@ module MicroStepsLibrary
       if (@nodes_ok.empty?) then
         return false
       else
+        @nodes_ok.set.each { |node|
+          @config.set_node_state(node.hostname, @macro_step, method_sym.to_s, "ok")
+        }
         real_method = "ms_#{method_sym.to_s}".to_sym
         if (self.class.method_defined? real_method) then
           if (@config.exec_specific.breakpoint_on_microstep != "none") then
@@ -1170,7 +1174,6 @@ module MicroStepsLibrary
       return parallel_exec_command_wrapper("mount #{tmp_part} /tmp",
                                            @config.common.taktuk_connector)
     end
-
 
     # Send the SSH key in the deployed environment
     #

@@ -78,7 +78,7 @@ module ParallelOperations
       else
         raise "Invalid structure for broadcasting file"
       end
-      @nodes.set.each { |node|
+      @nodes.make_sorted_array_of_nodes.each { |node|
         args += " -m #{node.hostname}"
       }
       args += " broadcast put [ #{file} ] [ #{dest_dir} ]"
@@ -105,7 +105,7 @@ module ParallelOperations
       else
         raise "Invalid structure for broadcasting file"
       end
-      @nodes.set.each { |node|
+      @nodes.make_sorted_array_of_nodes.each { |node|
         args += " -m #{node.hostname}"
       }
       args += " broadcast exec [ #{cmd} ];"

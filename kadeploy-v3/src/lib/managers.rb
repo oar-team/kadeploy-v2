@@ -296,6 +296,7 @@ module Managers
     @deployments_table_lock = nil
     @mutex = nil
     @thread_tab = nil
+    @deploy = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
 
@@ -316,14 +317,14 @@ module Managers
       @deployments_table_lock = deployments_table_lock
       @config = config
       @client = client
-      deploy_id = Time.now.to_f #we use the timestamp as a deploy_id
+      @deploy_id = Time.now.to_f #we use the timestamp as a deploy_id
       if (@config.exec_specific.debug_level != nil) then
         @output = Debug::OutputControl.new(@config.exec_specific.debug_level, client, 
-                                           @config.exec_specific.true_user, deploy_id,
+                                           @config.exec_specific.true_user, @deploy_id,
                                            @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, syslog_lock)
       else
         @output = Debug::OutputControl.new(@config.common.debug_level, client,
-                                           @config.exec_specific.true_user, deploy_id,
+                                           @config.exec_specific.true_user, @deploy_id,
                                            @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, syslog_lock)
       end
       @nodes_ok = Nodes::NodeSet.new
@@ -338,7 +339,7 @@ module Managers
       @boot_new_environment_instances = Array.new
       @thread_tab = Array.new
       @logger = Debug::Logger.new(@nodeset, @config, @db, 
-                                  @config.exec_specific.true_user, deploy_id, Time.now, 
+                                  @config.exec_specific.true_user, @deploy_id, Time.now, 
                                   @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version, syslog_lock)
 
       @thread_set_deployment_environment = Thread.new {
@@ -353,6 +354,17 @@ module Managers
       @thread_process_finished_nodes = Thread.new {
         launch_thread_for_macro_step("ProcessFinishedNodes")
       }
+    end
+
+    def get_state
+      hash = Hash.new
+      hash["user"] = @config.exec_specific.true_user
+      hash["deploy_id"] = @deploy_id
+      hash["environment_name"] = @config.exec_specific.environment.name
+      hash["environment_version"] = @config.exec_specific.environment.version
+      hash["environment_user"] = @config.exec_specific.user
+      hash["nodes"] = @config.exec_specific.nodes_state
+      return hash
     end
 
     def finalize

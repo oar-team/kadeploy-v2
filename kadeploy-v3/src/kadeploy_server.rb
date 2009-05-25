@@ -9,11 +9,11 @@ require 'process_management'
 #Ruby libs
 require 'drb'
 require 'socket'
+require 'yaml'
 
 class KadeployServer
   @config = nil
   @client = nil
- # attr_reader :file_server_lock
   attr_reader :deployments_table_lock
   attr_reader :tcp_buffer_size
   attr_reader :dest_host
@@ -65,6 +65,45 @@ class KadeployServer
     return id
   end
 
+  # Delete the information of a workflow
+  #
+  # Arguments
+  # * id: workflow id
+  # Output
+  # * nothing
+  def delete_workflow_info(id)
+    @workflow_info_hash_lock.lock
+    @workflow_info_hash.delete(id)
+    @workflow_info_hash_lock.unlock
+  end
+
+  # Get a YAML output of the workflows (RPC)
+  #
+  # Arguments
+  # * wid: workflow id
+  # Output
+  # * return a string containing the YAML output
+  def get_workflow_state(wid = "")
+    str = String.new
+    id = wid.to_i if (wid != "")
+    @workflow_info_hash_lock.lock
+    if (@workflow_info_hash.has_key?(id)) then
+      hash = Hash.new
+      hash[id] = @workflow_info_hash[id].get_state
+      str = hash.to_yaml
+      hash = nil
+    elsif (wid == "") then
+      hash = Hash.new
+      @workflow_info_hash.each_pair { |id,workflow_info_hash|
+        hash[id] = workflow_info_hash.get_state
+      }
+      str = hash.to_yaml
+      hash = nil
+    end
+    @workflow_info_hash_lock.unlock
+    return str
+  end
+  
   # Create a socket server designed to copy a file from to client to the server cache (RPC)
   #
   # Arguments
@@ -108,7 +147,7 @@ class KadeployServer
     if (id != -1) then
       workflow = @workflow_info_hash[id]
       workflow.kill_workflow()
-      @workflow_info_hash.delete(id)
+      delete_workflow_info(id)
     end
   end
 
@@ -172,6 +211,7 @@ class KadeployServer
     config.common = @config.common
     config.exec_specific = exec_specific
     config.cluster_specific = Hash.new
+
     #Overide the configuration if the steps are specified in the command line
     if (not exec_specific.steps.empty?) then
       exec_specific.node_list.group_by_cluster.each_key { |cluster|
@@ -199,6 +239,7 @@ class KadeployServer
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
     workflow_id = add_workflow_info(workflow)
     client.set_workflow_id(workflow_id)
+    client.write_workflow_id(exec_specific.write_workflow_id) if exec_specific.write_workflow_id != ""
     finished = false
     tid = Thread.new {
       while (not finished) do
@@ -217,7 +258,7 @@ class KadeployServer
     finished = true
     #let's free memory at the end of the workflow
     tid = nil
-    @workflow_info_hash.delete(workflow_id)
+    delete_workflow_info(workflow_id)
     workflow.finalize
     config.cluster_specific = nil
     config = nil
