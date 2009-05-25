@@ -129,6 +129,9 @@ module ConfigInformation
       exec_specific.nodes_ok_file = String.new
       exec_specific.nodes_ko_file = String.new
       exec_specific.multicluster = false
+      exec_specific.nodes_state = Hash.new
+      exec_specific.write_workflow_id = String.new
+
       if (load_kadeploy_cmdline_options(nodes_desc, exec_specific) == true) then
         case exec_specific.load_env_kind
         when "file"
@@ -153,6 +156,15 @@ module ConfigInformation
       else
         return nil
       end
+    end
+
+    def set_node_state(hostname, macro_step, micro_step, state)
+      if not @exec_specific.nodes_state.has_key?(hostname) then
+        @exec_specific.nodes_state[hostname] = Array.new
+      end
+      @exec_specific.nodes_state[hostname][0] = { "macro-step" => macro_step } if macro_step != ""
+      @exec_specific.nodes_state[hostname][1] = { "micro-step" => micro_step } if micro_step != ""
+      @exec_specific.nodes_state[hostname][2] = { "state" => state } if state != ""
     end
 
     private
@@ -800,6 +812,9 @@ module ConfigInformation
           end
         }
         opts.separator "Advanced options:"
+        opts.on("--write-workflow-id FILE", "Write the workflow id in a file") { |file|
+          exec_specific.write_workflow_id = file
+        }
         opts.on("--ignore-nodes-deploying", "Allow to deploy even on the nodes tagged as \"currently deploying\" (use this only if you know what you do)") {
           exec_specific.ignore_nodes_deploying = true
         }
@@ -1348,7 +1363,9 @@ module ConfigInformation
     # * return true in case of success, false otherwise
     def load_kanodes_exec_specific
       @exec_specific = OpenStruct.new
+      @exec_specific.operation = String.new
       @exec_specific.node_list = Array.new
+      @exec_specific.wid = String.new
       return load_kanodes_cmdline_options()
     end
 
@@ -1366,13 +1383,9 @@ module ConfigInformation
         opts.separator "Contact: kadeploy-devel@lists.grid5000.fr"
         opts.separator ""
         opts.separator "General options:"
-        opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
-          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~m) then
-            Debug::client_error("Invalid hostname: #{m}")
-            return false
-          end
-          @exec_specific.node_list.push(m)
-        }
+        opts.on("-b", "--get-state", "") {
+          @exec_specific.operation = list 
+        }       
         opts.on("-f", "--file MACHINELIST", "Only print information about the given machines")  { |f|
           if not File.readable?(f) then
             Debug::client_error("The file #{f} cannot be read")
@@ -1386,6 +1399,24 @@ module ConfigInformation
               @exec_specific.node_list.push(hostname.chomp)
             }
           end
+        }
+        opts.on("-m", "--machine MACHINE", "Only print information about the given machines") { |m|
+          if not (/\A[A-Za-z0-9\.\-]+\Z/ =~m) then
+            Debug::client_error("Invalid hostname: #{m}")
+            return false
+          end
+          @exec_specific.node_list.push(m)
+        }
+        opts.on("-o", "--operation OPERATION", "Choose the operation (get_deploy_state or get_yaml_dump)") { |o|
+          if not  (/\Aget_deploy_state|get_yaml_dump\Z/ =~ o) then
+            Debug::client_error("Invalid operation: #{o}")
+            return false
+          end
+          @exec_specific.operation = o
+        }
+        opts.on("-w", "--workflow-id WID", "Specify a workflow id (this is use with the get_yaml_dump operation. \
+                                            If no wid is specified, the information of all the running worklfows will be dumped") { |w|
+          @exec_specific.wid = w
         }
       end
       begin
@@ -1404,6 +1435,10 @@ module ConfigInformation
     # Output
     # * return true if the options used are correct, false otherwise
     def check_kanodes_config
+      if ((@exec_specific.operation == "get_deploy_state") && (@exec_specific.node_list.empty?)) then
+        Debug::client_error("You must choose at least one node")
+        return false
+      end
       return true
     end
 

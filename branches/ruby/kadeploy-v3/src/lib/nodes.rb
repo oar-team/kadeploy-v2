@@ -193,6 +193,20 @@ module Nodes
       return res
     end
 
+    # Create a sorted array (from the hostname point of view) of the nodes in a NodeSet
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a sorted array of nodes
+    def make_sorted_array_of_nodes
+      return @set.sort { |str_x,str_y|
+        x = str_x.hostname.gsub(/[a-zA-Z\-\.]/,"").to_i
+        y = str_y.hostname.gsub(/[a-zA-Z\-\.]/,"").to_i
+        x <=> y
+      }
+    end
+
     # Make a string with the characteristics of the nodes of a NodeSet
     #
     # Arguments

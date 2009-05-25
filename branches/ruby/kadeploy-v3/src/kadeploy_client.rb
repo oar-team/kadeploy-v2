@@ -173,6 +173,18 @@ class KadeployClient
     @workflow_id = id
   end
 
+  # Write the workflow id in a file (RPC)
+  #
+  # Arguments
+  # * file: destination file
+  # Output
+  # * nothing
+  def write_workflow_id(file)
+    File.delete(file) if File.exist?(file)
+    file = File.new(file, "w")
+    file.write("#{@workflow_id}\n")
+    file.close
+  end
 end
 
 def _exit(exit_code, dbh)
