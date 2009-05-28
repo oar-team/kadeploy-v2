@@ -80,41 +80,6 @@ module Debug
         @syslog_lock.unlock
       end
     end
-
-    # Ask the client to prepare its terminal for a progress bar
-    #
-    # Arguments
-    # * nothing
-    # Output
-    # * nothing
-    def progress_bar_start
-      @client.progress_bar_start if @client_output
-    end
-
-    # Ask the client to clean its terminal after a progress bar
-    #
-    # Arguments
-    # * nothing
-    # Output
-    # * nothing   
-    def progress_bar_stop
-      @client.progress_bar_stop if @client_output
-    end
-
-    # Ask the client to print a progress bar
-    #
-    # Arguments
-    # * l: debug level
-    # * progress_val: percentage of the progression
-    # * nb_missing: number of missing nodes
-    # * tic: number of tics
-    # Output
-    # * nothing   
-    def progress_barl(l, progress_val, nb_missing, tic)
-      if ((l <= @debug_level) && @client_output)
-        @client.progress_bar(progress_val, nb_missing, tic)
-      end
-    end
   end
 
   class Logger

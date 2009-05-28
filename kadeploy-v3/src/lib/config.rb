@@ -128,7 +128,6 @@ module ConfigInformation
       exec_specific.disable_bootloader_install = false
       exec_specific.nodes_ok_file = String.new
       exec_specific.nodes_ko_file = String.new
-      exec_specific.multicluster = false
       exec_specific.nodes_state = Hash.new
       exec_specific.write_workflow_id = String.new
 
@@ -1435,8 +1434,8 @@ module ConfigInformation
     # Output
     # * return true if the options used are correct, false otherwise
     def check_kanodes_config
-      if ((@exec_specific.operation == "get_deploy_state") && (@exec_specific.node_list.empty?)) then
-        Debug::client_error("You must choose at least one node")
+      if (exec_specific.operation == "") then
+        Debug::client_error("You must choose an operation")
         return false
       end
       return true

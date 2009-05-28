@@ -233,9 +233,6 @@ class KadeployServer
       config.cluster_specific = @config.cluster_specific
     end
 
-    #We check if the depoyment involves several clusters (useful for printing purposes)
-    config.exec_specific.multicluster = (exec_specific.node_list.get_nb_clusters > 1)
-
     workflow = Managers::WorkflowManager.new(config, client, @reboot_window, @nodes_check_window, @db, @deployments_table_lock, @syslog_lock)
     workflow_id = add_workflow_info(workflow)
     client.set_workflow_id(workflow_id)
