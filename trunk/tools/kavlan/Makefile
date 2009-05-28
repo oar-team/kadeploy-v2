@@ -4,6 +4,8 @@ CONFPATH=/etc/kavlan
 BINDIR=/usr/local/bin
 SBINDIR=/usr/local/sbin
 KAVLANUSER=kavlan
+VERSION=1.0rc1
+distdir = kavlan-$(VERSION)
 
 install-frontend: install-perllibs
 	install -m 0640 -d $(CONFPATH)
@@ -47,3 +49,12 @@ uninstall-backend :
 	rm -fr $(DEST)
 	rm $(BINDIR)/kavlan-backend
 
+release: Makefile
+	rm -fr $(distdir)
+	mkdir -p $(distdir)
+	tar zcf  tmp.tgz README Makefile src/*.pl src/*.sh src/KaVLAN/*.pm *.conf *.sql
+	tar -C $(distdir) -zxf tmp.tgz
+	mkdir $(distdir)/ebin
+	tar zvcf  $(distdir).tar.gz $(distdir)
+	rm -fr $(distdir)
+	rm -fr tmp.tgz
