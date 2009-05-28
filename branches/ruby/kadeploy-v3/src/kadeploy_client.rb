@@ -30,62 +30,6 @@ class KadeployClient
     puts msg
   end
 
-  # Prepare the client terminal for a progress bar (RPC)
-  #
-  # Arguments
-  # * nothing
-  # Output
-  # * nothing
-  def progress_bar_start
-    printf "\033[s"
-  end
-
-  # Clean the client terminal after a progress bar (RPC)
-  #
-  # Arguments
-  # * nothing
-  # Output
-  # * nothing
-  def progress_bar_stop
-    printf "\033[u\033[1D"
-    printf " "
-    printf "\033[K"
-    printf "\033[u"
-  end
-
-  # Print a progress bar (RPC)
-  #
-  # Arguments
-  # * progress_val: percentage of progression
-  # * nb_missing: number of missing nodes
-  # * tic: number of tics
-  # Output
-  # * nothing
-  def progress_bar(progress_val, nb_missing, tic)
-    str = String.new
-    bar_size = 25
-    val = (progress_val * bar_size).round
-    1.upto(bar_size) { |i|
-      if (i < val) then
-        str += "-"
-      elsif (i == val) then
-        str += ">"
-      else
-        str += " "
-      end
-    }
-    char_array = [ "-", "\\", "|", "/"]
-    animated_char = char_array[tic % char_array.length]
-    printf "\033[u\033[1D"
-    if (nb_missing > 1) then
-      printf "#{animated_char} Reboot in progress |#{str}| --- #{nb_missing} nodes are missing"
-    else
-      printf "#{animated_char} Reboot in progress |#{str}| --- #{nb_missing} node is missing"
-    end
-    printf "\033[K"
-    STDOUT.flush
-  end
-
   # Stop the DRB service and to release the client (RPC)
   #
   # Arguments

@@ -13,7 +13,7 @@ module ParallelOperations
     @taktuk_tree_arity = nil
     @taktuk_auto_propagate = nil
     @output = nil
-    @multicluster = nil
+    @config = nil
 
     # Constructor of ParallelOps
     #
@@ -26,11 +26,11 @@ module ParallelOperations
     # * nothing
     def initialize(nodes, config, taktuk_connector, output)
       @nodes = nodes
+      @config = config
       @taktuk_connector = taktuk_connector
       @taktuk_tree_arity = config.common.taktuk_tree_arity
       @taktuk_auto_propagate = config.common.taktuk_auto_propagate
       @output = output
-      @multicluster = config.exec_specific.multicluster
     end
 
     def make_taktuk_header_cmd
@@ -347,11 +347,12 @@ module ParallelOperations
       good_nodes = Array.new
       bad_nodes = Array.new
       init_nodes_state_before_wait_nodes_after_reboot_command
+      @nodes.set.each { |node|
+        @config.set_node_state(node.hostname, "", "", "reboot_in_progress")
+      }
       sleep(20)
       start = Time.now.tv_sec
 
-      tic = 0
-      @output.progress_bar_start if not @multicluster
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
         sleep(5)
         nodes_to_test = Nodes::NodeSet.new
@@ -395,6 +396,7 @@ module ParallelOperations
                   end
                   if all_ports_ok then
                     node.state = "OK"
+                    @config.set_node_state(node.hostname, "", "", "rebooted")
                   else
                     node.state = "KO"
                   end
@@ -406,25 +408,11 @@ module ParallelOperations
             tg.list.each { |tid|
               tid.join
             }
-            if not @multicluster then
-              missing = 0
-              missing_str = String.new
-              @nodes.set.each{ |node|
-                if node.state == "KO" then
-                  missing += 1
-                  missing_str += "#{node.hostname},"
-                end
-              }
-              progress_val = ((@nodes.length.to_f - missing.to_f) / @nodes.length.to_f)
-              @output.progress_barl(3, progress_val, missing, tic)
-            end
           }
           nodes_check_window.launch(nodes_to_test, &callback)
         }
         tid.join
-        tic += 1
       end
-      @output.progress_bar_stop if not @multicluster
 
       @nodes.set.each { |node|
         if node.state == "OK" then
