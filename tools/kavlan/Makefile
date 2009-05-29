@@ -4,7 +4,7 @@ CONFPATH=/etc/kavlan
 BINDIR=/usr/local/bin
 SBINDIR=/usr/local/sbin
 KAVLANUSER=kavlan
-VERSION=1.0rc1
+VERSION=1.0rc2
 distdir = kavlan-$(VERSION)
 
 install-frontend: install-perllibs

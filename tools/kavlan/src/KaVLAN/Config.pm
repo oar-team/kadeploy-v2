@@ -172,15 +172,15 @@ sub getPortName{
 sub getSwitchIdByName(){
     my ($name,$switch)=@_;
 
-#Check argument
+    # Check argument
     if(not defined $name){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
     my $indice=-1;
     foreach my $i (0..$#{$switch}) {
-        &const::verbose("name : ".$switch->[$i]{"Name"});
+        &const::debug("name : ".$switch->[$i]{"Name"});
         if ($switch->[$i]{"Name"} eq  $name) {
-            &const::verbose("found switch $name !");
+            &const::verbose("found switch $name (id=$i) !");
             $indice = $i;
             last;
         }
@@ -304,12 +304,12 @@ sub printPortInformation(){
     my @ret;
     my $val;
 
-#Check argument
+    # Check arguments
     if(not defined $port or not defined $switchSession or not defined $switchConfig){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Get information of the port
+    # Get information of the port
     my @info=$switchConfig->getPortInformation($port,$switchSession);
 
     if ($#info > 0) {
@@ -324,7 +324,10 @@ sub printPortInformation(){
         print "$name UNTAGGED: ";
         print $info[0];
         print "\n";
+    } elsif ($#info < 0) {
+        print STDERR "WARN: no VLAN found for $name\n";
     }
+
 }
 
 

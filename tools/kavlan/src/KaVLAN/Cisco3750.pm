@@ -77,8 +77,8 @@ sub getPortsAffectedToVlan(){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-    #Get port informations
-    &const::verbose("Getting ports affected");
+    # Get port informations
+    &const::debug("Getting ports affected");
 
     #Retrieve the vlan number
     my @vlanNumber;

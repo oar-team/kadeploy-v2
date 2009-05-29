@@ -54,6 +54,7 @@ our $VERBOSE=0;
 
 #Activate the debug mode
 our $DEBUG=0;
+
 #Uses during the verbose mode to show the name of the function this variable have to be redefined in each function in order to override the variable of the caller function
 our $FUNC_NAME="main";
 
@@ -72,19 +73,23 @@ sub verbose(){
 
     if($const::VERBOSE!=0){
         my $function = (caller(1))[3];
-        print $function."::";
+        print $function."::" if $function;
         foreach my $item (@args){
             print $item;
-    }
-
+        }
         print "\n";
     }
 }
 
 sub debug(){
-    my $string= shift;
+    my @args=@_;
     if($const::DEBUG){
-        print "DEBUG: $string\n";
+        my $function = (caller(1))[3];
+        print $function."::" if $function;
+        foreach my $item (@args){
+            print $item;
+        }
+        print "\n";
     }
 }
 

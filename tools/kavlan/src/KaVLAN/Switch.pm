@@ -59,27 +59,26 @@ sub getVlanNumber {
     my @res;
     my @resp;
 
-    if ( defined $const::CACHE{\$session}{'VLANS'}) {
-        &const::verbose("reuse VLAN list of switch from CACHE");
-        @resp = @{$const::CACHE{\$session}{'VLANS'}} ;
+    if ( defined $const::CACHE{$session}{'VLANS'}) {
+        &const::debug("reuse VLAN list of switch from CACHE");
+        @resp = @{$const::CACHE{$session}{'VLANS'}} ;
     } else {
         #Retrieve the number and the name of each vlan
         my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
         @resp = $session->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
-        $const::CACHE{\$session}{'VLANS'} = \@resp;
+        $const::CACHE{$session}{'VLANS'} = \@resp;
     }
 
     # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
     foreach my $i (0..$max){
-#        &const::verbose("Seeing ", ${ @{ $resp[0] } }[$i]->val);
         if( ${ @{ $resp[0] } }[$i]->val =~ /$vlanName/){
-            &const::verbose("Adding vlan ", ${ @{ $resp[0] } }[$i]->val ," because he matches the given name");
-#Getting the end of the oid as vlanNumber
-                        my $number = ${@{$resp[0]}}[$i]->iid;
-                        if(not defined $number or $number eq ""){
-                                $number = ${@{${@{$resp[0]}}[$i]}}[0];
-                        }
+            &const::debug("Adding vlan ", ${ @{ $resp[0] } }[$i]->val ," because he matches the given name");
+            # Getting the end of the oid as vlanNumber
+            my $number = ${@{$resp[0]}}[$i]->iid;
+            if(not defined $number or $number eq ""){
+                $number = ${@{${@{$resp[0]}}[$i]}}[0];
+            }
 
             $number =~ s/\w+\.//g;
             $number =~ s/\D+//g;
@@ -88,8 +87,8 @@ sub getVlanNumber {
         }
     }
 
-#Return the value which correspond to the vlan name
-    &const::verbose("Vlan's availables ",@res);
+    # Return the value which correspond to the vlan name
+    &const::verbose("Vlan's availables:",join(" ",@res));
 
     return @res;
 }
@@ -127,16 +126,16 @@ sub modifyVlanName(){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the vlan number
+    # Retrieve the vlan number
     my @vlanNumber = $self->getVlanNumber($oldVlanName,$session);
     if($#vlanNumber==-1){
         die "ERROR : Can't modify the vlan name because there is vlan available";
     }
 
-#Create the snmp variable to apply changes in the vlan $vlanNumber
+    # Create the snmp variable to apply changes in the vlan $vlanNumber
     my $var=new SNMP::Varbind([$self->{VLAN_NAME},$vlanNumber[0],$newVlanName,"OCTETSTR"]);
 
-#Send the snmp information
+    # Send the snmp information
     &const::verbose("Applying modification");
     $session->set($var) or die "ERROR : Can't modify vlan (there is probably another vlan with the same name)\n";
 
@@ -150,13 +149,13 @@ sub modifyVlanName(){
 ##########################################################################################
 sub getIPConfiguration(){
     my $self = shift;
-#Check arguement
     my ($vlanNumber,$session)=@_;
+    # Check args
     if(not defined $vlanNumber or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the informations about ip configuration
+    # Retrieve the informations about ip configuration
     &const::verbose("Retreive ip configuration of the vlan");
     my $ip=new SNMP::Varbind([$self->{IP},$vlanNumber,"","NETADDR"]);
     my $mask=new SNMP::Varbind([$self->{MASK},$vlanNumber,"","NETADDR"]);
@@ -177,26 +176,26 @@ sub getIPConfiguration(){
 ##########################################################################################
 sub getTagConfiguration(){
     my $self = shift;
-#Check arguement
+    #Check arguement
     my ($vlanNumber,$session)=@_;
     if(not defined $vlanNumber or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME=";
     }
 
-#Retreive the informations about ip configuration    
-    &const::verbose("Retreive tag configuration of the vlan for ".$vlanNumber);
+    # Retrieve the informations about ip configuration
+    &const::debug("Retrieve tag configuration of the vlan for ".$vlanNumber);
     my $res = 0;
 
-#Retrieve the number and the name of each vlan
+    # Retrieve the number and the name of each vlan
     my $var = new SNMP::VarList([$self->{TAG}]);
     my @resp = $session->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
 
-#Loop until we have a name which correspond to $vlanName
+    # Loop until we have a name which correspond to $vlanName
     my $i;
     for($i=0; ( $i<$const::IEEE_MAX_VLAN ) && ( $i<($#{ @{ $resp[0] } } +1) ) && ($res == 0) ;$i++){
         my $tag;
         my $number;
-#If the it is the normal mode, the tag is the value and number is in the oid
+        # If the it is the normal mode, the tag is the value and number is in the oid
         $tag = ${ @{ $resp[0] } }[$i]->val;
         $number = ${@{${@{$resp[0]}}[$i]}}[0];
         $number =~ s/\w+\.//g;
@@ -226,21 +225,21 @@ sub listVlanOnRouteur(){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retrieve the number and the name of each vlan
+    # Retrieve the number and the name of each vlan
     my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
     my @resp = $routeurSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
 
-#Loop until we have a name which correspond to $vlanName
+    # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
     foreach my $i (0..$max){
         if(${ @{ $resp[0] } }[$i]->val =~ /$const::MODIFY_NAME_KAVLAN$vlanName/){
-            &const::verbose("Vlan founded:",${ @{ $resp[0] } }[$i]->val);
+            &const::debug("Vlan founded:",${ @{ $resp[0] } }[$i]->val);
 
             print "-------------------------------\n";
             my $val = ${ @{ $resp[0] } }[$i]->val;
             $val =~ s/$const::MODIFY_NAME_KAVLAN//;
             print "VLAN NAME : $val\n";
-#Get the vlan number in order to retreive informations
+            # Get the vlan number in order to retreive informations
             my @vlanNumber = $self->getVlanNumber($val,$routeurSession);
             my $ip =  $self->getIPConfiguration($vlanNumber[0],$routeurSession);
             print "ATTRIBUTED IP : $ip\n";
@@ -283,8 +282,8 @@ sub listVlanOnSwitch(){
     my @resp = $switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
 
     use Data::Dumper;
-    &const::verbose("Dumper(@resp)");
-#Loop until we have a name which correspond to $vlanName
+    &const::debug("Dumper(@resp)");
+    # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
     print "vlanName is $vlanName (default is $const::VLAN_DEFAULT_NAME), max is $max\n" if ($const::VERBOSE);
     foreach my $i (0..$max){
@@ -324,50 +323,49 @@ sub getPortInformation(){
 
     my @ret;
     my $val;
-
     my @resp;
 
-
-    if ( defined $const::CACHE{\$switchSession}{'VLANS'}) {
-        &const::verbose("reuse VLAN list of switch from CACHE");
-        @resp = @{$const::CACHE{\$switchSession}{'VLANS'}} ;
+    if ( defined $const::CACHE{$switchSession}{'VLANS'}) {
+        &const::debug("reuse VLAN list of switch from CACHE ");
+        @resp = @{$const::CACHE{$switchSession}{'VLANS'}} ;
     } else {
         #Retrieve the number and the name of each vlan
         my $var = new SNMP::VarList([$self->{VLAN_NAME}]);
         @resp = $switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$var);
-        $const::CACHE{\$switchSession}{'VLANS'} = \@resp;
+        &const::debug("store VLAN list of switch to CACHE ");
+        $const::CACHE{$switchSession}{'VLANS'} = \@resp;
     }
 
     my $indiceTagPort = 1;
-#Loop until we have a name which correspond to $vlanName
+    # Loop until we have a name which correspond to $vlanName
     my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
     foreach my $i (0..$max){
         my $name = ${ @{ $resp[0] } }[$i]->val;
 
         if($name =~ /$const::MODIFY_NAME_KAVLAN/ or $name =~ /$const::VLAN_DEFAULT_NAME/){
-#Getting the right name of the vlan (without the prefix MODIFY_NAME_VLAN)
+            # Getting the right name of the vlan (without the prefix MODIFY_NAME_VLAN)
             if($name =~ /$const::MODIFY_NAME_KAVLAN/){
-                &const::verbose("Vlan found:",$name);
+                &const::debug("Vlan found:",$name);
                 $val = $name;
                 $val =~ s/$const::MODIFY_NAME_KAVLAN//;
 
             }
             if($name =~ /$const::VLAN_DEFAULT_NAME/){
-                &const::verbose("Vlan found:",$name);
+                &const::debug("Vlan found:",$name);
                 $val = $const::DEFAULT_NAME;
             }
             my %res;
-            if ( defined $const::CACHE{\$switchSession}{'port'}{$val}) {
-                &const::verbose("reuse VLAN list of port from CACHE");
-                %res = %{$const::CACHE{\$switchSession}{'port'}{$val}} ;
+            if ( defined $const::CACHE{$switchSession}{'port'}{$val}) {
+                &const::debug("reuse VLAN list of port from CACHE");
+                %res = %{$const::CACHE{$switchSession}{'port'}{$val}} ;
             } else {
                 &const::verbose("will run getPortsAffectedToVlan with ",$val);
                 my $tmp = $self->getPortsAffectedToVlan($val,$switchSession);
                 %res = %{$tmp};
-                $const::CACHE{\$switchSession}{'port'}{$val} = \%res;
+                $const::CACHE{$switchSession}{'port'}{$val} = \%res;
             }
 
-#Add informations about this vlan if we find the port in the vlan
+            # Add informations about this vlan if we find the port in the vlan
             if(defined  @{$res{"TAGGED"}}){
                 foreach my $j (0..$#{ @{ $res{"TAGGED"} } }){
                     if( ${@{$res{"TAGGED"}}}[$j] eq $port){

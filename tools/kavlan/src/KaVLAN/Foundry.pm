@@ -69,17 +69,17 @@ sub getIPConfiguration {
 ##########################################################################################
 sub getPortsAffectedToVlan(){
     my $self = shift;
-    #Check arguments
+    # Check arguments
     my ($vlanName,$switchSession)=@_;
     if(not defined $vlanName or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
     my %res;
 
-    #Get port informations
-    &const::verbose("Getting ports affected");
+    # Get port informations
+    &const::debug("Getting ports affected");
 
-    #Retrieve the vlan number
+    # Retrieve the vlan number
     my @vlanNumber;
     my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
     @vlanNumber= $self->getVlanNumber($realVlanName,$switchSession);
