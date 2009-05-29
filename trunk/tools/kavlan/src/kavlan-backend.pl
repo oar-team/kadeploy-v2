@@ -42,7 +42,8 @@ GetOptions(\%options,
         "g|get",
         "q|quiet",
         "h|help",
-        "v|verbose");
+        "v|verbose",
+        "d|debug");
 
 &usage(0) if( $options{"h"});
 
@@ -51,6 +52,10 @@ GetOptions(\%options,
 #------------------------------
 $const::CONFIGURATION_FILE = $options{"F"} if ($options{"F"});
 $const::VERBOSE=1 if $options{"v"};
+if ($options{"d"}) {
+    $const::VERBOSE=1;
+    $const::DEBUG=1;
+}
 
 my ($site,$router,$switch) = KaVLAN::Config::parseConfigurationFile();
 
@@ -172,6 +177,7 @@ sub get_vlan {
     my $VLAN = shift;
     my ($port,$switchName) = KaVLAN::Config::getPortNumber($node,$site->{"Name"});
     my $indiceSwitch = &KaVLAN::Config::getSwitchIdByName($switchName,$switch);
+    &const::verbose("get VLAN for node $node (port = $port, switch=$switchName, switchid=$indiceSwitch");
 
     &KaVLAN::Config::printPortInformation($node,$port,$switchSession[$indiceSwitch],$switchConfig[$indiceSwitch]);
 }
@@ -189,10 +195,12 @@ print "Version $const::VERSION
 USAGE : $0 [options]
        -i|--vlan_id <VLANID>
        -s                            set vlan for given node(s)
+       -g                            get vlan for given node(s)
        -f|--filenode <NODEFILE>
        -m|--machine <nodename>
        -q|--quiet                    quiet mode
        -h|--help                     print this help
+       -d|--debug                    debug mode
        -v|--verbose                  verbose mode\n";
     exit $status;
 }
