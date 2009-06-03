@@ -344,6 +344,7 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)    
     def wait_nodes_after_reboot(timeout, ports_up, ports_down, nodes_check_window)
+      start = Time.now.tv_sec
       good_nodes = Array.new
       bad_nodes = Array.new
       init_nodes_state_before_wait_nodes_after_reboot_command
@@ -351,7 +352,6 @@ module ParallelOperations
         @config.set_node_state(node.hostname, "", "", "reboot_in_progress")
       }
       sleep(20)
-      start = Time.now.tv_sec
 
       while (((Time.now.tv_sec - start) < timeout) && (not @nodes.all_ok?))
         sleep(5)
@@ -363,11 +363,11 @@ module ParallelOperations
         }
         # We launch a thread here because a client SIGINT would corrupt the nodes check  window 
         # management, thus even a SIGINT is received, the reboot process will finish
-        tid = Thread.new {
+        main_tid = Thread.new {
           callback = Proc.new { |ns|
             tg = ThreadGroup.new
             ns.set.each { |node|
-              tid = Thread.new {
+              sub_tid = Thread.new {
                 all_ports_ok = true
                 if Ping.pingecho(node.hostname, 1, 22) then
                   ports_up.each { |port|
@@ -396,22 +396,23 @@ module ParallelOperations
                   end
                   if all_ports_ok then
                     node.state = "OK"
+                    @output.debugl(4, "   *** #{node.hostname} is here after #{Time.now.tv_sec - start}s")
                     @config.set_node_state(node.hostname, "", "", "rebooted")
                   else
                     node.state = "KO"
                   end
                 end
               }
-              tg.add(tid)
+              tg.add(sub_tid)
             }
             #let's wait everybody
-            tg.list.each { |tid|
-              tid.join
+            tg.list.each { |sub_tid|
+              sub_tid.join
             }
           }
           nodes_check_window.launch(nodes_to_test, &callback)
         }
-        tid.join
+        main_tid.join
       end
 
       @nodes.set.each { |node|

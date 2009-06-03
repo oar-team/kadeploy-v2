@@ -397,7 +397,7 @@ module Managers
     # Output
     # * nothing
     def kill_workflow
-      @output.debugl(4, "Launching Mr Proper ...")
+      @output.debugl(3, "Launching Mr Proper ...")
       @output.debugl(0, "Deployment aborted by user")
       @logger.set("success", false, @nodeset)
       @logger.dump
@@ -405,23 +405,23 @@ module Managers
       @set_deployment_environment_instances.each { |instance|
         if (instance != nil) then
           instance.kill()
-          @output.debugl(4, " *** Kill a set_deployment_environment_instance")
+          @output.debugl(3, " *** Kill a set_deployment_environment_instance")
         end
       }
       @broadcast_environment_instances.each { |instance|
         if (instance != nil) then
-          @output.debugl(4, " *** Kill a broadcast_environment_instance")
+          @output.debugl(3, " *** Kill a broadcast_environment_instance")
           instance.kill()
         end
       }
       @boot_new_environment_instances.each { |instance|
         if (instance != nil) then
-          @output.debugl(4, " *** Kill a boot_new_environment_instance")
+          @output.debugl(3, " *** Kill a boot_new_environment_instance")
           instance.kill()
         end
       }
       @thread_tab.each { |tid|
-        @output.debugl(4, " *** Kill a main thread")
+        @output.debugl(3, " *** Kill a main thread")
         Thread.kill(tid)
       }
       Thread.kill(@thread_set_deployment_environment)
@@ -511,14 +511,14 @@ module Managers
                 end
                 @logger.set("success", true, @nodes_ok)
                 @nodes_ok.group_by_cluster.each_pair { |cluster, set|
-                  @output.debugl(1, "Nodes correctly deployed on cluster #{cluster}")
-                  @output.debugl(1, set.to_s)
+                  @output.debugl(0, "Nodes correctly deployed on cluster #{cluster}")
+                  @output.debugl(0, set.to_s)
                 }
                 @logger.set("success", false, @nodes_ko)
                 @logger.error(@nodes_ko)
                 @nodes_ko.group_by_cluster.each_pair { |cluster, set|
-                  @output.debugl(1, "Nodes not Correctly deployed on cluster #{cluster}")
-                  @output.debugl(1, set.to_s(true))
+                  @output.debugl(0, "Nodes not Correctly deployed on cluster #{cluster}")
+                  @output.debugl(0, set.to_s(true))
                 }
                 @client.generate_files(@nodes_ok, @config.exec_specific.nodes_ok_file, @nodes_ko, @config.exec_specific.nodes_ko_file)
                 @logger.dump
@@ -561,10 +561,10 @@ module Managers
       if (not File.exist?(local_file)) || (Digest::MD5.hexdigest(File.read(local_file)) != expected_md5) then
         #We first check if the file can be reached locally
         if (File.readable?(client_file) && (Digest::MD5.hexdigest(File.read(client_file)) == expected_md5)) then
-          @output.debugl(4, "Doing a local copy for the #{file_tag} #{client_file}")
+          @output.debugl(3, "Doing a local copy for the #{file_tag} #{client_file}")
           system("cp #{client_file} #{local_file}")
         else
-          @output.debugl(4, "Grab the #{file_tag} #{client_file}")
+          @output.debugl(3, "Grab the #{file_tag} #{client_file}")
           if not @client.get_file(client_file, prefix) then
             @output.debugl(0, "Unable to grab the #{file_tag} #{client_file}")
             return false
@@ -593,7 +593,7 @@ module Managers
       @config.exec_specific.environment.tarball["file"] = local_tarball
 
       if @config.exec_specific.key != "" then
-        @output.debugl(4, "Grab the key file #{@config.exec_specific.key}")
+        @output.debugl(3, "Grab the key file #{@config.exec_specific.key}")
         if not @client.get_file(@config.exec_specific.key, user_prefix) then
           @output.debugl(0, "Unable to grab the file #{@config.exec_specific.key}")
           return false
@@ -625,7 +625,7 @@ module Managers
           @config.exec_specific.custom_operations[macro_step].each_key { |micro_step|
             @config.exec_specific.custom_operations[macro_step][micro_step].each { |entry|
               if (entry[0] == "send") then
-                @output.debugl(4, "Grab the file #{entry[1]} for custom operations")
+                @output.debugl(3, "Grab the file #{entry[1]} for custom operations")
                 if not @client.get_file(entry[1], user_prefix) then
                   @output.debugl(0, "Unable to grab the file #{entry[1]}")
                   return false
@@ -647,7 +647,7 @@ module Managers
     # Output
     # * nothing  
     def run
-      @output.debugl(1, "Launching Kadeploy ...")
+      @output.debugl(0, "Launching Kadeploy ...")
       @deployments_table_lock.lock
       if (@config.exec_specific.ignore_nodes_deploying) then
         nodes_ok = @nodeset
@@ -655,7 +655,7 @@ module Managers
         res = @nodeset.check_nodes_in_deployment(@db, @config.common.purge_deployment_timer)
         nodes_ok = res[0]
         nodes_ko = res[1]
-        @output.debugl(1, "The nodes #{nodes_ko.to_s} are already involved in deployment, let's discard them") if (not nodes_ko.empty?)
+        @output.debugl(0, "The nodes #{nodes_ko.to_s} are already involved in deployment, let's discard them") if (not nodes_ko.empty?)
       end
       #We backup the set of nodes used in the deployement to be able to update their deployment state at the end of the deployment
       if not nodes_ok.empty? then
@@ -674,11 +674,11 @@ module Managers
           nodes_ok_backup.set_deployment_state("deployed", nil, @db)
           @deployments_table_lock.unlock
         else
-          @output.debugl(1, "Some error occurs when grabbing the files")
+          @output.debugl(0, "Some error occurs when grabbing the files")
         end
         nodes_ok_backup = nil
       else
-        @output.debugl(1, "All the nodes have been discarded ...")
+        @output.debugl(0, "All the nodes have been discarded ...")
       end
     end
   end

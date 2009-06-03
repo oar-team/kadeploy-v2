@@ -62,11 +62,12 @@ module MicroStepsLibrary
       end
       if not good_bad_array[1].empty? then
         good_bad_array[1].each { |n|
-          @config.set_node_state(n.hostname, "", "" "ko")
+          @output.debugl(4, "The node #{n.hostname} has been discarded of the current instance")
+          @config.set_node_state(n.hostname, "", "", "ko")
           @nodes_ko.push(n)
         }
       end
-    end 
+    end
  
     # Classify an array of nodes in two NodeSet (good ones and bad nodes) but does not modify @nodes_ko
     #
@@ -201,7 +202,7 @@ module MicroStepsLibrary
     # Output
     # * nothing
     def _reboot_wrapper(kind, node_set, use_rsh_for_reboot = false)
-      @output.debugl(4, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
+      @output.debugl(3, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
       node_set.set.each { |node|
         case kind
@@ -604,7 +605,7 @@ module MicroStepsLibrary
     # * return true if the operation is correctly performed, false otherwise
     def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
       if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
-        @output.debugl(4, "Error while cleaning the /tmp")
+        @output.debugl(3, "Error while cleaning the /tmp")
         return false
       end
       torrent = "#{tarball_file}.torrent"
@@ -634,9 +635,9 @@ module MicroStepsLibrary
         ProcessManagement::killall(seed_pid)
         return false
       end
-      @output.debugl(4, "Shutdown the seed for #{torrent}")
+      @output.debugl(3, "Shutdown the seed for #{torrent}")
       ProcessManagement::killall(seed_pid)
-      @output.debugl(4, "Shutdown the tracker for #{torrent}")
+      @output.debugl(3, "Shutdown the tracker for #{torrent}")
       ProcessManagement::killall(tracker_pid)
       system("rm -f #{btdownload_state}")
       case tarball_kind
@@ -653,11 +654,11 @@ module MicroStepsLibrary
         return false
       end
       if not parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector) then
-        @output.debugl(4, "Error while uncompressing the tarball")
+        @output.debugl(3, "Error while uncompressing the tarball")
         return false
       end
       if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
-        @output.debugl(4, "Error while cleaning the /tmp")
+        @output.debugl(3, "Error while cleaning the /tmp")
         return false
       end
       return true
@@ -671,7 +672,7 @@ module MicroStepsLibrary
     # Output
     # * return true if the command has been correctly performed, false otherwise
     def custom_exec_cmd(cmd)
-      @output.debugl(4, "CUS exec_cmd: #{@nodes_ok.to_s}")
+      @output.debugl(3, "CUS exec_cmd: #{@nodes_ok.to_s}")
       return parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector)
     end
 
@@ -683,7 +684,7 @@ module MicroStepsLibrary
     # Output
     # * return true if the file has been correctly sent, false otherwise
     def custom_send_file(file, dest_dir)
-      @output.debugl(4, "CUS send_file: #{@nodes_ok.to_s}")
+      @output.debugl(3, "CUS send_file: #{@nodes_ok.to_s}")
       return parallel_send_file_command_wrapper(file,
                                                 dest_dir,
                                                 "chain",
@@ -814,7 +815,7 @@ module MicroStepsLibrary
         sleep(1)
       end
       if (instance_thread.status != false) then
-        @output.debugl(4, "Timeout before the end of the step, let's kill the instance")
+        @output.debugl(3, "Timeout before the end of the step on cluster #{@cluster}, let's kill the instance")
         Thread.kill(instance_thread)
         @nodes_ok.free
         instance_node_set.duplicate_and_free(@nodes_ko)
@@ -847,15 +848,15 @@ module MicroStepsLibrary
           end
           if custom_methods_attached?(@macro_step, method_sym.to_s) then
             if run_custom_methods(@macro_step, method_sym.to_s) then
-              @output.debugl(3, "--- #{method_sym.to_s} (#{@cluster} cluster)")
-              @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
+              @output.debugl(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
+              @output.debugl(3, "  >>>  #{@nodes_ok.to_s}")
               send(real_method, *args)
             else
               return false
             end
           else
-            @output.debugl(3, "--- #{method_sym.to_s} (#{@cluster} cluster)")
-            @output.debugl(4, "  >>>  #{@nodes_ok.to_s}")
+            @output.debugl(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
+            @output.debugl(3, "  >>>  #{@nodes_ok.to_s}")
             send(real_method, *args)
           end
         else
@@ -969,7 +970,7 @@ module MicroStepsLibrary
                                                    @config.common.tftp_images_path,
                                                    @config.common.tftp_cfg)
             else
-              # @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+              # @output.debugl(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
               prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
               kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
               initrd = prefix_in_cache + File.basename(@config.exec_specific.environment.initrd)
@@ -1036,7 +1037,7 @@ module MicroStepsLibrary
           return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
                                                @config.common.taktuk_connector)
         else
-          @output.debugl(4, "The Kexec optimization can only be used with a linux environment")
+          @output.debugl(3, "The Kexec optimization can only be used with a linux environment")
           reboot_wrapper("soft", use_rsh_for_reboot)
         end
       end
@@ -1118,7 +1119,7 @@ module MicroStepsLibrary
                                                @config.common.taktuk_connector)
         end
       else
-        @output.debugl(4, "Bypass the format of the deploy part")
+        @output.debugl(3, "Bypass the format of the deploy part")
         return true
       end
     end
@@ -1158,7 +1159,7 @@ module MicroStepsLibrary
         return parallel_exec_command_wrapper("mount #{get_deploy_part_str()} #{@config.common.environment_extraction_dir}",
                                              @config.common.taktuk_connector)
       else
-        @output.debugl(4, "Bypass the mount of the deploy part")
+        @output.debugl(3, "Bypass the mount of the deploy part")
         return true
       end
     end
@@ -1231,7 +1232,7 @@ module MicroStepsLibrary
         end
       when "chainload_pxe"
         if @config.exec_specific.disable_bootloader_install then
-          @output.debugl(4, "Bypass the bootloader installation")
+          @output.debugl(3, "Bypass the bootloader installation")
           return true
         else
           case @config.exec_specific.environment.environment_kind
@@ -1239,7 +1240,7 @@ module MicroStepsLibrary
             return install_grub2_on_nodes("linux")
           when "xen"
 #           return install_grub2_on_nodes("xen")
-            @output.debugl(4, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+            @output.debugl(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
             return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel.sub(/\A\//,''),
                                               @config.exec_specific.environment.initrd.sub(/\A\//,''),
                                               @config.exec_specific.environment.hypervisor.sub(/\A\//,'')])
@@ -1277,7 +1278,7 @@ module MicroStepsLibrary
           (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
         return parallel_exec_command_wrapper("umount #{get_deploy_part_str()}", @config.common.taktuk_connector)
       else
-        @output.debugl(4, "Bypass the umount of the deploy part")
+        @output.debugl(3, "Bypass the umount of the deploy part")
         return true
       end
     end
@@ -1308,7 +1309,7 @@ module MicroStepsLibrary
                                                         @config.common.environment_extraction_dir,
                                                         get_deploy_part_str())        
       end
-      @output.debugl(4, "Broadcast time: #{Time.now.to_i - start} seconds")
+      @output.debugl(3, "Broadcast time: #{Time.now.to_i - start} seconds")
       return res
     end
 
@@ -1346,7 +1347,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(4, "Bypass the admin preinstalls")
+        @output.debugl(3, "Bypass the admin preinstalls")
       end
       return res
     end
@@ -1372,7 +1373,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(4, "Bypass the admin postinstalls")
+        @output.debugl(3, "Bypass the admin postinstalls")
       end
       return res
     end
@@ -1398,7 +1399,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(4, "Bypass the user postinstalls")
+        @output.debugl(3, "Bypass the user postinstalls")
       end
       return res
     end
