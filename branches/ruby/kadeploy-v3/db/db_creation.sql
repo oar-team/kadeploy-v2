@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `log` (
   `step2_duration` int(10) unsigned NOT NULL,
   `step3_duration` int(10) unsigned NOT NULL,
   `env` varchar(64) NOT NULL,
+  `anonymous_env` varchar(6) NOT NULL,
   `md5` varchar(35) NOT NULL,
   `success` varchar(6) NOT NULL,
   `error` varchar(255) NOT NULL,
@@ -66,8 +67,9 @@ DROP TABLE IF EXISTS `nodes`;
 CREATE TABLE IF NOT EXISTS `nodes` (
   `hostname` varchar(64) NOT NULL,
   `state` varchar(16) NOT NULL,
-  `env_id` int(10) unsigned NOT NULL,
-  `date` int(10) unsigned NOT NULL
+  `env_id` int(10) NOT NULL,
+  `date` int(10) unsigned NOT NULL,
+  `user` varchar(16) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 

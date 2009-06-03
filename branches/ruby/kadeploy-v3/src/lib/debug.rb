@@ -98,13 +98,14 @@ module Debug
     # * deploy_id: deployment id
     # * start: start time
     # * env: environment name
+    # * anonymous_env: anonymous environment or not
     # * syslog_lock: mutex on Syslog
     # Output
     # * nothing
-    def initialize(node_set, config, db, user, deploy_id, start, env, syslog_lock)
+    def initialize(node_set, config, db, user, deploy_id, start, env, anonymous_env, syslog_lock)
       @nodes = Hash.new
       node_set.make_array_of_hostname.each { |n|
-        @nodes[n] = create_node_infos(user, deploy_id, start, env)
+        @nodes[n] = create_node_infos(user, deploy_id, start, env, anonymous_env)
       }
       @config = config
       @db = db
@@ -118,9 +119,10 @@ module Debug
     # * deploy_id: deployment id
     # * start: start time
     # * env: environment name
+    # * anonymous_env: anonymous environment or not
     # Output
     # * returns an Hash instance
-    def create_node_infos(user, deploy_id, start, env)
+    def create_node_infos(user, deploy_id, start, env, anonymous_env)
       node_infos = Hash.new
       node_infos["deploy_id"] = deploy_id
       node_infos["user"] = user
@@ -138,6 +140,7 @@ module Debug
       node_infos["step2_duration"] = 0
       node_infos["step3_duration"] = 0
       node_infos["env"] = env
+      node_infos["anonymous_env"] = anonymous_env
       node_infos["md5"] = String.new
       node_infos["success"] = false
       node_infos["error"] = String.new
@@ -226,7 +229,7 @@ module Debug
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","
         str += node_infos["start"].to_i.to_s + ","
         str += node_infos["step1_duration"].to_s + "," + node_infos["step2_duration"].to_s + "," + node_infos["step3_duration"].to_s + ","
-        str += node_infos["env"] + "," + node_infos["md5"]
+        str += node_infos["env"] + "," + node_infos["anonymous_env"].to_s + "," + node_infos["md5"]
         str += node_infos["success"].to_s + "," + node_infos["error"].to_s
         sl.log(Syslog::LOG_NOTICE, "#{str}")
       }
@@ -248,7 +251,7 @@ module Debug
                                   retry_step1, retry_step2, retry_step3, \
                                   start, \
                                   step1_duration, step2_duration, step3_duration, \
-                                  env, md5, \
+                                  env, anonymous_env, md5, \
                                   success, error) \
                         VALUES (\"#{node_infos["deploy_id"]}\", \"#{node_infos["user"]}\", \"#{hostname}\", \
                                 \"#{node_infos["step1"]}\", \"#{node_infos["step2"]}\", \"#{node_infos["step3"]}\", \
@@ -256,7 +259,7 @@ module Debug
                                 \"#{node_infos["retry_step1"]}\", \"#{node_infos["retry_step2"]}\", \"#{node_infos["retry_step3"]}\", \
                                 \"#{node_infos["start"].to_i}\", \
                                 \"#{node_infos["step1_duration"]}\", \"#{node_infos["step2_duration"]}\", \"#{node_infos["step3_duration"]}\", \
-                                \"#{node_infos["env"]}\", \"#{node_infos["md5"]}\", \
+                                \"#{node_infos["env"]}\", \"#{node_infos["anonymous_env"].to_s}\", \"#{node_infos["md5"]}\", \
                                 \"#{node_infos["success"]}\", \"#{node_infos["error"]}\")"
         res = @db.run_query(query)
       }
@@ -278,7 +281,7 @@ module Debug
         str += node_infos["retry_step1"].to_s + "," + node_infos["retry_step2"].to_s + "," +  node_infos["retry_step3"].to_s + ","
         str += node_infos["start"].to_i.to_s + ","
         str += node_infos["step1_duration"].to_s + "," + node_infos["step2_duration"].to_s + "," + node_infos["step3_duration"].to_s + ","
-        str += node_infos["env"] + "," + node_infos["md5"]
+        str += node_infos["env"] + "," + node_infos["anonymous_env"].to_s + "," + node_infos["md5"] + ","
         str += node_infos["success"].to_s + "," + node_infos["error"].to_s
         fd.write("#{Time.now.to_i}: #{str}\n")
       }
