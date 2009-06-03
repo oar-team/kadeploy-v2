@@ -174,7 +174,7 @@ def list_all(config, db)
                                      "retry_step1","retry_step2","retry_step3", \
                                      "start", \
                                      "step1_duration","step2_duration","step3_duration", \
-                                     "env","md5", \
+                                     "env","anonymous_env","md5", \
                                      "success","error"])
   } 
 end

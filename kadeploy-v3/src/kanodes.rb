@@ -17,10 +17,11 @@ require 'drb'
 # Output
 # * prints the information about the nodes in a CSV format
 def get_deploy_state(config, db)
+  #If no node list is given, we print everything
   if config.exec_specific.node_list.empty? then
-    query = "SELECT nodes.hostname, nodes.state, environments.name, environments.version, environments.user \
-             FROM nodes, environments \
-             WHERE nodes.env_id = environments.id \
+    query = "SELECT nodes.hostname, nodes.state, nodes.user, environments.name, environments.version, environments.user \
+             FROM nodes \
+             LEFT JOIN environments ON nodes.env_id = environments.id \
              ORDER BY nodes.hostname"
   else
     nodes = String.new
@@ -29,15 +30,15 @@ def get_deploy_state(config, db)
       nodes += "OR " if (i < config.exec_specific.node_list.length - 1)
     }
 
-    query = "SELECT nodes.hostname, nodes.state, environments.name, environments.version, environments.user \
-             FROM nodes, environments \
-             WHERE nodes.env_id = environments.id \
-             AND (#{nodes})
+    query = "SELECT nodes.hostname, nodes.state, nodes.user, environments.name, environments.version, environments.user \
+             FROM nodes \
+             LEFT JOIN environments ON nodes.env_id = environments.id \
+             WHERE (#{nodes}) \
              ORDER BY nodes.hostname"
   end
   res = db.run_query(query)
   res.each { |row|
-    puts "#{row[0]},#{row[1]},#{row[2]},#{row[3]},#{row[4]}"
+    puts "#{row[0]},#{row[1]},#{row[2]},#{row[3]},#{row[4]},#{row[5]}"
   }
 end
 

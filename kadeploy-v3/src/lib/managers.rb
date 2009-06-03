@@ -299,6 +299,7 @@ module Managers
     @deploy = nil
     attr_accessor :nodes_ok
     attr_accessor :nodes_ko
+    @killed = nil
 
     # Constructor of WorkflowManager
     #
@@ -340,8 +341,10 @@ module Managers
       @thread_tab = Array.new
       @logger = Debug::Logger.new(@nodeset, @config, @db, 
                                   @config.exec_specific.true_user, @deploy_id, Time.now, 
-                                  @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version, syslog_lock)
-
+                                  @config.exec_specific.environment.name + ":" + @config.exec_specific.environment.version, 
+                                  @config.exec_specific.load_env_kind == "file",
+                                  syslog_lock)
+      @killed = false
       @thread_set_deployment_environment = Thread.new {
         launch_thread_for_macro_step("SetDeploymentEnv")
       }
@@ -363,6 +366,7 @@ module Managers
       hash["environment_name"] = @config.exec_specific.environment.name
       hash["environment_version"] = @config.exec_specific.environment.version
       hash["environment_user"] = @config.exec_specific.user
+      hash["anonymous_environment"] = (@config.exec_specific.load_env_kind == "file")
       hash["nodes"] = @config.exec_specific.nodes_state
       return hash
     end
@@ -397,11 +401,11 @@ module Managers
     # Output
     # * nothing
     def kill_workflow
-      @output.debugl(3, "Launching Mr Proper ...")
       @output.debugl(0, "Deployment aborted by user")
+      @killed = true
       @logger.set("success", false, @nodeset)
       @logger.dump
-      @nodeset.set_deployment_state("aborted", nil, @db)
+      @nodeset.set_deployment_state("aborted", nil, @db, "")
       @set_deployment_environment_instances.each { |instance|
         if (instance != nil) then
           instance.kill()
@@ -647,7 +651,7 @@ module Managers
     # Output
     # * nothing  
     def run
-      @output.debugl(0, "Launching Kadeploy ...")
+      @output.debugl(0, "Launching a deployment ...")
       @deployments_table_lock.lock
       if (@config.exec_specific.ignore_nodes_deploying) then
         nodes_ok = @nodeset
@@ -661,7 +665,12 @@ module Managers
       if not nodes_ok.empty? then
         nodes_ok_backup = Nodes::NodeSet.new
         nodes_ok.duplicate(nodes_ok_backup)
-        nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db)
+        #If the environment is not recorded in the DB (anonymous environment), we do not record an environment id in the node state
+        if @config.exec_specific.load_env_kind == "file" then
+          nodes_ok.set_deployment_state("deploying", -1, @db, @config.exec_specific.true_user)
+        else
+          nodes_ok.set_deployment_state("deploying", @config.exec_specific.environment.id, @db, @config.exec_specific.true_user)
+        end
       end
       @deployments_table_lock.unlock
       if (not nodes_ok.empty?) then
@@ -670,9 +679,11 @@ module Managers
             @queue_manager.next_macro_step(nil, set)
           }
           @thread_process_finished_nodes.join
-          @deployments_table_lock.lock
-          nodes_ok_backup.set_deployment_state("deployed", nil, @db)
-          @deployments_table_lock.unlock
+          if not @killed then
+            @deployments_table_lock.lock
+            nodes_ok_backup.set_deployment_state("deployed", nil, @db, "")
+            @deployments_table_lock.unlock
+          end
         else
           @output.debugl(0, "Some error occurs when grabbing the files")
         end

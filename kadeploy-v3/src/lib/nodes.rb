@@ -329,9 +329,10 @@ module Nodes
     # * state: state of the nodes (prod_env, deploying or deployed)
     # * env_id: id of the environment deployed on the nodes
     # * db: database handler
+    # * user: user name
     # Output
     # * return true if the state has been correctly modified, false otherwise
-    def set_deployment_state(state, env_id, db)
+    def set_deployment_state(state, env_id, db, user)
       list = String.new
       @set.each_index { |i|
         list += "hostname=\"#{@set[i].hostname}\" "
@@ -343,8 +344,8 @@ module Nodes
         db.run_query(query)
         date = Time.now.to_i
         @set.each { |node|
-          query = "INSERT INTO nodes (hostname, state, env_id, date) \
-                   VALUES (\"#{node.hostname}\",\"deploying\",\"#{env_id}\",\"#{date}\")"
+          query = "INSERT INTO nodes (hostname, state, env_id, date, user) \
+                   VALUES (\"#{node.hostname}\",\"deploying\",\"#{env_id}\",\"#{date}\",\"#{user}\")"
           db.run_query(query)
         }
       when "deployed"

@@ -315,7 +315,7 @@ class KadeployServer
         step.reboot("soft")
         step.wait_reboot([@config.common.ssh_port],[])
         if (exec_specific.reboot_kind == "back_to_prod_env") then
-          set.set_deployment_state("prod_env", nil, @db)
+          set.set_deployment_state("prod_env", nil, @db, exec_specific.true_user)
           step.check_nodes("prod_env_booted")
           if (exec_specific.check_prod_env) then
             step.nodes_ko.tag_demolishing_env(@db)

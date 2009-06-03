@@ -158,12 +158,15 @@ module ConfigInformation
     end
 
     def set_node_state(hostname, macro_step, micro_step, state)
-      if not @exec_specific.nodes_state.has_key?(hostname) then
-        @exec_specific.nodes_state[hostname] = Array.new
+      #This is not performed when nodes_state is unitialized (when called from Kareboot for instance)
+      if (@exec_specific.nodes_state != nil) then
+        if not @exec_specific.nodes_state.has_key?(hostname) then
+          @exec_specific.nodes_state[hostname] = Array.new
+        end
+        @exec_specific.nodes_state[hostname][0] = { "macro-step" => macro_step } if macro_step != ""
+        @exec_specific.nodes_state[hostname][1] = { "micro-step" => micro_step } if micro_step != ""
+        @exec_specific.nodes_state[hostname][2] = { "state" => state } if state != ""
       end
-      @exec_specific.nodes_state[hostname][0] = { "macro-step" => macro_step } if macro_step != ""
-      @exec_specific.nodes_state[hostname][1] = { "micro-step" => micro_step } if micro_step != ""
-      @exec_specific.nodes_state[hostname][2] = { "state" => state } if state != ""
     end
 
     private
