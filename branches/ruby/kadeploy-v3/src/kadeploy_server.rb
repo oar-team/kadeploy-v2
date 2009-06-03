@@ -244,7 +244,7 @@ class KadeployServer
           client.test()
         rescue DRb::DRbConnError
           workflow.output.disable_client_output()
-          workflow.output.debugl(4, "Client disconnection")
+          workflow.output.debugl(3, "Client disconnection")
           workflow.kill_workflow()
           finished = true
         end

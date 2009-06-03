@@ -17,12 +17,14 @@ module BootNewEnvironment
     # * output: instance of OutputControl
     # * logger: instance of Logger
     # Output
-    # * returns a BootNewEnv instance (BootNewEnvKexec, BootNewEnvClassical, BootNewEnvDummy)
+    # * returns a BootNewEnv instance (BootNewEnvKexec, BootNewEnvPivotRoot, BootNewEnvClassical, BootNewEnvDummy)
     # * raises an exception if an invalid kind of instance is given
     def BootNewEnvFactory.create(kind, max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       case kind
       when "BootNewEnvKexec"
         return BootNewEnvKexec.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
+      when "BootNewEnvPivotRoot"
+        return BootNewEnvPivotRoot.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger) 
       when "BootNewEnvClassical"
         return BootNewEnvClassical.new(max_retries, timeout, cluster, nodes, queue_manager, reboot_window, nodes_check_window, output, logger)
       when "BootNewEnvDummy"
@@ -133,11 +135,59 @@ module BootNewEnvironment
           instance_thread = Thread.new {
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(2, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(1, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
             result = result && @step.reboot("kexec")
             result = result && @step.wait_reboot([@config.common.ssh_port],[@config.common.test_deploy_env_port])
+            #End of micro steps
+          }
+          @instances.push(instance_thread)
+          if not @step.timeout?(@timeout, instance_thread, get_macro_step_name, instance_node_set) then
+            if not @nodes_ok.empty? then
+              @logger.set("step3_duration", Time.now.to_i - @start, @nodes_ok)
+              @nodes_ok.duplicate_and_free(instance_node_set)
+              @queue_manager.next_macro_step(get_macro_step_name, instance_node_set)
+            end
+          end
+          @remaining_retries -= 1
+        end
+        #After several retries, some nodes may still be in an incorrect state
+        if (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed) then
+          #Maybe some other instances are defined
+          if not @queue_manager.replay_macro_step_with_next_instance(get_macro_step_name, @cluster, @nodes_ko)
+            @queue_manager.add_to_bad_nodes_set(@nodes_ko)
+            @queue_manager.decrement_active_threads
+          end
+        else
+          @queue_manager.decrement_active_threads
+        end
+      }
+      return tid
+    end
+  end
+
+  class BootNewEnvPivotRoot < BootNewEnv
+    # Main of the BootNewEnvPivotRoot instance
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a thread id
+    def run
+      tid = Thread.new {
+        @queue_manager.next_macro_step(get_macro_step_name, @nodes) if @config.exec_specific.breakpointed
+        @nodes.duplicate_and_free(@nodes_ko)
+        while (@remaining_retries > 0) && (not @nodes_ko.empty?) && (not @config.exec_specific.breakpointed)
+          instance_node_set = Nodes::NodeSet.new
+          @nodes_ko.duplicate(instance_node_set)
+          instance_thread = Thread.new {
+            @logger.increment("retry_step3", @nodes_ko)
+            @nodes_ko.duplicate_and_free(@nodes_ok)
+            @output.debugl(1, "Performing a BootNewEnvPivotRoot step on the nodes: #{@nodes_ok.to_s}")
+            result = true
+            #Here are the micro steps
+            @output.debugl(0, "BootNewEnvPivotRoot is not yet implemented")
             #End of micro steps
           }
           @instances.push(instance_thread)
@@ -183,7 +233,7 @@ module BootNewEnvironment
             use_rsh_for_reboot = (@config.common.taktuk_connector == @config.common.taktuk_rsh_connector)
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(2, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
+            @output.debugl(1, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
             result = result && @step.umount_deploy_part
