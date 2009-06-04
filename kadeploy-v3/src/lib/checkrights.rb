@@ -1,6 +1,10 @@
- module CheckRights
-  class CheckRightsFactory
 
+module CheckRights
+  
+  USER = `id -nu`.chomp
+
+  class CheckRightsFactory
+    
     # Factory for the methods to check the rights
     #
     # Arguments
@@ -85,7 +89,7 @@
     # Output
     # * returns true if the rights are granted, false otherwise
     def granted?
-      query = "SELECT * FROM rights WHERE user=\"#{ENV['USER']}\" AND (part=\"#{@part}\" OR part=\"*\")"
+      query = "SELECT * FROM rights WHERE user=\"#{USER}\" AND (part=\"#{@part}\" OR part=\"*\")"
       @host_list.each { |host|
         node_found = false
         res = @db.run_query(query)

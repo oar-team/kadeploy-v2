@@ -1,6 +1,3 @@
-#Kadeploy libs
-require 'cmdctrl_wrapper'
-
 #Ruby libs
 require 'tempfile'
 require 'process_management'
@@ -17,11 +14,8 @@ module Bittorrent
   # * return the hash reference of the torrent
   def Bittorrent::get_torrent_hash(torrent)
     cmd = "btshowmetainfo #{torrent} | grep hash | sed 's/info hash.....: //'"
-    pr = CmdCtrlWrapper::init
-    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
-    CmdCtrlWrapper::run(pr)
-    hash = CmdCtrlWrapper::get_output(pr)
-    return hash.chomp
+    hash = `#{cmd}`.chomp
+    return hash
   end
 
   # Get the remaining leechers of a torrent
@@ -37,10 +31,7 @@ module Bittorrent
     temp = Tempfile.new("bttrack_wget")
     #then, we grab the HTML output of bttrack
     cmd = "wget --quiet -O #{temp.path} http://#{tracker_ip}:#{tracker_port} ; grep #{torrent_hash} #{temp.path} | sed 's/\"//g'"
-    pr = CmdCtrlWrapper::init
-    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
-    CmdCtrlWrapper::run(pr)
-    html_output = CmdCtrlWrapper::get_output(pr)
+    html_output = `#{cmd}`
     temp.unlink
     if /<tr><td.+\/td><td.+\/td><td align=right><code>(\d+)<\/code><\/td><td.+\/td><\/tr>/ =~ html_output then
       content = Regexp.last_match
@@ -64,10 +55,7 @@ module Bittorrent
     temp = Tempfile.new("bttrack_wget")
     #then, we grab the HTML output of bttrack
     cmd = "wget --quiet -O #{temp.path} http://#{tracker_ip}:#{tracker_port} ; grep #{torrent_hash} #{temp.path} | sed 's/\"//g'"
-    pr = CmdCtrlWrapper::init
-    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
-    CmdCtrlWrapper::run(pr)
-    html_output = CmdCtrlWrapper::get_output(pr)
+    html_output = `#{cmd}`
     temp.unlink
     if /<tr><td.+\/td><td.+\/td><td.+\/td><td align=right><code>(\d+)<\/code><\/td><\/tr>/ =~ html_output then
       content = Regexp.last_match
@@ -145,10 +133,8 @@ module Bittorrent
   # * return the hash of the torrent
   def Bittorrent::get_file_hash(torrent)
     cmd = "btshowmetainfo #{torrent} |grep hash|sed 's/.*:\ //g'"
-    pr = CmdCtrlWrapper::init
-    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
-    CmdCtrlWrapper::run(pr)
-    return CmdCtrlWrapper::get_output(pr)
+    file_hash = `#{cmd}`.chomp
+    return file_hash
   end  
 
   # Wait the end of the download

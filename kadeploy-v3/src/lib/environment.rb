@@ -1,8 +1,6 @@
 #Kadeploy libs
 require 'db'
-
-#Ruby libs
-require 'digest/md5'
+require 'md5'
 
 module EnvironmentManagement
   class Environment
@@ -70,7 +68,7 @@ module EnvironmentManagement
                 end
                 @tarball["kind"] = tmp[1]
                 puts "Computing the md5sum for #{@tarball["file"]}"
-                @tarball["md5"] = get_md5(@tarball["file"])
+                @tarball["md5"] = MD5::get_md5_sum(@tarball["file"])
               else
                 puts "The environment tarball must be described like filename|kind|md5sum where kind is tgz, tbz2, ddgz, or ddbz2"
                 return false
@@ -87,7 +85,7 @@ module EnvironmentManagement
                   return false
                 end
                 puts "Computing the md5sum for #{@preinstall["file"]}"
-                @preinstall["md5"] = get_md5(@preinstall["file"])
+                @preinstall["md5"] = MD5::get_md5_sum(@preinstall["file"])
               else
                 puts "The environment preinstall must be described like filename|kind1|script where kind is tgz or tbz2"
                 return false
@@ -106,7 +104,7 @@ module EnvironmentManagement
                   end
                   entry["kind"] = tmp2[1]
                   puts "Computing the md5sum for #{entry["file"]}"
-                  entry["md5"] = get_md5(entry["file"])
+                  entry["md5"] = MD5::get_md5_sum(entry["file"])
                   entry["script"] = tmp2[2]
                   @postinstall.push(entry)
                 }
@@ -155,7 +153,7 @@ module EnvironmentManagement
         return false
       end
       
-      @user = ENV["USER"]
+      @user = `id -nu`.chomp
     end
 
     # Load an environment from a database
@@ -259,28 +257,18 @@ module EnvironmentManagement
       val = @tarball.split("|")
       tarball_file = val[0]
       tarball_md5 = val[2]
-      if (Digest::MD5.hexdigest(File.read(tarball_file)) != tarball_md5) then
+      if (MD5::get_md5_sum(tarball_file) != tarball_md5) then
         return false
       end
       @postinstall.split(",").each { |entry|
         val = entry.split("|")
         postinstall_file = val[0]
         postinstall_md5 = val[2]
-        if (Digest::MD5.hexdigest(File.read(postinstall_file)) != postinstall_md5) then
+        if (MD5::get_md5_sum(postinstall_file) != postinstall_md5) then
           return false
         end       
       }
       return true
-    end
-
-    # Compute de md5 of a file
-    #
-    # Arguments
-    # * file: filename
-    # Output
-    # * return the md5 of the file
-    def get_md5(file)
-      return Digest::MD5.hexdigest(File.read(file))
     end
 
     # Print the header
