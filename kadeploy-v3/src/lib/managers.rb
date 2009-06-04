@@ -588,7 +588,11 @@ module Managers
     # Output
     # * return true if the files have been successfully grabbed, false otherwise
     def grab_user_files
-      env_prefix = "e-#{@config.exec_specific.environment.id}--"
+      if @config.exec_specific.load_env_kind == "file" then
+        env_prefix = "e-anon--"
+      else
+        env_prefix = "e-#{@config.exec_specific.environment.id}--"
+      end
       user_prefix = "u-#{@config.exec_specific.true_user}--"
       local_tarball = use_local_path_dirname(@config.exec_specific.environment.tarball["file"], env_prefix)
       if not grab_file(@config.exec_specific.environment.tarball["file"], local_tarball, 

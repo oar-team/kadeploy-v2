@@ -37,6 +37,7 @@ module EnvironmentManagement
         @preinstall = nil
         @postinstall = nil
         @demolishing_env = "0"
+        @kernel_params = ""
         IO::read(file).split("\n").each { |line|
           if /\A(\w+)\ :\ (.+)\Z/ =~ line then
             content = Regexp.last_match

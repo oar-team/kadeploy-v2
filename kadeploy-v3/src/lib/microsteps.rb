@@ -397,7 +397,11 @@ module MicroStepsLibrary
       must_extract = false
       archive = @config.exec_specific.environment.tarball["file"]
       dest_dir = @config.common.tftp_repository + "/" + @config.common.tftp_images_path
-      prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+      if (@config.exec_specific.load_env_kind != "file") then
+        prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+      else
+        prefix_in_cache = "e-anon--"
+      end
       files.each { |file|
         if not (File.exist?(dest_dir + "/" + prefix_in_cache + File.basename(file))) then
           must_extract = true
@@ -920,7 +924,11 @@ module MicroStepsLibrary
         else
           case @config.common.bootloader
           when "pure_pxe"
-            prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+            if (@config.exec_specific.load_env_kind != "file") then
+              prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+            else
+              prefix_in_cache = "e-anon--"
+            end          
             case @config.exec_specific.environment.environment_kind
             when "linux"
               kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
@@ -968,7 +976,11 @@ module MicroStepsLibrary
                                                    @config.common.tftp_cfg)
             else
               # @output.debugl(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
-              prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+              if (@config.exec_specific.load_env_kind != "file") then
+                prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
+              else
+                prefix_in_cache = "e-anon--"
+              end
               kernel = prefix_in_cache + File.basename(@config.exec_specific.environment.kernel)
               initrd = prefix_in_cache + File.basename(@config.exec_specific.environment.initrd)
               hypervisor = prefix_in_cache + File.basename(@config.exec_specific.environment.hypervisor)
