@@ -15,6 +15,7 @@ module ConfigInformation
   CLIENT_CONFIGURATION_FILE = "client_conf"
   SPECIFIC_CONFIGURATION_FILE_PREFIX = "specific_conf_"
   PARTITION_FILE_PREFIX = "partition_file_"
+  USER = `id -nu`.chomp
 
   class Config
     public
@@ -109,8 +110,8 @@ module ConfigInformation
       exec_specific.load_env_kind = String.new
       exec_specific.load_env_arg = String.new
       exec_specific.env_version = nil #By default we load the latest version
-      exec_specific.user = ENV['USER'] #By default, we use the current user
-      exec_specific.true_user = ENV['USER']
+      exec_specific.user = USER #By default, we use the current user
+      exec_specific.true_user = USER
       exec_specific.block_device = String.new
       exec_specific.deploy_part = String.new
       exec_specific.debug_level = nil
@@ -157,6 +158,15 @@ module ConfigInformation
       end
     end
 
+    # Set the state of the node from the deployment workflow point of view
+    #
+    # Arguments
+    # * hostname: hostname concerned by the update
+    # * macro_step: name of the macro step
+    # * micro_step: name of the micro step
+    # * state: state of the node (ok/ko)
+    # Output
+    # * nothing
     def set_node_state(hostname, macro_step, micro_step, state)
       #This is not performed when nodes_state is unitialized (when called from Kareboot for instance)
       if (@exec_specific.nodes_state != nil) then
@@ -995,7 +1005,7 @@ module ConfigInformation
       @exec_specific.operation = String.new
       @exec_specific.file = String.new
       @exec_specific.env_name = String.new
-      @exec_specific.user = ENV['USER'] #By default, we use the current user
+      @exec_specific.user = USER #By default, we use the current user
       @exec_specific.show_all_version = false
       @exec_specific.version = String.new
       return load_kaenv_cmdline_options()
@@ -1317,7 +1327,7 @@ module ConfigInformation
                            "retry_step1","retry_step2","retry_step3", \
                            "start", \
                            "step1_duration","step2_duration","step3_duration", \
-                           "env","md5", \
+                           "env","anonymous_env","md5", \
                            "success","error"]
       @exec_specific.fields.each { |f|
         if (not authorized_fields.include?(f)) then
@@ -1461,7 +1471,7 @@ module ConfigInformation
       @exec_specific.node_list = Nodes::NodeSet.new
       @exec_specific.pxe_profile_file = String.new
       @exec_specific.check_prod_env = false
-      @exec_specific.true_user = ENV['USER']
+      @exec_specific.true_user = USER
       @exec_specific.breakpoint_on_microstep = "none"
       @exec_specific.key = String.new
       return load_kareboot_cmdline_options(nodes_desc)

@@ -737,11 +737,8 @@ module MicroStepsLibrary
     # Output
     # * return the path of the tmp directory
     def get_tmpdir
-      pr = CmdCtrlWrapper::init
-      CmdCtrlWrapper::add_cmd(pr, "mktemp -d", "none")
-      CmdCtrlWrapper::run(pr)
-      path = CmdCtrlWrapper::get_output(pr)
-      return path.chomp
+      path = `mktemp -d`.chomp
+      return path
     end
 
     # Create a string containing the environment variables for pre/post installs

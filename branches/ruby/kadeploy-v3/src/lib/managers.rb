@@ -6,6 +6,7 @@ require 'cache'
 require 'stepdeployenv'
 require 'stepbroadcastenv'
 require 'stepbootnewenv'
+require 'md5'
 
 #Ruby libs
 require 'thread'
@@ -562,9 +563,9 @@ module Managers
     # Output
     # * return true if everything is successfully performed, false otherwise
     def grab_file(client_file, local_file, expected_md5, file_tag, prefix)
-      if (not File.exist?(local_file)) || (Digest::MD5.hexdigest(File.read(local_file)) != expected_md5) then
+      if ((not File.exist?(local_file)) || (MD5::get_md5_sum(local_file) != expected_md5)) then
         #We first check if the file can be reached locally
-        if (File.readable?(client_file) && (Digest::MD5.hexdigest(File.read(client_file)) == expected_md5)) then
+        if (File.readable?(client_file) && (MD5::get_md5_sum(client_file) == expected_md5)) then
           @output.debugl(3, "Doing a local copy for the #{file_tag} #{client_file}")
           system("cp #{client_file} #{local_file}")
         else

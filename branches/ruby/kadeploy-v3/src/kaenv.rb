@@ -8,6 +8,8 @@ require 'environment'
 #Ruby libs
 require 'drb'
 
+USER = `id -nu`.chomp
+
 # List the environments of a user defined in Config.exec_specific.user
 #
 # Arguments
@@ -129,11 +131,11 @@ def delete_environment(config, db)
   if (config.exec_specific.version != "") then
     version = config.exec_specific.version
   else
-    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+    version = get_max_version(db, config.exec_specific.env_name, USER)
   end
   query = "DELETE FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
                                     AND version=\"#{version}\" \
-                                    AND user=\"#{ENV['USER']}\"" #using $USER is not really good ...
+                                    AND user=\"#{USER}\""
   db.run_query(query)
 end
 
@@ -201,10 +203,10 @@ def update_tarball_md5(config, db)
   if (config.exec_specific.version != "") then
     version = config.exec_specific.version
   else
-    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+    version = get_max_version(db, config.exec_specific.env_name, USER)
   end
   query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                      AND user=\"#{ENV['USER']}\" \
+                                      AND user=\"#{USER}\" \
                                       AND version=\"#{version}\""
   res = db.run_query(query)
   res.each_hash  { |row|
@@ -213,7 +215,7 @@ def update_tarball_md5(config, db)
     tarball = "#{env.tarball["file"]}|#{env.tarball["kind"]}|#{env.get_md5(env.tarball["file"])}"
     
     query2 = "UPDATE environments SET tarball=\"#{tarball}\" WHERE name=\"#{config.exec_specific.env_name}\" \
-                                                             AND user=\"#{ENV['USER']}\" \
+                                                             AND user=\"#{USER}\" \
                                                              AND version=\"#{version}\""
     db.run_query(query2)
   }
@@ -229,10 +231,10 @@ def update_preinstall_md5(config, db)
   if (config.exec_specific.version != "") then
     version = config.exec_specific.version
   else
-    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+    version = get_max_version(db, config.exec_specific.env_name, USER)
   end
   query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                      AND user=\"#{ENV['USER']}\" \
+                                      AND user=\"#{USER}\" \
                                       AND version=\"#{version}\""
   res = db.run_query(query)
   res.each_hash  { |row|
@@ -241,7 +243,7 @@ def update_preinstall_md5(config, db)
     tarball = "#{env.preinstall["file"]}|#{env.preinstall["kind"]}|#{env.get_md5(env.preinstall["file"])}|#{env.preinstall["script"]}"
     
     query2 = "UPDATE environments SET preinstall=\"#{tarball}\" WHERE name=\"#{config.exec_specific.env_name}\" \
-                                                             AND user=\"#{ENV['USER']}\" \
+                                                             AND user=\"#{USER}\" \
                                                              AND version=\"#{version}\""
     db.run_query(query2)
   }
@@ -257,10 +259,10 @@ def update_postinstalls_md5(config, db)
   if (config.exec_specific.version != "") then
     version = config.exec_specific.version
   else
-    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+    version = get_max_version(db, config.exec_specific.env_name, USER)
   end
   query = "SELECT * FROM environments WHERE name=\"#{config.exec_specific.env_name}\" \
-                                      AND user=\"#{ENV['USER']}\" \
+                                      AND user=\"#{USER}\" \
                                       AND version=\"#{version}\""
   res = db.run_query(query)
   res.each_hash  { |row|
@@ -273,7 +275,7 @@ def update_postinstalls_md5(config, db)
         s += "," if (i < env.postinstall.length - 1)
       }
       query2 = "UPDATE environments SET postinstall=\"#{s}\" WHERE name=\"#{config.exec_specific.env_name}\" \
-                                                             AND user=\"#{ENV['USER']}\" \
+                                                             AND user=\"#{USER}\" \
                                                              AND version=\"#{version}\""
       db.run_query(query2)
     end
@@ -293,10 +295,10 @@ def remove_demolishing_tag(config, db)
   if (config.exec_specific.version != "") then
     version = config.exec_specific.version
   else
-    version = get_max_version(db, config.exec_specific.env_name, ENV['USER'])
+    version = get_max_version(db, config.exec_specific.env_name, USER)
   end
   query = "UPDATE environments SET demolishing_env=0 WHERE name=\"#{config.exec_specific.env_name}\" \
-                                                     AND user=\"#{ENV['USER']}\" \
+                                                     AND user=\"#{USER}\" \
                                                      AND version=\"#{version}\""
   db.run_query(query)
 end

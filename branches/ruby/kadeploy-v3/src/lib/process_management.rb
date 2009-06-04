@@ -1,6 +1,3 @@
-#Kadeploy libs
-require 'cmdctrl_wrapper'
-
 module ProcessManagement
   private
   # Get the childs of a process
@@ -12,10 +9,7 @@ module ProcessManagement
   def ProcessManagement::get_childs(father)
     result = Array.new
     cmd = "ps -eo pid,ppid |grep #{father}"
-    pr = CmdCtrlWrapper::init
-    CmdCtrlWrapper::add_cmd(pr, cmd, "none")
-    CmdCtrlWrapper::run(pr)
-    tab = CmdCtrlWrapper::get_output(pr).split("\n")
+    tab = `#{cmd}`.split("\n")
     tab.each { |line|
       line =~ /\A[\ ]*(\d+)[\ ]*(\d+)[\ ]*\Z/
       content = Regexp.last_match
