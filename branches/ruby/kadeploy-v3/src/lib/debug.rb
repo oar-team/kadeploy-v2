@@ -14,7 +14,8 @@ module Debug
   end
 
   class OutputControl
-    @debug_level = 0
+    @verbose_level = 0
+    @debug = nil
     @client = nil
     @user = nil
     @deploy_id = nil
@@ -26,7 +27,8 @@ module Debug
     # Constructor of OutputControl
     #
     # Arguments
-    # * debug_level: debug level at the runtime
+    # * verbose_level: verbose level at the runtime
+    # * debug: boolean user to know if the extra debug must be used or not 
     # * client: Drb handler of the client
     # * user: username
     # * deploy_id: id of the deployment
@@ -35,8 +37,9 @@ module Debug
     # * syslog_lock: mutex on Syslog
     # Output
     # * nothing
-    def initialize(debug_level, client, user, deploy_id, syslog, syslog_dbg_level, syslog_lock)
-      @debug_level = debug_level
+    def initialize(verbose_level, debug, client, user, deploy_id, syslog, syslog_dbg_level, syslog_lock)
+      @verbose_level = verbose_level
+      @debug = debug
       @client = client
       @user = user
       @deploy_id = deploy_id
@@ -63,8 +66,8 @@ module Debug
     # * msg: message
     # Output
     # * prints the message on the server and on the client
-    def debugl(l, msg)
-      if ((l <= @debug_level) && @client_output)
+    def verbosel(l, msg)
+      if ((l <= @verbose_level) && @client_output)
         @client.print(msg)
       end
       server_str = "#{@deploy_id}|#{@user} -> #{msg}"
@@ -78,6 +81,27 @@ module Debug
         sl.log(Syslog::LOG_NOTICE, "#{server_str}")
         sl.close
         @syslog_lock.unlock
+      end
+    end
+
+    def debug(cmd, nodeset)
+      if @debug then
+        @client.print("-------------------------")
+        @client.print("CMD: #{cmd}")
+        if (nodeset != nil) then
+          nodeset.set.each { |node|
+            node.last_cmd_stdout.split("\n").each { |line|
+              @client.print("#{node.hostname} -- STDOUT: #{line}")
+            }
+            node.last_cmd_stderr.split("\n").each { |line|
+              @client.print("#{node.hostname} -- STDERR: #{line}")
+            }
+            node.last_cmd_exit_status.split("\n").each { |line|
+            @client.print("#{node.hostname} -- EXIT STATUS: #{line}")
+            }
+          }
+        end
+        @client.print("-------------------------")
       end
     end
   end

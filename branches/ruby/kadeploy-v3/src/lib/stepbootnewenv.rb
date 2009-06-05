@@ -135,7 +135,7 @@ module BootNewEnvironment
           instance_thread = Thread.new {
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(1, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
+            @output.verbosel(1, "Performing a BootNewEnvKexec step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
             result = result && @step.reboot("kexec")
@@ -184,10 +184,10 @@ module BootNewEnvironment
           instance_thread = Thread.new {
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(1, "Performing a BootNewEnvPivotRoot step on the nodes: #{@nodes_ok.to_s}")
+            @output.verbosel(1, "Performing a BootNewEnvPivotRoot step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps
-            @output.debugl(0, "BootNewEnvPivotRoot is not yet implemented")
+            @output.verbosel(0, "BootNewEnvPivotRoot is not yet implemented")
             #End of micro steps
           }
           @instances.push(instance_thread)
@@ -233,7 +233,7 @@ module BootNewEnvironment
             use_rsh_for_reboot = (@config.common.taktuk_connector == @config.common.taktuk_rsh_connector)
             @logger.increment("retry_step3", @nodes_ko)
             @nodes_ko.duplicate_and_free(@nodes_ok)
-            @output.debugl(1, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
+            @output.verbosel(1, "Performing a BootNewEnvClassical step on the nodes: #{@nodes_ok.to_s}")
             result = true
             #Here are the micro steps 
             result = result && @step.umount_deploy_part

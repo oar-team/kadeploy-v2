@@ -62,7 +62,7 @@ module MicroStepsLibrary
       end
       if not good_bad_array[1].empty? then
         good_bad_array[1].each { |n|
-          @output.debugl(4, "The node #{n.hostname} has been discarded of the current instance")
+          @output.verbosel(4, "The node #{n.hostname} has been discarded of the current instance")
           @config.set_node_state(n.hostname, "", "", "ko")
           @nodes_ko.push(n)
         }
@@ -202,7 +202,7 @@ module MicroStepsLibrary
     # Output
     # * nothing
     def _reboot_wrapper(kind, node_set, use_rsh_for_reboot = false)
-      @output.debugl(3, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
+      @output.verbosel(3, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
       pr = CmdCtrlWrapper::init
       node_set.set.each { |node|
         case kind
@@ -355,7 +355,7 @@ module MicroStepsLibrary
             raise "The kind #{archive_kind} of archive is not supported"
           end
           if not system(cmd) then
-            @output.debugl(0, "The file #{file} cannot be extracted")
+            @output.verbosel(0, "The file #{file} cannot be extracted")
             return false
           end
 
@@ -556,7 +556,7 @@ module MicroStepsLibrary
       when "ddbz2"
         cmd = "bzip2 -cd > #{deploy_part}"
       else
-        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        @output.verbosel(0, "The #{tarball_kind} archive kind is not supported")
         return false
       end
       return parallel_exec_cmd_with_input_file_wrapper(tarball_file,
@@ -586,7 +586,7 @@ module MicroStepsLibrary
       when "ddbz2"
         cmd = "bzip2 -cd > #{deploy_part}"
       else
-        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        @output.verbosel(0, "The #{tarball_kind} archive kind is not supported")
         return false
       end
       list = String.new
@@ -594,7 +594,9 @@ module MicroStepsLibrary
       @nodes_ok.make_sorted_array_of_nodes.each { |node|
         list += " -m #{node.hostname}"
       }
-      return system("kastafior -c \\\"#{@config.common.taktuk_connector}\\\" #{list} -- -s \"cat #{tarball_file}\" -c \"#{cmd}\" -f")
+      cmd = "kastafior -c \\\"#{@config.common.taktuk_connector}\\\" #{list} -- -s \"cat #{tarball_file}\" -c \"#{cmd}\" -f"
+      @output.debug(cmd, nil)
+      return system(cmd)
     end
 
 
@@ -609,39 +611,39 @@ module MicroStepsLibrary
     # * return true if the operation is correctly performed, false otherwise
     def send_tarball_and_uncompress_with_bittorrent(tarball_file, tarball_kind, deploy_mount_point, deploy_part)
       if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
-        @output.debugl(3, "Error while cleaning the /tmp")
+        @output.verbosel(3, "Error while cleaning the /tmp")
         return false
       end
       torrent = "#{tarball_file}.torrent"
       btdownload_state = "/tmp/btdownload_state#{Time.now.to_f}"
       tracker_pid, tracker_port = Bittorrent::launch_tracker(btdownload_state)
       if not Bittorrent::make_torrent(tarball_file, @config.common.bt_tracker_ip, tracker_port) then
-        @output.debugl(0, "The torrent file (#{torrent}) has not been created")
+        @output.verbosel(0, "The torrent file (#{torrent}) has not been created")
         return false
       end
       seed_pid = Bittorrent::launch_seed(torrent, @config.common.kadeploy_cache_dir)
       if (seed_pid == -1) then
-        @output.debugl(0, "The seed of #{torrent} has not been launched")
+        @output.verbosel(0, "The seed of #{torrent} has not been launched")
         return false
       end
       if not parallel_send_file_command_wrapper(torrent, "/tmp", "tree", @config.common.taktuk_connector) then
-        @output.debugl(0, "Error while sending the torrent file")
+        @output.verbosel(0, "Error while sending the torrent file")
         return false
       end
       if not parallel_exec_command_wrapper("/usr/local/bin/bittorrent_detach /tmp/#{File.basename(torrent)}", @config.common.taktuk_connector) then
-        @output.debugl(0, "Error while launching the bittorrent download")
+        @output.verbosel(0, "Error while launching the bittorrent download")
         return false
       end
       sleep(20)
       expected_clients = @nodes_ok.length
       if not Bittorrent::wait_end_of_download(@config.common.bt_download_timeout, torrent, @config.common.bt_tracker_ip, tracker_port, expected_clients) then
-        @output.debugl(0, "A timeout for the bittorrent download has been reached")
+        @output.verbosel(0, "A timeout for the bittorrent download has been reached")
         ProcessManagement::killall(seed_pid)
         return false
       end
-      @output.debugl(3, "Shutdown the seed for #{torrent}")
+      @output.verbosel(3, "Shutdown the seed for #{torrent}")
       ProcessManagement::killall(seed_pid)
-      @output.debugl(3, "Shutdown the tracker for #{torrent}")
+      @output.verbosel(3, "Shutdown the tracker for #{torrent}")
       ProcessManagement::killall(tracker_pid)
       system("rm -f #{btdownload_state}")
       case tarball_kind
@@ -654,15 +656,15 @@ module MicroStepsLibrary
       when "ddbz2"
         cmd = "bzip2 -cd /tmp/#{File.basename(tarball_file)} > #{deploy_part}"
       else
-        @output.debugl(0, "The #{tarball_kind} archive kind is not supported")
+        @output.verbosel(0, "The #{tarball_kind} archive kind is not supported")
         return false
       end
       if not parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector) then
-        @output.debugl(3, "Error while uncompressing the tarball")
+        @output.verbosel(3, "Error while uncompressing the tarball")
         return false
       end
       if not parallel_exec_command_wrapper("rm -f /tmp/#{File.basename(tarball_file)}*", @config.common.taktuk_connector) then
-        @output.debugl(3, "Error while cleaning the /tmp")
+        @output.verbosel(3, "Error while cleaning the /tmp")
         return false
       end
       return true
@@ -676,7 +678,7 @@ module MicroStepsLibrary
     # Output
     # * return true if the command has been correctly performed, false otherwise
     def custom_exec_cmd(cmd)
-      @output.debugl(3, "CUS exec_cmd: #{@nodes_ok.to_s}")
+      @output.verbosel(3, "CUS exec_cmd: #{@nodes_ok.to_s}")
       return parallel_exec_command_wrapper(cmd, @config.common.taktuk_connector)
     end
 
@@ -688,7 +690,7 @@ module MicroStepsLibrary
     # Output
     # * return true if the file has been correctly sent, false otherwise
     def custom_send_file(file, dest_dir)
-      @output.debugl(3, "CUS send_file: #{@nodes_ok.to_s}")
+      @output.verbosel(3, "CUS send_file: #{@nodes_ok.to_s}")
       return parallel_send_file_command_wrapper(file,
                                                 dest_dir,
                                                 "chain",
@@ -714,7 +716,7 @@ module MicroStepsLibrary
         when "send"
           result = result && custom_send_file(arg, dir)
         else
-          @output.debugl(0, "Invalid custom method: #{cmd}")
+          @output.verbosel(0, "Invalid custom method: #{cmd}")
           return false
         end
       }
@@ -772,7 +774,7 @@ module MicroStepsLibrary
       when "untrusted_env"
         expected_status = "0"
       else
-        @output.debugl(0, "Invalid kind of deploy environment: #{env}")
+        @output.verbosel(0, "Invalid kind of deploy environment: #{env}")
         return false
       end
       temp = Tempfile.new("fdisk_#{@cluster}")
@@ -816,7 +818,7 @@ module MicroStepsLibrary
         sleep(1)
       end
       if (instance_thread.status != false) then
-        @output.debugl(3, "Timeout before the end of the step on cluster #{@cluster}, let's kill the instance")
+        @output.verbosel(3, "Timeout before the end of the step on cluster #{@cluster}, let's kill the instance")
         Thread.kill(instance_thread)
         @nodes_ok.free
         instance_node_set.duplicate_and_free(@nodes_ko)
@@ -842,26 +844,26 @@ module MicroStepsLibrary
             brk_on_macrostep = @config.exec_specific.breakpoint_on_microstep.split(":")[0]
             brk_on_microstep = @config.exec_specific.breakpoint_on_microstep.split(":")[1]
             if ((brk_on_macrostep == @macro_step) && (brk_on_microstep == method_sym.to_s)) then
-              @output.debugl(0, "BRK #{method_sym.to_s}: #{@nodes_ok.to_s}")
+              @output.verbosel(0, "BRK #{method_sym.to_s}: #{@nodes_ok.to_s}")
               @config.exec_specific.breakpointed = true
               return false
             end
           end
           if custom_methods_attached?(@macro_step, method_sym.to_s) then
             if run_custom_methods(@macro_step, method_sym.to_s) then
-              @output.debugl(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
-              @output.debugl(3, "  >>>  #{@nodes_ok.to_s}")
+              @output.verbosel(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
+              @output.verbosel(3, "  >>>  #{@nodes_ok.to_s}")
               send(real_method, *args)
             else
               return false
             end
           else
-            @output.debugl(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
-            @output.debugl(3, "  >>>  #{@nodes_ok.to_s}")
+            @output.verbosel(2, "--- #{method_sym.to_s} (#{@cluster} cluster)")
+            @output.verbosel(3, "  >>>  #{@nodes_ok.to_s}")
             send(real_method, *args)
           end
         else
-          @output.debugl(0, "Wrong method: #{method_sym} #{real_method}!!!")
+          @output.verbosel(0, "Wrong method: #{method_sym} #{real_method}!!!")
           exit 1
         end
       end
@@ -975,7 +977,7 @@ module MicroStepsLibrary
                                                    @config.common.tftp_images_path,
                                                    @config.common.tftp_cfg)
             else
-              # @output.debugl(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+              # @output.verbosel(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
               if (@config.exec_specific.load_env_kind != "file") then
                 prefix_in_cache = "e" + @config.exec_specific.environment.id + "--"
               else
@@ -1016,7 +1018,7 @@ module MicroStepsLibrary
                                                @config.common.tftp_cfg)
       end
       if (res == false) then
-        @output.debugl(0, "The PXE configuration has not been performed correctly: #{step}")
+        @output.verbosel(0, "The PXE configuration has not been performed correctly: #{step}")
       end
       return res
     end
@@ -1046,7 +1048,7 @@ module MicroStepsLibrary
           return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
                                                @config.common.taktuk_connector)
         else
-          @output.debugl(3, "The Kexec optimization can only be used with a linux environment")
+          @output.verbosel(3, "The Kexec optimization can only be used with a linux environment")
           reboot_wrapper("soft", use_rsh_for_reboot)
         end
       end
@@ -1128,7 +1130,7 @@ module MicroStepsLibrary
                                                @config.common.taktuk_connector)
         end
       else
-        @output.debugl(3, "Bypass the format of the deploy part")
+        @output.verbosel(3, "Bypass the format of the deploy part")
         return true
       end
     end
@@ -1168,7 +1170,7 @@ module MicroStepsLibrary
         return parallel_exec_command_wrapper("mount #{get_deploy_part_str()} #{@config.common.environment_extraction_dir}",
                                              @config.common.taktuk_connector)
       else
-        @output.debugl(3, "Bypass the mount of the deploy part")
+        @output.verbosel(3, "Bypass the mount of the deploy part")
         return true
       end
     end
@@ -1236,12 +1238,12 @@ module MicroStepsLibrary
                                             @config.exec_specific.environment.initrd.sub(/\A\//,''),
                                             @config.exec_specific.environment.hypervisor.sub(/\A\//,'')])
         when "other"
-          @output.debugl(0, "Only linux and xen environments can be booted with a pure PXE configuration")
+          @output.verbosel(0, "Only linux and xen environments can be booted with a pure PXE configuration")
           return false
         end
       when "chainload_pxe"
         if @config.exec_specific.disable_bootloader_install then
-          @output.debugl(3, "Bypass the bootloader installation")
+          @output.verbosel(3, "Bypass the bootloader installation")
           return true
         else
           case @config.exec_specific.environment.environment_kind
@@ -1249,7 +1251,7 @@ module MicroStepsLibrary
             return install_grub2_on_nodes("linux")
           when "xen"
 #           return install_grub2_on_nodes("xen")
-            @output.debugl(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
+            @output.verbosel(3, "Hack, Grub2 seems to failed to boot a Xen Dom0, so let's use the pure PXE fashion")
             return copy_kernel_initrd_to_pxe([@config.exec_specific.environment.kernel.sub(/\A\//,''),
                                               @config.exec_specific.environment.initrd.sub(/\A\//,''),
                                               @config.exec_specific.environment.hypervisor.sub(/\A\//,'')])
@@ -1260,7 +1262,7 @@ module MicroStepsLibrary
           end
         end
       else
-        @output.debugl(0, "Invalid bootloader value: #{@config.common.bootloader}")
+        @output.verbosel(0, "Invalid bootloader value: #{@config.common.bootloader}")
         return false
       end
     end
@@ -1287,7 +1289,7 @@ module MicroStepsLibrary
           (@config.exec_specific.environment.tarball["kind"] == "tbz2")) then
         return parallel_exec_command_wrapper("umount #{get_deploy_part_str()}", @config.common.taktuk_connector)
       else
-        @output.debugl(3, "Bypass the umount of the deploy part")
+        @output.verbosel(3, "Bypass the umount of the deploy part")
         return true
       end
     end
@@ -1318,7 +1320,7 @@ module MicroStepsLibrary
                                                         @config.common.environment_extraction_dir,
                                                         get_deploy_part_str())        
       end
-      @output.debugl(3, "Broadcast time: #{Time.now.to_i - start} seconds")
+      @output.verbosel(3, "Broadcast time: #{Time.now.to_i - start} seconds")
       return res
     end
 
@@ -1336,7 +1338,7 @@ module MicroStepsLibrary
         preinstall = @config.exec_specific.environment.preinstall
         res = send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
         if (preinstall["script"] == "breakpoint") then
-          @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
+          @output.verbosel(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
           @config.exec_specific.breakpointed = true
           res = false
         elsif (preinstall["script"] != "none")
@@ -1347,7 +1349,7 @@ module MicroStepsLibrary
         @config.cluster_specific[@cluster].admin_pre_install.each { |preinstall|
           res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, preinstall["file"], preinstall["kind"], @config.common.rambin_path, "")
           if (preinstall["script"] == "breakpoint") then
-            @output.debugl(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
+            @output.verbosel(0, "Breakpoint on admin preinstall after sending the file #{preinstall["file"]}")
             @config.exec_specific.breakpointed = true
             res = false
           elsif (preinstall["script"] != "none")
@@ -1356,7 +1358,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(3, "Bypass the admin preinstalls")
+        @output.verbosel(3, "Bypass the admin preinstalls")
       end
       return res
     end
@@ -1373,7 +1375,7 @@ module MicroStepsLibrary
         @config.cluster_specific[@cluster].admin_post_install.each { |postinstall|
           res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
           if (postinstall["script"] == "breakpoint") then 
-            @output.debugl(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
+            @output.verbosel(0, "Breakpoint on admin postinstall after sending the file #{postinstall["file"]}")         
             @config.exec_specific.breakpointed = true
             res= false
           elsif (postinstall["script"] != "none")
@@ -1382,7 +1384,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(3, "Bypass the admin postinstalls")
+        @output.verbosel(3, "Bypass the admin postinstalls")
       end
       return res
     end
@@ -1395,11 +1397,11 @@ module MicroStepsLibrary
     # * return true if the user postinstall has been successfully uncompressed, false otherwise
     def ms_manage_user_post_install(scattering_kind)
       res = true
-      if (@config.exec_specific.environment.environment_kind != "other") then
+      if (@config.exec_specific.environment.environment_kind != "other") && (@config.exec_specific.environment.postinstall != nil) then
         @config.exec_specific.environment.postinstall.each { |postinstall|
           res = res && send_tarball_and_uncompress_with_taktuk(scattering_kind, postinstall["file"], postinstall["kind"], @config.common.rambin_path, "")
           if (postinstall["script"] == "breakpoint") then
-            @output.debugl(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
+            @output.verbosel(0, "Breakpoint on user postinstall after sending the file #{postinstall["file"]}")
             @config.exec_specific.breakpointed = true
             res= false
           elsif (postinstall["script"] != "none")
@@ -1408,7 +1410,7 @@ module MicroStepsLibrary
           end
         }
       else
-        @output.debugl(3, "Bypass the user postinstalls")
+        @output.verbosel(3, "Bypass the user postinstalls")
       end
       return res
     end

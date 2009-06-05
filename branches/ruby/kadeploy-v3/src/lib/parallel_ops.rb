@@ -219,7 +219,8 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)
     def execute(cmd)
-      tw = TaktukWrapper::new(make_taktuk_exec_cmd(cmd))
+      command_array = make_taktuk_exec_cmd(cmd)
+      tw = TaktukWrapper::new(command_array)
       tw.run
       get_taktuk_exec_command_infos(tw)
       good_nodes = Array.new
@@ -232,6 +233,7 @@ module ParallelOperations
           bad_nodes.push(node)
         end
       }
+      @output.debug("taktuk #{command_array.join(" ")}", @nodes)
       return [good_nodes, bad_nodes]
     end
 
@@ -243,7 +245,8 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)
     def execute_expecting_status(cmd, status)
-      tw = TaktukWrapper::new(make_taktuk_exec_cmd(cmd))
+      command_array = make_taktuk_exec_cmd(cmd)
+      tw = TaktukWrapper::new(command_array)
       tw.run
       get_taktuk_exec_command_infos(tw)
       good_nodes = Array.new
@@ -256,6 +259,7 @@ module ParallelOperations
           bad_nodes.push(node)
         end
       }
+      @output.debug("taktuk #{command_array.join(" ")}", @nodes)
       return [good_nodes, bad_nodes]
     end
 
@@ -268,7 +272,8 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)
     def execute_expecting_status_and_output(cmd, status, output)
-      tw = TaktukWrapper::new(make_taktuk_exec_cmd(cmd))
+      command_array = make_taktuk_exec_cmd(cmd)
+      tw = TaktukWrapper::new(command_array)
       tw.run
       get_taktuk_exec_command_infos(tw)
       good_nodes = Array.new
@@ -282,6 +287,7 @@ module ParallelOperations
           bad_nodes.push(node)
         end
       }
+      @output.debug("taktuk #{command_array.join(" ")}", @nodes)
       return [good_nodes, bad_nodes]
     end
 
@@ -294,7 +300,8 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)    
     def send_file(file, dest_dir, scattering_kind)
-      tw = TaktukWrapper::new(make_taktuk_send_file_cmd(file, dest_dir, scattering_kind))
+      command_array = make_taktuk_send_file_cmd(file, dest_dir, scattering_kind)
+      tw = TaktukWrapper::new(command_array)
       tw.run
       get_taktuk_send_file_command_infos(tw)
       good_nodes = Array.new
@@ -306,6 +313,7 @@ module ParallelOperations
           bad_nodes.push(node)
         end
       }
+      @output.debug("taktuk #{command_array.join(" ")}", @nodes)
       return [good_nodes, bad_nodes]   
     end
 
@@ -319,7 +327,8 @@ module ParallelOperations
     # Output
     # * returns an array that contains two arrays ([0] is the nodes OK and [1] is the nodes KO)    
     def exec_cmd_with_input_file(file, cmd, scattering_kind, status)
-      tw = TaktukWrapper::new(make_taktuk_exec_cmd_with_input_file(file, cmd, scattering_kind))
+      command_array = make_taktuk_exec_cmd_with_input_file(file, cmd, scattering_kind)
+      tw = TaktukWrapper::new(command_array)
       tw.run
       get_taktuk_exec_cmd_with_input_file_infos(tw)
       good_nodes = Array.new
@@ -331,6 +340,7 @@ module ParallelOperations
           bad_nodes.push(node)
         end
       }
+      @output.debug("taktuk #{command_array.join(" ")}", @nodes)
       return [good_nodes, bad_nodes]
     end
 
@@ -396,7 +406,7 @@ module ParallelOperations
                   end
                   if all_ports_ok then
                     node.state = "OK"
-                    @output.debugl(4, "  *** #{node.hostname} is here after #{Time.now.tv_sec - start}s")
+                    @output.verbosel(4, "  *** #{node.hostname} is here after #{Time.now.tv_sec - start}s")
                     @config.set_node_state(node.hostname, "", "", "rebooted")
                   else
                     node.state = "KO"
