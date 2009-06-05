@@ -244,7 +244,7 @@ class KadeployServer
           client.test()
         rescue DRb::DRbConnError
           workflow.output.disable_client_output()
-          workflow.output.debugl(3, "Client disconnection")
+          workflow.output.verbosel(3, "Client disconnection")
           workflow.kill_workflow()
           finished = true
         end
@@ -272,25 +272,27 @@ class KadeployServer
   # * exec_specific: instance of Config.exec_specific
   # * host: hostname of the client
   # * port: port on which the client listen to Drb
+  # * verbose_level: level of verbosity
+  # * pxe_profile_msg: PXE profile
   # Output
   # * return 0 in case of success, 1 if the reboot failed on some nodes, 2 if the reboot has not been launched
-  def launch_reboot(exec_specific, host, port, debug_level, pxe_profile_msg)
+  def launch_reboot(exec_specific, host, port, verbose_level, pxe_profile_msg)
     DRb.start_service()
     uri = "druby://#{host}:#{port}"
     client = DRbObject.new(nil, uri)
     return_value = 0
-    if (debug_level != nil) then
-      dl = debug_level
+    if (verbose_level != nil) then
+      vl = verbose_level
     else
-      dl = @config.common.debug_level
+      vl = @config.common.verbose_level
     end
     @config.common.taktuk_connector = @config.common.taktuk_ssh_connector
-    output = Debug::OutputControl.new(dl, client, exec_specific.true_user, -1, 
+    output = Debug::OutputControl.new(vl, false, client, exec_specific.true_user, -1, 
                                       @config.common.dbg_to_syslog, @config.common.dbg_to_syslog_level, @syslog_lock)
     if (exec_specific.reboot_kind == "back_to_prod_env") && 
         exec_specific.check_prod_env && 
         exec_specific.node_list.check_demolishing_env(@db, @config.common.demolishing_env_threshold) then
-      output.debugl(0, "Reboot not performed since some nodes have been deployed with a demolishing environment")
+      output.verbosel(0, "Reboot not performed since some nodes have been deployed with a demolishing environment")
       return_value = 2
     else
       #We create a new instance of Config with a specific exec_specific part

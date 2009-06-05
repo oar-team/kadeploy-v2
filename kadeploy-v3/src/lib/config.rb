@@ -114,7 +114,8 @@ module ConfigInformation
       exec_specific.true_user = USER
       exec_specific.block_device = String.new
       exec_specific.deploy_part = String.new
-      exec_specific.debug_level = nil
+      exec_specific.verbose_level = nil
+      exec_specific.debug = false
       exec_specific.script = String.new
       exec_specific.key = String.new
       exec_specific.reformat_tmp = false
@@ -226,9 +227,9 @@ module ConfigInformation
             attr = content[1]
             val = content[2]
             case attr
-            when "debug_level"
+            when "verbose_level"
               if val =~ /\A[0-4]\Z/ then
-                @common.debug_level = val.to_i
+                @common.verbose_level = val.to_i
               else
                 puts "Invalid debug level"
                 return false
@@ -724,13 +725,8 @@ module ConfigInformation
             return false
           end
         }
-        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
-          if d =~ /\A[0-4]\Z/ then
-            exec_specific.debug_level = d.to_i
-          else
-            Debug::client_error("Invalid debug level")
-            return false
-          end
+        opts.on("-d", "--debug-mode", "Activate the debug mode") {
+          exec_specific.debug = true
         }
         opts.on("-e", "--env-name ENVNAME", "Name of the recorded environment to deploy") { |n|
           exec_specific.load_env_kind = "db"
@@ -812,6 +808,14 @@ module ConfigInformation
             exec_specific.env_version = n
           else
             Debug::client_error("Invalid version number")
+            return false
+          end
+        }
+        opts.on("--verbose-level VALUE", "Verbose level between 0 to 4") { |d|
+          if d =~ /\A[0-4]\Z/ then
+            exec_specific.verbose_level = d.to_i
+          else
+            Debug::client_error("Invalid verbose level")
             return false
           end
         }
@@ -1467,7 +1471,7 @@ module ConfigInformation
     # * return true in case of success, false otherwise
     def load_kareboot_exec_specific(nodes_desc)
       @exec_specific = OpenStruct.new
-      @exec_specific.debug_level = String.new
+      @exec_specific.verbose_level = String.new
       @exec_specific.node_list = Nodes::NodeSet.new
       @exec_specific.pxe_profile_file = String.new
       @exec_specific.check_prod_env = false
@@ -1493,14 +1497,6 @@ module ConfigInformation
         opts.separator "General options:"
         opts.on("-c", "--check-prod-env", "Check if the production environment has been detroyed") { |d|
           @exec_specific.check_prod_env = true
-        }
-        opts.on("-d", "--debug-level VALUE", "Debug level between 0 to 4") { |d|
-          if d =~ /\A[0-4]\Z/ then
-            @exec_specific.debug_level = d.to_i
-          else
-            Debug::client_error("Invalid debug level")
-            return false
-          end
         }
         opts.on("-f", "--file MACHINELIST", "Files containing list of nodes")  { |f|
           if not File.readable?(f) then
@@ -1534,6 +1530,14 @@ module ConfigInformation
         opts.on("-r", "--reboot-kind REBOOT_KIND", "Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot, deploy_env)") { |k|
           @exec_specific.reboot_kind = k
         }
+        opts.on("--verbose-level VALUE", "Verbose level between 0 to 4") { |d|
+          if d =~ /\A[0-4]\Z/ then
+            @exec_specific.verbose_level = d.to_i
+          else
+            Debug::client_error("Invalid verbose level")
+            return false
+          end
+        }
         opts.on("-w", "--set-pxe-profile FILE", "Set the PXE profile (use with caution)") { |file|
           @exec_specific.pxe_profile_file = file
         }      
@@ -1558,7 +1562,7 @@ module ConfigInformation
         Debug::client_error("No node is chosen")
         return false
       end    
-      if (@exec_specific.debug_level != "") && ((@exec_specific.debug_level > 4) || (@exec_specific.debug_level < 0)) then
+      if (@exec_specific.verbose_level != "") && ((@exec_specific.verbose_level > 4) || (@exec_specific.verbose_level < 0)) then
         Debug::client_error("Invalid debug level")
         return false
       end
@@ -1651,7 +1655,7 @@ module ConfigInformation
   end
   
   class CommonConfig
-    attr_accessor :debug_level
+    attr_accessor :verbose_level
     attr_accessor :tftp_repository
     attr_accessor :tftp_images_path
     attr_accessor :tftp_cfg
@@ -1719,7 +1723,7 @@ module ConfigInformation
         a = eval i
         puts "Warning: " + i + err_msg if (a == nil)
       }
-      if ((@debug_level == nil) || (@tftp_repository == nil) || (@tftp_images_path == nil) || (@tftp_cfg == nil) ||
+      if ((@verbose_level == nil) || (@tftp_repository == nil) || (@tftp_images_path == nil) || (@tftp_cfg == nil) ||
           (@tftp_images_max_size == nil) || (@db_kind == nil) || (@deploy_db_host == nil) || (@deploy_db_name == nil) ||
           (@deploy_db_login == nil) || (@deploy_db_passwd == nil) || (@rights_kind == nil) || (@nodes_desc == nil) ||
           (@taktuk_ssh_connector == nil) || (@taktuk_rsh_connector == nil) ||

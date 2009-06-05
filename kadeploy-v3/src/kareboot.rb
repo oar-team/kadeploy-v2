@@ -89,10 +89,10 @@ if config.check_config("kareboot") then
       _exit(1, db)
     end
 
-    if (config.exec_specific.debug_level != "") then
-      debug_level = config.exec_specific.debug_level
+    if (config.exec_specific.verbose_level != "") then
+      verbose_level = config.exec_specific.verbose_level
     else
-      debug_level = nil
+      verbose_level = nil
     end
     pxe_profile_msg = String.new
     if (config.exec_specific.pxe_profile_file != "") then
@@ -100,7 +100,7 @@ if config.check_config("kareboot") then
         pxe_profile_msg.concat(l)
       }
     end
-    res = kadeploy_server.launch_reboot(config.exec_specific, client_host, client_port, debug_level, pxe_profile_msg)
+    res = kadeploy_server.launch_reboot(config.exec_specific, client_host, client_port, verbose_level, pxe_profile_msg)
     _exit(res, db)
   else
     puts "You do not have the deployment rights on all the nodes"

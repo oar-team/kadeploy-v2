@@ -28,8 +28,6 @@ Kadeploy requires the following softwares (the Debian packages available in the 
 \item \texttt{ruby1.8}
 \item \texttt{rubylibmysql-ruby}
 \item \texttt{libopenssl-ruby}
-\item \texttt{libneedle-ruby1.8}
-\item \texttt{libnet-ssh-ruby1.8}
 \item \texttt{libtermios-ruby1.8}
 \item \texttt{bittorrent}
 \item \texttt{ctorrent}
@@ -143,6 +141,9 @@ This will generate three Debian package: \texttt{kadeploy-v3-common.deb}, \textt
 \end{verbatim}
 \end{small}
 
+\paragraph{Warning}
+In order to preserve your configuration files, the removal of a Kadeploy package will preserve the configuration files (unless you specify the \texttt{--purge} tag). But if you install a new version of the package, the new configuration files will override the old ones. Thus you can use the \texttt{--force-confold} with \texttt{dpkg} if you want to keep them.
+
 \section{Launching the Kadeploy server}
 After being installed and configured, the Kadeploy server can be run either interactively:
 \begin{small}
@@ -167,7 +168,7 @@ The general configuration file is named \texttt{conf} and is located in the Kade
 \subsection{Example of a general configuration file}
 \begin{small}
 \begin{verbatim}
-debug_level = 3
+verbose_level = 3
 tftp_repository = /var/lib/tftpboot/PXEClient
 tftp_images_path = images
 tftp_images_max_size = 4000
@@ -220,7 +221,7 @@ bt_download_timeout = 1800
 \subsection{Explanation of the fields used in the general configuration file}
 Each line if the configuration file must follow the pattern: \texttt{key = value} (note that the spaces around the \texttt{=} are mandatory.
 \begin{itemize}
-\item \texttt{debug\_level}: number between 0 and 4 that specifies the default debug level for the client. 0 means ``no debug'' and 4 means ``full debug''.
+\item \texttt{verbose\_level}: number between 0 and 4 that specifies the default verbose level for the client. 0 means ``no verbose'' and 4 means ``full verbose''.
 \item \texttt{tftp\_repository}: absolute path of the TFTP repository.
 \item \texttt{tftp\_images\_path}: relative path of the TFTP image sub-repository.
 \item \texttt{tftp\_images\_max\_size}: maximal size in MB of the TFTP image repository. Warning, as far as the Kadeploy server is launched by the \texttt{deploy} user, \texttt{deploy} must have the rights to read in this directory.
@@ -477,7 +478,7 @@ Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --env-file ENVFILE           File containing the environment description
   -b, --block-device BLOCKDEVICE   Specify the block device to use
-  -d, --debug-level VALUE          Debug level between 0 to 4
+  -d, --debug-mode                 Activate the debug mode
   -e, --env-name ENVNAME           Name of the recorded environment to deploy
   -f, --file MACHINELIST           Files containing list of nodes
   -k, --key FILE                   Public key to copy in the root's authorized_keys
@@ -489,6 +490,7 @@ General options:
   -s, --script FILE                Execute a script at the end of the deployment
   -u, --user USERNAME              Specify the user
   -v, --env-version NUMVERSION     Number of version of the environment to deploy
+      --verbose-level VALUE        Verbose level between 0 to 4
   -w, --set-pxe-profile FILE       Set the PXE profile (use with caution)
 Advanced options:
       --write-workflow-id FILE     Write the workflow id in a file
@@ -518,10 +520,10 @@ We present now several use cases.
 \begin{verbatim}
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e lenny-x64-nfs-1.0 \
-           -d 4 \
+           --verbose_level 4 \
            -k ~/.ssh/id_rsa.pub
 \end{verbatim}
-This command performs the deployment of the environment \textit{lenny-x64-nfs-1.0} on the node \textit{gdx-5.orsay.grid5000.fr} and copies the SSH public key \textit{~/.ssh/id\_rsa.pub} of the user in the deployed environment to allow a direct connection with the root account. Furthermore, the debug level is set to 4, which means that you want the maximum debugging information.
+This command performs the deployment of the environment \textit{lenny-x64-nfs-1.0} on the node \textit{gdx-5.orsay.grid5000.fr} and copies the SSH public key \textit{~/.ssh/id\_rsa.pub} of the user in the deployed environment to allow a direct connection with the root account. Furthermore, the verbose level is set to 4, which means that you want the maximum verbose information.
 
 \paragraph{Use case 2 - basic usage}
 \begin{verbatim}
@@ -546,10 +548,11 @@ This command performs the deployment of the environment described by the file \t
 \begin{verbatim}
 > kadeploy -m gdx-5.orsay.grid5000.fr \
            -e lenny-x64-nfs-1.0 \
-           -d 4 \
-           --breakpoint BroadcastEnvChain:manage_user_post_install
+           --verbose_level 4 \
+           --breakpoint BroadcastEnvChain:manage_user_post_install \
+           -d
 \end{verbatim}
-This kind of command can be used for debug purpose. It performs a deployment with the maximum debug level and it asks to stop the deployment workflow just before executing the \textit{manage\_user\_post\_install} micro-step of the \textit{BroadcastEnvChain} macro-step. Thus you will be able to connect in the deployment environment and to debug what you want.
+This kind of command can be used for debug purpose. It performs a deployment with the maximum verbose level and it asks to stop the deployment workflow just before executing the \textit{manage\_user\_post\_install} micro-step of the \textit{BroadcastEnvChain} macro-step. Thus you will be able to connect in the deployment environment and to debug what you want. Furthermore, the full output of the distant commands performed is shown.
 
 \paragraph{Use case 5 - advanced usage}
 \begin{verbatim}
