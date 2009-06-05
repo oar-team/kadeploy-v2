@@ -46,7 +46,7 @@ def _test_deploy(nodes, step1, step2, step3, test_name, key, env, ok = "nodes_ok
   nodes.each { |node|
     node_list += " -m #{node}"
   }
-  cmd = "#{KADEPLOY} #{node_list} -e \"#{env}\" -d 0 -k #{key} --force-steps \"SetDeploymentEnv|#{step1}&BroadcastEnv|#{step2}&BootNewEnv|#{step3}\" -o #{ok} -n #{ko}"
+  cmd = "#{KADEPLOY} #{node_list} -e \"#{env}\" --verbose-level 0 -k #{key} --force-steps \"SetDeploymentEnv|#{step1}&BroadcastEnv|#{step2}&BootNewEnv|#{step3}\" -o #{ok} -n #{ko}"
   system(cmd)
   if File.exist?(ko) then
     IO.readlines(ko).each { |node|
@@ -127,7 +127,7 @@ def test_dummy(nodes, step1, step2, step3, test_name, ok = "nodes_ok", ko = "nod
   nodes.each { |node|
     node_list += " -m #{node}"
   }
-  cmd = "#{KADEPLOY} #{node_list} -e \"#{ENV_LIST.split(",")[0]}\" -d 0 --force-steps \"SetDeploymentEnv|#{step1}&BroadcastEnv|#{step2}&BootNewEnv|#{step3}\" -o #{ok} -n #{ko}"
+  cmd = "#{KADEPLOY} #{node_list} -e \"#{ENV_LIST.split(",")[0]}\" --verbose-level 0 --force-steps \"SetDeploymentEnv|#{step1}&BroadcastEnv|#{step2}&BootNewEnv|#{step3}\" -o #{ok} -n #{ko}"
   start = Time.now.to_i
   system(cmd)
   if File.exist?(ko) then

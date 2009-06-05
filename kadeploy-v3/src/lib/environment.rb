@@ -37,7 +37,7 @@ module EnvironmentManagement
         @preinstall = nil
         @postinstall = nil
         @demolishing_env = "0"
-        @kernel_params = ""
+        @kernel_params = nil
         IO::read(file).split("\n").each { |line|
           if /\A(\w+)\ :\ (.+)\Z/ =~ line then
             content = Regexp.last_match
@@ -230,7 +230,11 @@ module EnvironmentManagement
         @postinstall = nil
       end
       @kernel = hash["kernel"]
-      @kernel_params = hash["kernel_params"]
+      if (hash["kernel_params"] != "") then
+        @kernel_params = hash["kernel_params"]
+      else
+        @kernel_params = nil
+      end
       @initrd = hash["initrd"]
       if (hash["hypervisor"] != "") then
         @hypervisor = hash["hypervisor"] 
@@ -309,7 +313,7 @@ module EnvironmentManagement
       puts "preinstall : #{flatten_pre_install()}" if (@preinstall != nil)
       puts "postinstall : #{flatten_post_install()}" if (@postinstall != nil)
       puts "kernel : #{@kernel}"
-      puts "kernel_params : #{@kernel_params}"
+      puts "kernel_params : #{@kernel_params}" if (@kernel_params != nil)
       puts "initrd : #{@initrd}"
       puts "hypervisor : #{@hypervisor}" if (@hypervisor != nil)
       puts "hypervisor_params : #{@hypervisor_params}" if (@hypervisor_params != nil)
