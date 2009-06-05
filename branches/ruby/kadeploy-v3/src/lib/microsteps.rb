@@ -470,6 +470,26 @@ module MicroStepsLibrary
       end
     end
 
+    # Get the kernel parameters
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return the kernel parameters
+    def get_kernel_params
+      kernel_params = String.new
+      #We first check if the kernel parameters are defined in the environment
+      if (@config.exec_specific.environment.kernel_params != nil) then
+        kernel_params = @config.exec_specific.environment.kernel_params
+      #Otherwise we eventually check in the cluster specific configuration
+      elsif (@config.cluster_specific[@cluster].kernel_params != nil) then
+        kernel_params = @config.cluster_specific[@cluster].kernel_params
+      else
+        kernel_params = ""
+      end
+      return kernel_params
+    end
+
     # Install Grub-legacy on the deployment partition
     #
     # Arguments
@@ -481,16 +501,17 @@ module MicroStepsLibrary
       grubpart = "hd0,#{get_deploy_part_num() - 1}"
       path = @config.common.environment_extraction_dir
       line1 = line2 = line3 = ""
+      kernel_params = get_kernel_params()
       case kind
       when "linux"
         line1 = "#{@config.exec_specific.environment.kernel}"
-        line1 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
+        line1 += " #{kernel_params}" if kernel_params != ""
         line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
         line1 = "#{@config.exec_specific.environment.hypervisor}"
         line1 += " #{@config.exec_specific.environment.hypervisor_params}" if @config.exec_specific.environment.hypervisor_params != ""
         line2 = "#{@config.exec_specific.environment.kernel}"
-        line2 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
+        line2 += " #{kernel_params}" if kernel_params != ""
         line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
@@ -513,16 +534,17 @@ module MicroStepsLibrary
       grubpart = "hd0,#{get_deploy_part_num()}"
       path = @config.common.environment_extraction_dir
       line1 = line2 = line3 = ""
+      kernel_params = get_kernel_params()
       case kind
       when "linux"
         line1 = "#{@config.exec_specific.environment.kernel}"
-        line1 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
+        line1 += " #{kernel_params}" if kernel_params != ""
         line2 = "#{@config.exec_specific.environment.initrd}"
       when "xen"
         line1 = "#{@config.exec_specific.environment.hypervisor}"
         line1 += " #{@config.exec_specific.environment.hypervisor_params}" if @config.exec_specific.environment.hypervisor_params != ""
         line2 = "#{@config.exec_specific.environment.kernel}"
-        line2 += " #{@config.exec_specific.environment.kernel_params}" if @config.exec_specific.environment.kernel_params != ""
+        line2 += " #{kernel_params}" if kernel_params != ""
         line3 = "#{@config.exec_specific.environment.initrd}"
       else
         return false
@@ -940,7 +962,7 @@ module MicroStepsLibrary
               res = res && system("touch -a #{images_dir}/#{initrd}")
               res = res && PXEOperations::set_pxe_for_linux(@nodes_ok.make_array_of_ip,
                                                             kernel,
-                                                            @config.exec_specific.environment.kernel_params,
+                                                            get_kernel_params(),
                                                             initrd,
                                                             get_deploy_part_str(),
                                                             @config.common.tftp_repository,
@@ -958,7 +980,7 @@ module MicroStepsLibrary
                                                           hypervisor,
                                                           @config.exec_specific.environment.hypervisor_params,
                                                           kernel,
-                                                          @config.exec_specific.environment.kernel_params,
+                                                          get_kernel_params(),
                                                           initrd,
                                                           get_deploy_part_str(),
                                                           @config.common.tftp_repository,
@@ -994,7 +1016,7 @@ module MicroStepsLibrary
                                                           hypervisor,
                                                           @config.exec_specific.environment.hypervisor_params,
                                                           kernel,
-                                                          @config.exec_specific.environment.kernel_params,
+                                                          get_kernel_params(),
                                                           initrd,
                                                           get_deploy_part_str(),
                                                           @config.common.tftp_repository,
@@ -1042,10 +1064,9 @@ module MicroStepsLibrary
         if (@config.exec_specific.environment.environment_kind == "linux") then
           kernel = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.kernel}"
           initrd = "#{@config.common.environment_extraction_dir}#{@config.exec_specific.environment.initrd}"
-          kernel_params = @config.exec_specific.environment.kernel_params
           root_part = get_deploy_part_str()
           #Warning, this require the /usr/local/bin/kexec_detach script
-          return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{kernel_params})",
+          return parallel_exec_command_wrapper("(/usr/local/bin/kexec_detach #{kernel} #{initrd} #{root_part} #{get_kernel_params()})",
                                                @config.common.taktuk_connector)
         else
           @output.verbosel(3, "The Kexec optimization can only be used with a linux environment")

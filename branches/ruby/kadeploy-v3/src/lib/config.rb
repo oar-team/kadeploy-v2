@@ -519,6 +519,8 @@ module ConfigInformation
                 val.split(",").each { |driver|
                   @cluster_specific[cluster].drivers.push(driver)
                 }
+              when "kernel_params"
+                 @cluster_specific[cluster].kernel_params = val
               when "admin_pre_install"
                 #filename|kind|script,filename|kind|script,...
                 if val =~ /\A.+\|(tgz|tbz2)\|.+(,.+\|(tgz|tbz2)\|.+)*\Z/ then
@@ -1765,6 +1767,7 @@ module ConfigInformation
     attr_accessor :partition_creation_kind
     attr_accessor :partition_file
     attr_accessor :drivers
+    attr_accessor :kernel_params
     attr_accessor :admin_pre_install
     attr_accessor :admin_post_install
 
@@ -1791,6 +1794,7 @@ module ConfigInformation
       @cmd_very_hard_reboot = nil
       @cmd_console = nil
       @drivers = nil
+      @kernel_params = nil
       @admin_pre_install = nil
       @admin_post_install = nil
       @partition_creation_kind = nil
@@ -1822,6 +1826,7 @@ module ConfigInformation
       dest.cmd_very_hard_reboot = @cmd_very_hard_reboot.clone
       dest.cmd_console = @cmd_console.clone
       dest.drivers = @drivers.clone if (@drivers != nil)
+      dest.kernel_params = @kernel_params.clone if (@kernel_params != nil)
       dest.admin_pre_install = @admin_pre_install.clone if (@admin_pre_install != nil)
       dest.admin_post_install = @admin_post_install.clone if (@admin_post_install != nil)
       dest.partition_creation_kind = @partition_creation_kind.clone
@@ -1851,6 +1856,7 @@ module ConfigInformation
       dest.cmd_very_hard_reboot = @cmd_very_hard_reboot.clone
       dest.cmd_console = @cmd_console.clone
       dest.drivers = @drivers.clone if (@drivers != nil)
+      dest.kernel_params = @kernel_params.clone if (@kernel_params != nil)
       dest.admin_pre_install = @admin_pre_install.clone if (@admin_pre_install != nil)
       dest.admin_post_install = @admin_post_install.clone if (@admin_post_install != nil)
       dest.partition_creation_kind = @partition_creation_kind.clone
