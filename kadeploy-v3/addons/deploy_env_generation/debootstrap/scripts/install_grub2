@@ -39,7 +39,15 @@ MSG=$MSG"}"
 /bin/echo -e $MSG > $MENU_GRUB
 
 /usr/sbin/grub-install $ROOT --root-directory=$DEST
+RETVAL=$?
+
+if [ $RETVAL -ne 0 ]; then
+    /usr/sbin/grub-install --recheck $ROOT --root-directory=$DEST
+    RETVAL=$?
+fi
+
+
 
 mv $MENU_GRUB $DEST/$MENU_GRUB
 
-exit 0
+exit $RETVAL
