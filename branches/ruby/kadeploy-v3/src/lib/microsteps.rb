@@ -2,7 +2,8 @@
 require 'debug'
 require 'nodes'
 require 'parallel_ops'
-require 'cmdctrl_wrapper'
+#require 'cmdctrl_wrapper'
+require 'parallel_runner'
 require 'pxe_ops'
 require 'cache'
 require 'bittorrent'
@@ -203,23 +204,41 @@ module MicroStepsLibrary
     # * nothing
     def _reboot_wrapper(kind, node_set, use_rsh_for_reboot = false)
       @output.verbosel(3, "A #{kind} reboot will be performed on the nodes #{node_set.to_s}")
-      pr = CmdCtrlWrapper::init
+#       pr = CmdCtrlWrapper::init
+#       node_set.set.each { |node|
+#         case kind
+#         when "soft"
+#           if (use_rsh_for_reboot) then
+#             CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_rsh, node)
+#           else
+#             CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_ssh, node)
+#           end
+#         when "hard"
+#           CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_hard, node)
+#         when "very_hard"
+#           CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_very_hard, node)
+#         end
+#       }
+#       CmdCtrlWrapper::run(pr)
+#      return classify_only_good_nodes(CmdCtrlWrapper::get_results(pr))
+      pr = ParallelRunner::PRunner.new(@output)
       node_set.set.each { |node|
         case kind
         when "soft"
           if (use_rsh_for_reboot) then
-            CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_rsh, node)
+            pr.add(node.cmd.reboot_soft_rsh, node)
           else
-            CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_soft_ssh, node)
+            pr.add(node.cmd.reboot_soft_ssh, node)
           end
         when "hard"
-          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_hard, node)
+          pr.add(node.cmd.reboot_hard, node)
         when "very_hard"
-          CmdCtrlWrapper::add_cmd(pr, node.cmd.reboot_very_hard, node)
+          pr.add(node.cmd.reboot_very_hard, node)
         end
       }
-      CmdCtrlWrapper::run(pr)
-      return classify_only_good_nodes(CmdCtrlWrapper::get_results(pr))
+      pr.run
+      pr.wait
+      return classify_only_good_nodes(pr.get_results)
     end
 
     # Wrap the reboot command

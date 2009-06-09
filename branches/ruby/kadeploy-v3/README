@@ -1,6 +1,3 @@
 Required packages:
 libmysql-ruby
 libopenssl-ruby
-libneedle-ruby1.8
-libnet-ssh-ruby1.8
-libtermios-ruby1.8

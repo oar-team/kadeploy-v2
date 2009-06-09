@@ -323,14 +323,32 @@ module EnvironmentManagement
       puts "demolishing_env : #{@demolishing_env}"
     end
 
+    # Give the flatten view of the tarball info without the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the tarball info without the md5sum
     def flatten_tarball
       return "#{@tarball["file"]}|#{@tarball["kind"]}"
     end
 
+    # Give the flatten view of the pre-install info without the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the pre-install info without the md5sum
     def flatten_pre_install
       return "#{@preinstall["file"]}|#{@preinstall["kind"]}|#{@preinstall["script"]}"
     end
 
+    # Give the flatten view of the post-install info without the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the post-install info without the md5sum
     def flatten_post_install
       s = String.new
       if (@postinstall != nil) then
@@ -342,10 +360,22 @@ module EnvironmentManagement
       return s
     end
 
+    # Give the flatten view of the tarball info with the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the tarball info with the md5sum
     def flatten_tarball_with_md5
       return "#{@tarball["file"]}|#{@tarball["kind"]}|#{@tarball["md5"]}"
     end
 
+    # Give the flatten view of the pre-install info with the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the pre-install info with the md5sum
     def flatten_pre_install_with_md5
       s = String.new
       if (@preinstall != nil) then
@@ -354,6 +384,12 @@ module EnvironmentManagement
       return s
     end
 
+    # Give the flatten view of the post-install info with the md5sum
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the post-install info with the md5sum
     def flatten_post_install_with_md5
       s = String.new
       if (@postinstall != nil) then

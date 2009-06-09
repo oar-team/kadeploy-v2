@@ -33,6 +33,12 @@ module ParallelOperations
       @output = output
     end
 
+    # Generate the header of a Taktuk command
+    #
+    # Arguments
+    # * nothing
+    # Output
+    # * return a string containing the header of Taktuk command
     def make_taktuk_header_cmd
       args_tab = Array.new
       args_tab.push("-s") if @taktuk_auto_propagate
