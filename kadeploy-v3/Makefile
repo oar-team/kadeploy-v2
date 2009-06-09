@@ -21,9 +21,6 @@ install_src:
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/*.rb /usr/local/kadeploy3/src
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/lib/*.rb /usr/local/kadeploy3/src/lib
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/*.rb /usr/local/kadeploy3/src/contrib
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/commands/*.rb /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
 
 install_conf_client:
 	@install -o $(DEPLOY_USER) -m 644 $(CONF)/client_conf /etc/kadeploy3
@@ -84,10 +81,6 @@ tree_common:
 	@mkdir -p /usr/local/kadeploy3/db
 	@mkdir -p /usr/local/kadeploy3/test
 	@mkdir -p /usr/local/kadeploy3/src/contrib
-	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3
-	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
-	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
-	@mkdir -p /usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
 	@if [ -d /etc/kadeploy3 ]; then  mv /etc/kadeploy3 /etc/kadeploy3-save-`date +"%s"`; fi
 	@mkdir -p /etc/kadeploy3
 

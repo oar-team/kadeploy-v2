@@ -16,9 +16,6 @@ install_src:
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/lib/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/lib
 	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
-	@install -o $(DEPLOY_USER) -m 644 $(SRC)/contrib/cmdctrl-0.3/lib/cmdctrl/commands/*.rb $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
 
 install_conf_client:
 	@install -o $(DEPLOY_USER) -m 644 $(CONF)/client_conf $(DEB_ROOT_CLIENT)/etc/kadeploy3
@@ -85,10 +82,6 @@ tree_common:
 	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/db
 	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/test
 	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib
-	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3
-	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib
-	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl
-	@mkdir -p $(DEB_ROOT_COMMON)/usr/local/kadeploy3/src/contrib/cmdctrl-0.3/lib/cmdctrl/commands
 	@mkdir -p $(DEB_ROOT_COMMON)/etc/kadeploy3
 
 package_client: tree_client install_conf_client install_bin

@@ -28,7 +28,6 @@ Kadeploy requires the following softwares (the Debian packages available in the 
 \item \texttt{ruby1.8}
 \item \texttt{rubylibmysql-ruby}
 \item \texttt{libopenssl-ruby}
-\item \texttt{libtermios-ruby1.8}
 \item \texttt{bittorrent}
 \item \texttt{ctorrent}
 \item \texttt{taktuk}
@@ -498,8 +497,10 @@ Advanced options:
       --write-workflow-id FILE     Write the workflow id in a file
       --ignore-nodes-deploying     Allow to deploy even on the nodes tagged as "currently deploying" 
                                    (use this only if you know what you do)
-      --disable-bootloader-install Disable the automatic installation of a bootloader for a Linux based environment
-      --breakpoint MICROSTEP       Set a breakpoint just before launching the give micro-step, the syntax is macrostep:microstep (use this only if you know what you do)
+      --disable-bootloader-install Disable the automatic installation of a bootloader for a 
+                                   Linux based environment
+      --breakpoint MICROSTEP       Set a breakpoint just before launching the give micro-step, the 
+                                   syntax is macrostep:microstep (use this only if you know what you do)
       --set-custom-operations FILE Add some custom operations defined in a file
       --force-steps STRING         Undocumented, for administration purpose only
 
@@ -588,7 +589,8 @@ This command performs the deployment of the \textit{Custom\_linux\_env} environm
                           BroadcastEnv|BroadcastEnvChain:2:300&
                           BootNewEnv|BootNewEnvKexec:1:150"
 \end{verbatim}
-If you are a power user, you can specify the full Kadeploy workflow and bypass the default configuration. Use it at your own risk since the nodes may not support all the Kadeploy features like the \textit{Kexec} optimization for instance. The syntax for the \texttt{--force-steps} option is the same that for the \texttt{macrostep} field if the Kadeploy configuration (see the~\ref{sec:specific_config} part for the available values). The difference is that the three macrostep are defined on the same line, with the \texttt{\&} character as a delimiter between the macro-steps. Warning, you must define at least one implementation for each macro-step, without newline (unlike the example).
+If you are a power user, you can specify the full Kadeploy workflow and bypass the default configuration. Use it at your own risk since the nodes may not support all the Kadeploy features like the \textit{Kexec} optimization for instance. The syntax for the \texttt{--force-steps} option is the same that for the \texttt{macrostep} field if the Kadeploy configuration% (see the~\ref{sec:specific_config} part for the available values)
+. The difference is that the three macrostep are defined on the same line, with the \texttt{\&} character as a delimiter between the macro-steps. Warning, you must define at least one implementation for each macro-step, without newline (unlike the example).
 
 \paragraph{Use case 9 - expert usage}
 \begin{verbatim}
@@ -620,7 +622,8 @@ General options:
   -f, --file MACHINELIST        Files containing list of nodes
   -k, --key FILE                Public key to copy in the root's authorized_keys
   -m, --machine MACHINE         Reboot the given machines
-  -r, --reboot-kind REBOOT_KIND Specify the reboot kind (back_to_prod_env, set_pxe, simple_reboot)
+  -r, --reboot-kind REBOOT_KIND Specify the reboot kind (back_to_prod_env, set_pxe, 
+                                simple_reboot)
   -w, --set-pxe-profile FILE    Set the PXE profile (use with caution)
 \end{verbatim}
 \end{small}
@@ -643,7 +646,8 @@ Here are some basic examples:
 
 Kareboot can be used to manage the demolishing environment. Typically, at the end of a reservation with deployment, the resource manager will perform a reboot on the production environment. By using the \texttt{-c|--check-prod-env} option (for instance: \texttt{kareboot -f nodes -r back\_to\_prod\_env -c}), Kareboot firstly checks if the deployed environment on the involved nodes is tagged like a demolishing environment. If the environment is considered as \textit{demolishing}, Kareboot does not perform a reboot and returns the \texttt{2} value. In this case, the production environment has been destroyed and should be deployed again. If the environment is not considered as \textit{demolishing}, the reboot is performed and a check is performed at the end of the reboot to ensure that the production environment is correctly deployed. If the nodes are correctly rebooted on the production environment, Kareboot returns the \texttt{0} value. Otherwise it returns the \texttt{1} value, what means that the production environment has been destroyed and that it should be deployed again.
 
-An environment is considered \textit{demolishing} if the number of failures after a reboot on the production environment (when the \texttt{-c|--check-prod-env} optionis used with Kareboot), is higher than the threshold specify in the configuration file (see the~\ref{sec:general_config} part). In the~\ref{sec:kaenv} part you can find the way to reset the \textit{demolishing} counter of an environment by using an option of Kaenv.
+An environment is considered \textit{demolishing} if the number of failures after a reboot on the production environment (when the \texttt{-c|--check-prod-env} optionis used with Kareboot), is higher than the threshold specify in the configuration file% (see the~\ref{sec:general_config} part)
+. In the~\ref{sec:kaenv} part you can find the way to reset the \textit{demolishing} counter of an environment by using an option of Kaenv.
 
 
 \subsection{Kaenv}\label{sec:kaenv}
@@ -657,7 +661,8 @@ Contact: kadeploy-devel@lists.grid5000.fr
 General options:
   -a, --add ENVFILE                     Add the environment to the environment database
   -d, --delete ENVNAME                  Delete the environment from the environment database
-  -l, --list                            List the environment recorded in the database for a given user
+  -l, --list                            List the environment recorded in the database for a 
+                                        given user
   -p, --print ENVNAME                   Print the information about a given environment
   -r, --remove-demolishing-tag ENVNAME  Remove the demolishing tag on an environment
   -s, --show-all-versions               Show all versions of an environment
@@ -691,7 +696,7 @@ This command lists prints the version \textit{3} of the environment \textit{Free
 \begin{verbatim}
 > kaenv -a ~/new_env.dsc
 \end{verbatim}
-This command adds the environment defined in the file \textit{~/new\_env.dsc}. See the~\ref{sec:env_desc} part to get information about the environment description.
+This command adds the environment defined in the file \textit{~/new\_env.dsc}. %See the~\ref{sec:env_desc} part to get information about the environment description.
 
 \paragraph{Use case 5}
 \begin{verbatim}
@@ -875,7 +880,9 @@ General options:
   -f, --file MACHINELIST       Only print information about the given machines
   -m, --machine MACHINE        Only print information about the given machines
   -o, --operation OPERATION    Choose the operation (get_deploy_state or get_yaml_dump)
-  -w, --workflow-id WID        Specify a workflow id (this is use with the get_yaml_dump operation). If no workflow id is specified, the information of all the running worklfows will be dumped
+  -w, --workflow-id WID        Specify a workflow id (this is use with the get_yaml_dump 
+                               operation). If no workflow id is specified, the information 
+                               of all the running worklfows will be dumped
 \end{verbatim}
 \end{small}
 
@@ -902,7 +909,7 @@ This commands prints a YAML output of the deployment state of all the nodes curr
 \begin{verbatim}
 > kanodes -o get_yaml_dump -w 78
 \end{verbatim}
-This commands prints a YAML output of the deployment state of all the nodes currently in the deployment number 78. The deployment number, or workflow id, can be obtained thanks to a Kadeploy option (see the~\ref{par:usecase-wid} part to know how to get the workflow id of a deployment).
+This commands prints a YAML output of the deployment state of all the nodes currently in the deployment number 78. The deployment number, or workflow id, can be obtained thanks to a Kadeploy option.% (see the~\ref{par:usecase-wid} part to know how to get the workflow id of a deployment).
 
 \section{Migrate your environment for Kadeploy 2.1.x}
 Migrating your environments from Kadeploy 2.1.x is quite easy. Please refer to the~\ref{sec:env_desc} part to get the full information about the environment description with Kadeploy 3.
@@ -938,7 +945,7 @@ General options:
 
 To use \texttt{env\_migrate}, you have to choose the kind of environment you wish to migrate and you have to choose the environment. The choice can be made in two ways:
 \begin{itemize}
-\item choosing the environment from its name in the old version of Kadeploy (like it can see with the kaenvironments output) ;
+\item choosing the environment from its name in the old version of Kadeploy (like it can be seen with the kaenvironments output) ;
 \item choosing the environment from a file that contains the description in the old format.
 \end{itemize}
 
@@ -961,7 +968,8 @@ The goal of the pre-install in the Kadeploy workflow is to prepare the disk of t
 \item mounting partition(s).
 \end{itemize}
 
-You can do want you want in the pre-install but you must that Kadeploy will extract the environment in the directory defined by the \texttt{environment\_extraction\_dir} field of the general configuration file (see the part~\ref{sec:general_config}). Commonly, this directory is \texttt{/mnt/dest}. Thus, you have to mount all the partitions you need in this directory. If you wish to deploy the environment onto several partitions, you can use for instance the following map:
+You can do want you want in the pre-install but you must that Kadeploy will extract the environment in the directory defined by the \texttt{environment\_extraction\_dir} field of the general configuration file% (see the part~\ref{sec:general_config})
+. Commonly, this directory is \texttt{/mnt/dest}. Thus, you have to mount all the partitions you need in this directory. If you wish to deploy the environment onto several partitions, you can use for instance the following map:
 \begin{itemize}
 \item /dev/sda3 $\mapsto$ /mnt/dest
 \item /dev/sda4 $\mapsto$ /mnt/dest/var
