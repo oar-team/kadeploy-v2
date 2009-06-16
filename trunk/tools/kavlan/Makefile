@@ -52,7 +52,7 @@ uninstall-backend :
 release: Makefile
 	rm -fr $(distdir)
 	mkdir -p $(distdir)
-	tar zcf  tmp.tgz README Makefile src/*.pl src/*.sh src/KaVLAN/*.pm *.conf *.sql
+	tar zcf  tmp.tgz README Makefile src/*.pl src/*.sh src/KaVLAN/*.pm *.conf *.sql src/*.pm
 	tar -C $(distdir) -zxf tmp.tgz
 	mkdir $(distdir)/ebin
 	tar zvcf  $(distdir).tar.gz $(distdir)
