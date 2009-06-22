@@ -44,6 +44,7 @@ my $CISCO_VMVLAN = ".1.3.6.1.4.1.9.9.68.1.2.2.1.2"; # access vlan for every port
 sub new {
     my ($pkg)= @_;
     my $self = bless KaVLAN::Switch->new("Cisco",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
+    $self->{'CISCO_LIST_UNTAG'} = $CISCO_LIST_UNTAG;
     return $self;
 }
 

@@ -31,13 +31,13 @@ sub new {
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-    my %res;
     my $self = shift;
     #Check arguments
     my ($vlanName,$switchSession)=@_;
     if(not defined $vlanName or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
+    my %res;
 
     # Get port informations
     &const::debug("Getting ports affected");
@@ -49,7 +49,7 @@ sub getPortsAffectedToVlan(){
     if($#vlanNumber == -1){
         die "ERROR : There is no vlan under this name";
     }
-    my $untag =new SNMP::VarList([$Cisco::CISCO_LIST_UNTAG]);
+    my $untag = new SNMP::VarList([$self->{CISCO_LIST_UNTAG}]);
     foreach my $i ($switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$untag)) {
         foreach my $j (@ {$i}) {
             if ($j->[2] == $vlanNumber[0] and  $j->[0] =~ /(\d+)\.(\d+)$/) {
