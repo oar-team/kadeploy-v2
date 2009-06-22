@@ -71,21 +71,8 @@ my @switchConfig;
 
 #We are loading all the switch information
 foreach my $i (0 .. $#{$switch}){
-    if($switch->[$i]{"Type"} eq "summit"){
-        $switchConfig[$i] = KaVLAN::summit->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "hp3400cl"){
-        $switchConfig[$i] =  KaVLAN::hp3400cl->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "Cisco3750"){
-        $switchConfig[$i] = KaVLAN::Cisco3750->new();
-    }
-    elsif($switch->[$i]{"Type"} eq "Foundry"){
-        $switchConfig[$i] = KaVLAN::Foundry->new();
-    }
-    else{
-        &mydie("ERROR : The switch type doesn't exist");
-    }
+    my $type= "KaVLAN::" . $switch->[$i]{"Type"};
+    $switchConfig[$i] = $type->new();
 }
 
 #---------------------------------------
