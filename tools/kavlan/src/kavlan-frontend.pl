@@ -58,7 +58,7 @@ GetOptions(\%options,
 $const::CONFIGURATION_FILE = $options{"F"} if ($options{"F"});
 $const::VERBOSE=1 if $options{"v"};
 
-my ($site,$router,$switch) = KaVLAN::Config::parseConfigurationFile();
+my ($site,$switch) = KaVLAN::Config::parseConfigurationFile();
 
 $const::VLAN_DEFAULT_NAME=$site->{"VlanDefaultName"};
 
@@ -94,8 +94,8 @@ if ($options{"r"}) {   # get-network-range
     }
 } elsif ($options{"g"}) { # get-network-gateway
     my $VLAN  = &get_vlan();
-    if ($router->{$VLAN_GATEWAY_NAME.$VLAN}) {
-        print $router->{$VLAN_GATEWAY_NAME.$VLAN}."\n";
+    if ($site->{$VLAN_GATEWAY_NAME.$VLAN}) {
+        print $site->{$VLAN_GATEWAY_NAME.$VLAN}."\n";
     } else {
         &mydie("ERROR : Unknown network gateway for vlan $VLAN\nERROR : please check your configuration file");
     }

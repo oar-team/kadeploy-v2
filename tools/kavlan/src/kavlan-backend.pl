@@ -20,6 +20,7 @@ use KaVLAN::Config;
 use KaVLAN::summit;
 use KaVLAN::hp3400cl;
 use KaVLAN::Cisco3750;
+use KaVLAN::Cisco6500;
 use KaVLAN::Foundry;
 
 my $VLAN_PROPERTY_NAME="vlan"; # OAR property name of the VLAN ressource
@@ -57,7 +58,7 @@ if ($options{"d"}) {
     $const::DEBUG=1;
 }
 
-my ($site,$router,$switch) = KaVLAN::Config::parseConfigurationFile();
+my ($site,$switch) = KaVLAN::Config::parseConfigurationFile();
 
 $const::VLAN_DEFAULT_NAME=$site->{"VlanDefaultName"};
 
@@ -66,17 +67,7 @@ $const::VLAN_DEFAULT_NAME=$site->{"VlanDefaultName"};
 #-----------------------------
 
 #Get the configurations informations of the appliances
-my $routerConfig;
 my @switchConfig;
-
-#Verifying if the -s option is activated to avoid loading router configuration
-if(not defined $options{"s"}){
-    if($router->{"Type"} eq "summit"){$routerConfig = KaVLAN::summit->new();}
-    elsif($router->{"Type"} eq "hp3400cl"){$routerConfig =  KaVLAN::hp3400cl->new();}
-    elsif($router->{"Type"} eq "Cisco3750"){$routerConfig = KaVLAN::Cisco3750->new();}
-    elsif($router->{"Type"} eq "Foundry"){$routerConfig = KaVLAN::Foundry->new();}
-    else{&mydie("ERROR : The router type doesn't exist");}
-}
 
 #We are loading all the switch information
 foreach my $i (0 .. $#{$switch}){
@@ -103,16 +94,9 @@ foreach my $i (0 .. $#{$switch}){
 
 #SNMP informations
 my $COMMUNITY = (defined $site->{"SNMPCommunity"}) ? $site->{"SNMPCommunity"} : "private";
-my $routerSession;
 my @switchSession;
 
 #Create the SNMP sessions
-if(not defined $options{"s"}){
-    $routerSession= new SNMP::Session(DestHost => $router->{"IP"},
-            Community => $COMMUNITY,
-            Version => "2c",
-            Timeout => 300000);
-}
 foreach my $i (0 .. $#{$switch}){
     print "establish session to remote SNMP server $switch->[$i]{IP}\n" if ($const::VERBOSE);
     $switchSession[$i]= new SNMP::Session(DestHost => $switch->[$i]{"IP"},
