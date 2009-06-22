@@ -19,7 +19,7 @@ use const;
 ##########################################################################################
 # Parse the configuration file
 # arg :
-# ret : two hash tables references : 1-site, 2-routeur
+# ret : one hash tables references : 1-site,
 #       an array reference containing hash tables : 3-switch
 # rmq :
 ##########################################################################################
@@ -28,7 +28,6 @@ sub parseConfigurationFile{
     my $value;
     my %site;
     my @switch;
-    my %routeur;
     my $typeLine="";
 
     my $nbSwitch = -1;
@@ -60,21 +59,15 @@ sub parseConfigurationFile{
 #Do the association between the line and the upper block which is the information for
                 if($typeLine =~ m/Switch/){
                     $switch[$nbSwitch]{$key}=$value;
-                } elsif($typeLine =~ m/Routeur/) {
-                    $routeur{$key} = $value;
                 } elsif($typeLine =~ m/Site/) {
                     $site{$key} = $value;
                 } else {
-                    print "Configuration line not associated with an upper block (Switch, Routeur or Information):\n";
+                    print "Configuration line not associated with an upper block (Switch  or Information):\n";
                 }
             }
         }
     }
     close(CONF);
-
-    if(not defined $routeur{"Name"} or not defined $routeur{"IP"} or not defined $routeur{"Type"}){
-        die "ERROR : You have to enter value for the routeur in the configuration file : Name, IP, Type";
-    }
 
     foreach my $i (0..$nbSwitch) {
         if(not defined $switch[$i]{"Name"} or not defined $switch[$i]{"IP"} or not defined $switch[$i]{"Type"} or not defined $switch[$i]{"Ports"}){
@@ -86,7 +79,7 @@ sub parseConfigurationFile{
     }
 
 #Return references of the three hash
-    return \%site,\%routeur,\@switch;
+    return \%site,\@switch;
 }
 
 
