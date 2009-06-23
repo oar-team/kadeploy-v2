@@ -45,6 +45,7 @@ sub new {
     my ($pkg)= @_;
     my $self = bless KaVLAN::Switch->new("Cisco",$CISCO_VLAN_NAME, $CISCO_IP, $CISCO_MASK, $CISCO_TAG),$pkg;
     $self->{'CISCO_LIST_UNTAG'} = $CISCO_LIST_UNTAG;
+    $self->{'CISCO_PORT_IFINDEX'} = $CISCO_PORT_IFINDEX;
     return $self;
 }
 
@@ -128,7 +129,7 @@ sub setUntag(){
 
     # Change the port information
     &const::verbose("Put the port ",$port," in untag mode to the vlan ",$vlanNumber[0]);
-    my $ifIndex = &getPortIfIndex($port,$switchSession);
+    my $ifIndex = $self->getPortIfIndex($port,$switchSession);
 
     my $var = new SNMP::Varbind([ $CISCO_VMVLAN, $ifIndex, $vlanNumber[0],"INTEGER"]);
     $switchSession->set($var) or die "ERROR : Can't affect the port to the vlan";
