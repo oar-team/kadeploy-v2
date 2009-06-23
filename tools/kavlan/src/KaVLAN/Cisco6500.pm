@@ -15,6 +15,7 @@ use KaVLAN::Cisco;
 use strict;
 use warnings;
 use Data::Dumper;
+our $CISCO_PORT_IFINDEX =".1.3.6.1.2.1.31.1.1.1.1";
 
 sub new {
     my ($pkg)= @_;
@@ -61,6 +62,26 @@ sub getPortsAffectedToVlan(){
     ## FIXME: handle tagged port
     &const::verbose("TAGGED vlan not implemented");
     return \%res;
+}
+
+sub getPortIfIndex {
+    my $self = shift;
+    my ($port,$switchSession) = @_;
+    if ($port =~ m@Gi(\d+)/(\d+)@) {
+        my $untag =new SNMP::VarList([$CISCO_PORT_IFINDEX]);
+        foreach my $i ($switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$untag)) {
+            foreach my $j (@ {$i}) {
+                if ($j->[2] eq $port) {
+                    my $ifIndex = $j->[1];
+                    &const::verbose("ifindex of port $port is $ifIndex");
+                    return $ifIndex;
+                }
+            }
+        }
+        die "port index not found ($port)";
+    } else {
+        die "bad port format: $port";
+    }
 }
 
 
