@@ -68,8 +68,16 @@ sub getPortIfIndex {
     my $self = shift;
     my ($port,$switchSession) = @_;
     if ($port =~ m@Gi(\d+)/(\d+)@) {
-        my $untag =new SNMP::VarList([$CISCO_PORT_IFINDEX]);
-        foreach my $i ($switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$untag)) {
+        my @resp;
+        if ( defined $const::CACHE{$switchSession}{'INDEX'}) {
+            &const::debug("reuse INDEX list of switch from CACHE");
+            @resp = @{$const::CACHE{$switchSession}{'INDEX'}} ;
+        } else {
+            my $untag =new SNMP::VarList([$CISCO_PORT_IFINDEX]);
+            @resp = $switchSession->bulkwalk(0,$const::IEEE_MAX_VLAN,$untag);
+            $const::CACHE{$switchSession}{'INDEX'} = \@resp;
+        }
+        foreach my $i (@resp) {
             foreach my $j (@ {$i}) {
                 if ($j->[2] eq $port) {
                     my $ifIndex = $j->[1];
@@ -83,6 +91,5 @@ sub getPortIfIndex {
         die "bad port format: $port";
     }
 }
-
 
 1;
