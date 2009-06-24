@@ -8,7 +8,7 @@ VERSION=$(shell grep VERSION src/const.pm|cut -f2 -d=| tr -d \"\;)
 distdir = kavlan-$(VERSION)
 
 install-frontend: install-perllibs
-	install -m 0640 -d $(CONFPATH)
+	install -m 0750 -d $(CONFPATH)
 #	cp -r *.conf $(CONFPATH)
 	install -m 0644 man/man1/kavlan.1 /usr/share/man/man1/
 	install -d $(DEST)/bin
