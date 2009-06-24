@@ -26,7 +26,7 @@ GetOptions(
           );
 &usage if $help;
 
-my ($site,$routeur,$switch) = KaVLAN::Config::parseConfigurationFile();
+my ($site,$switch) = KaVLAN::Config::parseConfigurationFile();
 
 ## checks if needed options are defined
 if (!@user_list){
