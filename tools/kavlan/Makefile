@@ -17,9 +17,9 @@ install-frontend: install-perllibs
 	install -o $(KAVLANUSER) -m 0750 src/kavlan_adduser.pl $(CMDPATH)/kavlan_adduser
 	install -o $(KAVLANUSER) -m 0750 src/kavlan_deluser.pl $(CMDPATH)/kavlan_deluser
 	install -o $(KAVLANUSER) -m 0755 src/kavlanwrapper.sh $(DEST)/bin
-	ln -s $(DEST)/bin/kavlanwrapper.sh $(BINDIR)/kavlan
-	ln -s $(DEST)/bin/kavlanwrapper.sh $(SBINDIR)/kavlan_deluser
-	ln -s $(DEST)/bin/kavlanwrapper.sh $(SBINDIR)/kavlan_adduser
+	ln -fs $(DEST)/bin/kavlanwrapper.sh $(BINDIR)/kavlan
+	ln -fs $(DEST)/bin/kavlanwrapper.sh $(SBINDIR)/kavlan_deluser
+	ln -fs $(DEST)/bin/kavlanwrapper.sh $(SBINDIR)/kavlan_adduser
 
 install-backend : install-perllibs
 	install -o $(KAVLANUSER) -d -m 0750 $(CONFPATH)
