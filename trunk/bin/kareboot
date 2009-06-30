@@ -74,7 +74,7 @@ GetOptions('m=s'        => \@host_list,
   'noreboot'            => \$noreboot,
   'p=s'                 => \$device,
   'partition=s'         => \$device,
-  'kp=s'	              => \$kernel_parameters,
+  'kp=s'	        => \$kernel_parameters,
   'kernel-parameters=s' => \$kernel_parameters,
   'verbose'             => \$verbose,
   'v'                   => \$verbose,
@@ -99,7 +99,7 @@ if ($node_file)
     open(NODEFILE,$node_file) or die "Can't open node_file : $node_file\n";
     while ($line = <NODEFILE>)
     {
-        if ($line =~ /([a-zA-Z0-9\.]+)/) { $line = $1; }
+        if ($line =~ /([a-zA-Z0-9-\.]+)/) { $line = $1; }
         chomp($line);
         push(@host_list, $line);
     }

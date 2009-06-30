@@ -14,6 +14,8 @@ NL_FNAME=""
 CLUSTER_NAME=""
 CLUSTER_FILES=""
 TMP_USED=0
+OAR_UID=$(getent passwd oar|cut -d: -f3)
+ROOT_UID=0
 
 # Makefile Substituted variables
 DEPLOYCONFDIR=__SUBST__
@@ -64,7 +66,10 @@ check_dir_exists()
   if [ ! -d "$dir" ]; then
     ( mkdir ${dir} || die "failed to create ${dir}" )
   fi
-  ( chmod 755 ${dir} || die "failed to chmod ${dir}" )	    
+  check_access $dir
+  if [ "$?" -ne 0 -a "$EUID" -ne "$OAR_UID" -a "$EUID" -ne "$ROOT_UID" ]; then
+    ( chmod 755 ${dir} || die "failed to chmod ${dir}" )
+  fi
 }
 
 #______________________________________
@@ -103,7 +108,7 @@ function check_kadeploy_user_dir()
   if [ "$USER" == "root" -o "$UID" -eq 0 ]; then
     ROOT_HOMEDIR="/root"
   else
-    ROOT_HOMEDIR=$(getent passwd|grep "^${USER}:"|cut -d: -f6)
+    ROOT_HOMEDIR=$(getent passwd "${USER}"|cut -d: -f6)
   fi
   if [ -n "$ROOT_HOMEDIR" ]; then
     kudir="$ROOT_HOMEDIR/$KADEPLOY_USER_DIR"
