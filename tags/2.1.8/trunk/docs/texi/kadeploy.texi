@@ -1,0 +1,265 @@
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@setfilename kadeploy.info
+@set full_documentation
+@include version.texi
+@settitle Kadeploy @value{KADEPLOYVERSION} documentation version @value{DOCVERSION}
+@c Unify all our little indices for now.
+@syncodeindex fn cp
+@syncodeindex vr cp
+@syncodeindex ky cp
+@syncodeindex pg cp
+@syncodeindex tp cp
+@c %**end of header
+
+@footnotestyle separate
+@paragraphindent 3
+@finalout
+
+@copying
+Copyright @copyright{} 2007 Julien Leduc <julien.leduc@@gmail.com>
+
+@quotation
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided also that
+the entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified
+versions.
+@end quotation
+@end copying
+
+@dircategory Kernel
+@direntry
+* Multiboot Specification: (multiboot).		Multiboot Specification.
+@end direntry
+
+@titlepage
+@sp 10
+@title The kadeploy documentation version @value{DOCVERSION}
+@author Julien Leduc
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@finalout
+@headings double
+
+@ifnottex
+@node Top
+@top Kadeploy Documentation
+
+This file documents Kadeploy @value{KADEPLOYVERSION}, the environment deployment system aimed at HPC facilities.
+
+@insertcopying
+@end ifnottex
+
+@menu
+* Overview::                    
+* Terminology::
+* Installation::
+* Configuration::                            
+* Customizing scripts::
+* Man pages::
+* History::                     
+* Index::                       
+@end menu
+
+
+
+@node Overview
+@chapter Overview of Kadeploy deployment system
+@cindex Overview of Kadeploy
+@cindex Kadeploy overview
+
+This chapter describes some rough information about the Kadeploy deployment system.
+
+@menu
+* Motivation::                  
+* Architecture::                
+* Operating systems::
+* Why a database::
+* Deployment steps::
+@end menu
+
+
+@node Motivation
+@section The background of Kadeploy design
+
+Every HPC facility needs a system to efficiently install and upgrade the @abbr{OS, operating system} deployed on the nodes.
+The first version of Kadeploy was designed to deploy efficiently a large set of nodes at once:
+the cluster's system  administrator was able to deploy one OS on a set of nodes, 
+this system is then homogeneous on all the nodes for users and users can submit 
+jobs on parts of the cluster. For upgrades, and global software installation, the system 
+administrator proceeds this way:
+@table @b
+@item isolate a node
+take a compute node out of reach of users to let them work on the rest of the cluster 
+nodes, this node is often called the golden node.
+@item install/upgrade the node OS
+at the end of this step, the node OS should be the desired OS for all the cluster nodes
+@item isolate another node and update it
+deploy the new version of the OS on a single node to test the deployment procedure, 
+if something goes wrong, adapt consequently the OS on the golden node and retry deployment
+@item isolate all the nodes and update them
+deploy the new version of the OS on all the nodes of the cluster at once
+@item test and give the nodes back
+test if users can use the nodes and let them use the nodes back, by registering 
+them as free in the cluster batch scheduler, for example.
+@end table
+
+This method of deployment, is a taken as a specific case: single user (only one user deploys here: administrator), single cluster (only one cluster targeted by the OS upgrade), single operating system deployment (there is only one OS per node).
+
+Kadeploy 2 was developed to be able to deal with all the other cases, from this simple 
+classic one to multi-users, multi-clusters, multi-OS including all possible mixes.
+
+
+@node Architecture
+@section The target architecture
+
+Kadeploy is primarily targeted at @samp{x86} and @samp{x86_64} CPUs architectures, 
+since they are the most common and have the largest variety of operating 
+systems. However, to the extent that certain other architectures comply
+with some network boot technologies described further, kadeploy can be 
+adapted for those needs (there is a @samp{IA64} version for kadeploy). Please let 
+me know if you are interested in specific versions.
+
+
+@node Operating systems
+@section The target operating systems
+
+The targeted operating systems are the ones running on the architectures 
+defined in @ref{Architecture}, and mainly the ones often used in HPC world.
+Kadeploy was primarily designed to deploy Linux and then FreeBSD, NetBSD and Solaris.
+
+@node Why a database
+@section Why does kadeploy use a database?
+
+kadeploy uses a database to maintain the persistence of the information about the 
+cluster composition and current state.
+The cluster composition is described via :
+@itemize
+@item the nodes and their features (name, mac address and ip address)
+@item the type of hard disk drive (size and device name) and their partitions (size and number)
+@item the environments available (registered) for deployment with all the relative needed information (path to image, kernel path, etc.)
+@end itemize
+
+The cluster state is described via :
+@itemize
+@item a snapshot of the cluster state that describes for each partition of each disk and on each node, the partition state, the environment installed on (if any), the number of the last deployment done on it and a brief error description about this deployment (if any)
+@item the history of the ordered deployment with their start and end dates and their state
+@end itemize
+
+During every single deployment occurring on the cluster, the cluster state database evolves to synchronize concurrent deployments on the cluster 
+(a node takes part to only one active deployment at a given time), and track history of the deployments on the cluster: success / failure 
+ratio on the nodes can help to track hardware failures on the nodes.
+
+@node Deployment steps
+@section What are the different steps of a deployment?
+
+This section explains briefly the different steps of a deployment process, all the different steps 
+
+@enumerate 
+@item All implied nodes are rebooted on a minimal OS, @dfn{duke-vmlinuz}
+@item the deployment server then launches all the different steps in the deployment process, once it has detected that 
+all the nodes are rebooted on the minimal system:
+@enumerate a
+@item preinstallation is launched on every node to prepare the disk for the deployment, this preinstallation script depends of the cluster it 
+@emph{is prepared by the cluster administrator}
+@item the raw system image is transferred on the nodes target partition
+@item postinstallation is executed on all the nodes, to prepare the nodes for the reboot (SSH keys, @file{fstab}, network, @acronym{LDAP} ...), 
+this postinstallation script depends of the deployed environment it is prepared by the @emph{environment's maintainer}
+@item reboot implied nodes on the deployed environment
+@end enumerate
+@item the deployment server waits for the implied nodes to reboot on the deployed system
+@item @i{Voila!}
+@end enumerate
+
+
+
+@node Installation
+@chapter Installing Kadeploy
+@cindex Installation of Kadeploy
+@cindex Kadeploy installation
+
+This chapter describes the path to a complete kadeploy installation
+
+@include installation.texi
+
+
+
+@node Configuration
+@chapter Configure kadeploy
+@cindex configuration of Kadeploy
+@cindex Kadeploy configuration
+
+This chapter describes how to configure different services used by kadeploy, and the 
+configuration of kadeploy itself.
+
+@include configuration.texi
+
+
+
+@node Customizing scripts
+@chapter Customize scripts for your cluster
+
+This chapter describes how to customize the scripts used by kadeploy.
+
+@include kadeploy_scripts.texi
+
+
+
+@node Man pages
+@chapter Kadeploy man pages
+@cindex man pages
+
+This chapter gives access to all the man pages available with the @acronym{UNIX} @command{man} command.
+
+@include man.texi
+
+
+@node Terminology
+@chapter Definitions of terms used through the documentation
+
+@table @dfn
+@item deployment server
+@cindex deployment server
+We use the term @dfn{deployment server}, as the server that hosts all the commands of the kadeploy suite. This server hosts the @command{tftp} server to control the PXE boot of the nodes.
+
+@item environment
+@cindex environment
+We use the term @dfn{environment}, as an entity that can be deployed using kadeploy, 
+or something that is deployed on a hard drive partition.
+
+@item environment maintainer
+@cindex environment maintainer
+@cindex maintainer
+An environment maintainer is the person responsible for the environment on a platform. His role is to prepare a @dfn{postinstallation} archive associated to the environment, and make sure his environment deploys on all the nodes of the platform. His email address should appear when the properties of the environment are listed with @command{kaenvironments}.
+
+@item shared partition
+@cindex shared partition
+We use the term @dfn{shared partition}, when a partition defined on the node's 
+local hard driver can be shared between several environments deployed 
+on different partitions of the node.
+@end table
+
+
+@node History
+@chapter The change log of kadeploy
+
+@include changelog.texi
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@contents
+@bye

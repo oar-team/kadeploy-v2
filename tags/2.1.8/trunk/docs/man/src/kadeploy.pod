@@ -1,0 +1,85 @@
+=head1 NAME
+
+kadeploy - deploys an environment on the given nodes.
+
+=head1 SYNOPSIS
+
+B<kadeploy>  B<-e|--environment> environment_name [B<-l> username] [B<-d|--device> device] [B<-p|--partition> partition] [B<-m|--machine> hostname] [B<-f> nodefile] [B<-D|--debug-level> debug_level] [B<-u|--use-prod-env>] [B<-r|--reformat-tmp>] [B<-F|--fast-kernel-reboot>] [B<-s|--script> path_to_script]
+
+=head1 DESCRIPTION
+
+This command deploys the specified environment on a specific parition of the target nodes. When successfully over, the nodes are available under the new and freshly installed environment.
+
+Kadeploy can deploy another user's environment.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-e|--environment> environment_name
+
+Specifies the name of the environment to deploy.
+
+=item B<-l> username
+
+Specifies the environment's owner, by defaut the user issuing kadeploy command.
+
+=item B<-d|--device> device
+
+Specifies the device to use for deployment on the target nodes.
+
+=item B<-p|--partition> partition
+
+Specifies the partition to use for deployment on the target nodes.
+
+=item B<-m|--machine> hostname
+
+Specifies a target host. This option can be used more than once to specify several target hosts.
+
+=item B<-f> nodefile
+
+Specifies a file containing a set of target nodes.
+
+=item B<-D|--debug-level> debug_level
+
+Specifies the verbosity's level. The values are : 0 (only result), 1 (main steps of the deployement), 2 (normal verbosity), 3 (advanced verbosity), 4 (extreme verbosity). 0 is default.
+
+=item B<-r|--reformat-tmp>
+
+Forces the formatting of the /tmp partition. By default, this step is avoided.
+
+=item B<-u|--use-prod-env>
+
+Performs the deployment with the production environment. This method avoid the first reboot on the deployment environment.
+
+=item B<-F|--fast-kernel-reboot>
+
+Uses the optimized method to reboot the nodes after the copy of the environment. Avoid a hard reboot. This option only works with Linux based environments.
+
+=item B<-s|--script> path_to_script
+
+Executes a script at the end of the deployment. Warning, the script must be executable.
+
+=back
+
+=head1 EXAMPLE
+
+=over
+
+=item kadeploy -e debian4all -d sda -p 3 -m node7 -u
+
+Deploys the debian4all environment on partition /dev/sda3 of node7 and uses the production environment to perform the deployment.
+
+=item kadeploy -e debian4jul -l jleduc -d cciss/c0d0 -p p2 -f $OAR_NODEFILE
+
+Deploys the debian4jul environment user jleduc on partition /dev/cciss/c0d0p2  of a set of nodes reserved with OAR in the deploy queue.
+
+=back
+
+=head1 SEE ALSO
+
+L<kaenvironments(1)>, L<karecordenv(1)>
+
+=head1 COPYRIGHTS
+
+This software is licensed under the GNU Library General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
