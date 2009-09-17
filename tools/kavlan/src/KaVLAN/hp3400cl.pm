@@ -47,7 +47,7 @@ my $HP3400CL_REMOVE_VALUE="0";
 ##########################################################################################
 sub new(){
     my ($pkg)= @_;
-    my $self = bless KaVLAN::Switch->new("hp3400cl",$HP3400CL_VLAN_NAME, $HP3400CL_IP, $HP3400CL_MASK, $HP3400CL_TAG),$pkg;
+    my $self = bless KaVLAN::Switch->new("hp3400cl",$HP3400CL_VLAN_NAME_FOR_MODIF, $HP3400CL_IP, $HP3400CL_MASK, $HP3400CL_TAG),$pkg;
     return $self;
 }
 
@@ -61,24 +61,22 @@ sub new(){
 ##########################################################################################
 sub modifyVlanName(){
     my $self = shift;
-#Check arguement
     my ($oldVlanName,$newVlanName,$session)=@_;
+    #Check arguments
     if(not defined $oldVlanName or not defined $newVlanName or not defined $session){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the vlan number
+    #Retrieve the vlan number
     my @vlanNumber = $self->getVlanNumber($oldVlanName,$session);
     if($#vlanNumber==-1){
         die "ERROR : Can't modify the vlan name because there is vlan available";
     }
-    
-    $vlanNumber[0] = $self->getTagConfiguration($vlanNumber[0],$session);
 
-#Create the snmp variable to apply changes in the vlan $vlanNumber
+    # Create the snmp variable to apply changes in the vlan $vlanNumber
     my $var=new SNMP::Varbind([$HP3400CL_VLAN_NAME_FOR_MODIF,$vlanNumber[0],$newVlanName,"OCTETSTR"]);
 
-#Send the snmp information
+    # Send the snmp information
     &const::verbose("Applying modification");
 
     $session->set($var) or die "ERROR : Can't modify vlan (there is probably another vlan with the same name)\n";
@@ -93,51 +91,55 @@ sub modifyVlanName(){
 # rmq : The vlan have to be present on the switch
 ##########################################################################################
 sub getPortsAffectedToVlan(){
-    my %res;
-
-#Check arguement
     my $self=shift;
     my ($vlanName,$switchSession)=@_;
+    #Check arguments
     if(not defined $vlanName or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
+    my %res;
 
 
-#Get port informations
-    &const::verbose("Getting ports affected");
+    #Get port informations
+    &const::verbose("Getting ports affected to $vlanName");
 
-    #Retreive the vlan number
+    #Retrieve the vlan number
     my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
     my @vlanNumber= $self->getVlanNumber($realVlanName,$switchSession);
     if($#vlanNumber == -1){
         die "ERROR : There is no vlan under this name";
     }
+    &const::debug("vlan number is $vlanNumber[0]");
 
-    $vlanNumber[0] = $self->getTagConfiguration($vlanNumber[0],$switchSession);
-
-#Get the information
+    # Get the information
     my $untag =new SNMP::Varbind([$HP3400CL_LIST_UNTAG,$vlanNumber[0]]);
     my $tag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0]]);
 
-        $switchSession->get($untag);
-        $switchSession->get($tag);
-
-    my $untagInfo = unpack("B*",$untag->val);
+    $switchSession->get($untag);
+    $switchSession->get($tag);
+    my $untagInfo ="";
+    if ($untag->val eq "NOSUCHINSTANCE") {
+        warn "Can't find UNTAG data for VLAN $vlanNumber[0]";
+    } else {
+        $untagInfo =  unpack("B*",$untag->val);
+    }
     my $tagInfo = unpack("B*",$tag->val);
-
+    return \%res if ($untag->val eq "NOSUCHINSTANCE") and ($tag->val eq "NOSUCHINSTANCE");
 
 #Look if there are any ports affected in the tag or untag mode
         my $i;
         for($i=0;$i<($HP3400CL_NB_PORT+1);$i++){
 #Retreive the oid sometimes, the oid is not in the good field and is in the name of the object that's why we try two way to get this number
-               my $valUntag =  substr($untagInfo,$i,1); 
-               my $valTag =  substr($tagInfo,$i,1); 
+               my $valUntag =  substr($untagInfo,$i,1);
+               my $valTag =  substr($tagInfo,$i,1);
 
         if($valTag eq $HP3400CL_AFFECTED_VALUE && $valUntag eq $HP3400CL_AFFECTED_VALUE){
             push @{$res{"UNTAGGED"}}, ($i+1);
+            &const::debug("found untag $valTag i=$i $untagInfo ($valUntag)");
         }
         elsif($valTag eq $HP3400CL_AFFECTED_VALUE){
             push @{$res{"TAGGED"}}, ($i+1);
+            &const::debug("found tag $valTag i=$i $untagInfo ($valUntag)");
         }
       }
     return \%res;
@@ -153,14 +155,14 @@ sub getPortsAffectedToVlan(){
 # rmq :
 ##########################################################################################
 sub setTag(){
-#Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
+    # Check arguments
     if(not defined $vlanName or not defined $port or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the vlan number of $vlanName
+    # Retrieve the vlan number of $vlanName
     &const::verbose("Verifying that the vlan is available");
     my @vlanNumber;
     my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
@@ -168,9 +170,6 @@ sub setTag(){
     if($#vlanNumber==-1){
         die "ERROR : There is no vlan available";
     }
-
-    $vlanNumber[0] = $self->getTagConfiguration($vlanNumber[0],$switchSession);
-#Change the port information
 
     &const::verbose("Put the port in tagged mode ",$port," to the vlan ",$vlanNumber[0]);
     my $tag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0]]);
@@ -182,32 +181,14 @@ sub setTag(){
     my $depTag = $tag->val;
     my $depUntag = $untag->val;
 
-#    print unpack("H*",$untag->val);
-#    print "\n";
-#    print unpack("H*",$tag->val);
-#    print "\n";
-
     my $untagInfo = unpack("B*",$untag->val);
     my $tagInfo = unpack("B*",$tag->val);
 
     substr($untagInfo,($port-1),1)="0";
     substr($tagInfo,($port-1),1)="1";
 
-#    print $untagInfo;
-#    print "\n";
-#    print $tagInfo;
-#    print "\n";
-
     $untagInfo = pack("B*",$untagInfo);
-    $tagInfo = pack("B*",$tagInfo);    
-
-#    print unpack("H*",$untagInfo);
-#    print "\n";
-#    print unpack("H*",$tagInfo);
-#    print "\n";
-
-#    if($depTag ne $tagInfo && $depUntag eq $untagInfo){print "OK\n";}
-#    else{print "KO\n";}
+    $tagInfo = pack("B*",$tagInfo);
 
     my $newTag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0],$tagInfo,"OCTETSTR"]);
     my $newUntag = new SNMP::Varbind([$HP3400CL_LIST_UNTAG,$vlanNumber[0],$untagInfo,"OCTETSTR"]);
@@ -226,49 +207,42 @@ sub setTag(){
 # rmq :
 ##########################################################################################
 sub setUntag(){
-#Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
+    # Check arguments
     if(not defined $vlanName or not defined $port or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the vlan number of $vlanName
+    #Retrieve the vlan number of $vlanName
     &const::verbose("Verifying that the vlan is available");
     my @vlanNumber;
-    if($vlanName eq $const::DEFAULT_NAME){
-        @vlanNumber= $self->getVlanNumber($const::VLAN_DEFAULT_NAME,$switchSession);
-    }
-    else{
-        @vlanNumber= $self->getVlanNumber($const::MODIFY_NAME_KAVLAN.$vlanName,$switchSession);
-    }
+    my $realVlanName = ($vlanName eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$vlanName;
+    @vlanNumber= $self->getVlanNumber($realVlanName,$switchSession);
     if($#vlanNumber==-1){
         die "ERROR : There is no vlan available";
     }
 
-    $vlanNumber[0] = $self->getTagConfiguration($vlanNumber[0],$switchSession);
-#Change the port information
-
-    &const::verbose("Put the port in untag mode ",$port," to the vlan ",$vlanNumber[0]);    
+    &const::verbose("Put the port in untag mode ",$port," to the vlan ",$vlanNumber[0]);
     my $tag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0]]);
     my $untag = new SNMP::Varbind([$HP3400CL_LIST_UNTAG,$vlanNumber[0]]);
 
     $switchSession->get($tag);
-    $switchSession->get($untag);    
+    $switchSession->get($untag);
 
     my $depTag = $tag->val;
     my $depUntag = $untag->val;
 
     my $untagInfo = unpack("B*",$untag->val);
     my $tagInfo = unpack("B*",$tag->val);
-    
+
     substr($untagInfo,($port-1),1)="1";
     substr($tagInfo,($port-1),1)="1";
 
     $untagInfo = pack("B*",$untagInfo);
-    $tagInfo = pack("B*",$tagInfo);    
+    $tagInfo = pack("B*",$tagInfo);
 
-        my $newTag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0],$tagInfo,"OCTETSTR"]);
+    my $newTag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0],$tagInfo,"OCTETSTR"]);
     my $newUntag = new SNMP::Varbind([$HP3400CL_LIST_UNTAG,$vlanNumber[0],$untagInfo,"OCTETSTR"]);
 
     $switchSession->set($newUntag) or die "ERROR : Can't affect the port to the vlan";
@@ -284,14 +258,14 @@ sub setUntag(){
 # rmq :
 ##########################################################################################
 sub setRemove(){
-#Check arguement
     my $self = shift;
     my ($vlanName,$port,$switchSession)=@_;
+    # Check arguments
     if(not defined $vlanName or not defined $port or not defined $switchSession){
         die "ERROR : Not enough argument for $const::FUNC_NAME";
     }
 
-#Retreive the vlan number of $vlanName
+    # Retrieve the vlan number of $vlanName
     &const::verbose("Verifying that the vlan is available");
     my @vlanNumber;
     if($vlanName eq $const::DEFAULT_NAME){
@@ -304,8 +278,7 @@ sub setRemove(){
         die "ERROR : There is no vlan available";
     }
 
-    $vlanNumber[0] = $self->getTagConfiguration($vlanNumber[0],$switchSession);
-#Change the port information
+    # Change the port information
 
     &const::verbose("Remove the port ",$port," from the vlan ",$vlanNumber[0]);    
     my $tag = new SNMP::Varbind([$HP3400CL_LIST_TAG,$vlanNumber[0]]);
@@ -319,7 +292,7 @@ sub setRemove(){
 
     my $untagInfo = unpack("B*",$untag->val);
     my $tagInfo = unpack("B*",$tag->val);
-    
+
     substr($untagInfo,($port-1),1)="0";
     substr($tagInfo,($port-1),1)="0";
 
