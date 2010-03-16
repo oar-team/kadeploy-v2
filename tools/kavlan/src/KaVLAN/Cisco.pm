@@ -136,6 +136,7 @@ sub setUntag(){
 }
 
 sub getPortIfIndex {
+    my $self = shift;
     my ($port,$switchSession) = @_;
     # On 3750, 2/0/23 port number is 2028
     # FIXME: why +5 ?
