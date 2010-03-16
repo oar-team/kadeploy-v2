@@ -133,10 +133,11 @@ sub setUntag(){
     if ($#OldVLAN==-1){
         die "ERROR : Can't find current VLAN of port $port";
     }
-    &const::verbose("The port is currently in the VLAN ",$OldVLAN[0]);
+    my $OldVlanName = ($OldVLAN[0] eq $const::DEFAULT_NAME) ? $const::VLAN_DEFAULT_NAME : $const::MODIFY_NAME_KAVLAN.$OldVLAN[0];
+    &const::verbose("The port is currently in the VLAN ",$OldVlanName);
     my $ifIndex = &getPortIfIndex($port,$switchSession);
     # delete
-    my ($old_vlan_number)= $self->getVlanNumber($OldVLAN[0],$switchSession);
+    my ($old_vlan_number)= $self->getVlanNumber($OldVlanName,$switchSession);
     &const::verbose("old vlan number is $old_vlan_number");
     my $var = new SNMP::Varbind([ $FOUNDRY_MEMBER_STATUS, "$old_vlan_number.$ifIndex", $FOUNDRY_DELETE_VLAN,"INTEGER"]);
     $switchSession->set($var) or die "ERROR : Can't delete the port from the old vlan ($OldVLAN[0].$ifIndex)";
