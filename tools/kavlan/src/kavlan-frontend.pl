@@ -48,8 +48,10 @@ GetOptions(\%options,
         "s|set",
         "q|quiet",
         "h|help",
-        "v|verbose");
+        "v|verbose",
+        "version");
 
+&version() if( $options{"version"});
 &usage(0) if( $options{"h"});
 
 #------------------------------
@@ -94,10 +96,13 @@ if ($options{"r"}) {   # get-network-range
     }
 } elsif ($options{"g"}) { # get-network-gateway
     my $VLAN  = &get_vlan();
-    if ($site->{$VLAN_GATEWAY_NAME.$VLAN}) {
+    if (defined $VLAN and $site->{$VLAN_GATEWAY_NAME.$VLAN}) {
         print $site->{$VLAN_GATEWAY_NAME.$VLAN}."\n";
-    } else {
+    } elsif (defined $VLAN) {
         &mydie("ERROR : Unknown network gateway for vlan $VLAN\nERROR : please check your configuration file");
+    } else {
+        print STDERR ("ERROR : $VLAN not set");
+        &usage(1);
     }
 } elsif ($options{"d"} ){ # disable dhcp server for the given vlan
     my $VLAN  = &get_vlan();
@@ -182,6 +187,7 @@ sub set_vlan {
     # )that the indice is defined and we have rights to modify the
     # port, therefore, we can skip checks here
     my $nodelist = join(" -m ",@{$nodes});
+    &const::verbose("run [kavlan-backend -s -i $VLAN -m $nodelist] on backend node");
     exec("$backend_cmd -s -i $VLAN -m $nodelist" );
 }
 
@@ -277,6 +283,11 @@ sub mydie {
     exit 1;
 }
 
+sub version(){
+    print "kavlan version $const::VERSION\n";
+    exit 0;
+}
+
 sub usage(){
     my $status= shift;
     $status=1 unless defined $status;
@@ -295,6 +306,7 @@ USAGE : kavlan [options]
        -m|--machine <nodename>
        -q|--quiet                    quiet mode
        -h|--help                     print this help
+       --version                     show version
        -v|--verbose                  verbose mode\n";
     exit $status;
 }

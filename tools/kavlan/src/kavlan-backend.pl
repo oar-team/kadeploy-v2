@@ -43,9 +43,11 @@ GetOptions(\%options,
         "g|get",
         "q|quiet",
         "h|help",
+        "version",
         "v|verbose",
         "d|debug");
 
+&version() if( $options{"version"});
 &usage(0) if( $options{"h"});
 
 #------------------------------
@@ -159,6 +161,11 @@ sub mydie {
     exit 1;
 }
 
+sub version(){
+    print "kavlan-backend version $const::VERSION\n";
+    exit 0;
+}
+
 sub usage(){
     my $status= shift;
     $status=1 unless defined $status;
@@ -172,6 +179,7 @@ USAGE : $0 [options]
        -q|--quiet                    quiet mode
        -h|--help                     print this help
        -d|--debug                    debug mode
-       -v|--verbose                  verbose mode\n";
+       -v|--verbose                  verbose mode
+       --version                     show version\n";
     exit $status;
 }
