@@ -70,14 +70,14 @@ sub getVlanNumber {
     }
 
     # Loop until we have a name which correspond to $vlanName
-    my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
+    my $max = min($const::IEEE_MAX_VLAN-1, $#{$resp[0]});
     foreach my $i (0..$max){
-        if( ${ @{ $resp[0] } }[$i]->val =~ /$vlanName/){
-            &const::debug("Adding vlan ", ${ @{ $resp[0] } }[$i]->val ," because he matches the given name");
+        if( ${$resp[0]}[$i]->val =~ /^$vlanName$/){
+            &const::debug("Adding vlan ", ${$resp[0]}[$i]->val ," because he matches the given name");
             # Getting the end of the oid as vlanNumber
-            my $number = ${@{$resp[0]}}[$i]->iid;
+            my $number = ${$resp[0]}[$i]->iid;
             if(not defined $number or $number eq ""){
-                $number = ${@{${@{$resp[0]}}[$i]}}[0];
+                $number = ${${$resp[0]}[$i]}[0];
             }
 
             $number =~ s/\w+\.//g;
@@ -338,9 +338,9 @@ sub getPortInformation(){
 
     my $indiceTagPort = 1;
     # Loop until we have a name which correspond to $vlanName
-    my $max = min($const::IEEE_MAX_VLAN-1, $#{ @{ $resp[0] } });
+    my $max = min($const::IEEE_MAX_VLAN-1, $#{$resp[0]});
     foreach my $i (0..$max){
-        my $name = ${ @{ $resp[0] } }[$i]->val;
+        my $name = ${ $resp[0]}[$i]->val;
 
         if($name =~ /$const::MODIFY_NAME_KAVLAN/ or $name =~ /$const::VLAN_DEFAULT_NAME/){
             # Getting the right name of the vlan (without the prefix MODIFY_NAME_VLAN)
@@ -348,7 +348,6 @@ sub getPortInformation(){
                 &const::debug("Vlan found:",$name);
                 $val = $name;
                 $val =~ s/$const::MODIFY_NAME_KAVLAN//;
-
             }
             if($name =~ /$const::VLAN_DEFAULT_NAME/){
                 &const::debug("Vlan found:",$name);
@@ -375,8 +374,8 @@ sub getPortInformation(){
                 }
             }
             if(defined  @{$res{"UNTAGGED"}}){
-                foreach my $j (0..$#{ @{ $res{"UNTAGGED"} } }){
-                    if(${@{$res{"UNTAGGED"}}}[$j] eq $port){
+                foreach my $j (0..$#{$res{"UNTAGGED"}}){
+                    if(${$res{"UNTAGGED"}}[$j] eq $port){
                         $ret[0] = $val;
                     }
                 }

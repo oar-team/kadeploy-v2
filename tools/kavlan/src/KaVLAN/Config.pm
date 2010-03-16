@@ -230,7 +230,7 @@ sub check_nodes_configuration {
     my $nodes   = shift;
     my $site    = shift;
     my $switch  = shift;
-    if ($#{@{$nodes}} < 0) {
+    if ($#{$nodes} < 0) {
         die "node list empty, abort !";
     }
     foreach my $node (@{$nodes}) {
