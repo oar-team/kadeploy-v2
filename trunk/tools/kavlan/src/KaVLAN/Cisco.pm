@@ -149,7 +149,6 @@ sub getPortIfIndex {
             $const::CACHE{$switchSession}{'IFDESCR'} = \@resp;
         }
         foreach my $i (@resp) {
-            print Dumper($i);
             foreach my $j (@ {$i}) {
                 if ($j->[2] =~ m@$port$@) {
                     my $ifIndex = $j->[1];
