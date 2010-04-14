@@ -22,7 +22,7 @@ package const;
 use strict;
 
 #Version of kavlan
-our $VERSION="1.0rc5";
+our $VERSION="1.0rc6";
 
 #Location of the configuration file
 our $CONFIGURATION_FILE="/etc/kavlan/kavlan.conf";
