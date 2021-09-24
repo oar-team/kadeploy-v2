@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation-x</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li ><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2: About the customization scripts</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-5.html" REL=next>
+ <LINK HREF="HOWTO-DEPLOY-3.html" REL=previous>
+ <LINK HREF="HOWTO-DEPLOY.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="HOWTO-DEPLOY-5.html">Next</A>
+<A HREF="HOWTO-DEPLOY-3.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc4">Contents</A>
+<HR>
+<H2><A NAME="About_the_customization_scripts"></A> <A NAME="s4">4.</A> <A HREF="HOWTO-DEPLOY.html#toc4">About the customization scripts</A></H2>
+
+<P>Kadeploy allows the customization of each node by 2 means:
+<UL>
+<LI>preinstallation script, executed before sending the system image</LI>
+<LI>postinstallation, executed after having sent the system image</LI>
+</UL>
+
+Originally, these two scripts are written in <EM>ash</EM>, which is a lightweight bash, but the way these scripts are designed could allow to add any script language.</P>
+
+<H2><A NAME="ss4.1">4.1</A> <A HREF="HOWTO-DEPLOY.html#toc4.1">Preinstallation script</A>
+</H2>
+
+<P>This script is common to all environments, its goal is to prepare the system to the hardware specification and the target hard disk drive for the deployment. It can load a specific IDE controller driver, improve deployment performance or make every kind of checks needed. This script is defined in the configuration file as 
+<A HREF="HOWTO-DEPLOY-5.html#pre_install_script">pre_install_script</A> and the associated archive as 
+<A HREF="HOWTO-DEPLOY-5.html#pre_install_archive">pre_install_archive</A>.</P>
+<H3>Preinstallation archive structure</H3>
+
+<P>The preinstallation archive is a gzipped tar archive, containing the 
+<A HREF="HOWTO-DEPLOY-5.html#pre_install_script">pre_install_script</A> in its root directory.
+Here is an example of a preinstallation archive structure:
+<PRE>
+/
+   init.ash
+   lib/
+   bin/
+      awk
+      df
+      du
+      xargs
+</PRE>
+</P>
+<P>The directory structure allows to custom the tasks to your needs. In this example, the pre_install_script is <EM>init.ash</EM>. Let's have a short look at this structure :
+<UL>
+<LI>
+<PRE>
+init.ash
+</PRE>
+ is my pre_install_script, so it needs to be there</LI>
+<LI>
+<PRE>
+bin/
+</PRE>
+ is a directory where you can add custom binaries, here, I needed <EM>awk</EM>, <EM>df</EM>, <EM>du</EM> and <EM>xargs</EM>.</LI>
+<LI>
+<PRE>
+lib/
+</PRE>
+ is a directory where you can add custom libraries for your binaries. I suggest you to compile static binaries, to prevent conflicts/version problems due to the presence of the system's shared libraries.</LI>
+</UL>
+</P>
+
+<H2><A NAME="ss4.2">4.2</A> <A HREF="HOWTO-DEPLOY.html#toc4.2">Postinstallation script</A>
+</H2>
+
+<P>This script is associated to the environment to deploy. Its goal is to adapt the crude system image to a bootable system. It is composed of a gunzipped tar archive that contains all the sites files and a script <EM>traitement.ash</EM> in the archive's root directory. This archive is sent to the nodes, decompressed in a ramdisk and then the <CODE>post_install_script</CODE> is executed on every node. The script name is defined in the configuration file as 
+<A HREF="HOWTO-DEPLOY-5.html#post_install_script">post_install_script</A>.</P>
+<H3>Postinstallation archive structure</H3>
+
+<P>The postinstallation archive is a gzipped tar archive, containing the 
+<A HREF="HOWTO-DEPLOY-5.html#post_install_script">post_install_script</A> in its root directory.
+Here is an example of a postinstallation archive structure:
+<PRE>
+/
+   traitement.ash
+   etc/
+      fstab
+      hosts
+      hosts.allow
+      hosts.deny
+      ntpdate
+   authorized_keys
+</PRE>
+</P>
+<P>The directory structure allows to custom the configuration script to your needs. Let's have a short look at this structure :
+<UL>
+<LI>
+<PRE>
+traitement.ash
+</PRE>
+ is my post_install_script.</LI>
+<LI>
+<PRE>
+etc/
+</PRE>
+ is a directory where I decided to put all the files I wanted to replace on my system, this is an arbitrary choice, but allows to keep a clean structure.</LI>
+<LI>
+<PRE>
+authorized_keys
+</PRE>
+ is the root's authorized_keys file I decided to put it in the root directory to be sure to have a look at it everytime I update my postinstallation archive.</LI>
+</UL>
+</P>
+
+<H3>System modifications</H3>
+
+<P>
+<OL>
+<LI>
+<PRE>
+/etc/fstab
+</PRE>
+ a site base file should be copied in the postinstall archive so that nfs mounts can be preserved and other site modifications could be preserved</LI>
+<LI>
+<PRE>
+/tmp
+</PRE>
+ should have its rights modified</LI>
+</OL>
+</P>
+<H3>Administrative aspects</H3>
+
+<P>Many other basic files can be handled by putting them in the archive and replace the existing ones. They are not all listed here but only the most important ones :
+<OL>
+<LI>
+<PRE>
+/root/.ssh/authorized_keys
+</PRE>
+ should contain the administrator's public key and also the public key of user <CODE>deploy</CODE>, to allow him to get a root shell on every node to reboot those. In order to do that this authorized_keys file has to be built and put in the archive's root directory</LI>
+<LI>
+<PRE>
+/etc/hosts /etc/hosts.allow /etc/hosts.deny
+</PRE>
+ should be set to fit the cluster's configuration, and ensure network connection within the cluster's network</LI>
+</OL>
+</P>
+<P>Numerous modifications can be done here, from authentification server to tailored modification depending on the node's IP. A good idea should be to modify <CODE>rc</CODE> scripts to prevent the first boot hard disk drive verification, because it is just a waste of time here, and avoid all the manual intervention that could occur on system boot : for example, by default, many distributions ask the root password before checking a filesystem on boot time.</P>
+
+
+<HR>
+<A HREF="HOWTO-DEPLOY-5.html">Next</A>
+<A HREF="HOWTO-DEPLOY-3.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc4">Contents</A>
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>

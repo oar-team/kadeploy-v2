@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation-x</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li ><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2: Installation</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-3.html" REL=next>
+ <LINK HREF="HOWTO-DEPLOY-1.html" REL=previous>
+ <LINK HREF="HOWTO-DEPLOY.html#toc2" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="HOWTO-DEPLOY-3.html">Next</A>
+<A HREF="HOWTO-DEPLOY-1.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc2">Contents</A>
+<HR>
+<H2><A NAME="s2">2.</A> <A HREF="HOWTO-DEPLOY.html#toc2">Installation</A></H2>
+
+<P>The goal of this part is to ease the deployment system installation steps and give information about all the relevant required tools and their configuration.</P>
+<H2><A NAME="ss2.1">2.1</A> <A HREF="HOWTO-DEPLOY.html#toc2.1">Perl</A>
+</H2>
+
+
+
+<H2><A NAME="ss2.2">2.2</A> <A HREF="HOWTO-DEPLOY.html#toc2.2">Database</A>
+</H2>
+
+<P>This part presents the database used. </P>
+<H3>Why use a database ?</H3>
+
+<P>kadeploy uses a database to maintain the persistance of the information about the cluster composition and current state.</P>
+<P>The cluster composition is described via :
+<UL>
+<LI> the nodes and their features (name, mac address and ip address)</LI>
+<LI> the type of hard disk drive (size and device name) and their partitions (size and number)</LI>
+<LI> the environments available (registered) for deployment with all the relative needed information (path to image, kernel path, etc.)</LI>
+</UL>
+</P>
+<P>The cluster state is described via :
+<UL>
+<LI> a snapshot of the cluster state that describes for each partition of each disk and on each node, the partition state, the environment installed on (if any), the number of the last deployment done on it and a brief error description about this deployment (if any)</LI>
+<LI> the history of the ordered deployment with their start and end dates and their state</LI>
+</UL>
+</P>
+<H3>How does the database evolve during a deployment execution ?</H3>
+
+<P>During a deployment execution, its state and the one of the partition involved changes in the database.</P>
+<P>A deployment can be in one of the following states :
+<UL>
+<LI> waiting (for the nodes)</LI>
+<LI> deploying</LI>
+<LI> terminated</LI>
+<LI> error</LI>
+</UL>
+</P>
+<P>By convention, there cannot be more than one deployment waiting for nodes. </P>
+<P>A partition can be in one of the following states :
+<UL>
+<LI> to deploy</LI>
+<LI> deploying</LI>
+<LI> rebooting</LI>
+<LI> deployed</LI>
+<LI> error</LI>
+</UL>
+</P>
+<P>By convention, a node involved in a running deployment cannot take part in another deployment.</P>
+<P> 
+The two conventions above guarantee that a node cannot be involved in two different deployments at the same time even on different disks and/or partitions.</P>
+<P>When a deployment ends :
+<UL>
+<LI> if it has failed on (at least) one node, it is changed to error state. When possible, a brief description of what (or when it) happened is associated to the matching partition ; the ones for which the deployment ended successfully are switched to the 'deployed' state. Thus, during a same deployment, two failures that would occur on two different partitions for different reasons would have different error messages. This enables to know if a failure is due to a global problem or to different local ones.</LI>
+<LI> on the contrary, if the deployment ended successfully on all the nodes, it is changed to the 'terminated' state. The nodes are ready to be used on the new and freshly deployed environment.</LI>
+</UL>
+</P>
+<H3>How to install the database ?</H3>
+
+<P>It is possible to create both databases manually. All you have to do is to run the command lines below. This will create the deploy and deploy_right databases and the appropriate users with read and/or write rights.</P>
+<P><CODE># mysql -u root -p &lt; tools/db/deploy_db_creation.sql</CODE></P>
+<P><CODE>Enter password: ********</CODE></P>
+<P><CODE># mysql -u root -p &lt; tools/db/rights_db_creation.sql</CODE></P>
+<P><CODE>Enter password: ********</CODE></P>
+<P>Next step will be to fill in the database. That can be done easily using the kaaddnode command.</P>
+<H3>How to configure access to databse ?</H3>
+
+<P>In order for the deployment system to access to the database, correct information e.g. database name, login and password should be filled in the configuration file for each database. See the 
+<A HREF="HOWTO-DEPLOY-5.html#database">database</A> part in the configuration file section for further details.</P>
+
+<H2><A NAME="ss2.3">2.3</A> <A HREF="HOWTO-DEPLOY.html#toc2.3"><CODE>PXE/TFTP</CODE></A>
+</H2>
+
+<P>This part explains how to configure <CODE>PXE/TFTP</CODE> to control the booting process on the cluster nodes.</P>
+<H3>Hardware specifications</H3>
+
+<P>The nodes' hardware must be <CODE>PXE</CODE> compliant, this means that the <CODE>BIOS/EFI</CODE> should allow to boot from the ethernet card. To ensure that, you must verify that the network interface is <CODE>PXE</CODE> compliant.</P>
+<H3>Required software</H3>
+
+<P>To be able to handle <CODE>PXE</CODE> requests from the booting nodes, the server should have a set of running servers, which must fit minimum requirements:
+<UL>
+<LI><CODE>DHCP</CODE> server, the easiest is to use the one developped by 
+<A HREF="http://www.isc.org/index.pl?/sw/dhcp/">ISC</A> in its third version. It is available in many distributions:
+<UL>
+<LI>Debian <EM>dhcp3-server</EM></LI>
+<LI>Mandrake <EM>dhcp-server</EM> and you should ensure the package release is at least 3.0</LI>
+</UL>
+</LI>
+<LI>TFTP server is not a simple tftp server, it should meet the <CODE>PXE</CODE> standard. So you must install the <EM>tftp-hpa</EM> server also available under package forms:
+<UL>
+<LI>Debian <EM>tftpd-hpa</EM> is necessary, because the simple tftpd package is not sufficient (cannot handle PXE requests)</LI>
+<LI>Mandrake <EM>tftp-server</EM> rpm in a minimum 0.29-1mdk version is required to take 
+<A HREF="http://rpmfind.net/linux/RPM/mandrake/9.2/i586/Mandrake/RPMS/tftp-server-0.34-1mdk.i586.html">hpa support</A> into account</LI>
+</UL>
+                                          </LI>
+</UL>
+</P>
+<H3><A NAME="TFTP_structure"></A> <CODE>TFTP</CODE> structure</H3>
+
+<P>Here is an example of a <CODE>TFTP</CODE> structure:
+<PRE>
+/tftpboot/
+   PXEClient/
+      images_grub/
+      pxelinux.cfg/
+      pxelinux.0
+      messages
+      help.txt
+   X86PC/
+      linux/
+         images_grub/
+         pxelinux.cfg/
+         linux.0
+         nbplinux.0
+         messages
+         help.txt
+</PRE>
+</P>
+<P>This directory structure and allow to respond to different <CODE>PXE</CODE> request schemes. The slight differences are not our business here, you should refer to the different <CODE>PXE</CODE> standards for this part. Let's have a short look at this structure :
+<UL>
+<LI>
+<PRE>
+/tftpboot/
+</PRE>
+ is <CODE>TFTP</CODE> root directory ; it is the directory served by the tftp server</LI>
+<LI>
+<PRE>
+/tftpboot/PXEClient/
+</PRE>
+ is the tftp directory for non Intel NICs (set by 
+<A HREF="HOWTO-DEPLOY-5.html#tftp_repository">tftp_repository</A> in the configuration file)</LI>
+<LI>
+<PRE>
+/tftpboot/X86PC/linux/
+</PRE>
+ is the tftp directory for Intel NICs (set by 
+<A HREF="HOWTO-DEPLOY-5.html#tftp_repository_intel">tftp_repository_intel</A> in the configuration file)</LI>
+</UL>
+
+These two last directories contain both about the same structure :
+<UL>
+<LI>
+<PRE>
+images_grub/
+</PRE>
+ that will contain <EM>kadeploy</EM> generated grub bootloaders, to allow the nodes to boot on the deployed system image (set by 
+<A HREF="HOWTO-DEPLOY-5.html#tftp_relative_path">tftp_relative_path</A> in the configuration file)</LI>
+<LI>
+<PRE>
+pxelinux.cfg/
+</PRE>
+ that links every node to its kernel/initrd pair to load and boot from network, an ensure that we can remotely control the way the nodes are booting (set by 
+<A HREF="HOWTO-DEPLOY-5.html#pxe_rep">pxe_rep</A> and 
+<A HREF="HOWTO-DEPLOY-5.html#pxe_rep_intel">pxe_rep_intel</A> in the configuration file)</LI>
+</UL>
+</P>
+<P>These four directories (two in each tftp directory) should be writtable by the <CODE>deploy</CODE> user, to allow <EM>kadeploy</EM> to control the way the nodes are booting. </P>
+
+<H2><A NAME="ss2.4">2.4</A> <A HREF="HOWTO-DEPLOY.html#toc2.4">System Requirements</A>
+</H2>
+
+
+<H3>Required privileges to execute <EM>kadeploy</EM></H3>
+
+<P><EM>kadeploy</EM> requires to perform some changes on the server, to control the way the nodes are booting. Some other tools like <EM>kaconsole</EM> or <EM>kareboot</EM> needs to connect to other computers. The purpose of this part is to define all the required privileges to ensure a smooth execution of <EM>kadeploy</EM>, and secure it by avoiding unnecessary privileges.</P>
+
+<HR>
+<A HREF="HOWTO-DEPLOY-3.html">Next</A>
+<A HREF="HOWTO-DEPLOY-1.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc2">Contents</A>
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>

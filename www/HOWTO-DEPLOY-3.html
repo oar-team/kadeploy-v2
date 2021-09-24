@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation-x</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li ><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2: Using kadeploy v2</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-4.html" REL=next>
+ <LINK HREF="HOWTO-DEPLOY-2.html" REL=previous>
+ <LINK HREF="HOWTO-DEPLOY.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="HOWTO-DEPLOY-4.html">Next</A>
+<A HREF="HOWTO-DEPLOY-2.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc3">Contents</A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="HOWTO-DEPLOY.html#toc3">Using kadeploy v2</A></H2>
+
+<P>The deployment system is composed of several tools or commands whose aim is the execution of all the needed actions to carry out deployments and other administrative tasks.</P>
+<P>Every tool has his own 
+<A HREF="HOWTO-DEPLOY-6.html#Man_pages">man page</A> available at the end of this documentation. This could be useful to answer some pertinent questions the reader may wonder.</P>
+<H2><A NAME="ss3.1">3.1</A> <A HREF="HOWTO-DEPLOY.html#toc3.1">The first time...</A>
+</H2>
+
+<P>The two first steps are to register the cluster "software and hardware composition" in its current state. </P>
+<P>If any environment is already installed on some partitions of some nodes, it is necessary to register it. This operation is done by giving the appropriate information (image name, image location, kernel path etc.) to the 
+<A HREF="HOWTO-DEPLOY-6.html#karecordenv">karecordenv</A> tool. </P>
+<P>Then, 
+<A HREF="HOWTO-DEPLOY-6.html#kaaddnode">kaaddnode</A> is used to register the cluster "hardware" composition. It needs the description of hosts, disks and partitions in a text file. The tool reads it and registers the information (name and addresses of nodes, disk type and size, partition number and size etc.) in the database.</P>
+<P>Once these operations completed, the system is ready for deployments.</P>
+<H2><A NAME="ss3.2">3.2</A> <A HREF="HOWTO-DEPLOY.html#toc3.2">Deployment</A>
+</H2>
+
+<P>The system has been prepared for deployment. Now what ? To deploy, something to be deployed is needed !</P>
+<P>The environment to be deployed can either already exist and be registered in the database or already exist but not be registered or neither exist nor be registered. The first case is the simplest since nothing has to be done prior to the deployment itself. In the other cases, 
+<A HREF="HOWTO-DEPLOY-6.html#kacreateenv">kacreateenv</A> (
+<A HREF="HOWTO-DEPLOY-6.html#kaarchive">kaarchive</A>/
+<A HREF="HOWTO-DEPLOY-6.html#karecordenv">karecordenv</A>) are used to create and register (create/register) an environment in the database (cf. the environment section for details about these steps).</P>
+<P>The deployment itself i.e. of a given environment on target partitions of a set of cluster nodes is done using the 
+<A HREF="HOWTO-DEPLOY-6.html#kadeploy">kadeploy</A> tool.</P>
+<P>A complete deployment is composed of the following steps :
+<UL>
+<LI>reboot on the deployment kernel via pxe protocol</LI>
+<LI>pre-installation actions (bench, partitionning and/or file system building if needed etc.)</LI>
+<LI>environment copy</LI>
+<LI>post-installation script sending and execution</LI>
+<LI>reboot on the freshly installed environment</LI>
+</UL>
+</P>
+<P>If the deployment fails on some nodes, these are rebooted on a default environment.</P>
+<P>Please refer to the 
+<A HREF="HOWTO-DEPLOY-4.html#About_the_customization_scripts">customization scripts section</A> for further details about preinstall and postinstall scripts.</P>
+<H2><A NAME="ss3.3">3.3</A> <A HREF="HOWTO-DEPLOY.html#toc3.3">Other tools for remote management</A>
+</H2>
+
+<P>Two remote management tools are available to diagnostic and if possible take control of cluster nodes that would be for instance in an unstable or undefined state further to a deployment failure. </P>
+<P>The 
+<A HREF="HOWTO-DEPLOY-6.html#kaconsole">kaconsole</A> tool enables to open a console on a remote node. It needs special hardware equipment and special command configuration as described in the second part of the configuartion files section.</P>
+<P>The 
+<A HREF="HOWTO-DEPLOY-6.html#kareboot">kareboot</A> tool enables to do various reboot types on cluster nodes. The possibilities are numerous : the reboot on a given (already installed) environment or on a given partition or even on the deployment kernel for instance. It also enables to hard reboot nodes appropriately equiped.</P>
+<H2><A NAME="ss3.4">3.4</A> <A HREF="HOWTO-DEPLOY.html#toc3.4">What if the cluster hardware composition changes ?</A>
+</H2>
+
+<P>
+<A HREF="HOWTO-DEPLOY-6.html#kaaddnode">kaaddnode</A> and 
+<A HREF="HOWTO-DEPLOY-6.html#kadelnode">kadelnode</A> enable to add and remove nodes from the deployment system if the cluster composition changes.</P>
+<H2><A NAME="ss3.5">3.5</A> <A HREF="HOWTO-DEPLOY.html#toc3.5">Command summary </A>
+</H2>
+
+
+<H3>Functionalities summary</H3>
+
+<P><CODE>kaaddnode</CODE> - registers nodes in deployment system</P>
+<P><CODE>kadelnode</CODE> - unregisters nodes in deployment system</P>
+<P><CODE>karecordenv</CODE> - registers an environment image in deployment system</P>
+<P><CODE>kaarchive</CODE> - creates an environment image</P>
+<P><CODE>kacreateenv</CODE> - creates and registers an environment image in deployment system</P>
+<P><CODE>kadeploy</CODE> - deploys an environment image</P>
+<P><CODE>kaconsole</CODE> - opens a remote console </P>
+<P><CODE>kareboot</CODE> - reboots according to requested reboot type</P>
+
+<H3>Use summary</H3>
+
+<P>The first time...
+<UL>
+<LI><CODE>karecordenv</CODE> - to register environments already installed (if any)</LI>
+<LI><CODE>kaaddnode</CODE> - to register the cluster hardware composition</LI>
+</UL>
+</P>
+<P>Deployment
+<UL>
+<LI><CODE>kacreateenv/karecordenv/kaarchive</CODE> - to create and/or register an environment and make it available for deployment</LI>
+<LI><CODE>kadeploy</CODE> - to deploy a registered environment</LI>
+</UL>
+</P>
+<P>Other tools
+<UL>
+<LI><CODE>kaconsole</CODE> - to open a console on a remote node</LI>
+<LI><CODE>kareboot</CODE> - to reboot a cluster node</LI>
+</UL>
+</P>
+<H3>Examples</H3>
+
+<P>
+<PRE>
+# karecordenv -n debian -d "custom debian" -fb file://home/toto/images/custom_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz -size 750 -k /boot/vmlinuz 
+# kaaddnode cluster_description.txt
+# kacreateenv -e new_debian -fb file://home/toto/images/new_debian.tgz -ft file://home/toto/images/debian_postinstall.tgz --size 650 -k /boot/vmlinuz --root-directory /
+# kadeploy -e new_debian -m node1 -m node2 -p hda7
+# kaconsole -m node2
+# kareboot -s -e custom_debian -m node2
+</PRE>
+</P>
+
+<HR>
+<A HREF="HOWTO-DEPLOY-4.html">Next</A>
+<A HREF="HOWTO-DEPLOY-2.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc3">Contents</A>
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>

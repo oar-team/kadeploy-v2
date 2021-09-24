@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation-x</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li ><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2: Configuration Files</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-6.html" REL=next>
+ <LINK HREF="HOWTO-DEPLOY-4.html" REL=previous>
+ <LINK HREF="HOWTO-DEPLOY.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="HOWTO-DEPLOY-6.html">Next</A>
+<A HREF="HOWTO-DEPLOY-4.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc5">Contents</A>
+<HR>
+<H2><A NAME="s5">5.</A> <A HREF="HOWTO-DEPLOY.html#toc5">Configuration Files</A></H2>
+
+<P><EM>kadeploy</EM> tools suite is configured through two configuration files : <CODE>deploy.conf</CODE> and <CODE>deploy_cmd.conf</CODE> in the <CODE>/etc/kadeploy/</CODE> folder.</P>
+<H2><A NAME="ss5.1">5.1</A> <A HREF="HOWTO-DEPLOY.html#toc5.1">deploy.conf</A>
+</H2>
+
+<P>This file presents all the variables the user must defined in order to be able to use the deployment system. It is divided into several sections. A very short description is available for each variable and sometimes example values are given in commentary.</P>
+<P>The user can find an example in the tools/cookbook folder.</P>
+<H3>nodes properties</H3>
+
+<P>
+<DL>
+<P>
+<A NAME="first_check_timeout"></A> </P>
+<DT><B>first_check_timeout</B><DD><P>value is the time in seconds to wait for the nodes to reboot and load the deployment kernel. A first attempt try to reboot them with a software reboot, after this timeout, all the non booted nodes are hard rebooted, and after a second timeout, the still non booted ones are excluded from deployment. If null, <EM>kadeploy</EM> waits for all the target nodes  
+<A NAME="last_check_timeout"></A> </P>
+<DT><B>last_check_timeout</B><DD><P>value is the time in seconds to wait for the nodes to reboot and load the deployed system. If null it waits for all the nodes that booted the deployment kernel</P>
+</DL>
+</P>
+<H3>nmap</H3>
+
+<P>
+<DL>
+<P>
+<A NAME="enable_nmap"></A> </P>
+<DT><B>enable_nmap</B><DD><P>value is 0 or 1, setting it to 1 enables ping checks before <EM>rsh</EM> or <EM>ssh</EM> checks, to fasten checks on the arrival of the nodes
+<A NAME="nmap_cmd"></A> </P>
+<DT><B>nmap_cmd</B><DD><P>value is the absolute path of the nmap command</P>
+</DL>
+</P>
+<H3>sentinelle</H3>
+
+<P><EM>sentinelle</EM> is a parallel launcher that is used by <EM>kadeploy</EM> to perform all the parallel tasks required during the deployment process. Two environments are defined : the first is the deploy environment, which should be configured to let the parallel launcher work when the target nodes are running the deployment kernel, and the prod environment, which is used to issue parallel commands when the nodes are rebooted under the deployed system.
+<DL>
+<P>
+<A NAME="deploy_sentinelle_cmd"></A> </P>
+<DT><B>deploy_sentinelle_cmd</B><DD><P>value is the absolute path of the sentinelle command used when the nodes are running the deployment kernel, this should be <CODE>/usr/local/bin/DKsentinelle</CODE>, and that is where you should copy the <EM>DKsentinelle</EM> binary
+<A NAME="deploy_sentinelle_default_args"></A> </P>
+<DT><B>deploy_sentinelle_default_args</B><DD><P>value is the default arguments given to the <CODE>deploy_sentinelle_cmd</CODE> to be able to connect to the nodes and timeout
+<A NAME="deploy_sentinelle_pipelined_args"></A> </P>
+<DT><B>deploy_sentinelle_pipelined_args</B><DD><P>value is the <CODE>deploy_sentinelle_cmd</CODE> arguments given during pipelined operations, it is possible to adapt it to ensure that the pipeline topology will meet the throughput constraints and the reliability needs
+<A NAME="deploy_sentinelle_endings"></A> </P>
+<DT><B>deploy_sentinelle_endings</B><DD><P>value is the command to issue to get a node's IP when it is running the deployment kernel
+<A NAME="deploy_sentinelle_timeout"></A> </P>
+<DT><B>deploy_sentinelle_timeout</B><DD><P>value is the number of seconds to wait for a parallel command to succeed
+<A NAME="prod_sentinelle_cmd"></A> </P>
+<DT><B>prod_sentinelle_cmd</B><DD><P>value is the absolute path of the sentinelle command used when the nodes are running the deployed system, this path is common to the server issuing the deployment, and the target nodes
+<A NAME="prod_sentinelle_default_args"></A> </P>
+<DT><B>prod_sentinelle_default_args</B><DD><P>value is the default arguments given to the <CODE>prod_sentinelle_cmd</CODE> to be able to connect to the nodes and timeout
+<A NAME="prod_sentinelle_pipelined_args"></A> </P>
+<DT><B>prod_sentinelle_pipelined_args</B><DD><P>value is the <CODE>prod_sentinelle_cmd</CODE> arguments given during pipelined operations, it is possible to adapt it to ensure that the pipeline topology will meet the throughput constraints and the reliability needs
+<A NAME="prod_sentinelle_endings"></A> </P>
+<DT><B>prod_sentinelle_endings</B><DD><P>value is the command to issue to get a node's IP when it is running the deployed system
+<A NAME="prod_sentinelle_timeout"></A> </P>
+<DT><B>prod_sentinelle_timeout</B><DD><P>value is the number of seconds to wait for a parallel command to succeed</P>
+</DL>
+</P>
+<H3><A NAME="database"></A> database</H3>
+
+<P>
+<DL>
+<P>
+<A NAME="deploy_db_host"></A> </P>
+<DT><B>deploy_db_host</B><DD><P>value is the hostname where the mysql server that owns the deployment system database is running
+<A NAME="deploy_db_name"></A> </P>
+<DT><B>deploy_db_name</B><DD><P>value is the name of the deploy database
+<A NAME="deploy_db_login"></A> </P>
+<DT><B>deploy_db_login</B><DD><P>value is the login to access to the deploy database
+<A NAME="deploy_db_psswd"></A> </P>
+<DT><B>deploy_db_psswd</B><DD><P>value is the password to access to the deploy database
+<A NAME="rights_db_host"></A> </P>
+<DT><B>rights_db_host</B><DD><P>value is the hostname where the mysql server that owns the deployment rights database is running
+<A NAME="rights_db_name"></A> </P>
+<DT><B>rights_db_name</B><DD><P>value is the name of the rights database
+<A NAME="rights_db_login"></A> </P>
+<DT><B>rights_db_login</B><DD><P>value is the login to access to the rights database
+<A NAME="rights_db_psswd"></A> </P>
+<DT><B>rights_db_psswd</B><DD><P>value is the password to access to the rights database</P>
+</DL>
+</P>
+<H3><A NAME="preinstall_and_postinstall"></A> preinstall and postinstall</H3>
+
+<P>
+<DL>
+<P>
+<A NAME="pre_install_archive"></A> </P>
+<DT><B>pre_install_archive</B><DD><P>value is the absolute path to the preinstall archive containing the pre_install_script
+<A NAME="pre_install_script"></A> </P>
+<DT><B>pre_install_script</B><DD><P>value is the name of the script in the preinstall archive that is supposed to be launched during the preinstall step 
+<A NAME="post_install_script"></A> </P>
+<DT><B>post_install_script</B><DD><P>value is the name of the script in the postinstall archive, defined in the database for each environment, that is supposed to be executed during the postinstall step</P>
+</DL>
+</P>
+<H3><CODE>PXE/TFTP</CODE></H3>
+
+<P>This part deals with the configuration of the <CODE>PXE/TFTP</CODE> structure, to allow <EM>kadeploy</EM> to control the way the nodes boot.
+<DL>
+<P>
+<A NAME="kernel_param"></A> </P>
+<DT><B>kernel_param</B><DD><P>value is the default kernel parameters given to the deployed kernel on boot, if none is specified with the environment, these parameters often deals with console redirection during kernel booting process
+<A NAME="tftp_repository_intel"></A> </P>
+<DT><B>tftp_repository_intel</B><DD><P>value is the base directory in the TFTP structure for Intel NICs (for our 
+<A HREF="HOWTO-DEPLOY-2.html#TFTP_structure">example</A>, value should be <CODE>/tftpboot/X86PC/linux/</CODE>)
+<A NAME="pxe_rep_intel"></A> </P>
+<DT><B>pxe_rep_intel</B><DD><P>value is the relative path from <CODE>tftp_repository_intel</CODE> to to the folder where kernel/initrd are associated to each node (for our 
+<A HREF="HOWTO-DEPLOY-2.html#TFTP_structure">example</A>, value should be <CODE>pxelinux.cfg/</CODE>)
+<A NAME="tftp_repository"></A> </P>
+<DT><B>tftp_repository</B><DD><P>value is the base directory in the TFTP structure for non Intel NICs (for our 
+<A HREF="HOWTO-DEPLOY-2.html#TFTP_structure">example</A>, value should be <CODE>/tftpboot/PXEClient/</CODE>)
+<A NAME="pxe_rep"></A> </P>
+<DT><B>pxe_rep</B><DD><P>value is the relative path from <CODE>tftp_repository</CODE> to to the folder where kernel/initrd are associated to each node (for our 
+<A HREF="HOWTO-DEPLOY-2.html#TFTP_structure">example</A>, value should be <CODE>pxelinux.cfg/</CODE>) 
+<A NAME="tftp_relative_path"></A> </P>
+<DT><B>tftp_relative_path</B><DD><P>value is the directory where the <EM>grub</EM> files are generated (for our 
+<A HREF="HOWTO-DEPLOY-2.html#TFTP_structure">example</A>, value should be <CODE>images_grub/</CODE>)</P>
+</DL>
+
+Some other custom variables are available here to ease the cluster management, by defining kernel/initrd shortcuts for <EM>kareboot</EM>. These custom variables begin with <CODE>label_</CODE> their values are kernel/initrd pairs that can be assigned to a booting node.
+<PRE>
+label_deploy_tg3 = duke-vmlinuz:duke-initrd  ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000
+</PRE>
+ means that the booting node will load <CODE>duke-vmlinuz</CODE> and <CODE>duke-initrd</CODE> from the 
+<PRE>
+/tftpboot/PXEClient/images_grub
+</PRE>
+ directory passing the following parameters to the kernel 
+<PRE>
+ETH_DRV=tg3 console=tty0 console=ttyS0,38400n8 ramdisk_size=20000
+</PRE>
+</P>
+
+<H2><A NAME="ss5.2">5.2</A> <A HREF="HOWTO-DEPLOY.html#toc5.2">deploy_cmd.conf</A>
+</H2>
+
+<P>This file contains the appropriate reboot and remote console opening commands. The kareboot and kaconsole tools get the commands to execute according to node given in parameter from it.</P>
+<P>Also, the user can find an example in the tools/cookbook folder with a brief description of the syntax to use.</P>
+<P>The syntax is <CODE>host_name command_type command</CODE> where possible command types are softboot, hardboot, deployboot or console.</P>
+<P>
+<DL>
+<P>
+<A NAME="softboot"></A> </P>
+<DT><B>softboot</B><DD><P>the sofboot line is the software reboot command. Typically it looks something like <CODE>ssh user@hostname /sbin/reboot</CODE> 
+<A NAME="deployboot"></A> </P>
+<DT><B>deployboot</B><DD><P>the deployboot line is the command to execute to reboot the node under the deployment kernel e.g. using the <CODE>setup_pxe.pl</CODE> utility in the <CODE>boot/</CODE> directory
+<A NAME="hardboot"></A> </P>
+<DT><B>hardboot</B><DD><P>hardboot is the hardware reboot command depending on special hardware equipment
+<A NAME="console"></A> </P>
+<DT><B>console</B><DD><P>console is the command to open a remote console on a cluster node e.g. via serial port using the kermit software</P>
+</DL>
+</P>
+
+<HR>
+<A HREF="HOWTO-DEPLOY-6.html">Next</A>
+<A HREF="HOWTO-DEPLOY-4.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc5">Contents</A>
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li class="webgen-menu-item-selected"><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-1.html" REL=next>
+
+
+</HEAD>
+<BODY>
+<A HREF="HOWTO-DEPLOY-1.html">Next</A>
+Previous
+Contents
+<HR>
+<H1>Kadeploy v2</H1>
+
+<H2>Julien Leduc (
+<A HREF="mailto:julien.leduc@imag.fr">julien.leduc@imag.fr</A>), Gaetan Peaquin</H2>V0.01  2004-07-20
+<HR>
+<EM>
+<!--
+kadeploy
+-->
+
+The purpose of this HOWTO is to provide all the necessary steps to install and use kadeploy on demand deploying system in its second version.</EM>
+<HR>
+<P>
+<H2><A NAME="toc1">1.</A> <A HREF="HOWTO-DEPLOY-1.html">Introduction</A></H2>
+
+<UL>
+<LI><A NAME="toc1.1">1.1</A> <A HREF="HOWTO-DEPLOY-1.html#ss1.1">Copyright</A>
+<LI><A NAME="toc1.2">1.2</A> <A HREF="HOWTO-DEPLOY-1.html#ss1.2">Disclaimer</A>
+<LI><A NAME="toc1.3">1.3</A> <A HREF="HOWTO-DEPLOY-1.html#ss1.3">News</A>
+<LI><A NAME="toc1.4">1.4</A> <A HREF="HOWTO-DEPLOY-1.html#ss1.4">Credits</A>
+<LI><A NAME="toc1.5">1.5</A> <A HREF="HOWTO-DEPLOY-1.html#ss1.5">Translations</A>
+</UL>
+<P>
+<H2><A NAME="toc2">2.</A> <A HREF="HOWTO-DEPLOY-2.html">Installation</A></H2>
+
+<UL>
+<LI><A NAME="toc2.1">2.1</A> <A HREF="HOWTO-DEPLOY-2.html#ss2.1">Perl</A>
+<LI><A NAME="toc2.2">2.2</A> <A HREF="HOWTO-DEPLOY-2.html#ss2.2">Database</A>
+<LI><A NAME="toc2.3">2.3</A> <A HREF="HOWTO-DEPLOY-2.html#ss2.3"><CODE>PXE/TFTP</CODE></A>
+<LI><A NAME="toc2.4">2.4</A> <A HREF="HOWTO-DEPLOY-2.html#ss2.4">System Requirements</A>
+</UL>
+<P>
+<H2><A NAME="toc3">3.</A> <A HREF="HOWTO-DEPLOY-3.html">Using kadeploy v2</A></H2>
+
+<UL>
+<LI><A NAME="toc3.1">3.1</A> <A HREF="HOWTO-DEPLOY-3.html#ss3.1">The first time...</A>
+<LI><A NAME="toc3.2">3.2</A> <A HREF="HOWTO-DEPLOY-3.html#ss3.2">Deployment</A>
+<LI><A NAME="toc3.3">3.3</A> <A HREF="HOWTO-DEPLOY-3.html#ss3.3">Other tools for remote management</A>
+<LI><A NAME="toc3.4">3.4</A> <A HREF="HOWTO-DEPLOY-3.html#ss3.4">What if the cluster hardware composition changes ?</A>
+<LI><A NAME="toc3.5">3.5</A> <A HREF="HOWTO-DEPLOY-3.html#ss3.5">Command summary </A>
+</UL>
+<P>
+<H2><A NAME="toc4">4.</A> <A HREF="HOWTO-DEPLOY-4.html">About the customization scripts</A></H2>
+
+<UL>
+<LI><A NAME="toc4.1">4.1</A> <A HREF="HOWTO-DEPLOY-4.html#ss4.1">Preinstallation script</A>
+<LI><A NAME="toc4.2">4.2</A> <A HREF="HOWTO-DEPLOY-4.html#ss4.2">Postinstallation script</A>
+</UL>
+<P>
+<H2><A NAME="toc5">5.</A> <A HREF="HOWTO-DEPLOY-5.html">Configuration Files</A></H2>
+
+<UL>
+<LI><A NAME="toc5.1">5.1</A> <A HREF="HOWTO-DEPLOY-5.html#ss5.1">deploy.conf</A>
+<LI><A NAME="toc5.2">5.2</A> <A HREF="HOWTO-DEPLOY-5.html#ss5.2">deploy_cmd.conf</A>
+</UL>
+<P>
+<H2><A NAME="toc6">6.</A> <A HREF="HOWTO-DEPLOY-6.html">Man pages</A></H2>
+
+<UL>
+<LI><A NAME="toc6.1">6.1</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.1">kaaddnode</A>
+<LI><A NAME="toc6.2">6.2</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.2">kadelnode</A>
+<LI><A NAME="toc6.3">6.3</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.3">kadeploy</A>
+<LI><A NAME="toc6.4">6.4</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.4">kareboot</A>
+<LI><A NAME="toc6.5">6.5</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.5">kaconsole</A>
+<LI><A NAME="toc6.6">6.6</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.6">karecordenv</A>
+<LI><A NAME="toc6.7">6.7</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.7">kaarchive</A>
+<LI><A NAME="toc6.8">6.8</A> <A HREF="HOWTO-DEPLOY-6.html#ss6.8">kacreateenv</A>
+</UL>
+<HR>
+<A HREF="HOWTO-DEPLOY-1.html">Next</A>
+Previous
+Contents
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>

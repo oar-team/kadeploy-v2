@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Documentation-x</title>
+    <link href="./default.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+  </head>
+  <body>
+
+  <div id="container">
+
+<div style="text-align: center;"><img style="border: 0px solid ; " alt="kadeplo's logo" title="" src="images/kadeploy.png"></div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="menu">
+		<div class="webgen-menu-horiz "><ul><li ><a href="./index.html" title="Main">Main</a></li><li ><a href="./HOWTO-DEPLOY.html" title="Documentation">Documentation</a></li></ul></div>
+    </div>
+
+    <div class="body">
+      
+      <h1>IMPORTANT NOTICE</h1>
+      <p>This is the website of <b>KADEPLOY VERSION 2</b>. The <b>LATEST</b> version of KADEPLOY is <b>VERSION 3</b>, whose web site is <b><a href="https://kadeploy.gitlabpages.inria.fr">HERE</a></b>.</p>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.21">
+ <TITLE>Kadeploy v2: Man pages</TITLE>
+ <LINK HREF="HOWTO-DEPLOY-5.html" REL=previous>
+ <LINK HREF="HOWTO-DEPLOY.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+Next
+<A HREF="HOWTO-DEPLOY-5.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc6">Contents</A>
+<HR>
+<H2><A NAME="Man_pages"></A> <A NAME="s6">6.</A> <A HREF="HOWTO-DEPLOY.html#toc6">Man pages</A></H2>
+
+<P>This section regroups the man pages for the different tools that compose the deployment system.</P>
+<H2><A NAME="kaaddnode"></A> <A NAME="ss6.1">6.1</A> <A HREF="HOWTO-DEPLOY.html#toc6.1">kaaddnode</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kaaddnode - registers nodes and their disk and partition features</P>
+
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kaaddnode info_file</CODE></P>
+<H3>DESCRIPTION</H3>
+
+<P>kaaddnode registers nodes and their disk and partition features for them to be available to the deployment system. It can be used at the very beginning to describe a whole cluster (after having completed the installation for instance) or later when new nodes are added to a cluster already managed by the deployment system.</P>
+<P>info_file is the name of the file that describes all the information the system needs. It contains two main parts and has to be formatted as described below:</P>
+<P>
+<PRE>
+# first part : node set description
+
+node_name1    mac_address1    ip_address1
+node_name2    mac_address2    ip_address2
+node_name3    mac_address3    ip_address3
+...           ...             ...
+</PRE>
+        
+N.B. : each node is described on a separate line; fields on each line are separated by tabs or spaces. 
+<PRE>
+# second part : descriptive information about the type of disk and the partitioning
+
+device_name    device_size
+partition_number1    partition_size1    deployed_env1
+partition_number2    partition_size2    deployed_env2
+partition_number3    partition_size3    deployed_env3
+...                  ...                ...
+</PRE>
+
+N.B. : each partition is described on a separate line; fields on each line are separated by tabs or spaces. All size are given in Mbytes. The specified deployed_env should already exist in the deployment system otherwise default value 'undefined' will be switched to the declared one during the execution.</P>
+<P>First and second part are separated by a - strange and arbitrary - line starting with the following characters : \#. Empty lines and commentaries (starting with #) are ignored. Before doing any modification in the deployment system database, kaaddnode tries to check if the expected description syntax is respected in both parts.</P>
+<H3>EXAMPLE</H3>
+
+<P><CODE>kaaddnode description.txt</CODE></P>
+<P>with description.txt as below:
+<PRE>
+# Nodes
+node1    00:02:73:49:9C:8D    192.168.10.1
+node2    00:02:73:49:9C:8E    192.168.10.2
+...      ...                  ...
+
+\#
+
+# Disk &amp; Parts
+hda  80000
+1    5000    swap
+2    20000   debian
+...  ...     ...
+</PRE>
+</P>
+<H2><A NAME="kadelnode"></A> <A NAME="ss6.2">6.2</A> <A HREF="HOWTO-DEPLOY.html#toc6.2">kadelnode</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kadelnode - unregisters nodes</P>
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kadelnode -m|--machine hostname</CODE></P>
+<H3>DESCRIPTION</H3>
+
+<P>kadelnode unregisters nodes and their disk and partition features from the deployment system.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-m, --machine hostname</B><DD><P>specifies a host. This option can be used more than once to specify several hosts</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B> kadelnode -m node1</B><DD><P>remove all information relative to node1 from the deployment system database</P>
+</DL>
+</P>
+<H2><A NAME="kadeploy"></A> <A NAME="ss6.3">6.3</A> <A HREF="HOWTO-DEPLOY.html#toc6.3">kadeploy</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kadeploy - deploys an environment on the given nodes</P>
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kadeploy -e|--environment environment_name -m|--machine hostname -p|--partition partition</CODE></P>
+<H3>DESCRIPTION</H3>
+
+<P>kadeploy deploys the specified environment on the requested nodes. When successfully over, the nodes are available under the new and freshly installed environment.</P>
+<P>It needs critic variables to be defined in the /etc/kadeploy/deploy.conf configuration file ; see configuration file section for further details.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-e, --environment environment_name</B><DD><P>the name of the environment to deploy</P>
+<DT><B>-m, --machine hostname</B><DD><P>specifies a host. This option can be used more than once to specify several hosts. By default, it tries to deploy on all the nodes.</P>
+<DT><B>-p, --partition partition</B><DD><P>the target partition. This option can't be used more than once and the partition is the same for all the nodes.</P>
+</DL>
+</P>
+<H3>CONFIGURATION FILES</H3>
+
+<P>
+<DL>
+<DT><B>/etc/kadeploy/deploy.conf</B><DD><P>Contains variables that should be defined prior to the command execution. These variables are grouped into several sections. A very short description is available for each variable and sometimes example values are given in commentary. The file is read once at the beginning of the execution and prior to any other action. If values are missing, it should be told as precisely as possible. The syntax is the following :
+<PRE>
+# section_name #
+# ------------ #
+
+# short description
+var_name1 = var_value1
+
+# short description
+var_name2 = var_value2  # example_value
+
+...
+</PRE>
+
+Also, an example of this file can be found at in the <CODE>tools/cookbook/</CODE> folder.</P>
+
+<DT><B>/etc/kadeploy/deploy_cmd.conf</B><DD><P>Contains entries describing reboot command needed for deployment. Please see kareboot man page for further details.</P>
+</DL>
+</P>
+<H3>FILES</H3>
+
+<P>kadeploy needs read and write access to several folder and files to acheive a deployment. These rights should be granted to the deploy user. Here are the files and folder list :
+<UL>
+<LI><CODE>$KADEPLOYDIR/boot/</CODE> contains utilities (binaries etc.) for grub/pxe/reboot stories</LI>
+<LI>the <CODE>tftp</CODE> folder where grub and pxe files will be written and that should be defined in the <CODE>/etc/kadeploy/deploy.conf</CODE> configuration file</LI>
+<LI>and <CODE>/tmp/</CODE> for a few temporary files</LI>
+</UL>
+</P>
+
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>kadeploy -e debian -m node7 -p hda3</B><DD><P>deploys the debian on partition hda3 of node 7</P>
+<DT><B>kadeploy -e debian -m node1 -m node2 -p hdb6</B><DD><P>deploys the debian on partition hdb6 of nodes 1 and 2</P>
+</DL>
+</P>
+<H2><A NAME="kareboot"></A> <A NAME="ss6.4">6.4</A> <A HREF="HOWTO-DEPLOY.html#toc6.4">kareboot</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kareboot - reboots a node</P>
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kareboot [-n|--noreboot] [-s|--soft] [-h|--hard] [-d|--deploy] -m|--machine hostname [-e|--environment name] [-p|--partition partition]</CODE></P>
+
+<H3>DESCRIPTION</H3>
+
+<P>kareboot can execute software or hardware reboots on given nodes. It can execute five types of query : no reboot, simple reboot, deploy reboot, environment reboot and partition reboot. For all of them, the user can specify one or several hosts.</P>
+<P>Here is a brief description of the effects of each reboot type :
+<UL>
+<LI>no reboot : setups pxe, grub and tftp stuff for the given nodes without rebooting</LI>
+<LI>simple reboot : executes a 'normal' (classic) reboot of the given nodes</LI>
+<LI>deploy reboot : reboots the given nodes on the deployment kernel</LI>
+<LI>environment reboot : looks for the specified environment on the given nodes and reboots on it. The environment should thus already be installed.</LI>
+<LI>partition reboot : reboots the given nodes on the requested partition if an appropriate environment is found</LI>
+</UL>
+
+Consult the example section below for more explicit usage descriptions.</P>
+<P>kareboot needs the appropriate command (softboot, hardboot, deployboot) to be defined in the configuration file in order to be able to execute the requested reboot on the given node ; see configuration file section for further details.</P>
+
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-n, --noreboot</B><DD><P>setups pxe, grub and tftp stuff</P>
+<DT><B>-s, --soft</B><DD><P>requests a software reboot (default reboot type)</P>
+<DT><B>-h, --hard</B><DD><P>requests a hardware reboot</P>
+<DT><B>-d, --deploy</B><DD><P>specify to reboot on the deployment kernel</P>
+<DT><B>-m, --machine hostname</B><DD><P>specifies a host. This option can be used more than once to specify several hosts.</P>
+<DT><B>-e, --environment</B><DD><P>gives an (already installed) environment to boot. When used, only one environment can be specified.</P>
+<DT><B>-p, --partition</B><DD><P>gives a partition to boot on. When used, only one partition can be specified.</P>
+</DL>
+</P>
+<H3>CONFIGURATION FILE</H3>
+
+<P>
+<DL>
+<DT><B>/etc/kadeploy/deploy_cmd.conf</B><DD><P>Can contain four entry types per node whose three are relative to the kareboot command. Those three entries describe the reboot commands for the soft, hard and deploy reboot type. Here is the description of the expected syntax : </P>
+<P><CODE>host_name reboot_type command</CODE></P>
+<P>where reboot_type can be either softboot, hardboot or deployboot. </P>
+<P>Example for idpot1 of idpot cluster :
+<UL>
+<LI><CODE>idpot1 softboot ssh root@idpot1 -o ConnectTimeout=2 /sbin/reboot</CODE></LI>
+<LI><CODE>idpot1 hardboot ssh localuser@ldap-idpot ~/commande_modules/logiciel/dio_reset 0x81 0</CODE></LI>
+<LI><CODE>idpot1 deployboot ../boot/setup_pxe.pl 192.168.10.1:label_deploy_tg3</CODE></LI>
+</UL>
+</P>
+<P>In this example, 
+<UL>
+<LI>soft reboot is actually a simple "reboot" command done via a ssh connection as root</LI>
+<LI>hard reboot is a hard signal sent via a ssh connection on a precise server as a special user</LI>
+<LI>deploy boot is a call to the (deployment system) setup_pxe.pl perl script with appropriate arguments</LI>
+</UL>
+</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>No reboot</B><DD><P>
+<DL>
+<DT><B>kareboot -n -m node1 -e debian </B><DD><P>setups pxe, grub and tftp stuff for rebooting node1 on debian environment (if already installed)</P>
+<DT><B>kareboot -n -m node7 -p hda5 </B><DD><P>setups pxe, grub and tftp stuff for rebooting node7 on partition hda5 (if an environment is found)</P>
+</DL>
+</P>
+<DT><B>Simple reboot</B><DD><P>
+<DL>
+<DT><B>kareboot -s -m node1</B><DD><P>executes a software reboot of node1</P>
+<DT><B>kareboot -h -m node7 -m node6</B><DD><P>executes a hardware reboot of nodes 7 and 6</P>
+<DT><B>kareboot -m node7</B><DD><P>executes a software reboot of node7</P>
+</DL>
+</P>
+<DT><B>Deploy reboot</B><DD><P>
+<DL>
+<DT><B>kareboot -d -m node2</B><DD><P>(soft) reboots on deployment kernel</P>
+<DT><B>kareboot -d -h -m node2</B><DD><P>(hard) reboots on deployment kernel</P>
+</DL>
+</P>
+<DT><B>Environment reboot</B><DD><P>
+<DL>
+<DT><B>kareboot -e debian -m node3</B><DD><P>looks for environment debian on node3 and (soft) reboots on it if it exists</P>
+<DT><B>kareboot -h -e debian -m node3</B><DD><P>looks for environment debian on node3 and (hard) reboots on it if it exists</P>
+</DL>
+</P>
+<DT><B>Partition reboot</B><DD><P>
+<DL>
+<DT><B>kareboot -s -p hda6 -m node4</B><DD><P>checks the environment installed on partition hda6 of node4 and (soft) reboots on it if appropriate</P>
+</DL>
+</P>
+</DL>
+</P>
+<H2><A NAME="kaconsole"></A> <A NAME="ss6.5">6.5</A> <A HREF="HOWTO-DEPLOY.html#toc6.5">kaconsole</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kaconsole - opens a console on a remote node</P>
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kaconsole -m|--machine hostname</CODE></P>
+<H3>DESCRIPTION</H3>
+
+<P>kaconsole opens a console on a remote node. This tool is designed to help the user that would try to find out the reason of a deployment failure or to follow a boot sequence for instance. It needs the appropriate command to be defined in the configuration file in order to be able to open a remote console on the given node ; see configuration file section for further details.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-m, --machine hostname</B><DD><P>specifies a host. This option cannot be used more than once.</P>
+</DL>
+</P>
+<H3>CONFIGURATION FILE</H3>
+
+<P>
+<DL>
+<DT><B>/etc/kadeploy/deploy_cmd.conf</B><DD><P>Can contain four entry types per node whose only one is relative to the kaconsole command. This entry describes the command to open a remote console on the specified node of the cluster. Here is the description of the expected syntax :</P>
+<P><CODE>host_name console command</CODE></P>
+<P>Example for idpot1 of idpot cluster :</P>
+<P><CODE>idpot1 console ssh -t localuser@ldap-idpot kermit -l /dev/ttyUSB0 -b 38400 -c</CODE></P>
+<P>In this example, kaconsole -m idpot1 means to open a serial connection on idpot1 node via kermit software from ldap-idpot</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>kaconsole -m node</B><DD><P>opens a console on node (if appropriately equipped)</P>
+</DL>
+</P>
+<H2><A NAME="karecordenv"></A> <A NAME="ss6.6">6.6</A> <A HREF="HOWTO-DEPLOY.html#toc6.6">karecordenv</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>karecordenv - registers a environment</P>
+<H3>SYNOPSIS</H3>
+
+<P>
+<PRE>
+karecordenv
+   -n |  --name        registration name
+   -v |  --version     version            # default is 1
+   -d |  --description description
+   -a |  --author      author email
+   -fb| --filebase    environment image path
+   -ft| --filesite    post-installation file path
+   -s |  --size        size (Mo)
+   -i |  --initrdpath  initrdpath        # default is none
+   -k |  --kernelpath  kernel path
+   -p |  --param       kernel param 
+   -fd| --fdisktype   fdisk type         # default is 82
+   -fs| --filesystem  file system        # default is ext2
+</PRE>
+
+Name, kernel_path, environment_image_path and post-installation_file_path must be defined</P>
+<H3>DESCRIPTION</H3>
+
+<P>karecordenv registers an environment in order to be able to use it with the deployment system.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-n,  --name registration_name</B><DD><P>the registration name for the environment</P>
+<DT><B>-v,  --version version</B><DD><P>the version number of the environment (if needed) ; default is 1</P>
+<DT><B>-d,  --description "description"</B><DD><P>a brief description of the environment</P>
+<DT><B>-a,  --author author_email</B><DD><P>the author email address</P>
+<DT><B>-fb, --filebase environment_image_path</B><DD><P>the complete path to the environment image</P>
+<DT><B>-ft, --filesite post-installation_file_path</B><DD><P>the complete path to the post-installation file</P>
+<DT><B>-s,  --size size (Mo)</B><DD><P>the size of the environment ; in order to perform partition size check before a deployment</P>
+<DT><B>-i,  --initrdpath</B><DD><P>the complete initrd path in the environment (including intrd name)</P>
+<DT><B>-k,  --kernelpath kernel_path</B><DD><P>the complete kernel path in the environment (including kernel name)</P>
+<DT><B>-p,  --param</B><DD><P>arguments passed to kernel at boot (
+<PRE>
+root
+</PRE>
+ parameter is set automatically), if left empty, default 
+<A HREF="HOWTO-DEPLOY-5.html#kernel_param">kernel parameters</A> can be configured</P>
+<DT><B>-fd, --fdisktype fdisk_type</B><DD><P>the fdisk type ; default is 82</P>
+<DT><B>-fs, --filesystem file_system</B><DD><P>the file system type ; default is ext2</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>karecordenv -n debian -v 2 -d "debian maison prête à l'installation" -a katools@imag.fr -fb file://home/nis/jleduc/ImagesDistrib/image_Debian_current.tgz -ft file://home/nis/jleduc/Boulot/postinstall/traitement.tgz -size 650 -k /boot/vmlinuz -i /initrd -p "console=ttyS0,38400n8 ETH_DRV=tg3" -fd 83 -fs ext2</B><DD><P>registers a debian image whose features are explicitly given in parameter</P>
+</DL>
+</P>
+<H2><A NAME="kaarchive"></A> <A NAME="ss6.7">6.7</A> <A HREF="HOWTO-DEPLOY.html#toc6.7">kaarchive</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kaarchive - creates an environment image</P>
+<H3>SYNOPSIS</H3>
+
+<P><CODE>kaarchive [-X | --exclude-from file] [-z | --gzip] [--output-directory output_directory] [-i | --image image_name] --root-directory root_directory</CODE></P>
+<H3>DESCRIPTION</H3>
+
+<P>kaarchive creates a environment image from a running system one.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-X, --exclude-from file</B><DD><P>excludes files named into file from the generated environment</P>
+<DT><B>-z, --gzip</B><DD><P>filters the archive through gzip</P>
+<DT><B>--output-directory output_directory</B><DD><P>sets the output directory for the generated environment ; default is current directory</P>
+<DT><B>-i, --image image_name</B><DD><P>sets the output image name ; default is output_image</P>
+<DT><B>--root-directory root_directory</B><DD><P>sets the root directory for the environment creation</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>kaarchive -z -X /path/to/files_to_exclude_list.txt -i debian --root-directory /mnt/debian/</B><DD><P>creates the debian.tgz image file from /mnt/debian excluding the files listed into /path/to/files_to_exclude_list.txt</P>
+</DL>
+</P>
+
+<H2><A NAME="kacreateenv"></A> <A NAME="ss6.8">6.8</A> <A HREF="HOWTO-DEPLOY.html#toc6.8">kacreateenv</A>
+</H2>
+
+
+<H3>NAME</H3>
+
+<P>kacreateenv - creates and registers a new environment</P>
+<H3>SYNOPSIS</H3>
+
+<P>
+<PRE>
+kacreateenv 
+   -e | --environment environment_name 
+   -v | --version version 
+   -X | --exclude-from file 
+   -z | --gzip
+   --output-directory output_directory
+   --root-directory root_directory
+   --author email_address
+   --description "description"
+   --file-base file
+   --file-site file
+   --size size
+   --kernel-path kernel_path
+   --fdisk-type fdisk_type_number
+   --file-system file_system_type
+</PRE>
+</P>
+<H3>DESCRIPTION</H3>
+
+<P>kacreateenv creates and registers a new environment from a running system one.</P>
+<H3>OPTIONS</H3>
+
+<P>
+<DL>
+<DT><B>-e,  --environment environment_name</B><DD><P>the registration and output image name for the environment</P>
+<DT><B>-v,  --version version</B><DD><P>the version number of the environment (if needed) ; default is 1</P>
+<DT><B>-d,  --description "description"</B><DD><P>a brief description of the environment</P>
+<DT><B>-a,  --author author_email</B><DD><P>the author email address</P>
+<DT><B>-fb, --filebase environment_image_path</B><DD><P>the complete path to the environment image</P>
+<DT><B>-ft, --filesite post-installation_file_path</B><DD><P>the complete path to the post-installation file</P>
+<DT><B>-s,  --size size (Mo)</B><DD><P>the size of the environment ; in order to perform partition size check before a deployment</P>
+<DT><B>-k,  --kernelpath kernel_path</B><DD><P>the complete kernel path in the environment</P>
+<DT><B>-fd, --fdisktype fdisk_type_number</B><DD><P>the fdisk type ; default is 82</P>
+<DT><B>-fs, --filesystem file_system_type</B><DD><P>the file system type ; default is ext2</P>
+<DT><B>--root-directory root_directory</B><DD><P>sets the root directory for the environment creation</P>
+<DT><B>-X, --exclude-from file</B><DD><P>excludes files named into file from the generated environment</P>
+<DT><B>-z, --gzip</B><DD><P>filters the archive through gzip</P>
+<DT><B>--output-directory output_directory</B><DD><P>sets the output directory for the generated environment ; default is current directory</P>
+</DL>
+</P>
+<H3>EXAMPLE</H3>
+
+<P>
+<DL>
+<DT><B>kacreateenv -e toto_env --description "toto's special image" --author toto@fai.fr -fb file://home/images_folder/toto_env.tgz -ft file://home/images_folder/toto_spec_file.tgz --size 650 -k /boot/vmlinuz --root-directory /home/toto_img/ -X /path/to/file_to_exclude.txt -z</B><DD><P>creates and registers the environment according to the parameters</P>
+</DL>
+</P>
+
+<HR>
+Next
+<A HREF="HOWTO-DEPLOY-5.html">Previous</A>
+<A HREF="HOWTO-DEPLOY.html#toc6">Contents</A>
+</BODY>
+</HTML>
+
+    </div>
+
+<table style="background-color: rgb(250, 123, 25);" border="0" cellpadding="1" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+       <td></td>
+    </tr>
+  </tbody>
+</table>
+
+    <div id="footer" class="bar">
+      generated with <a href="http://webgen.rubyforge.org"> webgen </a> on <b>Monday, February 12 13:10:29 CET 2007</b>
+    </div>
+
+  </div>
+
+  </body>
+</html>
